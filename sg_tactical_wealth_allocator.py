@@ -80,8 +80,49 @@ def harvest_market_historical_metrics():
                 st.error(f"Error fetching data for {standard_name}: {error_msg}")
     return computed_metrics
 
+@st.cache_data(ttl=14400)
+def fetch_macro_indicators():
+    """Fetch live macro indicators: VIX, 10Y yield, 3M yield for yield spread calculation."""
+    macro = {"vix": None, "yield_10y": None, "yield_3m": None, "yield_spread": None}
+
+    # Fetch VIX
+    try:
+        vix_data = yf.Ticker("^VIX").history(period="5d")
+        time.sleep(1.5)
+        if not vix_data.empty:
+            macro["vix"] = float(vix_data['Close'].iloc[-1])
+    except Exception:
+        pass
+
+    # Fetch 10Y Treasury Yield
+    try:
+        tnx_data = yf.Ticker("^TNX").history(period="5d")
+        time.sleep(1.5)
+        if not tnx_data.empty:
+            macro["yield_10y"] = float(tnx_data['Close'].iloc[-1])
+    except Exception:
+        pass
+
+    # Fetch 3M Treasury Yield (proxy for 2Y)
+    try:
+        irx_data = yf.Ticker("^IRX").history(period="5d")
+        time.sleep(1.5)
+        if not irx_data.empty:
+            macro["yield_3m"] = float(irx_data['Close'].iloc[-1])
+    except Exception:
+        pass
+
+    # Calculate yield spread
+    if macro["yield_10y"] is not None and macro["yield_3m"] is not None:
+        macro["yield_spread"] = macro["yield_10y"] - macro["yield_3m"]
+
+    return macro
+
 with st.spinner("Harvesting live historical index structures via API pipelines..."):
     market_state_database = harvest_market_historical_metrics()
+
+with st.spinner("Fetching live macro indicators (VIX, Yield Curve)..."):
+    live_macro = fetch_macro_indicators()
 
 # Safety check
 if not market_state_database:
@@ -94,10 +135,10 @@ if not market_state_database:
     st.stop()
 
 # ==============================================================================
-# 4. FUTURE DRAWDOWN STRESS TESTING CONTROL MATRIX (WITH HISTORICAL PICKER)
+# 4. MARKET CONDITIONS & SCENARIO MODELER
 # ==============================================================================
-st.markdown("### 🔮 Future Drawdown Scenario Modeler")
-st.info("Simulate a future market crash or select a historical date to see past allocation zones.")
+st.markdown("### 🔮 Market Conditions & Scenario Modeler")
+st.info("Live market data is loaded by default. Adjust sliders to run scenario analysis or override with manual inputs.")
 
 available_indices = list(market_state_database.keys())
 selected_index_profile = st.selectbox("Select Target Index Spectrum", available_indices)
@@ -111,9 +152,10 @@ live_anchor_close = selected_index_package["live_close"]
 historical_ath_anchor = selected_index_package["ath_peak"]
 underlying_data = selected_index_package["underlying_df"]
 
-control_col_1, control_col_2, control_col_3, control_col_4 = st.columns(4)
+# --- ROW 1: Historical picker + Index price slider ---
+row1_col1, row1_col2 = st.columns(2)
 
-with control_col_1:
+with row1_col1:
     underlying_data.index = underlying_data.index.tz_localize(None)
     min_date = underlying_data.index.min().to_pydatetime().date()
     max_date = underlying_data.index.max().to_pydatetime().date()
@@ -127,46 +169,75 @@ with control_col_1:
     else:
         picked_price = None
 
-with control_col_2:
+with row1_col2:
     if use_historical:
-        simulated_future_price = st.slider(
-            "Simulated Future Target Price",
+        index_price_input = st.slider(
+            "Market Index Price Level",
             int(live_anchor_close * 0.35), int(historical_ath_anchor * 1.25), int(picked_price),
             disabled=True, help="Disabled while historical date mode is active."
         )
     else:
-        simulated_future_price = st.slider(
-            "Simulated Future Target Price",
+        index_price_input = st.slider(
+            "Market Index Price Level",
             int(live_anchor_close * 0.35), int(historical_ath_anchor * 1.25), int(live_anchor_close),
-            help="Slide left to simulate future drawdowns, or right to simulate upward expansions."
+            help="Default is live close price. Slide left to simulate drawdowns, right to simulate rallies."
         )
+    st.caption(f"📡 Live close: **{live_anchor_close:,.2f}**")
 
-with control_col_3:
-    simulated_future_pmi = st.slider(
-        "Simulated Manufacturing PMI Baseline",
+# --- ROW 2: PMI | Yield Spread | VIX ---
+st.markdown("")
+row2_col1, row2_col2, row2_col3 = st.columns(3)
+
+# Determine live defaults with fallbacks
+live_vix = live_macro.get("vix")
+live_yield_spread = live_macro.get("yield_spread")
+
+vix_default = round(live_vix, 1) if live_vix is not None else 20.0
+yield_spread_default = round(live_yield_spread, 2) if live_yield_spread is not None else 0.45
+
+with row2_col1:
+    pmi_input = st.slider(
+        "US ISM Manufacturing PMI",
         40.0, 60.0, 51.5,
-        help="Global industrial production boundary indicator. Readings dropping below 50 reflect contractionary risk profiles."
+        help="Manufacturing activity gauge. Below 50 = contraction. Updated monthly by the ISM."
     )
+    st.caption("📝 Manual input — [Check latest at ISM](https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/)")
 
-with control_col_4:
-    simulated_yield_spread = st.slider(
-        "Simulated Yield Curve Spread (10Y - 2Y)",
-        -1.50, 2.00, 0.45,
-        help="Inversion trends falling below 0 signal institutional positioning ahead of global economic recessions."
+with row2_col2:
+    yield_spread_input = st.slider(
+        "US Treasury Yield Spread (10Y−2Y)",
+        -1.50, 2.50, yield_spread_default,
+        help="Yield curve inversion (below 0) signals recession risk. Using 10Y−3M as proxy."
     )
+    if live_yield_spread is not None:
+        st.caption(f"📡 Live spread: **{live_yield_spread:.2f}%** (10Y: {live_macro.get('yield_10y', 0):.2f}% − 3M: {live_macro.get('yield_3m', 0):.2f}%)")
+    else:
+        st.caption("⚠️ Live yield data unavailable — using default")
+
+with row2_col3:
+    vix_input = st.slider(
+        "CBOE VIX Volatility Index",
+        10.0, 80.0, vix_default,
+        help="Market fear gauge. Above 30 = elevated fear/stress. Above 40 = extreme panic."
+    )
+    if live_vix is not None:
+        st.caption(f"📡 Live VIX: **{live_vix:.2f}**")
+    else:
+        st.caption("⚠️ Live VIX unavailable — using default")
 
 # ==============================================================================
 # 5. DYNAMIC PROCESSING ENGINE & STATE CALCULATOR
 # ==============================================================================
-evaluation_price = picked_price if use_historical else simulated_future_price
+evaluation_price = picked_price if use_historical else index_price_input
 active_rolling_peak = max(historical_ath_anchor, evaluation_price)
 effective_scenario_drawdown = ((evaluation_price - active_rolling_peak) / active_rolling_peak) * 100
 baseline_200_ma = selected_index_package["ma_200"]
 
 # Individual risk trigger flags
-pmi_triggered = simulated_future_pmi < 50.0
-yield_triggered = simulated_yield_spread < 0.0
+pmi_triggered = pmi_input < 50.0
+yield_triggered = yield_spread_input < 0.0
 ma_triggered = evaluation_price < baseline_200_ma
+vix_triggered = vix_input > 30.0
 
 systemic_risk_score = 0
 if pmi_triggered:
@@ -174,6 +245,8 @@ if pmi_triggered:
 if yield_triggered:
     systemic_risk_score += 1
 if ma_triggered:
+    systemic_risk_score += 1
+if vix_triggered:
     systemic_risk_score += 1
 
 # Define zones
@@ -201,7 +274,7 @@ elif effective_scenario_drawdown <= -10.0:
     zone_color = "#F9A825"
     zone_text_color = "#1A1A1A"
     use_pulse = False
-elif evaluation_price > (1.20 * baseline_200_ma) and systemic_risk_score >= 2:
+elif evaluation_price > (1.20 * baseline_200_ma) and systemic_risk_score >= 3:
     active_allocation_zone = "STRONG SELL"
     zone_presentation_title = "STRONG SELL ZONE"
     zone_subtitle = "Systemic Market Bubble Detected &mdash; Maximize Liquidity &amp; Take Profits"
@@ -238,12 +311,12 @@ else:
     dd_label = "Within normal range"
 
 # Determine risk score alert state
-if systemic_risk_score >= 2:
+if systemic_risk_score >= 3:
     rs_bg = "#FFCDD2"; rs_border = "#D32F2F"; rs_icon = "🚨"; rs_text_color = "#B71C1C"
     rs_label = "CRITICAL: Multiple risk triggers active!"
-elif systemic_risk_score == 1:
+elif systemic_risk_score >= 1:
     rs_bg = "#FFE0B2"; rs_border = "#E65100"; rs_icon = "⚠️"; rs_text_color = "#E65100"
-    rs_label = "Elevated: 1 risk factor active"
+    rs_label = "Elevated: " + str(systemic_risk_score) + " risk factor(s) active"
 else:
     rs_bg = "#E8F5E9"; rs_border = "#2E7D32"; rs_icon = "✅"; rs_text_color = "#2E7D32"
     rs_label = "All clear &mdash; no risk triggers"
@@ -251,18 +324,22 @@ else:
 # Peak horizon
 pk_bg = "#E3F2FD"; pk_border = "#1565C0"; pk_icon = "📊"; pk_text_color = "#1565C0"
 
-# Individual risk indicator icons
-pmi_status_icon = "🚨" if pmi_triggered else "✅"
-pmi_status_color = "#D32F2F" if pmi_triggered else "#2E7D32"
-pmi_status_text = "CONTRACTION" if pmi_triggered else "Expansionary"
+# Individual risk indicator statuses
+pmi_si = "🚨" if pmi_triggered else "✅"
+pmi_sc = "#D32F2F" if pmi_triggered else "#2E7D32"
+pmi_st = "CONTRACTION" if pmi_triggered else "Expansionary"
 
-yield_status_icon = "🚨" if yield_triggered else "✅"
-yield_status_color = "#D32F2F" if yield_triggered else "#2E7D32"
-yield_status_text = "INVERTED" if yield_triggered else "Normal"
+yield_si = "🚨" if yield_triggered else "✅"
+yield_sc = "#D32F2F" if yield_triggered else "#2E7D32"
+yield_st = "INVERTED" if yield_triggered else "Normal"
 
-ma_status_icon = "🚨" if ma_triggered else "✅"
-ma_status_color = "#D32F2F" if ma_triggered else "#2E7D32"
-ma_status_text = "BELOW 200MA" if ma_triggered else "Above 200MA"
+ma_si = "🚨" if ma_triggered else "✅"
+ma_sc = "#D32F2F" if ma_triggered else "#2E7D32"
+ma_st = "BELOW 200MA" if ma_triggered else "Above 200MA"
+
+vix_si = "🚨" if vix_triggered else "✅"
+vix_sc = "#D32F2F" if vix_triggered else "#2E7D32"
+vix_st = "ELEVATED FEAR" if vix_triggered else "Normal"
 
 metric_col_1, metric_col_2, metric_col_3 = st.columns(3)
 
@@ -280,13 +357,14 @@ with metric_col_2:
     rs_html = (
         '<div style="background:' + rs_bg + '; border-left:6px solid ' + rs_border + '; border-radius:10px; padding:20px; text-align:center;">'
         '<div style="font-size:14px; color:#555; font-weight:600;">CALCULATED MACRO RISK SCORE</div>'
-        '<div style="font-size:42px; font-weight:800; color:' + rs_text_color + '; margin:8px 0;">' + rs_icon + ' ' + str(systemic_risk_score) + ' / 3</div>'
+        '<div style="font-size:42px; font-weight:800; color:' + rs_text_color + '; margin:8px 0;">' + rs_icon + ' ' + str(systemic_risk_score) + ' / 4</div>'
         '<div style="font-size:12px; color:#777; margin-bottom:12px;">' + rs_label + '</div>'
-        '<div style="text-align:left; padding:8px 12px; background:rgba(255,255,255,0.6); border-radius:8px;">'
-        '<div style="font-size:11px; font-weight:700; color:#333; margin-bottom:6px; text-transform:uppercase; letter-spacing:1px;">Risk Breakdown:</div>'
-        '<div style="font-size:12px; color:' + pmi_status_color + '; margin:3px 0;">' + pmi_status_icon + ' <b>PMI:</b> ' + f"{simulated_future_pmi:.1f}" + ' &mdash; ' + pmi_status_text + ' <span style="color:#999;">(trigger &lt; 50)</span></div>'
-        '<div style="font-size:12px; color:' + yield_status_color + '; margin:3px 0;">' + yield_status_icon + ' <b>Yield Spread:</b> ' + f"{simulated_yield_spread:.2f}" + ' &mdash; ' + yield_status_text + ' <span style="color:#999;">(trigger &lt; 0)</span></div>'
-        '<div style="font-size:12px; color:' + ma_status_color + '; margin:3px 0;">' + ma_status_icon + ' <b>Price vs 200MA:</b> ' + f"{evaluation_price:,.0f}" + ' vs ' + f"{baseline_200_ma:,.0f}" + ' &mdash; ' + ma_status_text + '</div>'
+        '<div style="text-align:left; padding:10px 14px; background:rgba(255,255,255,0.7); border-radius:8px;">'
+        '<div style="font-size:11px; font-weight:700; color:#333; margin-bottom:8px; text-transform:uppercase; letter-spacing:1px;">Risk Breakdown:</div>'
+        '<div style="font-size:12px; color:' + pmi_sc + '; margin:4px 0;">' + pmi_si + ' <b>ISM PMI:</b> ' + f"{pmi_input:.1f}" + ' &mdash; ' + pmi_st + ' <span style="color:#999;">(trigger &lt; 50)</span></div>'
+        '<div style="font-size:12px; color:' + yield_sc + '; margin:4px 0;">' + yield_si + ' <b>Yield Spread:</b> ' + f"{yield_spread_input:.2f}" + ' &mdash; ' + yield_st + ' <span style="color:#999;">(trigger &lt; 0)</span></div>'
+        '<div style="font-size:12px; color:' + ma_sc + '; margin:4px 0;">' + ma_si + ' <b>Price vs 200MA:</b> ' + f"{evaluation_price:,.0f}" + ' vs ' + f"{baseline_200_ma:,.0f}" + ' &mdash; ' + ma_st + '</div>'
+        '<div style="font-size:12px; color:' + vix_sc + '; margin:4px 0;">' + vix_si + ' <b>VIX Index:</b> ' + f"{vix_input:.1f}" + ' &mdash; ' + vix_st + ' <span style="color:#999;">(trigger &gt; 30)</span></div>'
         '</div>'
         '</div>'
     )
@@ -305,9 +383,8 @@ with metric_col_3:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# ENHANCED ZONE BANNER — TRADING TERMINAL STYLE (FIXED CSS)
+# ENHANCED ZONE BANNER — TRADING TERMINAL STYLE
 # ------------------------------------------------------------------------------
-# Build CSS separately to avoid f-string curly brace conflicts
 if use_pulse:
     pulse_style = """
     <style>
@@ -347,6 +424,53 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ==============================================================================
 st.markdown("### 📋 Tactical Allocation Recommendations")
 
+# --- ALLOCATION RULES LEGEND ---
+with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
+    # Build the rules table with the active zone highlighted
+    zones_data = [
+        ("STRONG BUY", "≤ -35%", "100%", "100%", "100%", "Generational opportunity — max conviction"),
+        ("BUY", "≤ -20%", "50%", "75%", "40%", "Structural bear — scale in aggressively"),
+        ("INITIAL BUY", "≤ -10%", "20%", "30%", "15%", "Healthy correction — nibble positions"),
+        ("HOLD / DCA", "Normal", "0%", "0%", "0%", "Maintain DCA schedules only"),
+        ("STRONG SELL", "Bubble + Risk ≥3", "0%", "0%", "0%", "Pause all buying — take profits"),
+    ]
+
+    table_header = "| Zone | Drawdown Trigger | Cash | SRS | CPF-OA | Rationale |\n"
+    table_header += "|:---|:---|:---:|:---:|:---:|:---|\n"
+
+    table_rows = ""
+    for zone_name, trigger, cash_pct, srs_pct, cpf_pct, rationale in zones_data:
+        # Check if this is the active zone
+        is_active = (
+            (zone_name == "STRONG BUY" and active_allocation_zone == "STRONG BUY") or
+            (zone_name == "BUY" and active_allocation_zone == "BUY") or
+            (zone_name == "INITIAL BUY" and active_allocation_zone == "INITIAL BUY") or
+            (zone_name == "HOLD / DCA" and active_allocation_zone == "HOLD") or
+            (zone_name == "STRONG SELL" and active_allocation_zone == "STRONG SELL")
+        )
+        if is_active:
+            table_rows += f"| 👉 **{zone_name}** | **{trigger}** | **{cash_pct}** | **{srs_pct}** | **{cpf_pct}** | **{rationale}** |\n"
+        else:
+            table_rows += f"| {zone_name} | {trigger} | {cash_pct} | {srs_pct} | {cpf_pct} | {rationale} |\n"
+
+    st.markdown(table_header + table_rows)
+
+    st.markdown("""
+    **How deployment amounts are calculated:**
+    - 💵 **Cash** deploys from your savings **after** deducting the Emergency Liquid Cash Buffer
+    - 🛡️ **CPF-OA** deploys **after** preserving the S$20k floor (if toggled) to secure the extra 1% government bonus yield
+    - 📈 **SRS** deploys from the full balance for tax-deferred investment optimisation
+
+    **Risk score triggers (4 indicators):**
+    - ISM Manufacturing PMI < 50 (contraction)
+    - US Treasury Yield Spread < 0 (inverted curve)
+    - Index price below 200-day Moving Average
+    - CBOE VIX > 30 (elevated market fear)
+    """)
+
+st.markdown("")
+
+# --- DEPLOYMENT LOGIC ---
 usable_cash_reserves = max(0.0, cash_balance - emergency_buffer)
 usable_srs_reserves = srs_balance
 usable_cpf_reserves = max(0.0, cpf_oa_balance - 20000.0) if preserve_cpf_bonus else cpf_oa_balance
