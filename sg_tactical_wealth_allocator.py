@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as gr
+import time
 from datetime import datetime
 
 # ==============================================================================
@@ -31,9 +32,10 @@ emergency_buffer = st.sidebar.number_input("Emergency Liquid Cash Buffer ($)", m
 preserve_cpf_bonus = st.sidebar.checkbox("Preserve S$20k CPF-OA Core Floor", value=True, help="Protects the initial structural floor space to secure the government's extra 1% bonus yield tier.")
 
 # Available investment options mapping configuration
+# Using reliable yfinance ticker symbols
 INDEX_TICKERS = {
-    "S&P 500 (US Market Core)": "^SPX",
-    "Nasdaq 100 (Tech Growth)": "^NDX",
+    "S&P 500 (US Market Core)": "^GSPC",
+    "Nasdaq 100 (Tech Growth)": "^IXIC",
     "Straits Times Index (SG Value/REITs)": "^STI",
     "Hang Seng Index (HK Cyclical/Beta)": "^HSI"
 }
@@ -63,6 +65,10 @@ def harvest_market_historical_metrics():
             # Query maximum historical duration sequence starting before 1997
             ticker_object = yf.Ticker(target_ticker)
             dataframe = ticker_object.history(start="1997-01-01")
+
+            # Small delay between API calls to avoid Yahoo Finance rate limiting
+            time.sleep(1.5)
+
             if not dataframe.empty:
                 current_spot = float(dataframe['Close'].iloc[-1])
                 moving_average_200 = float(dataframe['Close'].rolling(200).mean().iloc[-1])
@@ -75,12 +81,30 @@ def harvest_market_historical_metrics():
                     "drawdown": active_drawdown,
                     "underlying_df": dataframe
                 }
+            else:
+                st.warning(f"⚠️ No data returned for {standard_name} ({target_ticker}). The market may be closed or the ticker is unavailable.")
         except Exception as system_error:
-            st.error(f"Error fetching data for {standard_name}: {str(system_error)}")
+            error_msg = str(system_error)
+            if "Too Many Requests" in error_msg or "Rate" in error_msg or "429" in error_msg:
+                st.error(f"Error fetching data for {standard_name}: Too Many Requests. Rate limited. Try after a while.")
+            else:
+                st.error(f"Error fetching data for {standard_name}: {error_msg}")
     return computed_metrics
 
 with st.spinner("Harvesting live historical index structures via API pipelines..."):
     market_state_database = harvest_market_historical_metrics()
+
+# ==============================================================================
+# SAFETY CHECK: Ensure data was loaded before proceeding
+# ==============================================================================
+if not market_state_database:
+    st.error("🚨 **No market data could be loaded.** Yahoo Finance may be temporarily rate-limiting this server. Please try:")
+    st.markdown("""
+    1. Wait **1-2 minutes** and click **🔄 Force Refresh Market Data** in the sidebar
+    2. Reload the page (Ctrl+R / Cmd+R)
+    3. If the issue persists, try again in 10-15 minutes
+    """)
+    st.stop()
 
 # ==============================================================================
 # 4. FUTURE DRAWDOWN STRESS TESTING CONTROL MATRIX (WITH HISTORICAL PICKER)
@@ -88,7 +112,15 @@ with st.spinner("Harvesting live historical index structures via API pipelines..
 st.markdown("### 🔮 Future Drawdown Scenario Modeler")
 st.info("Simulate a future market crash or select a historical date to see past allocation zones.")
 
-selected_index_profile = st.selectbox("Select Target Index Spectrum", list(INDEX_TICKERS.keys()))
+# Only show indices that were successfully loaded
+available_indices = list(market_state_database.keys())
+selected_index_profile = st.selectbox("Select Target Index Spectrum", available_indices)
+
+# Safely access the selected index data
+if selected_index_profile not in market_state_database:
+    st.error(f"❌ Data for **{selected_index_profile}** is not available. Please select another index or refresh.")
+    st.stop()
+
 selected_index_package = market_state_database[selected_index_profile]
 live_anchor_close = selected_index_package["live_close"]
 historical_ath_anchor = selected_index_package["ath_peak"]
