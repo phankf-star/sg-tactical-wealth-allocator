@@ -39,6 +39,40 @@ INDEX_TICKERS = {
     "Hang Seng Index (HK Cyclical/Beta)": "^HSI"
 }
 
+# ETF Universe mapped to each index
+ETF_UNIVERSE = {
+    "Straits Times Index (SG Value/REITs)": {
+        "market_label": "🇸🇬 Singapore",
+        "etfs": [
+            ("SPDR STI ETF", "ES3.SI"),
+            ("Nikko AM STI ETF", "G3B.SI"),
+        ]
+    },
+    "Hang Seng Index (HK Cyclical/Beta)": {
+        "market_label": "🇭🇰 Hong Kong",
+        "etfs": [
+            ("Tracker Fund (TraHK)", "2800.HK"),
+            ("iShares HSI ETF", "3115.HK"),
+            ("iShares HS TECH ETF", "3067.HK"),
+        ]
+    },
+    "Nasdaq 100 (Tech Growth)": {
+        "market_label": "🇺🇸 Nasdaq",
+        "etfs": [
+            ("Invesco QQQ Trust", "QQQ"),
+            ("Invesco NASDAQ 100 (QQQM)", "QQQM"),
+        ]
+    },
+    "S&P 500 (US Market Core)": {
+        "market_label": "🇺🇸 S&P 500",
+        "etfs": [
+            ("SPDR S&P 500 (SPY)", "SPY"),
+            ("Vanguard S&P 500 (VOO)", "VOO"),
+            ("iShares Core S&P 500 (IVV)", "IVV"),
+        ]
+    },
+}
+
 # ==============================================================================
 # 3. LIVE API DATA COLLECTION PIPELINE
 # ==============================================================================
@@ -117,6 +151,43 @@ def fetch_macro_indicators():
         macro["yield_spread"] = macro["yield_10y"] - macro["yield_3m"]
 
     return macro
+
+@st.cache_data(ttl=14400)
+def fetch_etf_performance():
+    """Fetch trailing 1Y, 3Y, 5Y returns for all ETFs in the universe."""
+    results = {}
+    for index_name, group in ETF_UNIVERSE.items():
+        group_results = []
+        for etf_name, ticker in group["etfs"]:
+            etf_record = {"name": etf_name, "ticker": ticker, "1y": None, "3y": None, "5y": None, "price": None}
+            try:
+                hist = yf.Ticker(ticker).history(period="6y")
+                time.sleep(0.8)
+                if not hist.empty:
+                    current_price = float(hist['Close'].iloc[-1])
+                    etf_record["price"] = current_price
+                    total_days = len(hist)
+
+                    # 1Y return (~252 trading days)
+                    if total_days >= 252:
+                        price_1y = float(hist['Close'].iloc[-252])
+                        etf_record["1y"] = ((current_price / price_1y) - 1) * 100
+
+                    # 3Y return (~756 trading days)
+                    if total_days >= 756:
+                        price_3y = float(hist['Close'].iloc[-756])
+                        etf_record["3y"] = ((current_price / price_3y) - 1) * 100
+
+                    # 5Y return (~1260 trading days)
+                    if total_days >= 1260:
+                        price_5y = float(hist['Close'].iloc[-1260])
+                        etf_record["5y"] = ((current_price / price_5y) - 1) * 100
+
+            except Exception:
+                pass
+            group_results.append(etf_record)
+        results[index_name] = group_results
+    return results
 
 with st.spinner("Harvesting live historical index structures via API pipelines..."):
     market_state_database = harvest_market_historical_metrics()
@@ -569,3 +640,92 @@ with display_col_3:
 
 st.markdown("---")
 st.subheader(f"Total Capital to Deploy in this Tranche: :green[S${total_tactical_deployed:,.2f}]")
+
+# ==============================================================================
+# 7. ETF PERFORMANCE TRACKER
+# ==============================================================================
+st.markdown("---")
+st.markdown("### 📊 Investable ETF Performance Tracker")
+st.caption("Trailing total returns for investable ETFs mapped to each index. Data refreshed every 4 hours.")
+
+try:
+    with st.spinner("Fetching ETF performance data..."):
+        etf_data = fetch_etf_performance()
+
+    if etf_data:
+        # Define display order to show the selected index first
+        display_order = []
+        if selected_index_profile in ETF_UNIVERSE:
+            display_order.append(selected_index_profile)
+        for idx_name in ETF_UNIVERSE:
+            if idx_name not in display_order:
+                display_order.append(idx_name)
+
+        for idx_name in display_order:
+            if idx_name not in etf_data:
+                continue
+
+            group_info = ETF_UNIVERSE[idx_name]
+            market_label = group_info["market_label"]
+            etf_records = etf_data[idx_name]
+
+            is_selected = (idx_name == selected_index_profile)
+            highlight_note = ' &nbsp; <span style="background:#E8F5E9; color:#2E7D32; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600;">✅ CURRENTLY SELECTED</span>' if is_selected else ''
+
+            st.markdown('<div style="font-size:18px; font-weight:700; margin-top:16px; margin-bottom:8px;">' + market_label + highlight_note + '</div>', unsafe_allow_html=True)
+
+            # Build HTML table
+            table_html = (
+                '<table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:16px;">'
+                '<thead>'
+                '<tr style="background:#F0F2F6; border-bottom:2px solid #DDD;">'
+                '<th style="text-align:left; padding:10px 12px; font-weight:700;">ETF Name</th>'
+                '<th style="text-align:center; padding:10px 12px; font-weight:700;">Ticker</th>'
+                '<th style="text-align:center; padding:10px 12px; font-weight:700;">Price</th>'
+                '<th style="text-align:center; padding:10px 12px; font-weight:700;">1Y Return</th>'
+                '<th style="text-align:center; padding:10px 12px; font-weight:700;">3Y Return</th>'
+                '<th style="text-align:center; padding:10px 12px; font-weight:700;">5Y Return</th>'
+                '</tr>'
+                '</thead>'
+                '<tbody>'
+            )
+
+            for rec in etf_records:
+                # Format price
+                price_str = f"{rec['price']:,.2f}" if rec['price'] is not None else "N/A"
+
+                # Format returns with colors
+                def format_return(val):
+                    if val is None:
+                        return '<span style="color:#999;">N/A</span>'
+                    color = "#2E7D32" if val >= 0 else "#D32F2F"
+                    arrow = "▲" if val >= 0 else "▼"
+                    return '<span style="color:' + color + '; font-weight:600;">' + arrow + ' ' + f"{val:.1f}" + '%</span>'
+
+                r1y = format_return(rec["1y"])
+                r3y = format_return(rec["3y"])
+                r5y = format_return(rec["5y"])
+
+                row_bg = "#FFFFFF"
+                table_html += (
+                    '<tr style="background:' + row_bg + '; border-bottom:1px solid #EEE;">'
+                    '<td style="padding:10px 12px; font-weight:500;">' + rec["name"] + '</td>'
+                    '<td style="text-align:center; padding:10px 12px; color:#555; font-family:monospace;">' + rec["ticker"] + '</td>'
+                    '<td style="text-align:center; padding:10px 12px; font-weight:600;">' + price_str + '</td>'
+                    '<td style="text-align:center; padding:10px 12px;">' + r1y + '</td>'
+                    '<td style="text-align:center; padding:10px 12px;">' + r3y + '</td>'
+                    '<td style="text-align:center; padding:10px 12px;">' + r5y + '</td>'
+                    '</tr>'
+                )
+
+            table_html += '</tbody></table>'
+            st.markdown(table_html, unsafe_allow_html=True)
+
+    else:
+        st.warning("ETF performance data could not be loaded. Try refreshing later.")
+
+except Exception as etf_error:
+    st.warning(f"⚠️ ETF performance data temporarily unavailable: {str(etf_error)}")
+
+st.markdown("---")
+st.caption("⚠️ Disclaimer: This tool is for educational and informational purposes only. It does not constitute financial advice. Always consult a licensed financial advisor before making investment decisions.")
