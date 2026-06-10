@@ -155,6 +155,14 @@ underlying_data = selected_index_package["underlying_df"]
 # Convert index to timezone-naive (do this once before any date operations)
 underlying_data.index = underlying_data.index.tz_localize(None)
 
+# Compute ATH and ATH date for contextual display
+ath_value = float(underlying_data['Close'].max())
+ath_date = underlying_data['Close'].idxmax()
+try:
+    ath_date_str = ath_date.strftime('%Y-%m-%d')
+except Exception:
+    ath_date_str = "N/A"
+
 # --- ROW 1: Historical picker + Index price slider ---
 row1_col1, row1_col2 = st.columns(2)
 
@@ -169,10 +177,12 @@ with row1_col1:
         picked_price = float(closest_row['Close'])
         st.caption(f"Price on {target_date.strftime('%Y-%m-%d')}: **{picked_price:,.2f}**")
 
-        # CORRECT DRAWDOWN: Peak = highest close UP TO the selected historical date
+        # 52-WEEK TRAILING HIGH: highest close in 252 trading days up to selected date
         data_up_to_date = underlying_data.loc[:pd.Timestamp(target_date)]
-        trailing_peak = float(data_up_to_date['Close'].max())
-        peak_date = data_up_to_date['Close'].idxmax()
+        lookback_start = max(0, len(data_up_to_date) - 252)
+        recent_window = data_up_to_date.iloc[lookback_start:]
+        trailing_peak = float(recent_window['Close'].max())
+        peak_date = recent_window['Close'].idxmax()
     else:
         picked_price = None
 
@@ -191,10 +201,18 @@ with row1_col2:
         )
     st.caption(f"📡 Live close: **{live_anchor_close:,.2f}**")
 
-# For LIVE / SIMULATION mode: peak = ATH up to today (correct trailing high watermark)
+# For LIVE / SIMULATION mode: 52-week trailing high from the most recent 252 trading days
 if not use_historical:
-    trailing_peak = float(underlying_data['Close'].max())
-    peak_date = underlying_data['Close'].idxmax()
+    lookback_start = max(0, len(underlying_data) - 252)
+    recent_window = underlying_data.iloc[lookback_start:]
+    trailing_peak = float(recent_window['Close'].max())
+    peak_date = recent_window['Close'].idxmax()
+
+# Format peak date for display
+try:
+    peak_date_str = peak_date.strftime('%Y-%m-%d')
+except Exception:
+    peak_date_str = "N/A"
 
 # --- ROW 2: PMI | Yield Spread | VIX ---
 st.markdown("")
@@ -242,19 +260,10 @@ with row2_col3:
 # ==============================================================================
 evaluation_price = picked_price if use_historical else index_price_input
 
-# CORRECT DRAWDOWN CALCULATION
-# trailing_peak is already set above:
-#   - Historical mode: highest close from data start up to selected date
-#   - Live/Simulation mode: ATH up to today
+# CORRECT DRAWDOWN: measured from the 52-week trailing high (current cycle peak)
 effective_scenario_drawdown = ((evaluation_price - trailing_peak) / trailing_peak) * 100 if trailing_peak > 0 else 0.0
 
 baseline_200_ma = selected_index_package["ma_200"]
-
-# Format peak date for display
-try:
-    peak_date_str = peak_date.strftime('%Y-%m-%d')
-except Exception:
-    peak_date_str = "N/A"
 
 # Individual risk trigger flags
 pmi_triggered = pmi_input < 50.0
@@ -372,6 +381,7 @@ with metric_col_1:
         '<div style="font-size:14px; color:#555; font-weight:600;">EFFECTIVE DRAWDOWN FROM PEAK</div>'
         '<div style="font-size:42px; font-weight:800; color:' + dd_text_color + '; margin:8px 0;">' + dd_icon + ' ' + f"{effective_scenario_drawdown:.2f}%" + '</div>'
         '<div style="font-size:12px; color:#777;">' + dd_label + '</div>'
+        '<div style="font-size:11px; color:#999; margin-top:6px;">vs 52-week trailing high</div>'
         '</div>'
     )
     st.markdown(dd_html, unsafe_allow_html=True)
@@ -396,9 +406,10 @@ with metric_col_2:
 with metric_col_3:
     pk_html = (
         '<div style="background:' + pk_bg + '; border-left:6px solid ' + pk_border + '; border-radius:10px; padding:20px; text-align:center;">'
-        '<div style="font-size:14px; color:#555; font-weight:600;">TRAILING HIGH WATERMARK</div>'
+        '<div style="font-size:14px; color:#555; font-weight:600;">52-WEEK TRAILING HIGH</div>'
         '<div style="font-size:42px; font-weight:800; color:' + pk_text_color + '; margin:8px 0;">' + pk_icon + ' ' + f"{trailing_peak:,.2f}" + '</div>'
         '<div style="font-size:12px; color:#777;">Peak reached on ' + peak_date_str + '</div>'
+        '<div style="font-size:11px; color:#aaa; margin-top:8px; padding-top:8px; border-top:1px solid #D0D0D0;">All-Time High: ' + f"{ath_value:,.2f}" + ' (' + ath_date_str + ')</div>'
         '</div>'
     )
     st.markdown(pk_html, unsafe_allow_html=True)
@@ -477,15 +488,17 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
     st.markdown(table_header + table_rows)
 
     st.markdown("""
+    **How drawdown is calculated:**
+    - Drawdown is measured from the **52-week (252 trading day) trailing high** — the most recent cycle peak
+    - This reflects the **current market cycle**, not stale historical peaks from years ago
+    - **Historical mode:** 52-week trailing high up to the selected date
+    - **Live mode:** 52-week trailing high up to today
+    - Formula: (Current Price − 52W High) / 52W High × 100%
+
     **How deployment amounts are calculated:**
     - 💵 **Cash** deploys from your savings **after** deducting the Emergency Liquid Cash Buffer
     - 🛡️ **CPF-OA** deploys **after** preserving the S$20k floor (if toggled) to secure the extra 1% government bonus yield
     - 📈 **SRS** deploys from the full balance for tax-deferred investment optimisation
-
-    **How drawdown is calculated:**
-    - **Historical mode:** Peak = highest price the index reached **up to** the selected date (not all-time high)
-    - **Live mode:** Peak = highest price the index has reached up to today (trailing high watermark)
-    - Drawdown = (Current Price − Peak) / Peak × 100%
 
     **Risk score triggers (4 indicators):**
     - ISM Manufacturing PMI < 50 (contraction)
