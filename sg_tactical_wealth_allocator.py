@@ -2,7 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as gr
+import plotly.graph_objects as go
 import time
 from datetime import datetime
 
@@ -116,33 +116,38 @@ def harvest_market_historical_metrics():
 
 @st.cache_data(ttl=14400)
 def fetch_macro_indicators():
-    """Fetch live macro indicators: VIX, 10Y yield, 3M yield for yield spread calculation."""
-    macro = {"vix": None, "yield_10y": None, "yield_3m": None, "yield_spread": None}
+    """Fetch live macro indicators and 1-year historical data for charts."""
+    macro = {"vix": None, "yield_10y": None, "yield_3m": None, "yield_spread": None,
+             "vix_hist": None, "tnx_hist": None, "irx_hist": None}
 
-    # Fetch VIX
+    # Fetch VIX (current + 1Y history)
     try:
-        vix_data = yf.Ticker("^VIX").history(period="5d")
+        vix_ticker = yf.Ticker("^VIX")
+        vix_hist = vix_ticker.history(period="1y")
         time.sleep(1.5)
-        if not vix_data.empty:
-            macro["vix"] = float(vix_data['Close'].iloc[-1])
+        if not vix_hist.empty:
+            macro["vix"] = float(vix_hist['Close'].iloc[-1])
+            macro["vix_hist"] = vix_hist
     except Exception:
         pass
 
-    # Fetch 10Y Treasury Yield
+    # Fetch 10Y Treasury Yield (1Y history)
     try:
-        tnx_data = yf.Ticker("^TNX").history(period="5d")
+        tnx_hist = yf.Ticker("^TNX").history(period="1y")
         time.sleep(1.5)
-        if not tnx_data.empty:
-            macro["yield_10y"] = float(tnx_data['Close'].iloc[-1])
+        if not tnx_hist.empty:
+            macro["yield_10y"] = float(tnx_hist['Close'].iloc[-1])
+            macro["tnx_hist"] = tnx_hist
     except Exception:
         pass
 
-    # Fetch 3M Treasury Yield (proxy for 2Y)
+    # Fetch 3M Treasury Yield (1Y history)
     try:
-        irx_data = yf.Ticker("^IRX").history(period="5d")
+        irx_hist = yf.Ticker("^IRX").history(period="1y")
         time.sleep(1.5)
-        if not irx_data.empty:
-            macro["yield_3m"] = float(irx_data['Close'].iloc[-1])
+        if not irx_hist.empty:
+            macro["yield_3m"] = float(irx_hist['Close'].iloc[-1])
+            macro["irx_hist"] = irx_hist
     except Exception:
         pass
 
@@ -168,17 +173,14 @@ def fetch_etf_performance():
                     etf_record["price"] = current_price
                     total_days = len(hist)
 
-                    # 1Y return (~252 trading days)
                     if total_days >= 252:
                         price_1y = float(hist['Close'].iloc[-252])
                         etf_record["1y"] = ((current_price / price_1y) - 1) * 100
 
-                    # 3Y return (~756 trading days)
                     if total_days >= 756:
                         price_3y = float(hist['Close'].iloc[-756])
                         etf_record["3y"] = ((current_price / price_3y) - 1) * 100
 
-                    # 5Y return (~1260 trading days)
                     if total_days >= 1260:
                         price_5y = float(hist['Close'].iloc[-1260])
                         etf_record["5y"] = ((current_price / price_5y) - 1) * 100
@@ -223,7 +225,7 @@ live_anchor_close = selected_index_package["live_close"]
 historical_ath_anchor = selected_index_package["ath_peak"]
 underlying_data = selected_index_package["underlying_df"]
 
-# Convert index to timezone-naive (do this once before any date operations)
+# Convert index to timezone-naive
 underlying_data.index = underlying_data.index.tz_localize(None)
 
 # Compute ATH and ATH date for contextual display
@@ -248,7 +250,7 @@ with row1_col1:
         picked_price = float(closest_row['Close'])
         st.caption(f"Price on {target_date.strftime('%Y-%m-%d')}: **{picked_price:,.2f}**")
 
-        # 52-WEEK TRAILING HIGH: highest close in 252 trading days up to selected date
+        # 52-WEEK TRAILING HIGH
         data_up_to_date = underlying_data.loc[:pd.Timestamp(target_date)]
         lookback_start = max(0, len(data_up_to_date) - 252)
         recent_window = data_up_to_date.iloc[lookback_start:]
@@ -272,18 +274,53 @@ with row1_col2:
         )
     st.caption(f"📡 Live close: **{live_anchor_close:,.2f}**")
 
-# For LIVE / SIMULATION mode: 52-week trailing high from the most recent 252 trading days
+# For LIVE / SIMULATION mode: 52-week trailing high
 if not use_historical:
     lookback_start = max(0, len(underlying_data) - 252)
     recent_window = underlying_data.iloc[lookback_start:]
     trailing_peak = float(recent_window['Close'].max())
     peak_date = recent_window['Close'].idxmax()
 
-# Format peak date for display
+# Format peak date
 try:
     peak_date_str = peak_date.strftime('%Y-%m-%d')
 except Exception:
     peak_date_str = "N/A"
+
+# --- MINI CHART: 52-Week Index Price ---
+try:
+    chart_data_52w = underlying_data.iloc[max(0, len(underlying_data) - 252):]
+    ma_200_series = underlying_data['Close'].rolling(200).mean().iloc[max(0, len(underlying_data) - 252):]
+
+    fig_index = go.Figure()
+    fig_index.add_trace(go.Scatter(
+        x=chart_data_52w.index, y=chart_data_52w['Close'],
+        mode='lines', name='Close',
+        line=dict(color='#1565C0', width=1.5)
+    ))
+    fig_index.add_trace(go.Scatter(
+        x=ma_200_series.index, y=ma_200_series.values,
+        mode='lines', name='200MA',
+        line=dict(color='#4CAF50', width=1, dash='dot')
+    ))
+    fig_index.add_hline(y=trailing_peak, line_dash="dash", line_color="#D32F2F", line_width=1,
+                        annotation_text="52W High: " + f"{trailing_peak:,.0f}",
+                        annotation_position="top left",
+                        annotation_font_size=10, annotation_font_color="#D32F2F")
+    fig_index.update_layout(
+        title=dict(text="52-Week Price Chart — " + selected_index_profile, font=dict(size=13)),
+        height=220,
+        margin=dict(l=10, r=10, t=35, b=10),
+        showlegend=True,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1, font=dict(size=10)),
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True, gridcolor="#F0F0F0"),
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+    )
+    st.plotly_chart(fig_index, use_container_width=True, config={'displayModeBar': False})
+except Exception:
+    st.caption("⚠️ Index chart unavailable")
 
 # --- ROW 2: PMI | Yield Spread | VIX ---
 st.markdown("")
@@ -326,12 +363,117 @@ with row2_col3:
     else:
         st.caption("⚠️ Live VIX unavailable — using default")
 
+# --- MINI CHARTS ROW: PMI note | Yield Spread | VIX ---
+chart_col1, chart_col2, chart_col3 = st.columns(3)
+
+with chart_col1:
+    # PMI has no free live API — show informational note
+    pmi_note_html = (
+        '<div style="background:#F5F5F5; border:1px solid #DDD; border-radius:8px; padding:16px; text-align:center; height:180px; display:flex; flex-direction:column; justify-content:center;">'
+        '<div style="font-size:13px; font-weight:600; color:#555; margin-bottom:8px;">📊 PMI Historical Chart</div>'
+        '<div style="font-size:12px; color:#888;">No free live API for ISM PMI data.</div>'
+        '<div style="font-size:12px; color:#888; margin-top:4px;">Update manually from '
+        '<a href="https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/" target="_blank" style="color:#1565C0;">ISM Reports</a></div>'
+        '<div style="font-size:11px; color:#aaa; margin-top:8px;">Published monthly, usually first business day.</div>'
+        '</div>'
+    )
+    st.markdown(pmi_note_html, unsafe_allow_html=True)
+
+with chart_col2:
+    # Yield Spread 1Y Chart
+    try:
+        tnx_hist = live_macro.get("tnx_hist")
+        irx_hist = live_macro.get("irx_hist")
+        if tnx_hist is not None and irx_hist is not None:
+            tnx_df = tnx_hist[['Close']].rename(columns={'Close': 'TNX'})
+            irx_df = irx_hist[['Close']].rename(columns={'Close': 'IRX'})
+            tnx_df.index = tnx_df.index.tz_localize(None)
+            irx_df.index = irx_df.index.tz_localize(None)
+            spread_df = tnx_df.join(irx_df, how='inner')
+            spread_df['Spread'] = spread_df['TNX'] - spread_df['IRX']
+
+            fig_yield = go.Figure()
+            # Fill area below 0 in red
+            fig_yield.add_trace(go.Scatter(
+                x=spread_df.index, y=spread_df['Spread'].clip(upper=0),
+                fill='tozeroy', fillcolor='rgba(211,47,47,0.15)',
+                line=dict(width=0), showlegend=False, hoverinfo='skip'
+            ))
+            # Main line
+            fig_yield.add_trace(go.Scatter(
+                x=spread_df.index, y=spread_df['Spread'],
+                mode='lines', name='Yield Spread',
+                line=dict(color='#E65100', width=1.5)
+            ))
+            fig_yield.add_hline(y=0, line_dash="dash", line_color="#D32F2F", line_width=1,
+                                annotation_text="Inversion", annotation_position="bottom left",
+                                annotation_font_size=9, annotation_font_color="#D32F2F")
+            fig_yield.update_layout(
+                title=dict(text="Yield Spread (10Y−3M) — 1 Year", font=dict(size=12)),
+                height=180,
+                margin=dict(l=10, r=10, t=30, b=10),
+                showlegend=False,
+                xaxis=dict(showgrid=False),
+                yaxis=dict(showgrid=True, gridcolor="#F0F0F0", title=""),
+                plot_bgcolor="white", paper_bgcolor="white",
+            )
+            st.plotly_chart(fig_yield, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.caption("⚠️ Yield spread chart data unavailable")
+    except Exception:
+        st.caption("⚠️ Yield spread chart unavailable")
+
+with chart_col3:
+    # VIX 1Y Chart
+    try:
+        vix_hist = live_macro.get("vix_hist")
+        if vix_hist is not None:
+            vix_chart = vix_hist.copy()
+            vix_chart.index = vix_chart.index.tz_localize(None)
+
+            fig_vix = go.Figure()
+            # Fill area above 30 in red
+            fig_vix.add_trace(go.Scatter(
+                x=vix_chart.index, y=vix_chart['Close'].clip(lower=30),
+                fill='tozeroy', fillcolor='rgba(211,47,47,0.12)',
+                line=dict(width=0), showlegend=False, hoverinfo='skip'
+            ))
+            # Baseline at 30 to clip fill correctly
+            fig_vix.add_trace(go.Scatter(
+                x=vix_chart.index, y=[30]*len(vix_chart),
+                fill='tonexty', fillcolor='white',
+                line=dict(width=0), showlegend=False, hoverinfo='skip'
+            ))
+            # Main VIX line
+            fig_vix.add_trace(go.Scatter(
+                x=vix_chart.index, y=vix_chart['Close'],
+                mode='lines', name='VIX',
+                line=dict(color='#7B1FA2', width=1.5)
+            ))
+            fig_vix.add_hline(y=30, line_dash="dash", line_color="#D32F2F", line_width=1,
+                              annotation_text="Fear Zone (30)", annotation_position="top left",
+                              annotation_font_size=9, annotation_font_color="#D32F2F")
+            fig_vix.update_layout(
+                title=dict(text="CBOE VIX — 1 Year", font=dict(size=12)),
+                height=180,
+                margin=dict(l=10, r=10, t=30, b=10),
+                showlegend=False,
+                xaxis=dict(showgrid=False),
+                yaxis=dict(showgrid=True, gridcolor="#F0F0F0", title=""),
+                plot_bgcolor="white", paper_bgcolor="white",
+            )
+            st.plotly_chart(fig_vix, use_container_width=True, config={'displayModeBar': False})
+        else:
+            st.caption("⚠️ VIX chart data unavailable")
+    except Exception:
+        st.caption("⚠️ VIX chart unavailable")
+
 # ==============================================================================
 # 5. DYNAMIC PROCESSING ENGINE & STATE CALCULATOR
 # ==============================================================================
 evaluation_price = picked_price if use_historical else index_price_input
 
-# CORRECT DRAWDOWN: measured from the 52-week trailing high (current cycle peak)
+# CORRECT DRAWDOWN: measured from the 52-week trailing high
 effective_scenario_drawdown = ((evaluation_price - trailing_peak) / trailing_peak) * 100 if trailing_peak > 0 else 0.0
 
 baseline_200_ma = selected_index_package["ma_200"]
@@ -488,7 +630,7 @@ with metric_col_3:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# ENHANCED ZONE BANNER — TRADING TERMINAL STYLE
+# ENHANCED ZONE BANNER
 # ------------------------------------------------------------------------------
 if use_pulse:
     pulse_style = """
@@ -539,8 +681,10 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
         ("STRONG SELL", "Bubble + Risk ≥3", "0%", "0%", "0%", "Pause all buying — take profits"),
     ]
 
-    table_header = "| Zone | Drawdown Trigger | Cash | SRS | CPF-OA | Rationale |\n"
-    table_header += "|:---|:---|:---:|:---:|:---:|:---|\n"
+    table_header = "| Zone | Drawdown Trigger | Cash | SRS | CPF-OA | Rationale |
+"
+    table_header += "|:---|:---|:---:|:---:|:---:|:---|
+"
 
     table_rows = ""
     for zone_name, trigger, cash_pct, srs_pct, cpf_pct, rationale in zones_data:
@@ -552,9 +696,11 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
             (zone_name == "STRONG SELL" and active_allocation_zone == "STRONG SELL")
         )
         if is_active:
-            table_rows += f"| 👉 **{zone_name}** | **{trigger}** | **{cash_pct}** | **{srs_pct}** | **{cpf_pct}** | **{rationale}** |\n"
+            table_rows += f"| 👉 **{zone_name}** | **{trigger}** | **{cash_pct}** | **{srs_pct}** | **{cpf_pct}** | **{rationale}** |
+"
         else:
-            table_rows += f"| {zone_name} | {trigger} | {cash_pct} | {srs_pct} | {cpf_pct} | {rationale} |\n"
+            table_rows += f"| {zone_name} | {trigger} | {cash_pct} | {srs_pct} | {cpf_pct} | {rationale} |
+"
 
     st.markdown(table_header + table_rows)
 
@@ -562,8 +708,6 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
     **How drawdown is calculated:**
     - Drawdown is measured from the **52-week (252 trading day) trailing high** — the most recent cycle peak
     - This reflects the **current market cycle**, not stale historical peaks from years ago
-    - **Historical mode:** 52-week trailing high up to the selected date
-    - **Live mode:** 52-week trailing high up to today
     - Formula: (Current Price − 52W High) / 52W High × 100%
 
     **How deployment amounts are calculated:**
@@ -653,7 +797,7 @@ try:
         etf_data = fetch_etf_performance()
 
     if etf_data:
-        # Define display order to show the selected index first
+        # Show selected index first
         display_order = []
         if selected_index_profile in ETF_UNIVERSE:
             display_order.append(selected_index_profile)
@@ -674,7 +818,6 @@ try:
 
             st.markdown('<div style="font-size:18px; font-weight:700; margin-top:16px; margin-bottom:8px;">' + market_label + highlight_note + '</div>', unsafe_allow_html=True)
 
-            # Build HTML table
             table_html = (
                 '<table style="width:100%; border-collapse:collapse; font-size:14px; margin-bottom:16px;">'
                 '<thead>'
@@ -691,10 +834,8 @@ try:
             )
 
             for rec in etf_records:
-                # Format price
                 price_str = f"{rec['price']:,.2f}" if rec['price'] is not None else "N/A"
 
-                # Format returns with colors
                 def format_return(val):
                     if val is None:
                         return '<span style="color:#999;">N/A</span>'
@@ -706,9 +847,8 @@ try:
                 r3y = format_return(rec["3y"])
                 r5y = format_return(rec["5y"])
 
-                row_bg = "#FFFFFF"
                 table_html += (
-                    '<tr style="background:' + row_bg + '; border-bottom:1px solid #EEE;">'
+                    '<tr style="background:#FFFFFF; border-bottom:1px solid #EEE;">'
                     '<td style="padding:10px 12px; font-weight:500;">' + rec["name"] + '</td>'
                     '<td style="text-align:center; padding:10px 12px; color:#555; font-family:monospace;">' + rec["ticker"] + '</td>'
                     '<td style="text-align:center; padding:10px 12px; font-weight:600;">' + price_str + '</td>'
