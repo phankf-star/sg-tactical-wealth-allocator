@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import time
-from datetime import datetime
+import math
 
 st.set_page_config(page_title='SG Tactical Capital Allocator', layout='wide', initial_sidebar_state='expanded')
 st.title('\U0001f1f8\U0001f1ec Tactical Wealth Allocation & Future Drawdown Simulator')
@@ -48,10 +48,13 @@ def harvest_market_historical_metrics():
             df = yf.Ticker(target_ticker).history(start='1997-01-01')
             time.sleep(1.5)
             if not df.empty:
+                df = df.dropna(subset=['Close'])
+                if df.empty: continue
                 cs = float(df['Close'].iloc[-1])
-                ma = float(df['Close'].rolling(200).mean().iloc[-1])
+                ma = float(df['Close'].rolling(200).mean().dropna().iloc[-1]) if len(df) >= 200 else cs
                 atp = float(df['Close'].max())
                 dd = ((cs - atp) / atp) * 100
+                if math.isnan(cs) or math.isnan(atp): continue
                 computed_metrics[standard_name] = {'live_close': cs, 'ma_200': ma, 'ath_peak': atp, 'drawdown': dd, 'underlying_df': df}
         except Exception as e:
             st.error(f'Error fetching {standard_name}: {e}')
@@ -63,17 +66,17 @@ def fetch_macro_indicators():
     try:
         vh = yf.Ticker('^VIX').history(period='1y')
         time.sleep(1.5)
-        if not vh.empty: macro['vix'] = float(vh['Close'].iloc[-1]); macro['vix_hist'] = vh
+        if not vh.empty: macro['vix'] = float(vh['Close'].dropna().iloc[-1]); macro['vix_hist'] = vh
     except: pass
     try:
         th = yf.Ticker('^TNX').history(period='1y')
         time.sleep(1.5)
-        if not th.empty: macro['yield_10y'] = float(th['Close'].iloc[-1]); macro['tnx_hist'] = th
+        if not th.empty: macro['yield_10y'] = float(th['Close'].dropna().iloc[-1]); macro['tnx_hist'] = th
     except: pass
     try:
         ih = yf.Ticker('^IRX').history(period='1y')
         time.sleep(1.5)
-        if not ih.empty: macro['yield_3m'] = float(ih['Close'].iloc[-1]); macro['irx_hist'] = ih
+        if not ih.empty: macro['yield_3m'] = float(ih['Close'].dropna().iloc[-1]); macro['irx_hist'] = ih
     except: pass
     if macro['yield_10y'] is not None and macro['yield_3m'] is not None:
         macro['yield_spread'] = macro['yield_10y'] - macro['yield_3m']
@@ -90,6 +93,7 @@ def fetch_etf_performance():
                 hist = yf.Ticker(ticker).history(period='6y')
                 time.sleep(0.8)
                 if not hist.empty:
+                    hist = hist.dropna(subset=['Close'])
                     cp = float(hist['Close'].iloc[-1]); rec['price'] = cp; td = len(hist)
                     if td >= 252: rec['1y'] = ((cp / float(hist['Close'].iloc[-252])) - 1) * 100
                     if td >= 756: rec['3y'] = ((cp / float(hist['Close'].iloc[-756])) - 1) * 100
@@ -110,6 +114,7 @@ def fetch_benchmark_performance():
                 hist = yf.Ticker(ticker).history(period='6y')
                 time.sleep(0.8)
                 if not hist.empty:
+                    hist = hist.dropna(subset=['Close'])
                     cp = float(hist['Close'].iloc[-1]); rec['price'] = cp; td = len(hist)
                     if td >= 252: rec['1y'] = ((cp / float(hist['Close'].iloc[-252])) - 1) * 100
                     if td >= 756: rec['3y'] = ((cp / float(hist['Close'].iloc[-756])) - 1) * 100
@@ -125,7 +130,7 @@ with st.spinner('Fetching macro indicators (VIX, Yield Curve)...'):
     live_macro = fetch_macro_indicators()
 
 if not market_state_database:
-    st.error('\U0001f6a8 **No market data loaded.** Yahoo Finance may be rate-limiting. Wait and retry.')
+    st.error('\U0001f6a8 **No market data loaded.** Yahoo Finance may be rate-limiting. Wait 1-2 minutes and click Force Refresh.')
     st.stop()
 
 st.markdown('### \U0001f52e Market Conditions & Scenario Modeler')
@@ -142,14 +147,24 @@ historical_ath_anchor = selected_index_package['ath_peak']
 underlying_data = selected_index_package['underlying_df']
 underlying_data.index = underlying_data.index.tz_localize(None)
 
+# Safety guard: ensure numeric values are valid
+def safe_float(val, fallback=1000.0):
+    try:
+        v = float(val)
+        if math.isnan(v) or math.isinf(v): return fallback
+        return v
+    except: return fallback
+
+live_anchor_close = safe_float(live_anchor_close, 1000.0)
+historical_ath_anchor = safe_float(historical_ath_anchor, live_anchor_close * 1.5)
+
 ath_value = float(underlying_data['Close'].max())
 ath_date = underlying_data['Close'].idxmax()
 try: ath_date_str = ath_date.strftime('%Y-%m-%d')
 except: ath_date_str = 'N/A'
 
-slider_min = int(live_anchor_close * 0.35)
-slider_max = int(historical_ath_anchor * 1.25)
-if slider_min >= slider_max: slider_max = slider_min + 100
+slider_min = max(1, int(live_anchor_close * 0.35))
+slider_max = max(slider_min + 100, int(historical_ath_anchor * 1.25))
 
 row1_col1, row1_col2 = st.columns(2)
 with row1_col1:
@@ -229,9 +244,9 @@ with chart_col2:
         tnx_h = live_macro.get('tnx_hist')
         irx_h = live_macro.get('irx_hist')
         if tnx_h is not None and irx_h is not None:
-            td = tnx_h[['Close']].rename(columns={'Close':'TNX'}); td.index = td.index.tz_localize(None)
+            td_ = tnx_h[['Close']].rename(columns={'Close':'TNX'}); td_.index = td_.index.tz_localize(None)
             id_ = irx_h[['Close']].rename(columns={'Close':'IRX'}); id_.index = id_.index.tz_localize(None)
-            sd = td.join(id_, how='inner'); sd['Spread'] = sd['TNX'] - sd['IRX']
+            sd = td_.join(id_, how='inner'); sd['Spread'] = sd['TNX'] - sd['IRX']
             fy = go.Figure()
             fy.add_trace(go.Scatter(x=sd.index, y=sd['TNX'], mode='lines', name='10Y Yield', line=dict(color='#1565C0', width=1.5)))
             fy.add_trace(go.Scatter(x=sd.index, y=sd['IRX'], mode='lines', name='3M Yield', line=dict(color='#E65100', width=1.5)))
@@ -257,8 +272,9 @@ with chart_col3:
     except: st.caption('\u26a0\ufe0f VIX chart unavailable')
 
 evaluation_price = picked_price if use_historical else index_price_input
+trailing_peak = safe_float(trailing_peak, evaluation_price)
 effective_scenario_drawdown = ((evaluation_price - trailing_peak) / trailing_peak) * 100 if trailing_peak > 0 else 0.0
-baseline_200_ma = selected_index_package['ma_200']
+baseline_200_ma = safe_float(selected_index_package['ma_200'], evaluation_price)
 
 pmi_triggered = pmi_input < 50.0
 yield_triggered = yield_spread_input < 0.0
@@ -308,10 +324,10 @@ with mc2:
     h += '<div style="font-size:12px; color:#777; margin-bottom:12px;">' + rs_label + '</div>'
     h += '<div style="text-align:left; padding:10px 14px; background:rgba(255,255,255,0.7); border-radius:8px;">'
     h += '<div style="font-size:11px; font-weight:700; color:#333; margin-bottom:8px; text-transform:uppercase;">Risk Breakdown:</div>'
-    h += '<div style="font-size:12px; color:' + pmi_sc + '; margin:4px 0;">' + pmi_si + ' <b>ISM PMI:</b> ' + f'{pmi_input:.1f}' + ' &mdash; ' + pmi_st + ' <span style="color:#999;">(trigger &lt; 50)</span></div>'
-    h += '<div style="font-size:12px; color:' + yield_sc + '; margin:4px 0;">' + yield_si + ' <b>Yield Spread:</b> ' + f'{yield_spread_input:.2f}' + ' &mdash; ' + yield_st + ' <span style="color:#999;">(trigger &lt; 0)</span></div>'
+    h += '<div style="font-size:12px; color:' + pmi_sc + '; margin:4px 0;">' + pmi_si + ' <b>ISM PMI:</b> ' + f'{pmi_input:.1f}' + ' &mdash; ' + pmi_st + ' <span style="color:#999">(trigger &lt; 50)</span></div>'
+    h += '<div style="font-size:12px; color:' + yield_sc + '; margin:4px 0;">' + yield_si + ' <b>Yield Spread:</b> ' + f'{yield_spread_input:.2f}' + ' &mdash; ' + yield_st + ' <span style="color:#999">(trigger &lt; 0)</span></div>'
     h += '<div style="font-size:12px; color:' + ma_sc + '; margin:4px 0;">' + ma_si + ' <b>Price vs 200MA:</b> ' + f'{evaluation_price:,.0f}' + ' vs ' + f'{baseline_200_ma:,.0f}' + ' &mdash; ' + ma_st + '</div>'
-    h += '<div style="font-size:12px; color:' + vix_sc + '; margin:4px 0;">' + vix_si + ' <b>VIX:</b> ' + f'{vix_input:.1f}' + ' &mdash; ' + vix_st + ' <span style="color:#999;">(trigger &gt; 30)</span></div>'
+    h += '<div style="font-size:12px; color:' + vix_sc + '; margin:4px 0;">' + vix_si + ' <b>VIX:</b> ' + f'{vix_input:.1f}' + ' &mdash; ' + vix_st + ' <span style="color:#999">(trigger &gt; 30)</span></div>'
     h += '</div></div>'
     st.markdown(h, unsafe_allow_html=True)
 
@@ -381,8 +397,8 @@ def build_perf_table(records):
         ps = f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
         def fr(v):
             if v is None: return '<span style="color:#999">N/A</span>'
-            c = '#2E7D32' if v >= 0 else '#D32F2F'; a_ = '\u25b2' if v >= 0 else '\u25bc'
-            return '<span style="color:' + c + ';font-weight:600">' + a_ + ' ' + f'{v:.1f}' + '%</span>'
+            c = '#2E7D32' if v >= 0 else '#D32F2F'; ar = '\u25b2' if v >= 0 else '\u25bc'
+            return '<span style="color:' + c + ';font-weight:600">' + ar + ' ' + f'{v:.1f}' + '%</span>'
         t += '<tr style="background:#FFF;border-bottom:1px solid #EEE">'
         t += '<td style="padding:10px 12px">' + r['name'] + '</td>'
         t += '<td style="text-align:center;padding:10px 12px;font-family:monospace;color:#555">' + r['ticker'] + '</td>'
