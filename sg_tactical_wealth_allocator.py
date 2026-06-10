@@ -152,11 +152,13 @@ live_anchor_close = selected_index_package["live_close"]
 historical_ath_anchor = selected_index_package["ath_peak"]
 underlying_data = selected_index_package["underlying_df"]
 
+# Convert index to timezone-naive (do this once before any date operations)
+underlying_data.index = underlying_data.index.tz_localize(None)
+
 # --- ROW 1: Historical picker + Index price slider ---
 row1_col1, row1_col2 = st.columns(2)
 
 with row1_col1:
-    underlying_data.index = underlying_data.index.tz_localize(None)
     min_date = underlying_data.index.min().to_pydatetime().date()
     max_date = underlying_data.index.max().to_pydatetime().date()
     use_historical = st.checkbox("Use Historical Date Price", value=False)
@@ -166,6 +168,11 @@ with row1_col1:
         closest_row = underlying_data.iloc[closest_row_idx]
         picked_price = float(closest_row['Close'])
         st.caption(f"Price on {target_date.strftime('%Y-%m-%d')}: **{picked_price:,.2f}**")
+
+        # CORRECT DRAWDOWN: Peak = highest close UP TO the selected historical date
+        data_up_to_date = underlying_data.loc[:pd.Timestamp(target_date)]
+        trailing_peak = float(data_up_to_date['Close'].max())
+        peak_date = data_up_to_date['Close'].idxmax()
     else:
         picked_price = None
 
@@ -183,6 +190,11 @@ with row1_col2:
             help="Default is live close price. Slide left to simulate drawdowns, right to simulate rallies."
         )
     st.caption(f"📡 Live close: **{live_anchor_close:,.2f}**")
+
+# For LIVE / SIMULATION mode: peak = ATH up to today (correct trailing high watermark)
+if not use_historical:
+    trailing_peak = float(underlying_data['Close'].max())
+    peak_date = underlying_data['Close'].idxmax()
 
 # --- ROW 2: PMI | Yield Spread | VIX ---
 st.markdown("")
@@ -229,9 +241,20 @@ with row2_col3:
 # 5. DYNAMIC PROCESSING ENGINE & STATE CALCULATOR
 # ==============================================================================
 evaluation_price = picked_price if use_historical else index_price_input
-active_rolling_peak = max(historical_ath_anchor, evaluation_price)
-effective_scenario_drawdown = ((evaluation_price - active_rolling_peak) / active_rolling_peak) * 100
+
+# CORRECT DRAWDOWN CALCULATION
+# trailing_peak is already set above:
+#   - Historical mode: highest close from data start up to selected date
+#   - Live/Simulation mode: ATH up to today
+effective_scenario_drawdown = ((evaluation_price - trailing_peak) / trailing_peak) * 100 if trailing_peak > 0 else 0.0
+
 baseline_200_ma = selected_index_package["ma_200"]
+
+# Format peak date for display
+try:
+    peak_date_str = peak_date.strftime('%Y-%m-%d')
+except Exception:
+    peak_date_str = "N/A"
 
 # Individual risk trigger flags
 pmi_triggered = pmi_input < 50.0
@@ -321,7 +344,7 @@ else:
     rs_bg = "#E8F5E9"; rs_border = "#2E7D32"; rs_icon = "✅"; rs_text_color = "#2E7D32"
     rs_label = "All clear &mdash; no risk triggers"
 
-# Peak horizon
+# Peak horizon card
 pk_bg = "#E3F2FD"; pk_border = "#1565C0"; pk_icon = "📊"; pk_text_color = "#1565C0"
 
 # Individual risk indicator statuses
@@ -373,9 +396,9 @@ with metric_col_2:
 with metric_col_3:
     pk_html = (
         '<div style="background:' + pk_bg + '; border-left:6px solid ' + pk_border + '; border-radius:10px; padding:20px; text-align:center;">'
-        '<div style="font-size:14px; color:#555; font-weight:600;">ACTIVE ROLLING TARGET PEAK</div>'
-        '<div style="font-size:42px; font-weight:800; color:' + pk_text_color + '; margin:8px 0;">' + pk_icon + ' ' + f"{active_rolling_peak:,.2f}" + '</div>'
-        '<div style="font-size:12px; color:#777;">All-time high reference horizon</div>'
+        '<div style="font-size:14px; color:#555; font-weight:600;">TRAILING HIGH WATERMARK</div>'
+        '<div style="font-size:42px; font-weight:800; color:' + pk_text_color + '; margin:8px 0;">' + pk_icon + ' ' + f"{trailing_peak:,.2f}" + '</div>'
+        '<div style="font-size:12px; color:#777;">Peak reached on ' + peak_date_str + '</div>'
         '</div>'
     )
     st.markdown(pk_html, unsafe_allow_html=True)
@@ -426,7 +449,6 @@ st.markdown("### 📋 Tactical Allocation Recommendations")
 
 # --- ALLOCATION RULES LEGEND ---
 with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
-    # Build the rules table with the active zone highlighted
     zones_data = [
         ("STRONG BUY", "≤ -35%", "100%", "100%", "100%", "Generational opportunity — max conviction"),
         ("BUY", "≤ -20%", "50%", "75%", "40%", "Structural bear — scale in aggressively"),
@@ -440,7 +462,6 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
 
     table_rows = ""
     for zone_name, trigger, cash_pct, srs_pct, cpf_pct, rationale in zones_data:
-        # Check if this is the active zone
         is_active = (
             (zone_name == "STRONG BUY" and active_allocation_zone == "STRONG BUY") or
             (zone_name == "BUY" and active_allocation_zone == "BUY") or
@@ -460,6 +481,11 @@ with st.expander("📐 Allocation Rules & Deployment Matrix — Click to view"):
     - 💵 **Cash** deploys from your savings **after** deducting the Emergency Liquid Cash Buffer
     - 🛡️ **CPF-OA** deploys **after** preserving the S$20k floor (if toggled) to secure the extra 1% government bonus yield
     - 📈 **SRS** deploys from the full balance for tax-deferred investment optimisation
+
+    **How drawdown is calculated:**
+    - **Historical mode:** Peak = highest price the index reached **up to** the selected date (not all-time high)
+    - **Live mode:** Peak = highest price the index has reached up to today (trailing high watermark)
+    - Drawdown = (Current Price − Peak) / Peak × 100%
 
     **Risk score triggers (4 indicators):**
     - ISM Manufacturing PMI < 50 (contraction)
