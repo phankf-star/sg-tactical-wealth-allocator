@@ -404,201 +404,124 @@ with d3: st.markdown('#### \U0001f6e1\ufe0f CPF-OA'); st.metric('Deploy',f'S${cp
 st.markdown('---')
 st.subheader(f'Total Deploy: :green[S${deploy_amount:,.2f}]')
 
+st.markdown('---')
+st.markdown('### \U0001f4ca Market Performance & ETF Tracker')
+def bpt(recs):
+    t='<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
+    t+='<th style="text-align:left;padding:10px">Name</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Price</th>'
+    t+='<th style="text-align:center;padding:10px">1Y</th><th style="text-align:center;padding:10px">3Y</th><th style="text-align:center;padding:10px">5Y</th></tr></thead><tbody>'
+    for r in recs:
+        ps=f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
+        yf_url='https://finance.yahoo.com/quote/'+r['ticker']
+        def fr(v):
+            if v is None: return '<span style="color:#999">N/A</span>'
+            c='#2E7D32' if v>=0 else '#D32F2F'; ar='\u25b2' if v>=0 else '\u25bc'
+            return '<span style="color:'+c+';font-weight:600">'+ar+' '+f'{v:.1f}'+'%</span>'
+        t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px"><a href="'+yf_url+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+r['ticker']+'</a></td><td style="text-align:center;padding:10px;font-weight:600">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
+    return t+'</tbody></table>'
+
+try:
+    with st.spinner('Fetching benchmarks...'): bd=fetch_bench()
+    if bd:
+        for gn,recs in bd.items():
+            ic='\U0001f30d' if 'Indic' in gn else '\U0001f6e2\ufe0f'
+            st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+ic+' '+gn+'</div>',unsafe_allow_html=True)
+            st.markdown(bpt(recs),unsafe_allow_html=True)
+except Exception as e: st.warning(f'Benchmarks unavailable: {e}')
+
+try:
+    with st.spinner('Fetching ETFs...'): ed=fetch_etf_perf()
+    if ed:
+        st.markdown('<div style="font-size:20px;font-weight:700;margin:24px 0 8px">\U0001f4c8 Investable ETFs</div>',unsafe_allow_html=True)
+        do=[]
+        if sel_idx in ETF_UNIVERSE: do.append(sel_idx)
+        for ix in ETF_UNIVERSE:
+            if ix not in do: do.append(ix)
+        for ix in do:
+            if ix not in ed: continue
+            gi=ETF_UNIVERSE[ix]; sel=(ix==sel_idx)
+            badge=' <span style="background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">\u2705 SELECTED</span>' if sel else ''
+            st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+gi['label']+badge+'</div>',unsafe_allow_html=True)
+            st.markdown(bpt(ed[ix]),unsafe_allow_html=True)
+except Exception as e: st.warning(f'ETFs unavailable: {e}')
 
 st.markdown('---')
+st.markdown('### \U0001f3c6 Crash Buying Backtest \u2014 Proof That Buying The Dip Works')
+st.caption('Simulate investing at every drawdown trough in ' + sel_idx + '. Adjust parameters below.')
 
-# =========================
-# CONSOLIDATED INSTITUTIONAL LAYOUT
-# =========================
+bt_c1,bt_c2,bt_c3=st.columns(3)
+with bt_c1: bt_amount=st.number_input('Investment per crash ($)',min_value=1000,value=10000,step=1000)
+with bt_c2:
+    bt_min_date=ud.index.min().to_pydatetime().date(); bt_max_date=ud.index.max().to_pydatetime().date()
+    bt_start=st.date_input('Start backtest from',value=bt_min_date,min_value=bt_min_date,max_value=bt_max_date)
+with bt_c3: bt_threshold=st.slider('Min drawdown threshold (%)',min_value=5,max_value=50,value=10,step=5)
 
-with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=False):
-    st.markdown("""
-    <h1 style='font-size:34px;margin-bottom:0'>📊 Market Performance & ETF Tracker</h1>
-    <p style='font-size:16px;color:gray;margin-top:0'>Global indices, ETFs, benchmarks and tactical opportunity tracking</p>
-    """, unsafe_allow_html=True)
+try:
+    bt=ud.loc[pd.Timestamp(bt_start):].copy()
+    bt['rm']=bt['Close'].rolling(252,min_periods=1).max()
+    bt['dd_pct']=((bt['Close']-bt['rm'])/bt['rm'])*100
+    lc_=float(bt['Close'].iloc[-1])
+    troughs=[]; in_dd=False; ep_s=None
+    for i in range(len(bt)):
+        dv=bt['dd_pct'].iloc[i]
+        if dv<=-bt_threshold and not in_dd: in_dd=True; ep_s=i
+        elif dv>-5 and in_dd:
+            in_dd=False; episode=bt.iloc[ep_s:i]; ti=episode['dd_pct'].idxmin(); tr=bt.loc[ti]
+            if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
+                d_=float(tr['dd_pct']); p_=float(tr['Close']); pk_=float(tr['rm'])
+                lkb=bt.loc[:ti]; lk252=lkb.iloc[max(0,len(lkb)-252):]
+                pk_dt=lk252['Close'].idxmax().strftime('%Y-%m-%d')
+                z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
+                zc_='#D32F2F' if d_<=-35 else ('#E65100' if d_<=-20 else '#F9A825')
+                troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
+    if in_dd and ep_s is not None:
+        episode=bt.iloc[ep_s:]; ti=episode['dd_pct'].idxmin(); tr=bt.loc[ti]
+        if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
+            d_=float(tr['dd_pct']); p_=float(tr['Close']); pk_=float(tr['rm'])
+            lkb=bt.loc[:ti]; lk252=lkb.iloc[max(0,len(lkb)-252):]
+            pk_dt=lk252['Close'].idxmax().strftime('%Y-%m-%d')
+            z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
+            zc_='#D32F2F' if d_<=-35 else ('#E65100' if d_<=-20 else '#F9A825')
+            troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
 
-    def bpt(recs):
-        t='<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
-        t+='<th style="text-align:left;padding:10px">Name</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Price</th>'
-        t+='<th style="text-align:center;padding:10px">1Y</th><th style="text-align:center;padding:10px">3Y</th><th style="text-align:center;padding:10px">5Y</th></tr></thead><tbody>'
-        for r in recs:
-            ps=f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
-            yf_url='https://finance.yahoo.com/quote/'+r['ticker']
-            def fr(v):
-                if v is None:
-                    return '<span style="color:#999">N/A</span>'
-                c='#2E7D32' if v>=0 else '#D32F2F'
-                ar='▲' if v>=0 else '▼'
-                return '<span style="color:'+c+';font-weight:600">'+ar+' '+f'{v:.1f}'+'%</span>'
-            t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px"><a href="'+yf_url+'" target="_blank">'+r['ticker']+'</a></td><td style="text-align:center;padding:10px">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
-        return t+'</tbody></table>'
+    if troughs:
+        ti_=len(troughs)*bt_amount; tc_=sum(t['cv'] for t in troughs); tr_=((tc_-ti_)/ti_)*100
+        s1,s2,s3=st.columns(3)
+        with s1: st.metric('Invested',f'${ti_:,.0f}',help=f'{len(troughs)} events x ${bt_amount:,.0f}')
+        with s2: st.metric('Value Today',f'${tc_:,.0f}',f'{tr_:+.1f}%')
+        with s3: st.metric('Avg Return',f'{sum(t["ret"] for t in troughs)/len(troughs):,.1f}%')
 
-    try:
-        with st.spinner('Fetching benchmarks...'):
-            bd=fetch_bench()
-        if bd:
-            for gn,recs in bd.items():
-                st.markdown('### '+gn)
-                st.markdown(bpt(recs), unsafe_allow_html=True)
-    except Exception as e:
-        st.warning(f'Benchmarks unavailable: {e}')
+        # Backtest table with peak basis
+        th_='<table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD"><th style="padding:8px">#</th><th style="padding:8px">Trough Date</th><th style="text-align:center;padding:8px">Level</th><th style="text-align:center;padding:8px">Drawdown</th><th style="text-align:center;padding:8px">Zone</th><th style="text-align:center;padding:8px">Invested</th><th style="text-align:center;padding:8px">Value</th><th style="text-align:center;padding:8px">Return</th></tr></thead><tbody>'
+        for i,t in enumerate(troughs):
+            rc_='#2E7D32' if t['ret']>=0 else '#D32F2F'; ar_='\u25b2' if t['ret']>=0 else '\u25bc'
+            th_+='<tr style="border-bottom:1px solid #EEE"><td style="padding:8px;text-align:center">'+str(i+1)+'</td><td style="padding:8px">'+t['date'].strftime('%Y-%m-%d')+'</td><td style="text-align:center;padding:8px">'+f"{t['price']:,.0f}"+'</td>'
+            th_+='<td style="text-align:center;padding:8px"><div style="color:#D32F2F;font-weight:600">'+f"{t['dd']:.1f}%"+'</div><div style="font-size:10px;color:#999">from '+f"{t['peak']:,.0f}"+' ('+t['peak_dt']+')</div></td>'
+            th_+='<td style="text-align:center;padding:8px"><span style="background:'+t['zc']+';color:#FFF;padding:2px 8px;border-radius:4px;font-size:11px">'+t['zone']+'</span></td>'
+            th_+='<td style="text-align:center;padding:8px">$'+f'{bt_amount:,.0f}'+'</td><td style="text-align:center;padding:8px;font-weight:700">$'+f"{t['cv']:,.0f}"+'</td>'
+            th_+='<td style="text-align:center;padding:8px;color:'+rc_+';font-weight:700">'+ar_+' '+f"{t['ret']:.1f}%"+'</td></tr>'
+        th_+='</tbody></table>'
+        st.markdown(th_,unsafe_allow_html=True)
 
-    try:
-        with st.spinner('Fetching ETFs...'):
-            ed=fetch_etf_perf()
-        if ed:
-            for ix in ETF_UNIVERSE:
-                if ix not in ed:
-                    continue
-                st.markdown('### '+ETF_UNIVERSE[ix]['label'], unsafe_allow_html=True)
-                st.markdown(bpt(ed[ix]), unsafe_allow_html=True)
-    except Exception as e:
-        st.warning(f'ETFs unavailable: {e}')
+        # Bar chart
+        fb=go.Figure()
+        fb.add_trace(go.Bar(x=[t['date'].strftime('%Y-%m') for t in troughs],y=[t['cv'] for t in troughs],marker_color=[t['zc'] for t in troughs],text=[f"${t['cv']:,.0f}" for t in troughs],textposition='outside'))
+        fb.add_hline(y=bt_amount,line_dash='dash',line_color='#999',line_width=1,annotation_text='$'+f'{bt_amount:,.0f}'+' invested',annotation_position='bottom right',annotation_font_size=10)
+        fb.update_layout(title=dict(text='Value of $'+f'{bt_amount:,.0f}'+' at Each Trough \u2014 '+sel_idx,font=dict(size=14)),height=350,margin=dict(l=10,r=10,t=40,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis=dict(showgrid=True,gridcolor='#F0F0F0'))
+        st.plotly_chart(fb,use_container_width=True,config={'displayModeBar':False})
 
-with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
-    st.markdown("""
-    <h1 style='font-size:34px;margin-bottom:0'>🏆 Crash & Recovery Analytics</h1>
-    <p style='font-size:16px;color:gray;margin-top:0'>Historical drawdown analytics, crash deployment validation and recovery analysis</p>
-    """, unsafe_allow_html=True)
+        st.markdown('#### \U0001f4ca Historical Success Probability')
+        thresholds=[5,10,15,20,30,40]
+        sr='| Correction | Events | Profitable | Success Rate |'+chr(10)+'|:---|:---:|:---:|:---:|'+chr(10)
+        for thr in thresholds:
+            ev=[t for t in troughs if t['dd']<=-thr]; w=[t for t in ev if t['ret']>0]
+            rate=(len(w)/len(ev)*100) if ev else 0
+            em='\U0001f7e2' if rate>=80 else ('\U0001f7e1' if rate>=60 else '\U0001f534')
+            sr+=f'| \u2265 {thr}% | {len(ev)} | {len(w)} | {em} **{rate:.0f}%** |'+chr(10)
+        st.markdown(sr)
+        st.success('\U0001f4a1 **Every major crash in '+sel_idx+' was a buying opportunity.** $'+f'{ti_:,.0f}'+' became $'+f'{tc_:,.0f}'+' \u2014 '+f'{tr_:.1f}%'+' return.')
+    else: st.info('No drawdown events found with the selected parameters.')
+except Exception as e: st.warning(f'Backtest unavailable: {e}')
 
-    bt_c1,bt_c2,bt_c3=st.columns(3)
-    with bt_c1:
-        bt_amount=st.number_input('Investment per crash ($)',min_value=1000,value=10000,step=1000)
-    with bt_c2:
-        bt_min_date=ud.index.min().to_pydatetime().date()
-        bt_max_date=ud.index.max().to_pydatetime().date()
-        bt_start=st.date_input('Start backtest from',value=bt_min_date,min_value=bt_min_date,max_value=bt_max_date)
-    with bt_c3:
-        bt_threshold=st.slider('Min drawdown threshold (%)',min_value=5,max_value=50,value=10,step=5)
-
-    try:
-        bt=ud.loc[pd.Timestamp(bt_start):].copy()
-        bt['rm']=bt['Close'].rolling(252,min_periods=1).max()
-        bt['dd_pct']=((bt['Close']-bt['rm'])/bt['rm'])*100
-        lc_=float(bt['Close'].iloc[-1])
-
-        troughs=[]
-        in_dd=False
-        ep_s=None
-
-        for i in range(len(bt)):
-            dv=bt['dd_pct'].iloc[i]
-            if dv<=-bt_threshold and not in_dd:
-                in_dd=True
-                ep_s=i
-            elif dv>-5 and in_dd:
-                in_dd=False
-                episode=bt.iloc[ep_s:i]
-                ti=episode['dd_pct'].idxmin()
-                tr=bt.loc[ti]
-
-                if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
-                    d_=float(tr['dd_pct'])
-                    p_=float(tr['Close'])
-                    pk_=float(tr['rm'])
-                    lkb=bt.loc[:ti]
-                    lk252=lkb.iloc[max(0,len(lkb)-252):]
-                    pk_dt=lk252['Close'].idxmax()
-
-                    z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
-
-                    troughs.append({
-                        'date':ti,
-                        'price':p_,
-                        'dd':d_,
-                        'zone':z_,
-                        'cv':bt_amount*(lc_/p_),
-                        'ret':((lc_/p_)-1)*100,
-                        'peak':pk_,
-                        'peak_dt':pk_dt
-                    })
-
-        if troughs:
-            years_span=max((bt.index.max()-bt.index.min()).days/365.25,1)
-
-            dd10=len([t for t in troughs if -20<t['dd']<=-10])
-            dd20=len([t for t in troughs if -30<t['dd']<=-20])
-            dd30=len([t for t in troughs if t['dd']<=-30])
-
-            c1,c2,c3=st.columns(3)
-            with c1:
-                st.info(f"📉 10–20% corrections historically occur every ~{round(years_span/dd10,1) if dd10 else 'N/A'} years")
-            with c2:
-                st.warning(f"⚠️ 20–30% corrections historically occur every ~{round(years_span/dd20,1) if dd20 else 'N/A'} years")
-            with c3:
-                st.error(f"🔥 30%+ crashes historically occur every ~{round(years_span/dd30,1) if dd30 else 'N/A'} years")
-
-            ti_=len(troughs)*bt_amount
-            tc_=sum(t['cv'] for t in troughs)
-            tr_=((tc_-ti_)/ti_)*100
-
-            k1,k2,k3,k4,k5=st.columns(5)
-            with k1:
-                st.metric('Crash Events', len(troughs))
-            with k2:
-                st.metric('Success Rate', f"{sum(1 for t in troughs if t['ret']>0)/len(troughs)*100:.0f}%")
-            with k3:
-                st.metric('Avg Recovery', f"{np.mean([t['ret'] for t in troughs]):.1f}%")
-            with k4:
-                st.metric('Best Recovery', f"{max([t['ret'] for t in troughs]):.1f}%")
-            with k5:
-                st.metric('Current Drawdown', f"{bt['dd_pct'].iloc[-1]:.1f}%")
-
-            st.markdown('### 📉 Drawdown Timeline + Event Table')
-
-            event_df=pd.DataFrame([
-                {
-                    'Peak Date':t['peak_dt'].strftime('%Y-%m-%d'),
-                    'Peak Index':round(t['peak'],0),
-                    'Trough Date':t['date'].strftime('%Y-%m-%d'),
-                    'Trough Index':round(t['price'],0),
-                    'Drawdown %':round(t['dd'],1),
-                    'Recovery Return %':round(t['ret'],1),
-                    'Zone':t['zone']
-                }
-                for t in troughs
-            ])
-
-            st.dataframe(event_df,use_container_width=True,hide_index=True)
-
-            st.markdown('### ⚖️ DCA vs Crash Buying')
-
-            dca_dates=pd.date_range(bt.index.min(),bt.index.max(),freq='QS')
-            dca_units=0
-            for d in dca_dates:
-                nearest=bt.index[bt.index.get_indexer([d],method='nearest')[0]]
-                dca_units += bt_amount/float(bt.loc[nearest]['Close'])
-
-            dca_total=len(dca_dates)*bt_amount
-            dca_value=dca_units*lc_
-            dca_ret=((dca_value-dca_total)/dca_total)*100 if dca_total else 0
-
-            dc1,dc2=st.columns(2)
-            with dc1:
-                st.metric('Crash Buying Return', f'{tr_:.1f}%')
-            with dc2:
-                st.metric('Quarterly DCA Return', f'{dca_ret:.1f}%')
-
-            winner='Crash Buying' if tr_>dca_ret else 'Quarterly DCA'
-            st.success(f'🏆 {winner} historically delivered stronger returns for {sel_idx} based on available historical data.')
-
-            st.info('📌 Severe drawdowns historically generated stronger forward returns, though recovery periods varied materially across cycles.')
-
-            export_df=event_df.copy()
-            st.download_button(
-                '⬇️ Export Crash Analytics CSV',
-                export_df.to_csv(index=False),
-                file_name='crash_recovery_analytics.csv',
-                mime='text/csv'
-            )
-
-        else:
-            st.info('No drawdown events found with selected parameters.')
-
-    except Exception as e:
-        st.warning(f'Crash analytics unavailable: {e}')
-
-from datetime import datetime
 st.markdown('---')
-st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
-st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed advisor.')
+st.caption('\u26a0\ufe0f Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed advisor.')
