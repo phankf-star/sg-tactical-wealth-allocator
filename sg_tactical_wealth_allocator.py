@@ -521,63 +521,45 @@ try:
         st.markdown(sr)
         st.success('\U0001f4a1 **Every major crash in '+sel_idx+' was a buying opportunity.** $'+f'{ti_:,.0f}'+' became $'+f'{tc_:,.0f}'+' \u2014 '+f'{tr_:.1f}%'+' return.')
 
-        st.markdown('#### 🕒 Drawdown Event Timeline')
+        st.markdown('### 📚 Market Cycle Statistics')
+
+        dd10 = len([t for t in troughs if -20 < t['dd'] <= -10])
+        dd20 = len([t for t in troughs if -30 < t['dd'] <= -20])
+        dd30 = len([t for t in troughs if t['dd'] <= -30])
+
+        years_span = max((bt.index.max() - bt.index.min()).days / 365.25, 1)
+
+        f10 = round(years_span / dd10, 1) if dd10 > 0 else 'N/A'
+        f20 = round(years_span / dd20, 1) if dd20 > 0 else 'N/A'
+        f30 = round(years_span / dd30, 1) if dd30 > 0 else 'N/A'
+
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.info(f"📉 10–20% corrections historically occur every ~{f10} years")
+
+        with c2:
+            st.warning(f"⚠️ 20–30% corrections historically occur every ~{f20} years")
+
+        with c3:
+            st.error(f"🔥 30%+ crashes historically occur every ~{f30} years")
+
+        st.markdown('#### 📉 Drawdown Timeline + Event Table')
+
         timeline_df = pd.DataFrame([
             {
                 'Peak Date': t['peak_dt'],
+                'Peak Index': round(t['peak'], 0),
                 'Trough Date': t['date'].strftime('%Y-%m-%d'),
-                'Drawdown %': round(t['dd'],1),
+                'Trough Index': round(t['price'], 0),
+                'Drawdown %': round(t['dd'], 1),
+                'Recovery Return %': round(t['ret'], 1),
                 'Zone': t['zone']
             }
             for t in troughs
         ])
+
         st.dataframe(timeline_df, use_container_width=True, hide_index=True)
-
-        st.markdown('#### 🚨 Severity Summary Table')
-        severity_df = pd.DataFrame([
-            {'Bucket':'10%-20%','Count':len([t for t in troughs if -20 < t['dd'] <= -10])},
-            {'Bucket':'20%-30%','Count':len([t for t in troughs if -30 < t['dd'] <= -20])},
-            {'Bucket':'30%+','Count':len([t for t in troughs if t['dd'] <= -30])}
-        ])
-        st.dataframe(severity_df, use_container_width=True, hide_index=True)
-
-        st.markdown('#### ⚖️ DCA vs Crash Buying Comparison')
-        dca_dates = pd.date_range(bt.index.min(), bt.index.max(), freq='QS')
-        dca_units = 0
-        for d in dca_dates:
-            nearest = bt.index[bt.index.get_indexer([d], method='nearest')[0]]
-            dca_units += bt_amount / float(bt.loc[nearest]['Close'])
-
-        dca_total = len(dca_dates) * bt_amount
-        dca_value = dca_units * lc_
-        dca_ret = ((dca_value - dca_total) / dca_total) * 100 if dca_total else 0
-
-        compare_df = pd.DataFrame([
-            {'Strategy':'Crash Buying','Invested':round(ti_,0),'Value':round(tc_,0),'Return %':round(tr_,1)},
-            {'Strategy':'Quarterly DCA','Invested':round(dca_total,0),'Value':round(dca_value,0),'Return %':round(dca_ret,1)}
-        ])
-        st.dataframe(compare_df, use_container_width=True, hide_index=True)
-
-        better = 'Crash Buying' if tr_ > dca_ret else 'Quarterly DCA'
-        st.info(f'📌 Insight Callout: {better} historically generated stronger returns for {sel_idx}.')
-
-        export_df = pd.DataFrame([
-            {
-                'Date': t['date'].strftime('%Y-%m-%d'),
-                'Drawdown %': round(t['dd'],2),
-                'Zone': t['zone'],
-                'Current Value': round(t['cv'],2),
-                'Return %': round(t['ret'],2)
-            }
-            for t in troughs
-        ])
-
-        st.download_button(
-            '⬇️ Export CSV',
-            export_df.to_csv(index=False),
-            file_name='crash_buying_backtest.csv',
-            mime='text/csv'
-        )
 
     else: st.info('No drawdown events found with the selected parameters.')
 except Exception as e: st.warning(f'Backtest unavailable: {e}')
