@@ -23,13 +23,21 @@ st.caption('Singapore wealth allocation platform with regime classification, opp
 st.sidebar.markdown('## 💰 Capital Pools')
 cash_balance = st.sidebar.number_input('Liquid Cash (S$)', min_value=0.0, value=100000.0, step=5000.0)
 srs_balance = st.sidebar.number_input('SRS (S$)', min_value=0.0, value=35000.0, step=5000.0)
-cpy_oa_balance_default = 180000.0
-cpf_oa_balance = st.sidebar.number_input('CPF-OA (S$)', min_value=0.0, value=cpy_oa_balance_default, step=5000.0)
+cpf_oa_balance = st.sidebar.number_input('CPF-OA (S$)', min_value=0.0, value=180000.0, step=5000.0)
 
 st.sidebar.markdown('---')
 st.sidebar.markdown('## ⚙️ Safeguards')
 emergency_buffer = st.sidebar.number_input('Emergency Buffer (S$)', min_value=0.0, value=20000.0, step=1000.0)
 preserve_cpf = st.sidebar.checkbox('Preserve S$20k CPF-OA Floor', value=True)
+
+st.sidebar.markdown('---')
+st.sidebar.markdown('## 📐 Drawdown Formula')
+drawdown_method = st.sidebar.radio(
+    'Current drawdown reference',
+    ['Rolling 252D Peak (previous backtest formula)', 'All-Time High Peak'],
+    index=0,
+    help='Rolling 252D Peak matches the previous crash-backtest formula: rolling 252-day high → current close.'
+)
 
 st.sidebar.markdown('---')
 st.sidebar.markdown('## 🔄 Data Sync')
@@ -81,6 +89,17 @@ def download_price_history(ticker, start='1997-01-01'):
         return pd.DataFrame()
     return df.dropna(subset=['Close']).copy()
 
+def latest_drawdown(df, method):
+    close = safe_float(df['Close'].iloc[-1])
+    if method.startswith('Rolling'):
+        peak = safe_float(df['Close'].rolling(252, min_periods=1).max().iloc[-1], close)
+        label = 'Rolling 252D Peak'
+    else:
+        peak = safe_float(df['Close'].max(), close)
+        label = 'All-Time High Peak'
+    dd = ((close - peak) / peak) * 100 if peak else 0
+    return close, peak, dd, label
+
 @st.cache_data(ttl=14400)
 def harvest_market():
     market = {}
@@ -92,13 +111,15 @@ def harvest_market():
             close = safe_float(df['Close'].iloc[-1])
             ma200 = safe_float(df['Close'].rolling(200).mean().dropna().iloc[-1], close) if len(df) >= 200 else close
             ath = safe_float(df['Close'].max(), close)
-            dd = ((close - ath) / ath) * 100 if ath else 0
+            rolling_peak = safe_float(df['Close'].rolling(252, min_periods=1).max().iloc[-1], close)
             market[name] = {
                 'ticker': ticker,
                 'live_close': close,
                 'ma_200': ma200,
                 'ath_peak': ath,
-                'drawdown': dd,
+                'rolling_252_peak': rolling_peak,
+                'drawdown_ath': ((close - ath) / ath) * 100 if ath else 0,
+                'drawdown_rolling_252': ((close - rolling_peak) / rolling_peak) * 100 if rolling_peak else 0,
                 'underlying_df': df
             }
         except Exception:
@@ -145,6 +166,8 @@ def classify_zone(drawdown_pct):
     return 'HOLD', '#1976D2'
 
 def build_drawdown_events(bt, bt_threshold, bt_amount, current_level):
+    # Previous version event formula retained exactly:
+    # rolling 252-day max = rm; dd_pct = (Close - rm) / rm * 100
     events = []
     in_dd = False
     ep_s = None
@@ -168,17 +191,7 @@ def build_drawdown_events(bt, bt_threshold, bt_amount, current_level):
                 lookback252 = lookback.iloc[max(0, len(lookback)-252):]
                 pk_dt = lookback252['Close'].idxmax()
                 zone, colour = classify_zone(d_)
-                events.append({
-                    'date': ti,
-                    'price': p_,
-                    'dd': d_,
-                    'zone': zone,
-                    'colour': colour,
-                    'cv': bt_amount * (current_level / p_) if p_ else 0,
-                    'ret': ((current_level / p_) - 1) * 100 if p_ else 0,
-                    'peak': pk_,
-                    'peak_dt': pk_dt
-                })
+                events.append({'date': ti,'price': p_,'dd': d_,'zone': zone,'colour': colour,'cv': bt_amount * (current_level / p_) if p_ else 0,'ret': ((current_level / p_) - 1) * 100 if p_ else 0,'peak': pk_,'peak_dt': pk_dt})
     if in_dd and ep_s is not None:
         episode = bt.iloc[ep_s:]
         if not episode.empty:
@@ -192,17 +205,7 @@ def build_drawdown_events(bt, bt_threshold, bt_amount, current_level):
                 lookback252 = lookback.iloc[max(0, len(lookback)-252):]
                 pk_dt = lookback252['Close'].idxmax()
                 zone, colour = classify_zone(d_)
-                events.append({
-                    'date': ti,
-                    'price': p_,
-                    'dd': d_,
-                    'zone': zone,
-                    'colour': colour,
-                    'cv': bt_amount * (current_level / p_) if p_ else 0,
-                    'ret': ((current_level / p_) - 1) * 100 if p_ else 0,
-                    'peak': pk_,
-                    'peak_dt': pk_dt
-                })
+                events.append({'date': ti,'price': p_,'dd': d_,'zone': zone,'colour': colour,'cv': bt_amount * (current_level / p_) if p_ else 0,'ret': ((current_level / p_) - 1) * 100 if p_ else 0,'peak': pk_,'peak_dt': pk_dt})
     return events
 
 # =========================
@@ -226,8 +229,7 @@ st.markdown('---')
 st.markdown('## 🧠 Executive Tactical Allocation Centre')
 st.caption('Always-visible decision engine for deployment sizing, capital pools and current market opportunity zone.')
 
-live_close = selected['live_close']
-current_dd = selected['drawdown']
+live_close, drawdown_peak, current_dd, drawdown_label = latest_drawdown(ud, drawdown_method)
 ma200 = selected['ma_200']
 zone, zone_colour = classify_zone(current_dd)
 trend_status = 'Above 200D MA' if live_close >= ma200 else 'Below 200D MA'
@@ -256,7 +258,7 @@ with c1:
 with c2:
     st.metric('Current Drawdown', f'{current_dd:.1f}%')
 with c3:
-    st.metric('Trend', trend_status)
+    st.metric('Drawdown Ref.', drawdown_label)
 with c4:
     st.metric('Action Zone', zone)
 with c5:
@@ -264,7 +266,8 @@ with c5:
 
 st.markdown(f"""
 <div style='padding:14px;border-left:6px solid {zone_colour};background:#FAFAFA;border-radius:10px;margin-top:8px'>
-<b>Current tactical interpretation:</b> {sel_idx} is in <b>{zone}</b> territory with a drawdown of <b>{current_dd:.1f}%</b> from its available historical peak. Suggested deployment is based on drawdown severity and capital safeguards.
+<b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference. Current reference is <b>{drawdown_label}</b> at approximately <b>{drawdown_peak:,.0f}</b>.
+<br><b>Current tactical interpretation:</b> {sel_idx} is in <b>{zone}</b> territory with a drawdown of <b>{current_dd:.1f}%</b>.
 </div>
 """, unsafe_allow_html=True)
 
@@ -394,6 +397,7 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
         bt['dd_pct'] = ((bt['Close'] - bt['rm']) / bt['rm']) * 100
         lc_ = safe_float(bt['Close'].iloc[-1])
 
+        st.caption('Crash event drawdown formula follows the previous version: rolling 252-day peak → trough close.')
         troughs = build_drawdown_events(bt, bt_threshold, bt_amount, lc_)
 
         if not troughs:
@@ -527,31 +531,10 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
                 if not chart_df.empty:
                     st.markdown('#### 📉 Mini Historical Crash Chart')
                     fig = go.Figure()
-                    fig.add_trace(go.Scatter(
-                        x=chart_df.index,
-                        y=chart_df['Close'],
-                        mode='lines',
-                        line=dict(color='#D32F2F', width=3),
-                        name='Peak → Trough Path'
-                    ))
-                    fig.add_trace(go.Scatter(
-                        x=[chart_start], y=[selected_row['Peak Index']], mode='markers+text',
-                        marker=dict(color='#555', size=10), text=['Peak'], textposition='top center', name='Peak'
-                    ))
-                    fig.add_trace(go.Scatter(
-                        x=[chart_end], y=[selected_row['Trough Index']], mode='markers+text',
-                        marker=dict(color='#D32F2F', size=10), text=['Trough'], textposition='bottom center', name='Trough'
-                    ))
-                    fig.update_layout(
-                        height=340,
-                        margin=dict(l=10,r=10,t=40,b=10),
-                        title='Mini Historical Crash Chart: Peak → Trough',
-                        plot_bgcolor='white',
-                        paper_bgcolor='white',
-                        xaxis_title='Date',
-                        yaxis_title='Index Level',
-                        showlegend=False
-                    )
+                    fig.add_trace(go.Scatter(x=chart_df.index,y=chart_df['Close'],mode='lines',line=dict(color='#D32F2F', width=3),name='Peak → Trough Path'))
+                    fig.add_trace(go.Scatter(x=[chart_start], y=[selected_row['Peak Index']], mode='markers+text',marker=dict(color='#555', size=10), text=['Peak'], textposition='top center', name='Peak'))
+                    fig.add_trace(go.Scatter(x=[chart_end], y=[selected_row['Trough Index']], mode='markers+text',marker=dict(color='#D32F2F', size=10), text=['Trough'], textposition='bottom center', name='Trough'))
+                    fig.update_layout(height=340,margin=dict(l=10,r=10,t=40,b=10),title='Mini Historical Crash Chart: Peak → Trough',plot_bgcolor='white',paper_bgcolor='white',xaxis_title='Date',yaxis_title='Index Level',showlegend=False)
                     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar':False})
 
             st.info('📌 Historical insight: severe drawdowns have historically produced stronger forward return potential, but recovery timing varies materially across cycles. This section is educational and does not guarantee future outcomes.')
