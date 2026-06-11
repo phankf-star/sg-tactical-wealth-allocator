@@ -8,22 +8,17 @@ import time
 import math
 from datetime import datetime
 
-st.set_page_config(
-    page_title='SG Tactical Wealth Allocator',
-    layout='wide',
-    initial_sidebar_state='expanded'
-)
-
+st.set_page_config(page_title='SG Tactical Wealth Allocator', layout='wide', initial_sidebar_state='expanded')
 st.title('🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator')
 st.caption('Singapore wealth allocation platform with regime classification, opportunity scoring, and crash-recovery analytics.')
 
 # =========================
-# Sidebar Inputs
+# Sidebar
 # =========================
 st.sidebar.markdown('## 💰 Capital Pools')
 cash_balance = st.sidebar.number_input('Liquid Cash (S$)', min_value=0.0, value=100000.0, step=5000.0)
 srs_balance = st.sidebar.number_input('SRS (S$)', min_value=0.0, value=35000.0, step=5000.0)
-cpf_oa_balance = st.sidebar.number_input('CPF-OA (S$)', min_value=0.0, value=180000.0, step=5000.0)
+cpy_oa_balance = st.sidebar.number_input('CPF-OA (S$)', min_value=0.0, value=180000.0, step=5000.0)
 
 st.sidebar.markdown('---')
 st.sidebar.markdown('## ⚙️ Safeguards')
@@ -81,13 +76,21 @@ def safe_float(v, fb=0.0):
     except Exception:
         return fb
 
+def make_index_tz_naive(df):
+    df = df.copy()
+    df.index = pd.to_datetime(df.index)
+    if getattr(df.index, 'tz', None) is not None:
+        df.index = df.index.tz_convert(None)
+    return df
+
 @st.cache_data(ttl=14400)
 def download_price_history(ticker, start='1997-01-01'):
     df = yf.Ticker(ticker).history(start=start)
     time.sleep(0.2)
     if df is None or df.empty:
         return pd.DataFrame()
-    return df.dropna(subset=['Close']).copy()
+    df = df.dropna(subset=['Close']).copy()
+    return make_index_tz_naive(df)
 
 def latest_drawdown(df, method):
     close = safe_float(df['Close'].iloc[-1])
@@ -166,8 +169,8 @@ def classify_zone(drawdown_pct):
     return 'HOLD', '#1976D2'
 
 def build_drawdown_events(bt, bt_threshold, bt_amount, current_level):
-    # Previous version event formula retained exactly:
-    # rolling 252-day max = rm; dd_pct = (Close - rm) / rm * 100
+    # Previous version formula retained:
+    # rolling 252-day high = rm; dd_pct = (Close - rm) / rm * 100
     events = []
     in_dd = False
     ep_s = None
@@ -220,7 +223,7 @@ if not market:
 
 sel_idx = st.selectbox('Select Market Index', list(market.keys()), index=list(market.keys()).index('Hang Seng Index (HK Cyclical/Beta)') if 'Hang Seng Index (HK Cyclical/Beta)' in market else 0)
 selected = market[sel_idx]
-ud = selected['underlying_df'].copy()
+ud = make_index_tz_naive(selected['underlying_df'])
 
 # =========================
 # Executive Tactical Allocation Centre
@@ -385,14 +388,15 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
     with bt_c1:
         bt_amount = st.number_input('Investment per selected crash (S$)', min_value=1000, value=10000, step=1000)
     with bt_c2:
-        bt_min_date = ud.index.min().to_pydatetime().date()
-        bt_max_date = ud.index.max().to_pydatetime().date()
+        bt_min_date = ud.index.min().date()
+        bt_max_date = ud.index.max().date()
         bt_start = st.date_input('Start backtest from', value=bt_min_date, min_value=bt_min_date, max_value=bt_max_date)
     with bt_c3:
         bt_threshold = st.slider('Min drawdown threshold (%)', min_value=5, max_value=50, value=10, step=5)
 
     try:
         bt = ud.loc[pd.Timestamp(bt_start):].copy()
+        bt = make_index_tz_naive(bt)
         bt['rm'] = bt['Close'].rolling(252, min_periods=1).max()
         bt['dd_pct'] = ((bt['Close'] - bt['rm']) / bt['rm']) * 100
         lc_ = safe_float(bt['Close'].iloc[-1])
@@ -452,15 +456,33 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
                 return '10-20%'
 
             event_df['Severity'] = event_df['Drawdown %'].apply(sev_bucket)
+            event_df['Trough Date_dt'] = pd.to_datetime(event_df['Trough Date']).dt.date
 
             st.markdown('### 🔍 Interactive Event Explorer')
-            f1,f2 = st.columns(2)
+            f1,f2,f3 = st.columns([1,1,1.2])
             with f1:
                 severity_filter = st.multiselect('Severity filters', ['10-20%','20-30%','30%+'], default=['10-20%','20-30%','30%+'])
             with f2:
                 zone_filter = st.multiselect('Buy Zone filters', ['INITIAL BUY','BUY','STRONG BUY'], default=['INITIAL BUY','BUY','STRONG BUY'])
+            with f3:
+                historical_date_range = st.date_input(
+                    'Historical event date range',
+                    value=(event_df['Trough Date_dt'].min(), event_df['Trough Date_dt'].max()),
+                    min_value=event_df['Trough Date_dt'].min(),
+                    max_value=event_df['Trough Date_dt'].max()
+                )
 
-            filtered_df = event_df[event_df['Severity'].isin(severity_filter) & event_df['Zone'].isin(zone_filter)].copy()
+            if isinstance(historical_date_range, tuple) and len(historical_date_range) == 2:
+                hist_start, hist_end = historical_date_range
+            else:
+                hist_start, hist_end = event_df['Trough Date_dt'].min(), event_df['Trough Date_dt'].max()
+
+            filtered_df = event_df[
+                event_df['Severity'].isin(severity_filter) &
+                event_df['Zone'].isin(zone_filter) &
+                (event_df['Trough Date_dt'] >= hist_start) &
+                (event_df['Trough Date_dt'] <= hist_end)
+            ].copy()
 
             st.markdown('#### 🔎 Filtered Event Statistics')
             if filtered_df.empty:
@@ -477,7 +499,8 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
                     st.metric('Best Recovery', f"{filtered_df['Recovery Return %'].max():.1f}%")
 
                 st.markdown('#### 📉 Filtered Event Table')
-                st.dataframe(filtered_df, use_container_width=True, hide_index=True)
+                display_df = filtered_df.drop(columns=['Trough Date_dt'])
+                st.dataframe(display_df, use_container_width=True, hide_index=True)
 
                 event_options = [f"{r['Peak Date']} → {r['Trough Date']} ({r['Drawdown %']}%)" for _, r in filtered_df.iterrows()]
                 selected_event = st.selectbox('Historical Crash Explorer', event_options)
@@ -525,20 +548,19 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
                 with o4:
                     st.metric('Return Since Trough', f'{selected_return:.1f}%')
 
-                chart_start = peak_date
-                chart_end = trough_date
-                chart_df = bt.loc[chart_start:chart_end].copy()
+                chart_df = bt.loc[peak_date:trough_date].copy()
                 if not chart_df.empty:
                     st.markdown('#### 📉 Mini Historical Crash Chart')
                     fig = go.Figure()
-                    fig.add_trace(go.Scatter(x=chart_df.index,y=chart_df['Close'],mode='lines',line=dict(color='#D32F2F', width=3),name='Peak → Trough Path'))
-                    fig.add_trace(go.Scatter(x=[chart_start], y=[selected_row['Peak Index']], mode='markers+text',marker=dict(color='#555', size=10), text=['Peak'], textposition='top center', name='Peak'))
-                    fig.add_trace(go.Scatter(x=[chart_end], y=[selected_row['Trough Index']], mode='markers+text',marker=dict(color='#D32F2F', size=10), text=['Trough'], textposition='bottom center', name='Trough'))
-                    fig.update_layout(height=340,margin=dict(l=10,r=10,t=40,b=10),title='Mini Historical Crash Chart: Peak → Trough',plot_bgcolor='white',paper_bgcolor='white',xaxis_title='Date',yaxis_title='Index Level',showlegend=False)
+                    fig.add_trace(go.Scatter(x=chart_df.index, y=chart_df['Close'], mode='lines', line=dict(color='#D32F2F', width=3), name='Peak → Trough Path'))
+                    fig.add_trace(go.Scatter(x=[peak_date], y=[selected_row['Peak Index']], mode='markers+text', marker=dict(color='#555', size=10), text=['Peak'], textposition='top center', name='Peak'))
+                    fig.add_trace(go.Scatter(x=[trough_date], y=[selected_row['Trough Index']], mode='markers+text', marker=dict(color='#D32F2F', size=10), text=['Trough'], textposition='bottom center', name='Trough'))
+                    fig.update_layout(height=340, margin=dict(l=10,r=10,t=40,b=10), title='Mini Historical Crash Chart: Peak → Trough', plot_bgcolor='white', paper_bgcolor='white', xaxis_title='Date', yaxis_title='Index Level', showlegend=False)
                     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar':False})
 
             st.info('📌 Historical insight: severe drawdowns have historically produced stronger forward return potential, but recovery timing varies materially across cycles. This section is educational and does not guarantee future outcomes.')
-            st.download_button('⬇️ Export Crash Analytics CSV', event_df.to_csv(index=False), file_name='crash_recovery_analytics.csv', mime='text/csv')
+            export_df = event_df.drop(columns=['Trough Date_dt'])
+            st.download_button('⬇️ Export Crash Analytics CSV', export_df.to_csv(index=False), file_name='crash_recovery_analytics.csv', mime='text/csv')
 
     except Exception as e:
         st.warning(f'Crash analytics unavailable: {e}')
