@@ -6,22 +6,22 @@ import plotly.graph_objects as go
 import time
 import math
 
-st.set_page_config(page_title='SG Tactical Wealth Allocator', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='SG Tactical Wealth Allocator',layout='wide',initial_sidebar_state='expanded')
 st.title('\U0001f1f8\U0001f1ec Tactical Wealth Allocation & Future Drawdown Simulator')
 st.caption('Singapore wealth allocation platform with regime classification, opportunity scoring, and crash-buying validation.')
 
 st.sidebar.markdown('## \U0001f4b0 Capital Pools')
-cash_balance = st.sidebar.number_input('Liquid Cash ($)',min_value=0.0,value=100000.0,step=5000.0)
-srs_balance = st.sidebar.number_input('SRS ($)',min_value=0.0,value=35000.0,step=5000.0)
-cpf_oa_balance = st.sidebar.number_input('CPF-OA ($)',min_value=0.0,value=180000.0,step=5000.0)
+cash_balance=st.sidebar.number_input('Liquid Cash ($)',min_value=0.0,value=100000.0,step=5000.0)
+srs_balance=st.sidebar.number_input('SRS ($)',min_value=0.0,value=35000.0,step=5000.0)
+cpf_oa_balance=st.sidebar.number_input('CPF-OA ($)',min_value=0.0,value=180000.0,step=5000.0)
 st.sidebar.markdown('---')
 st.sidebar.markdown('## \u2699\ufe0f Safeguards')
-emergency_buffer = st.sidebar.number_input('Emergency Buffer ($)',min_value=0.0,value=20000.0,step=1000.0)
-preserve_cpf = st.sidebar.checkbox('Preserve S$20k CPF-OA Floor',value=True)
+emergency_buffer=st.sidebar.number_input('Emergency Buffer ($)',min_value=0.0,value=20000.0,step=1000.0)
+preserve_cpf=st.sidebar.checkbox('Preserve S$20k CPF-OA Floor',value=True)
 
-INDEX_TICKERS = {'S&P 500 (US Market Core)':'^GSPC','Nasdaq 100 (Tech Growth)':'^IXIC','Straits Times Index (SG Value/REITs)':'^STI','Hang Seng Index (HK Cyclical/Beta)':'^HSI'}
+INDEX_TICKERS={'S&P 500 (US Market Core)':'^GSPC','Nasdaq 100 (Tech Growth)':'^IXIC','Straits Times Index (SG Value/REITs)':'^STI','Hang Seng Index (HK Cyclical/Beta)':'^HSI'}
 
-ETF_UNIVERSE = {
+ETF_UNIVERSE={
     'Straits Times Index (SG Value/REITs)':{'label':'\U0001f1f8\U0001f1ec Singapore','etfs':[('SPDR STI ETF','ES3.SI'),('Nikko AM STI ETF','G3B.SI')]},
     'Hang Seng Index (HK Cyclical/Beta)':{'label':'\U0001f1ed\U0001f1f0 Hong Kong','etfs':[('Tracker Fund','2800.HK'),('iShares HSI','3115.HK'),('iShares HS TECH','3067.HK')]},
     'Nasdaq 100 (Tech Growth)':{'label':'\U0001f1fa\U0001f1f8 Nasdaq','etfs':[('Invesco QQQ','QQQ'),('Invesco QQQM','QQQM')]},
@@ -35,14 +35,14 @@ ETF_UNIVERSE = {
     'Global':{'label':'\U0001f30d Global','etfs':[('Vanguard Total World','VT')]},
     'Bonds':{'label':'\U0001f4c9 Bonds','etfs':[('iShares 20+ Year Treasury','TLT')]},
 }
-BENCHMARK_TICKERS = {
+BENCHMARK_TICKERS={
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('Nikkei 225','^N225'),('SSE A Share','000002.SS'),('TWSE','^TWII')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')],
 }
 
 st.sidebar.markdown('---')
 st.sidebar.markdown('## \U0001f504 Data Sync')
-if st.sidebar.button('\U0001f504 Force Refresh'): st.cache_data.clear(); st.toast('Cache cleared!',icon='\U0001f504')
+if st.sidebar.button('\U0001f504 Force Refresh'): st.cache_data.clear(); st.toast('Cleared!',icon='\U0001f504')
 
 def safe_float(v,fb=1000.0):
     try:
@@ -245,7 +245,6 @@ elif opp_score>=50: opp_label='Moderate'; opp_color='#E65100'
 else: opp_label='Low'; opp_color='#999'
 confidence_pct=min(99,max(10,opp_score+(rsk*5)))
 
-# Compute allocation FIRST so deploy figures are synced
 uc=max(0.0,cash_balance-emergency_buffer); us=srs_balance; ucpf=max(0.0,cpf_oa_balance-20000.0) if preserve_cpf else cpf_oa_balance
 co=0.0;so=0.0;cpfo=0.0
 if azn=='STRONG BUY': co=uc;so=us;cpfo=ucpf
@@ -340,42 +339,40 @@ with ec4:
     h+='<div style="font-size:12px;color:#999">Dry powder</div></div>'
     st.markdown(h,unsafe_allow_html=True)
 
-# Top 3 Opportunities (scored from ETF data)
 try:
-    with st.spinner('Ranking ETFs...'): etf_all = fetch_etf_perf()
-    flat_etfs = []
-    for cat, recs in etf_all.items():
+    with st.spinner('Ranking ETFs...'): etf_all=fetch_etf_perf()
+    flat_etfs=[]
+    for cat,recs in etf_all.items():
         for r in recs:
             if r['1y'] is not None:
-                y1 = r['1y']
-                if y1 < -20: sc = 90 + abs(y1)
-                elif y1 < 0: sc = 70 + abs(y1)
-                elif y1 < 20: sc = 50 + y1
-                else: sc = 40 + y1 * 0.3
-                flat_etfs.append({'name': r['name'], 'ticker': r['ticker'], 'score': round(sc, 1), 'ret_1y': y1, 'cat': cat})
-    flat_etfs.sort(key=lambda x: x['score'], reverse=True)
-    top3 = flat_etfs[:3]
-    if top3 and deploy_amount > 0:
+                y1=r['1y']
+                if y1<-20: sc=90+abs(y1)
+                elif y1<0: sc=70+abs(y1)
+                elif y1<20: sc=50+y1
+                else: sc=40+y1*0.3
+                flat_etfs.append({'name':r['name'],'ticker':r['ticker'],'score':round(sc,1),'ret_1y':y1,'cat':cat})
+    flat_etfs.sort(key=lambda x:x['score'],reverse=True)
+    top3=flat_etfs[:3]
+    if top3 and deploy_amount>0:
         st.markdown('#### \U0001f947 Top 3 Opportunities & Suggested Capital Split')
-        splits = [0.50, 0.30, 0.20]
-        t3h = '<table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
-        t3h += '<th style="padding:10px">Rank</th><th style="text-align:left;padding:10px">ETF</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Score</th><th style="text-align:center;padding:10px">1Y Return</th><th style="text-align:center;padding:10px">Suggested Deploy</th></tr></thead><tbody>'
-        medals = ['\U0001f947', '\U0001f948', '\U0001f949']
-        for i, etf in enumerate(top3):
-            amt = deploy_amount * splits[i]
-            rc = '#2E7D32' if etf['ret_1y'] >= 0 else '#D32F2F'
-            ar = '\u25b2' if etf['ret_1y'] >= 0 else '\u25bc'
-            act = 'STRONG BUY' if etf['score'] >= 80 else 'BUY'
-            ac = '#D32F2F' if act == 'STRONG BUY' else '#E65100'
-            t3h += '<tr style="border-bottom:1px solid #EEE"><td style="padding:10px;text-align:center;font-size:20px">' + medals[i] + '</td>'
-            t3h += '<td style="padding:10px;font-weight:600">' + etf['name'] + '</td>'
-            t3h += '<td style="text-align:center;padding:10px;font-family:monospace">' + etf['ticker'] + '</td>'
-            t3h += '<td style="text-align:center;padding:10px"><span style="background:' + ac + ';color:#FFF;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">' + str(etf['score']) + '</span></td>'
-            t3h += '<td style="text-align:center;padding:10px;color:' + rc + ';font-weight:600">' + ar + ' ' + f"{etf['ret_1y']:.1f}%" + '</td>'
-            t3h += '<td style="text-align:center;padding:10px;font-weight:700;color:#2E7D32">S$' + f'{amt:,.0f}' + '</td></tr>'
-        t3h += '</tbody></table>'
-        st.markdown(t3h, unsafe_allow_html=True)
-except Exception as e: st.caption(f'Top 3 ranking unavailable: {e}')
+        splits=[0.50,0.30,0.20]
+        t3='<table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
+        t3+='<th style="padding:10px">Rank</th><th style="text-align:left;padding:10px">ETF</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Score</th><th style="text-align:center;padding:10px">1Y Return</th><th style="text-align:center;padding:10px">Suggested Deploy</th></tr></thead><tbody>'
+        medals=['\U0001f947','\U0001f948','\U0001f949']
+        for i,etf in enumerate(top3):
+            amt=deploy_amount*splits[i]
+            rc='#2E7D32' if etf['ret_1y']>=0 else '#D32F2F'; ar='\u25b2' if etf['ret_1y']>=0 else '\u25bc'
+            act='STRONG BUY' if etf['score']>=80 else 'BUY'; ac='#D32F2F' if act=='STRONG BUY' else '#E65100'
+            yf_link='https://finance.yahoo.com/quote/'+etf['ticker']
+            t3+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px;text-align:center;font-size:20px">'+medals[i]+'</td>'
+            t3+='<td style="padding:10px;font-weight:600">'+etf['name']+'</td>'
+            t3+='<td style="text-align:center;padding:10px"><a href="'+yf_link+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+etf['ticker']+'</a></td>'
+            t3+='<td style="text-align:center;padding:10px"><span style="background:'+ac+';color:#FFF;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">'+str(etf['score'])+'</span></td>'
+            t3+='<td style="text-align:center;padding:10px;color:'+rc+';font-weight:600">'+ar+' '+f"{etf['ret_1y']:.1f}%"+'</td>'
+            t3+='<td style="text-align:center;padding:10px;font-weight:700;color:#2E7D32">S$'+f'{amt:,.0f}'+'</td></tr>'
+        t3+='</tbody></table>'
+        st.markdown(t3,unsafe_allow_html=True)
+except Exception as e: st.caption(f'Top 3 unavailable: {e}')
 
 with st.expander('\U0001f4ca Opportunity Score Breakdown'):
     sc_tbl='| Factor | Input | Score |'+chr(10)+'|:---|:---|:---:|'+chr(10)
@@ -415,11 +412,12 @@ def bpt(recs):
     t+='<th style="text-align:center;padding:10px">1Y</th><th style="text-align:center;padding:10px">3Y</th><th style="text-align:center;padding:10px">5Y</th></tr></thead><tbody>'
     for r in recs:
         ps=f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
+        yf_url='https://finance.yahoo.com/quote/'+r['ticker']
         def fr(v):
             if v is None: return '<span style="color:#999">N/A</span>'
             c='#2E7D32' if v>=0 else '#D32F2F'; ar='\u25b2' if v>=0 else '\u25bc'
             return '<span style="color:'+c+';font-weight:600">'+ar+' '+f'{v:.1f}'+'%</span>'
-        t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px;font-family:monospace;color:#555">'+r['ticker']+'</td><td style="text-align:center;padding:10px;font-weight:600">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
+        t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px"><a href="'+yf_url+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+r['ticker']+'</a></td><td style="text-align:center;padding:10px;font-weight:600">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
     return t+'</tbody></table>'
 
 try:
@@ -449,46 +447,69 @@ except Exception as e: st.warning(f'ETFs unavailable: {e}')
 
 st.markdown('---')
 st.markdown('### \U0001f3c6 Crash Buying Backtest \u2014 Proof That Buying The Dip Works')
-st.caption('What if you invested $10,000 at every drawdown trough in ' + sel_idx + '?')
+st.caption('Simulate investing at every drawdown trough in ' + sel_idx + '. Adjust parameters below.')
+
+bt_c1,bt_c2,bt_c3=st.columns(3)
+with bt_c1: bt_amount=st.number_input('Investment per crash ($)',min_value=1000,value=10000,step=1000)
+with bt_c2:
+    bt_min_date=ud.index.min().to_pydatetime().date(); bt_max_date=ud.index.max().to_pydatetime().date()
+    bt_start=st.date_input('Start backtest from',value=bt_min_date,min_value=bt_min_date,max_value=bt_max_date)
+with bt_c3: bt_threshold=st.slider('Min drawdown threshold (%)',min_value=5,max_value=50,value=10,step=5)
+
 try:
-    bt=ud.copy(); bt['rm']=bt['Close'].rolling(252,min_periods=1).max(); bt['dd_']=((bt['Close']-bt['rm'])/bt['rm'])*100
-    lc_=float(bt['Close'].iloc[-1]); troughs=[]; in_dd=False; ep_s=None
+    bt=ud.loc[pd.Timestamp(bt_start):].copy()
+    bt['rm']=bt['Close'].rolling(252,min_periods=1).max()
+    bt['dd_pct']=((bt['Close']-bt['rm'])/bt['rm'])*100
+    lc_=float(bt['Close'].iloc[-1])
+    troughs=[]; in_dd=False; ep_s=None
     for i in range(len(bt)):
-        dv=bt['dd_'].iloc[i]
-        if dv<=-10 and not in_dd: in_dd=True; ep_s=i
+        dv=bt['dd_pct'].iloc[i]
+        if dv<=-bt_threshold and not in_dd: in_dd=True; ep_s=i
         elif dv>-5 and in_dd:
-            in_dd=False; episode=bt.iloc[ep_s:i]; ti=episode['dd_'].idxmin(); tr=bt.loc[ti]
+            in_dd=False; episode=bt.iloc[ep_s:i]; ti=episode['dd_pct'].idxmin(); tr=bt.loc[ti]
             if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
-                d_=float(tr['dd_']); p_=float(tr['Close'])
+                d_=float(tr['dd_pct']); p_=float(tr['Close']); pk_=float(tr['rm'])
+                lkb=bt.loc[:ti]; lk252=lkb.iloc[max(0,len(lkb)-252):]
+                pk_dt=lk252['Close'].idxmax().strftime('%Y-%m-%d')
                 z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
                 zc_='#D32F2F' if d_<=-35 else ('#E65100' if d_<=-20 else '#F9A825')
-                troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':10000*(lc_/p_),'ret':((lc_/p_)-1)*100})
+                troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
     if in_dd and ep_s is not None:
-        episode=bt.iloc[ep_s:]; ti=episode['dd_'].idxmin(); tr=bt.loc[ti]
+        episode=bt.iloc[ep_s:]; ti=episode['dd_pct'].idxmin(); tr=bt.loc[ti]
         if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
-            d_=float(tr['dd_']); p_=float(tr['Close'])
+            d_=float(tr['dd_pct']); p_=float(tr['Close']); pk_=float(tr['rm'])
+            lkb=bt.loc[:ti]; lk252=lkb.iloc[max(0,len(lkb)-252):]
+            pk_dt=lk252['Close'].idxmax().strftime('%Y-%m-%d')
             z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
             zc_='#D32F2F' if d_<=-35 else ('#E65100' if d_<=-20 else '#F9A825')
-            troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':10000*(lc_/p_),'ret':((lc_/p_)-1)*100})
+            troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'zc':zc_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
+
     if troughs:
-        ti_=len(troughs)*10000; tc_=sum(t['cv'] for t in troughs); tr_=((tc_-ti_)/ti_)*100
+        ti_=len(troughs)*bt_amount; tc_=sum(t['cv'] for t in troughs); tr_=((tc_-ti_)/ti_)*100
         s1,s2,s3=st.columns(3)
-        with s1: st.metric('Invested',f'${ti_:,.0f}',help=f'{len(troughs)} events')
+        with s1: st.metric('Invested',f'${ti_:,.0f}',help=f'{len(troughs)} events x ${bt_amount:,.0f}')
         with s2: st.metric('Value Today',f'${tc_:,.0f}',f'{tr_:+.1f}%')
         with s3: st.metric('Avg Return',f'{sum(t["ret"] for t in troughs)/len(troughs):,.1f}%')
-        th_='<table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD"><th style="padding:8px">#</th><th style="padding:8px">Date</th><th style="text-align:center;padding:8px">Level</th><th style="text-align:center;padding:8px">DD</th><th style="text-align:center;padding:8px">Zone</th><th style="text-align:center;padding:8px">Invested</th><th style="text-align:center;padding:8px">Value</th><th style="text-align:center;padding:8px">Return</th></tr></thead><tbody>'
+
+        # Backtest table with peak basis
+        th_='<table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD"><th style="padding:8px">#</th><th style="padding:8px">Trough Date</th><th style="text-align:center;padding:8px">Level</th><th style="text-align:center;padding:8px">Drawdown</th><th style="text-align:center;padding:8px">Zone</th><th style="text-align:center;padding:8px">Invested</th><th style="text-align:center;padding:8px">Value</th><th style="text-align:center;padding:8px">Return</th></tr></thead><tbody>'
         for i,t in enumerate(troughs):
             rc_='#2E7D32' if t['ret']>=0 else '#D32F2F'; ar_='\u25b2' if t['ret']>=0 else '\u25bc'
-            th_+='<tr style="border-bottom:1px solid #EEE"><td style="padding:8px;text-align:center">'+str(i+1)+'</td><td style="padding:8px">'+t['date'].strftime('%Y-%m-%d')+'</td><td style="text-align:center;padding:8px">'+f"{t['price']:,.0f}"+'</td><td style="text-align:center;padding:8px;color:#D32F2F;font-weight:600">'+f"{t['dd']:.1f}%"+'</td><td style="text-align:center;padding:8px"><span style="background:'+t['zc']+';color:#FFF;padding:2px 8px;border-radius:4px;font-size:11px">'+t['zone']+'</span></td><td style="text-align:center;padding:8px">$10,000</td><td style="text-align:center;padding:8px;font-weight:700">$'+f"{t['cv']:,.0f}"+'</td><td style="text-align:center;padding:8px;color:'+rc_+';font-weight:700">'+ar_+' '+f"{t['ret']:.1f}%"+'</td></tr>'
+            th_+='<tr style="border-bottom:1px solid #EEE"><td style="padding:8px;text-align:center">'+str(i+1)+'</td><td style="padding:8px">'+t['date'].strftime('%Y-%m-%d')+'</td><td style="text-align:center;padding:8px">'+f"{t['price']:,.0f}"+'</td>'
+            th_+='<td style="text-align:center;padding:8px"><div style="color:#D32F2F;font-weight:600">'+f"{t['dd']:.1f}%"+'</div><div style="font-size:10px;color:#999">from '+f"{t['peak']:,.0f}"+' ('+t['peak_dt']+')</div></td>'
+            th_+='<td style="text-align:center;padding:8px"><span style="background:'+t['zc']+';color:#FFF;padding:2px 8px;border-radius:4px;font-size:11px">'+t['zone']+'</span></td>'
+            th_+='<td style="text-align:center;padding:8px">$'+f'{bt_amount:,.0f}'+'</td><td style="text-align:center;padding:8px;font-weight:700">$'+f"{t['cv']:,.0f}"+'</td>'
+            th_+='<td style="text-align:center;padding:8px;color:'+rc_+';font-weight:700">'+ar_+' '+f"{t['ret']:.1f}%"+'</td></tr>'
         th_+='</tbody></table>'
         st.markdown(th_,unsafe_allow_html=True)
+
+        # Bar chart
         fb=go.Figure()
         fb.add_trace(go.Bar(x=[t['date'].strftime('%Y-%m') for t in troughs],y=[t['cv'] for t in troughs],marker_color=[t['zc'] for t in troughs],text=[f"${t['cv']:,.0f}" for t in troughs],textposition='outside'))
-        fb.add_hline(y=10000,line_dash='dash',line_color='#999',line_width=1,annotation_text='$10K',annotation_position='bottom right',annotation_font_size=10)
-        fb.update_layout(title=dict(text='Value of $10K at Each Trough',font=dict(size=14)),height=350,margin=dict(l=10,r=10,t=40,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis=dict(showgrid=True,gridcolor='#F0F0F0'))
+        fb.add_hline(y=bt_amount,line_dash='dash',line_color='#999',line_width=1,annotation_text='$'+f'{bt_amount:,.0f}'+' invested',annotation_position='bottom right',annotation_font_size=10)
+        fb.update_layout(title=dict(text='Value of $'+f'{bt_amount:,.0f}'+' at Each Trough \u2014 '+sel_idx,font=dict(size=14)),height=350,margin=dict(l=10,r=10,t=40,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis=dict(showgrid=True,gridcolor='#F0F0F0'))
         st.plotly_chart(fb,use_container_width=True,config={'displayModeBar':False})
 
-        # Success Rate Table
         st.markdown('#### \U0001f4ca Historical Success Probability')
         thresholds=[5,10,15,20,30,40]
         sr='| Correction | Events | Profitable | Success Rate |'+chr(10)+'|:---|:---:|:---:|:---:|'+chr(10)
@@ -499,7 +520,7 @@ try:
             sr+=f'| \u2265 {thr}% | {len(ev)} | {len(w)} | {em} **{rate:.0f}%** |'+chr(10)
         st.markdown(sr)
         st.success('\U0001f4a1 **Every major crash in '+sel_idx+' was a buying opportunity.** $'+f'{ti_:,.0f}'+' became $'+f'{tc_:,.0f}'+' \u2014 '+f'{tr_:.1f}%'+' return.')
-    else: st.info('No events found.')
+    else: st.info('No drawdown events found with the selected parameters.')
 except Exception as e: st.warning(f'Backtest unavailable: {e}')
 
 st.markdown('---')
