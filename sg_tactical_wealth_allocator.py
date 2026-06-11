@@ -405,45 +405,46 @@ st.markdown('---')
 st.subheader(f'Total Deploy: :green[S${deploy_amount:,.2f}]')
 
 st.markdown('---')
-st.markdown('### \U0001f4ca Market Performance & ETF Tracker')
-def bpt(recs):
-    t='<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
-    t+='<th style="text-align:left;padding:10px">Name</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Price</th>'
-    t+='<th style="text-align:center;padding:10px">1Y</th><th style="text-align:center;padding:10px">3Y</th><th style="text-align:center;padding:10px">5Y</th></tr></thead><tbody>'
-    for r in recs:
-        ps=f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
-        yf_url='https://finance.yahoo.com/quote/'+r['ticker']
-        def fr(v):
-            if v is None: return '<span style="color:#999">N/A</span>'
-            c='#2E7D32' if v>=0 else '#D32F2F'; ar='\u25b2' if v>=0 else '\u25bc'
-            return '<span style="color:'+c+';font-weight:600">'+ar+' '+f'{v:.1f}'+'%</span>'
-        t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px"><a href="'+yf_url+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+r['ticker']+'</a></td><td style="text-align:center;padding:10px;font-weight:600">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
-    return t+'</tbody></table>'
+with st.expander('📊 Market Performance & ETF Tracker', expanded=False):
+    st.markdown('### \U0001f4ca Market Performance & ETF Tracker')
+    def bpt(recs):
+        t='<table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:16px"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
+        t+='<th style="text-align:left;padding:10px">Name</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Price</th>'
+        t+='<th style="text-align:center;padding:10px">1Y</th><th style="text-align:center;padding:10px">3Y</th><th style="text-align:center;padding:10px">5Y</th></tr></thead><tbody>'
+        for r in recs:
+            ps=f"{r['price']:,.2f}" if r['price'] is not None else 'N/A'
+            yf_url='https://finance.yahoo.com/quote/'+r['ticker']
+            def fr(v):
+                if v is None: return '<span style="color:#999">N/A</span>'
+                c='#2E7D32' if v>=0 else '#D32F2F'; ar='\u25b2' if v>=0 else '\u25bc'
+                return '<span style="color:'+c+';font-weight:600">'+ar+' '+f'{v:.1f}'+'%</span>'
+            t+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px">'+r['name']+'</td><td style="text-align:center;padding:10px"><a href="'+yf_url+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+r['ticker']+'</a></td><td style="text-align:center;padding:10px;font-weight:600">'+ps+'</td><td style="text-align:center;padding:10px">'+fr(r['1y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['3y'])+'</td><td style="text-align:center;padding:10px">'+fr(r['5y'])+'</td></tr>'
+        return t+'</tbody></table>'
 
-try:
-    with st.spinner('Fetching benchmarks...'): bd=fetch_bench()
-    if bd:
-        for gn,recs in bd.items():
-            ic='\U0001f30d' if 'Indic' in gn else '\U0001f6e2\ufe0f'
-            st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+ic+' '+gn+'</div>',unsafe_allow_html=True)
-            st.markdown(bpt(recs),unsafe_allow_html=True)
-except Exception as e: st.warning(f'Benchmarks unavailable: {e}')
+    try:
+        with st.spinner('Fetching benchmarks...'): bd=fetch_bench()
+        if bd:
+            for gn,recs in bd.items():
+                ic='\U0001f30d' if 'Indic' in gn else '\U0001f6e2\ufe0f'
+                st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+ic+' '+gn+'</div>',unsafe_allow_html=True)
+                st.markdown(bpt(recs),unsafe_allow_html=True)
+    except Exception as e: st.warning(f'Benchmarks unavailable: {e}')
 
-try:
-    with st.spinner('Fetching ETFs...'): ed=fetch_etf_perf()
-    if ed:
-        st.markdown('<div style="font-size:20px;font-weight:700;margin:24px 0 8px">\U0001f4c8 Investable ETFs</div>',unsafe_allow_html=True)
-        do=[]
-        if sel_idx in ETF_UNIVERSE: do.append(sel_idx)
-        for ix in ETF_UNIVERSE:
-            if ix not in do: do.append(ix)
-        for ix in do:
-            if ix not in ed: continue
-            gi=ETF_UNIVERSE[ix]; sel=(ix==sel_idx)
-            badge=' <span style="background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">\u2705 SELECTED</span>' if sel else ''
-            st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+gi['label']+badge+'</div>',unsafe_allow_html=True)
-            st.markdown(bpt(ed[ix]),unsafe_allow_html=True)
-except Exception as e: st.warning(f'ETFs unavailable: {e}')
+    try:
+        with st.spinner('Fetching ETFs...'): ed=fetch_etf_perf()
+        if ed:
+            st.markdown('<div style="font-size:20px;font-weight:700;margin:24px 0 8px">\U0001f4c8 Investable ETFs</div>',unsafe_allow_html=True)
+            do=[]
+            if sel_idx in ETF_UNIVERSE: do.append(sel_idx)
+            for ix in ETF_UNIVERSE:
+                if ix not in do: do.append(ix)
+            for ix in do:
+                if ix not in ed: continue
+                gi=ETF_UNIVERSE[ix]; sel=(ix==sel_idx)
+                badge=' <span style="background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600">\u2705 SELECTED</span>' if sel else ''
+                st.markdown('<div style="font-size:18px;font-weight:700;margin:16px 0 8px">'+gi['label']+badge+'</div>',unsafe_allow_html=True)
+                st.markdown(bpt(ed[ix]),unsafe_allow_html=True)
+    except Exception as e: st.warning(f'ETFs unavailable: {e}')
 
 st.markdown('---')
 st.markdown('### \U0001f3c6 Crash Buying Backtest \u2014 Proof That Buying The Dip Works')
