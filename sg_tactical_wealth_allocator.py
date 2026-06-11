@@ -1,4 +1,3 @@
-
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -6,324 +5,416 @@ import numpy as np
 import plotly.graph_objects as go
 import time
 import math
-from datetime import datetime
 
-st.set_page_config(
-    page_title='SG Tactical Wealth Allocator',
-    layout='wide',
-    initial_sidebar_state='expanded'
-)
+st.set_page_config(page_title='SG Tactical Wealth Allocator',layout='wide',initial_sidebar_state='expanded')
+st.title('\U0001f1f8\U0001f1ec Tactical Wealth Allocation & Future Drawdown Simulator')
+st.caption('Singapore wealth allocation platform with regime classification, opportunity scoring, and crash-buying validation.')
 
-st.title('🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator')
-st.caption('Singapore wealth allocation platform with regime classification, opportunity scoring, and crash-recovery analytics.')
+st.sidebar.markdown('## \U0001f4b0 Capital Pools')
+cash_balance=st.sidebar.number_input('Liquid Cash ($)',min_value=0.0,value=100000.0,step=5000.0)
+srs_balance=st.sidebar.number_input('SRS ($)',min_value=0.0,value=35000.0,step=5000.0)
+cpf_oa_balance=st.sidebar.number_input('CPF-OA ($)',min_value=0.0,value=180000.0,step=5000.0)
+st.sidebar.markdown('---')
+st.sidebar.markdown('## \u2699\ufe0f Safeguards')
+emergency_buffer=st.sidebar.number_input('Emergency Buffer ($)',min_value=0.0,value=20000.0,step=1000.0)
+preserve_cpf=st.sidebar.checkbox('Preserve S$20k CPF-OA Floor',value=True)
 
-# =========================
-# Sidebar Inputs
-# =========================
-st.sidebar.markdown('## 💰 Capital Pools')
-cash_balance = st.sidebar.number_input('Liquid Cash (S$)', min_value=0.0, value=100000.0, step=5000.0)
-srs_balance = st.sidebar.number_input('SRS (S$)', min_value=0.0, value=35000.0, step=5000.0)
-cpf_oa_balance = st.sidebar.number_input('CPF-OA (S$)', min_value=0.0, value=180000.0, step=5000.0)
+INDEX_TICKERS={'S&P 500 (US Market Core)':'^GSPC','Nasdaq 100 (Tech Growth)':'^IXIC','Straits Times Index (SG Value/REITs)':'^STI','Hang Seng Index (HK Cyclical/Beta)':'^HSI'}
+
+ETF_UNIVERSE={
+    'Straits Times Index (SG Value/REITs)':{'label':'\U0001f1f8\U0001f1ec Singapore','etfs':[('SPDR STI ETF','ES3.SI'),('Nikko AM STI ETF','G3B.SI')]},
+    'Hang Seng Index (HK Cyclical/Beta)':{'label':'\U0001f1ed\U0001f1f0 Hong Kong','etfs':[('Tracker Fund','2800.HK'),('iShares HSI','3115.HK'),('iShares HS TECH','3067.HK')]},
+    'Nasdaq 100 (Tech Growth)':{'label':'\U0001f1fa\U0001f1f8 Nasdaq','etfs':[('Invesco QQQ','QQQ'),('Invesco QQQM','QQQM')]},
+    'S&P 500 (US Market Core)':{'label':'\U0001f1fa\U0001f1f8 S&P 500','etfs':[('SPDR SPY','SPY'),('Vanguard VOO','VOO'),('iShares IVV','IVV')]},
+    'AI & Technology':{'label':'\U0001f916 AI & Technology','etfs':[('iShares AI Innovation','BAI'),('Global X AI & Tech','AIQ'),('Global X Robotics & AI','BOTZ')]},
+    'Semiconductors':{'label':'\U0001f4a1 Semiconductors','etfs':[('iShares Semiconductor','SOXX'),('VanEck Semiconductor','SMH')]},
+    'China Internet':{'label':'\U0001f1e8\U0001f1f3 China Internet','etfs':[('KraneShares China Internet','KWEB')]},
+    'Emerging Markets':{'label':'\U0001f30f Emerging Markets','etfs':[('iShares MSCI EM','EEM')]},
+    'US REITs':{'label':'\U0001f3e0 US REITs','etfs':[('Vanguard Real Estate','VNQ')]},
+    'Dividend':{'label':'\U0001f4b8 Dividend','etfs':[('Schwab US Dividend','SCHD')]},
+    'Global':{'label':'\U0001f30d Global','etfs':[('Vanguard Total World','VT')]},
+    'Bonds':{'label':'\U0001f4c9 Bonds','etfs':[('iShares 20+ Year Treasury','TLT')]},
+}
+BENCHMARK_TICKERS={
+    'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('Nikkei 225','^N225'),('SSE A Share','000002.SS'),('TWSE','^TWII')],
+    'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')],
+}
 
 st.sidebar.markdown('---')
-st.sidebar.markdown('## ⚙️ Safeguards')
-emergency_buffer = st.sidebar.number_input('Emergency Buffer (S$)', min_value=0.0, value=20000.0, step=1000.0)
-preserve_cpf = st.sidebar.checkbox('Preserve S$20k CPF-OA Floor', value=True)
+st.sidebar.markdown('## \U0001f504 Data Sync')
+if st.sidebar.button('\U0001f504 Force Refresh'): st.cache_data.clear(); st.toast('Cleared!',icon='\U0001f504')
 
-st.sidebar.markdown('---')
-st.sidebar.markdown('## 🔄 Data Sync')
-if st.sidebar.button('🔄 Force Refresh'):
-    st.cache_data.clear()
-    st.toast('Market data cache cleared.', icon='🔄')
-
-INDEX_TICKERS = {
-    'S&P 500 (US Market Core)': '^GSPC',
-    'Nasdaq 100 (Tech Growth)': '^IXIC',
-    'Straits Times Index (SG Value/REITs)': '^STI',
-    'Hang Seng Index (HK Cyclical/Beta)': '^HSI'
-}
-
-ETF_UNIVERSE = {
-    'Straits Times Index (SG Value/REITs)': {'label':'🇸🇬 Singapore','etfs':[('SPDR STI ETF','ES3.SI'),('Nikko AM STI ETF','G3B.SI')]},
-    'Hang Seng Index (HK Cyclical/Beta)': {'label':'🇭🇰 Hong Kong','etfs':[('Tracker Fund','2800.HK'),('iShares HSI','3115.HK'),('iShares HS TECH','3067.HK')]},
-    'Nasdaq 100 (Tech Growth)': {'label':'🇺🇸 Nasdaq','etfs':[('Invesco QQQ','QQQ'),('Invesco QQQM','QQQM')]},
-    'S&P 500 (US Market Core)': {'label':'🇺🇸 S&P 500','etfs':[('SPDR SPY','SPY'),('Vanguard VOO','VOO'),('iShares IVV','IVV')]},
-    'AI & Technology': {'label':'🤖 AI & Technology','etfs':[('iShares AI Innovation','BAI'),('Global X AI & Tech','AIQ'),('Global X Robotics & AI','BOTZ')]},
-    'Semiconductors': {'label':'💡 Semiconductors','etfs':[('iShares Semiconductor','SOXX'),('VanEck Semiconductor','SMH')]},
-    'China Internet': {'label':'🇨🇳 China Internet','etfs':[('KraneShares China Internet','KWEB')]},
-    'Emerging Markets': {'label':'🌏 Emerging Markets','etfs':[('iShares MSCI EM','EEM')]},
-    'US REITs': {'label':'🏠 US REITs','etfs':[('Vanguard Real Estate','VNQ')]},
-    'Dividend': {'label':'💸 Dividend','etfs':[('Schwab US Dividend','SCHD')]},
-    'Global': {'label':'🌍 Global','etfs':[('Vanguard Total World','VT')]},
-    'Bonds': {'label':'📉 Bonds','etfs':[('iShares 20+ Year Treasury','TLT')]},
-}
-
-BENCHMARK_TICKERS = {
-    'Global Indices': [('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('Nikkei 225','^N225'),('SSE A Share','000002.SS'),('TWSE','^TWII')],
-    'Commodities & Crypto': [('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')],
-}
-
-def safe_float(v, fb=0.0):
+def safe_float(v,fb=1000.0):
     try:
-        x = float(v)
-        if math.isnan(x) or math.isinf(x):
-            return fb
+        x=float(v)
+        if math.isnan(x) or math.isinf(x): return fb
         return x
-    except Exception:
-        return fb
-
-@st.cache_data(ttl=14400)
-def download_price_history(ticker, start='1997-01-01'):
-    df = yf.Ticker(ticker).history(start=start)
-    time.sleep(0.2)
-    if df is None or df.empty:
-        return pd.DataFrame()
-    df = df.dropna(subset=['Close']).copy()
-    return df
+    except: return fb
 
 @st.cache_data(ttl=14400)
 def harvest_market():
-    market = {}
-    for name, ticker in INDEX_TICKERS.items():
+    m={}
+    for nm,tk in INDEX_TICKERS.items():
         try:
-            df = download_price_history(ticker)
-            if df.empty:
-                continue
-            close = safe_float(df['Close'].iloc[-1])
-            ma200 = safe_float(df['Close'].rolling(200).mean().dropna().iloc[-1], close) if len(df) >= 200 else close
-            ath = safe_float(df['Close'].max(), close)
-            dd = ((close - ath) / ath) * 100 if ath else 0
-            market[name] = {
-                'ticker': ticker,
-                'live_close': close,
-                'ma_200': ma200,
-                'ath_peak': ath,
-                'drawdown': dd,
-                'underlying_df': df
-            }
-        except Exception:
-            continue
-    return market
+            df=yf.Ticker(tk).history(start='1997-01-01'); time.sleep(1.5)
+            if not df.empty:
+                df=df.dropna(subset=['Close'])
+                if df.empty: continue
+                cs=float(df['Close'].iloc[-1]); ma=float(df['Close'].rolling(200).mean().dropna().iloc[-1]) if len(df)>=200 else cs
+                atp=float(df['Close'].max())
+                if math.isnan(cs) or math.isnan(atp): continue
+                m[nm]={'live_close':cs,'ma_200':ma,'ath_peak':atp,'drawdown':((cs-atp)/atp)*100,'underlying_df':df}
+        except Exception as e: st.error(f'Error: {nm}: {e}')
+    return m
 
 @st.cache_data(ttl=14400)
-def fetch_perf_records(items):
-    records = []
-    for name, ticker in items:
-        try:
-            df = download_price_history(ticker, start='2018-01-01')
-            if df.empty:
-                records.append({'name':name,'ticker':ticker,'price':None,'1y':None,'3y':None,'5y':None})
-                continue
-            last = safe_float(df['Close'].iloc[-1])
-            def ret(days):
-                if len(df) <= days:
-                    return None
-                start_px = safe_float(df['Close'].iloc[-days])
-                return ((last / start_px) - 1) * 100 if start_px else None
-            records.append({'name':name,'ticker':ticker,'price':last,'1y':ret(252),'3y':ret(756),'5y':ret(1260)})
-        except Exception:
-            records.append({'name':name,'ticker':ticker,'price':None,'1y':None,'3y':None,'5y':None})
-    return records
-
-@st.cache_data(ttl=14400)
-def fetch_bench():
-    return {group: fetch_perf_records(items) for group, items in BENCHMARK_TICKERS.items()}
+def fetch_macro():
+    m={'vix':None,'yield_10y':None,'yield_3m':None,'yield_spread':None,'vix_hist':None,'tnx_hist':None,'irx_hist':None}
+    try:
+        vh=yf.Ticker('^VIX').history(period='1y'); time.sleep(1.5)
+        if not vh.empty: m['vix']=float(vh['Close'].dropna().iloc[-1]); m['vix_hist']=vh
+    except: pass
+    try:
+        th=yf.Ticker('^TNX').history(period='1y'); time.sleep(1.5)
+        if not th.empty: m['yield_10y']=float(th['Close'].dropna().iloc[-1]); m['tnx_hist']=th
+    except: pass
+    try:
+        ih=yf.Ticker('^IRX').history(period='1y'); time.sleep(1.5)
+        if not ih.empty: m['yield_3m']=float(ih['Close'].dropna().iloc[-1]); m['irx_hist']=ih
+    except: pass
+    if m['yield_10y'] is not None and m['yield_3m'] is not None: m['yield_spread']=m['yield_10y']-m['yield_3m']
+    return m
 
 @st.cache_data(ttl=14400)
 def fetch_etf_perf():
-    return {name: fetch_perf_records(info['etfs']) for name, info in ETF_UNIVERSE.items()}
+    r={}
+    for iname,g in ETF_UNIVERSE.items():
+        gr=[]
+        for en,tk in g['etfs']:
+            rec={'name':en,'ticker':tk,'1y':None,'3y':None,'5y':None,'price':None}
+            try:
+                h=yf.Ticker(tk).history(period='6y'); time.sleep(0.8)
+                if not h.empty:
+                    h=h.dropna(subset=['Close']); cp=float(h['Close'].iloc[-1]); rec['price']=cp; td=len(h)
+                    if td>=252: rec['1y']=((cp/float(h['Close'].iloc[-252]))-1)*100
+                    if td>=756: rec['3y']=((cp/float(h['Close'].iloc[-756]))-1)*100
+                    if td>=1260: rec['5y']=((cp/float(h['Close'].iloc[-1260]))-1)*100
+            except: pass
+            gr.append(rec)
+        r[iname]=gr
+    return r
 
-def classify_zone(drawdown_pct):
-    if drawdown_pct <= -35:
-        return 'STRONG BUY', '#D32F2F'
-    if drawdown_pct <= -20:
-        return 'BUY', '#E65100'
-    if drawdown_pct <= -10:
-        return 'INITIAL BUY', '#F9A825'
-    if drawdown_pct >= 0:
-        return 'STRONG SELL', '#6A1B9A'
-    return 'HOLD', '#1976D2'
+@st.cache_data(ttl=14400)
+def fetch_bench():
+    r={}
+    for gn,tks in BENCHMARK_TICKERS.items():
+        gr=[]
+        for nm,tk in tks:
+            rec={'name':nm,'ticker':tk,'1y':None,'3y':None,'5y':None,'price':None}
+            try:
+                h=yf.Ticker(tk).history(period='6y'); time.sleep(0.8)
+                if not h.empty:
+                    h=h.dropna(subset=['Close']); cp=float(h['Close'].iloc[-1]); rec['price']=cp; td=len(h)
+                    if td>=252: rec['1y']=((cp/float(h['Close'].iloc[-252]))-1)*100
+                    if td>=756: rec['3y']=((cp/float(h['Close'].iloc[-756]))-1)*100
+                    if td>=1260: rec['5y']=((cp/float(h['Close'].iloc[-1260]))-1)*100
+            except: pass
+            gr.append(rec)
+        r[gn]=gr
+    return r
 
-def build_drawdown_events(bt, bt_threshold, bt_amount, current_level):
-    events = []
-    in_dd = False
-    ep_s = None
-    for i in range(len(bt)):
-        dv = bt['dd_pct'].iloc[i]
-        if dv <= -bt_threshold and not in_dd:
-            in_dd = True
-            ep_s = i
-        elif dv > -5 and in_dd:
-            in_dd = False
-            episode = bt.iloc[ep_s:i]
-            if episode.empty:
-                continue
-            ti = episode['dd_pct'].idxmin()
-            tr = bt.loc[ti]
-            if len(events) == 0 or (ti - events[-1]['date']).days >= 60:
-                d_ = safe_float(tr['dd_pct'])
-                p_ = safe_float(tr['Close'])
-                pk_ = safe_float(tr['rm'])
-                lookback = bt.loc[:ti]
-                lookback252 = lookback.iloc[max(0, len(lookback)-252):]
-                pk_dt = lookback252['Close'].idxmax()
-                zone, colour = classify_zone(d_)
-                events.append({
-                    'date': ti,
-                    'price': p_,
-                    'dd': d_,
-                    'zone': zone,
-                    'colour': colour,
-                    'cv': bt_amount * (current_level / p_) if p_ else 0,
-                    'ret': ((current_level / p_) - 1) * 100 if p_ else 0,
-                    'peak': pk_,
-                    'peak_dt': pk_dt
-                })
-    if in_dd and ep_s is not None:
-        episode = bt.iloc[ep_s:]
-        if not episode.empty:
-            ti = episode['dd_pct'].idxmin()
-            tr = bt.loc[ti]
-            if len(events) == 0 or (ti - events[-1]['date']).days >= 60:
-                d_ = safe_float(tr['dd_pct'])
-                p_ = safe_float(tr['Close'])
-                pk_ = safe_float(tr['rm'])
-                lookback = bt.loc[:ti]
-                lookback252 = lookback.iloc[max(0, len(lookback)-252):]
-                pk_dt = lookback252['Close'].idxmax()
-                zone, colour = classify_zone(d_)
-                events.append({
-                    'date': ti,
-                    'price': p_,
-                    'dd': d_,
-                    'zone': zone,
-                    'colour': colour,
-                    'cv': bt_amount * (current_level / p_) if p_ else 0,
-                    'ret': ((current_level / p_) - 1) * 100 if p_ else 0,
-                    'peak': pk_,
-                    'peak_dt': pk_dt
-                })
-    return events
+with st.spinner('Harvesting index data...'): mdb=harvest_market()
+with st.spinner('Fetching macro...'): live_macro=fetch_macro()
+if not mdb: st.error('\U0001f6a8 No data. Try Force Refresh.'); st.stop()
 
-# =========================
-# Market Harvest
-# =========================
-with st.spinner('Loading market data...'):
-    market = harvest_market()
+st.markdown('### \U0001f52e Market Conditions & Scenario Modeler')
+st.info('Live data loaded. Adjust sliders for scenarios.')
+avail=list(mdb.keys())
+sel_idx=st.selectbox('Select Target Index',avail)
+if sel_idx not in mdb: st.error('Unavailable.'); st.stop()
+sp=mdb[sel_idx]; lac=safe_float(sp['live_close']); haa=safe_float(sp['ath_peak'],lac*1.5)
+ud=sp['underlying_df']; ud.index=ud.index.tz_localize(None)
+ath_val=float(ud['Close'].max()); ath_dt=ud['Close'].idxmax()
+try: ath_ds=ath_dt.strftime('%Y-%m-%d')
+except: ath_ds='N/A'
+smin=max(1,int(lac*0.35)); smax=max(smin+100,int(haa*1.25))
+r1c1,r1c2=st.columns(2)
+with r1c1:
+    mnd=ud.index.min().to_pydatetime().date(); mxd=ud.index.max().to_pydatetime().date()
+    use_hist=st.checkbox('Use Historical Date',value=False)
+    if use_hist:
+        tdt=st.date_input('Pick Date',value=mxd,min_value=mnd,max_value=mxd)
+        ci=ud.index.get_indexer([pd.Timestamp(tdt)],method='nearest')[0]
+        pp=float(ud.iloc[ci]['Close']); st.caption(f'Price: **{pp:,.2f}**')
+        dup=ud.loc[:pd.Timestamp(tdt)]; rw=dup.iloc[max(0,len(dup)-252):]
+        tp=float(rw['Close'].max()); pdt=rw['Close'].idxmax()
+    else: pp=None
+with r1c2:
+    if use_hist:
+        sv=min(max(int(pp),smin),smax); ipi=st.slider('Index Price',smin,smax,sv,disabled=True)
+    else:
+        sv=min(max(int(lac),smin),smax); ipi=st.slider('Index Price',smin,smax,sv,help='Slide to simulate.')
+    st.caption(f'\U0001f4e1 Live: **{lac:,.2f}**')
+if not use_hist:
+    rw=ud.iloc[max(0,len(ud)-252):]; tp=float(rw['Close'].max()); pdt=rw['Close'].idxmax()
+try: pds=pdt.strftime('%Y-%m-%d')
+except: pds='N/A'
 
-if not market:
-    st.error('Market data unavailable. Try Force Refresh or check data connectivity.')
-    st.stop()
+try:
+    cd=ud.iloc[max(0,len(ud)-252):]; m2=ud['Close'].rolling(200).mean().iloc[max(0,len(ud)-252):]
+    fi=go.Figure()
+    fi.add_trace(go.Scatter(x=cd.index,y=cd['Close'],mode='lines',name='Close',line=dict(color='#1565C0',width=1.5)))
+    fi.add_trace(go.Scatter(x=m2.index,y=m2.values,mode='lines',name='200MA',line=dict(color='#4CAF50',width=1,dash='dot')))
+    fi.add_hline(y=tp,line_dash='dash',line_color='#D32F2F',line_width=1,annotation_text='52W High: '+f'{tp:,.0f}',annotation_position='top left',annotation_font_size=10,annotation_font_color='#D32F2F')
+    fi.update_layout(title=dict(text='52-Week Price \u2014 '+sel_idx,font=dict(size=13)),height=220,margin=dict(l=10,r=10,t=35,b=10),showlegend=True,legend=dict(orientation='h',yanchor='bottom',y=1.02,xanchor='right',x=1,font=dict(size=10)),xaxis=dict(showgrid=False),yaxis=dict(showgrid=True,gridcolor='#F0F0F0'),plot_bgcolor='white',paper_bgcolor='white')
+    st.plotly_chart(fi,use_container_width=True,config={'displayModeBar':False})
+except: st.caption('\u26a0\ufe0f Chart unavailable')
 
-sel_idx = st.selectbox('Select Market Index', list(market.keys()), index=list(market.keys()).index('Hang Seng Index (HK Cyclical/Beta)') if 'Hang Seng Index (HK Cyclical/Beta)' in market else 0)
-selected = market[sel_idx]
-ud = selected['underlying_df'].copy()
+st.markdown('')
+r2c1,r2c2,r2c3=st.columns(3)
+lv_=live_macro.get('vix'); ls_=live_macro.get('yield_spread')
+vd_=round(lv_,1) if lv_ else 20.0; yd_=round(ls_,2) if ls_ else 0.45
+with r2c1:
+    pmi_in=st.slider('US ISM PMI',40.0,60.0,51.5)
+    st.caption('\U0001f4dd [ISM Reports](https://www.ismworld.org/supply-management-news-and-reports/reports/ism-report-on-business/)')
+with r2c2:
+    ys_in=st.slider('Yield Spread (10Y\u22123M)',-1.50,2.50,yd_)
+    if ls_ is not None:
+        y10=live_macro.get('yield_10y',0); y3=live_macro.get('yield_3m',0)
+        st.caption(f'\U0001f4e1 **{ls_:.2f}%** (10Y:{y10:.2f}% \u2212 3M:{y3:.2f}%)')
+with r2c3:
+    vix_in=st.slider('CBOE VIX',10.0,80.0,vd_)
+    if lv_: st.caption(f'\U0001f4e1 VIX: **{lv_:.2f}**')
 
-# =========================
-# Executive Tactical Allocation Centre
-# =========================
+cc1,cc2,cc3=st.columns(3)
+with cc1:
+    st.markdown('<div style="background:#F5F5F5;border:1px solid #DDD;border-radius:8px;padding:16px;text-align:center;height:200px;display:flex;flex-direction:column;justify-content:center"><div style="font-size:13px;font-weight:600;color:#555">\U0001f4ca PMI Chart</div><div style="font-size:12px;color:#888;margin-top:8px">No free API. <a href="https://www.ismworld.org" target="_blank" style="color:#1565C0">ISM Reports</a></div></div>',unsafe_allow_html=True)
+with cc2:
+    try:
+        th_=live_macro.get('tnx_hist'); ih_=live_macro.get('irx_hist')
+        if th_ is not None and ih_ is not None:
+            td2=th_[['Close']].rename(columns={'Close':'T'}); td2.index=td2.index.tz_localize(None)
+            id2=ih_[['Close']].rename(columns={'Close':'I'}); id2.index=id2.index.tz_localize(None)
+            sd2=td2.join(id2,how='inner'); sd2['S']=sd2['T']-sd2['I']
+            fy=go.Figure()
+            fy.add_trace(go.Scatter(x=sd2.index,y=sd2['T'],mode='lines',name='10Y',line=dict(color='#1565C0',width=1.5)))
+            fy.add_trace(go.Scatter(x=sd2.index,y=sd2['I'],mode='lines',name='3M',line=dict(color='#E65100',width=1.5)))
+            fy.add_trace(go.Scatter(x=sd2.index,y=sd2['S'],mode='lines',name='Spread',line=dict(color='#7B1FA2',width=1.5,dash='dot')))
+            fy.add_hline(y=0,line_dash='dash',line_color='#D32F2F',line_width=1)
+            fy.update_layout(title=dict(text='US Yields \u2014 10Y vs 3M',font=dict(size=12)),height=200,margin=dict(l=10,r=10,t=30,b=10),showlegend=True,legend=dict(orientation='h',yanchor='bottom',y=1.02,xanchor='right',x=1,font=dict(size=9)),xaxis=dict(showgrid=False),yaxis=dict(showgrid=True,gridcolor='#F0F0F0',ticksuffix='%'),plot_bgcolor='white',paper_bgcolor='white')
+            st.plotly_chart(fy,use_container_width=True,config={'displayModeBar':False})
+    except: st.caption('\u26a0\ufe0f Yield chart unavailable')
+with cc3:
+    try:
+        vh_=live_macro.get('vix_hist')
+        if vh_ is not None:
+            vc=vh_.copy(); vc.index=vc.index.tz_localize(None)
+            fv=go.Figure(); fv.add_trace(go.Scatter(x=vc.index,y=vc['Close'],mode='lines',line=dict(color='#7B1FA2',width=1.5)))
+            fv.add_hline(y=30,line_dash='dash',line_color='#D32F2F',line_width=1,annotation_text='Fear(30)',annotation_position='top left',annotation_font_size=9,annotation_font_color='#D32F2F')
+            fv.update_layout(title=dict(text='VIX \u2014 1Y',font=dict(size=12)),height=200,margin=dict(l=10,r=10,t=30,b=10),showlegend=False,xaxis=dict(showgrid=False),yaxis=dict(showgrid=True,gridcolor='#F0F0F0'),plot_bgcolor='white',paper_bgcolor='white')
+            st.plotly_chart(fv,use_container_width=True,config={'displayModeBar':False})
+    except: st.caption('\u26a0\ufe0f VIX chart unavailable')
+
+ep=pp if use_hist else ipi
+tp=safe_float(tp,ep)
+edd=((ep-tp)/tp)*100 if tp>0 else 0.0
+bma=safe_float(sp['ma_200'],ep)
+pt=pmi_in<50; yt=ys_in<0; mt=ep<bma; vt=vix_in>30
+rsk=sum([pt,yt,mt,vt])
+
+if edd<=-35: azn='STRONG BUY'; zpt='STRONG BUY ZONE'; zs='Generational &mdash; Deploy Maximum Capital'; ze='\U0001f6a8'; zc='#D32F2F'; ztc='#FFF'; pulse=True
+elif edd<=-20: azn='BUY'; zpt='BUY ZONE'; zs='Bear Market &mdash; Scale In'; ze='\U0001f7e2'; zc='#E65100'; ztc='#FFF'; pulse=False
+elif edd<=-10: azn='INITIAL BUY'; zpt='INITIAL BUY ZONE'; zs='Correction &mdash; Nibble Positions'; ze='\U0001f7e1'; zc='#F9A825'; ztc='#1A1A1A'; pulse=False
+elif ep>(1.20*bma) and rsk>=3: azn='STRONG SELL'; zpt='STRONG SELL ZONE'; zs='Bubble &mdash; Maximize Liquidity'; ze='\U0001f534'; zc='#B71C1C'; ztc='#FFF'; pulse=True
+else: azn='HOLD'; zpt='HOLD / DCA ZONE'; zs='Normal &mdash; Maintain DCA'; ze='\u26aa'; zc='#2E7D32'; ztc='#FFF'; pulse=False
+
+if rsk>=3 or edd<=-35: regime='CRISIS'; regime_color='#B71C1C'; regime_emoji='\U0001f534'; regime_label='Maximum contrarian'
+elif rsk>=2 or edd<=-20: regime='RISK-OFF'; regime_color='#E65100'; regime_emoji='\U0001f7e0'; regime_label='Elevated contrarian'
+elif rsk>=1 or edd<=-10: regime='NEUTRAL'; regime_color='#F9A825'; regime_emoji='\U0001f7e1'; regime_label='Selective deploy'
+else: regime='RISK-ON'; regime_color='#2E7D32'; regime_emoji='\U0001f7e2'; regime_label='Standard pace'
+
+dd_score=20 if edd<=-35 else (15 if edd<=-20 else (10 if edd<=-10 else 5))
+vix_score=20 if vix_in>30 else (15 if vix_in>20 else (10 if vix_in>15 else 5))
+pmi_score=20 if pmi_in>55 else (15 if pmi_in>=50 else (10 if pmi_in>=45 else 5))
+trend_score=5 if mt else 15
+if edd<=-20 and mt: trend_score=10
+yield_score=15 if ys_in>0.5 else (10 if ys_in>=0 else 5)
+opp_score=dd_score+vix_score+pmi_score+trend_score+yield_score
+if opp_score>=70: opp_label='High Conviction'; opp_color='#2E7D32'
+elif opp_score>=50: opp_label='Moderate'; opp_color='#E65100'
+else: opp_label='Low'; opp_color='#999'
+confidence_pct=min(99,max(10,opp_score+(rsk*5)))
+
+uc=max(0.0,cash_balance-emergency_buffer); us=srs_balance; ucpf=max(0.0,cpf_oa_balance-20000.0) if preserve_cpf else cpf_oa_balance
+co=0.0;so=0.0;cpfo=0.0
+if azn=='STRONG BUY': co=uc;so=us;cpfo=ucpf
+elif azn=='BUY': co=uc*0.5;so=us*0.75;cpfo=ucpf*0.4
+elif azn=='INITIAL BUY': co=uc*0.2;so=us*0.3;cpfo=ucpf*0.15
+deploy_amount=co+so+cpfo
+avail_capital=uc+us+ucpf
+hold_amount=avail_capital-deploy_amount
+deploy_pct=int((deploy_amount/avail_capital)*100) if avail_capital>0 else 0
+
 st.markdown('---')
-st.markdown('## 🧠 Executive Tactical Allocation Centre')
-st.caption('Always-visible decision engine for deployment sizing, capital pools and current market opportunity zone.')
+if edd<=-35: dbg='#FFCDD2';dbd='#D32F2F';di='\U0001f6a8';dtc='#B71C1C';dl='Generational!'
+elif edd<=-20: dbg='#FFE0B2';dbd='#E65100';di='\u26a0\ufe0f';dtc='#E65100';dl='Deep drawdown!'
+elif edd<=-10: dbg='#FFF9C4';dbd='#F9A825';di='\u26a0\ufe0f';dtc='#F57F17';dl='Correction'
+else: dbg='#E8F5E9';dbd='#2E7D32';di='\u2705';dtc='#2E7D32';dl='Normal'
+if rsk>=3: rbg='#FFCDD2';rbd='#D32F2F';ri='\U0001f6a8';rtc='#B71C1C';rl='CRITICAL!'
+elif rsk>=1: rbg='#FFE0B2';rbd='#E65100';ri='\u26a0\ufe0f';rtc='#E65100';rl='Elevated: '+str(rsk)
+else: rbg='#E8F5E9';rbd='#2E7D32';ri='\u2705';rtc='#2E7D32';rl='All clear'
+psi='\U0001f6a8' if pt else '\u2705'; psc='#D32F2F' if pt else '#2E7D32'; pst='CONTRACTION' if pt else 'OK'
+ysi='\U0001f6a8' if yt else '\u2705'; ysc='#D32F2F' if yt else '#2E7D32'; yst='INVERTED' if yt else 'Normal'
+msi='\U0001f6a8' if mt else '\u2705'; msc='#D32F2F' if mt else '#2E7D32'; mst='BELOW' if mt else 'Above'
+vsi='\U0001f6a8' if vt else '\u2705'; vsc='#D32F2F' if vt else '#2E7D32'; vst='FEAR' if vt else 'Normal'
 
-live_close = selected['live_close']
-current_dd = selected['drawdown']
-ma200 = selected['ma_200']
-zone, zone_colour = classify_zone(current_dd)
-trend_status = 'Above 200D MA' if live_close >= ma200 else 'Below 200D MA'
+mc1,mc2,mc3=st.columns(3)
+with mc1:
+    h='<div style="background:'+dbg+';border-left:6px solid '+dbd+';border-radius:10px;padding:20px;text-align:center">'
+    h+='<div style="font-size:14px;color:#555;font-weight:600">EFFECTIVE DRAWDOWN</div>'
+    h+='<div style="font-size:42px;font-weight:800;color:'+dtc+';margin:8px 0">'+di+' '+f'{edd:.2f}%'+'</div>'
+    h+='<div style="font-size:12px;color:#777">'+dl+'</div><div style="font-size:11px;color:#999;margin-top:6px">vs 52-week high</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
+with mc2:
+    h='<div style="background:'+rbg+';border-left:6px solid '+rbd+';border-radius:10px;padding:20px;text-align:center">'
+    h+='<div style="font-size:14px;color:#555;font-weight:600">MACRO RISK SCORE</div>'
+    h+='<div style="font-size:42px;font-weight:800;color:'+rtc+';margin:8px 0">'+ri+' '+str(rsk)+' / 4</div>'
+    h+='<div style="font-size:12px;color:#777;margin-bottom:12px">'+rl+'</div>'
+    h+='<div style="text-align:left;padding:10px;background:rgba(255,255,255,.7);border-radius:8px">'
+    h+='<div style="font-size:11px;font-weight:700;color:#333;margin-bottom:6px">BREAKDOWN:</div>'
+    h+='<div style="font-size:12px;color:'+psc+'">'+psi+' PMI: '+f'{pmi_in:.1f}'+' \u2014 '+pst+'</div>'
+    h+='<div style="font-size:12px;color:'+ysc+'">'+ysi+' Yield: '+f'{ys_in:.2f}'+' \u2014 '+yst+'</div>'
+    h+='<div style="font-size:12px;color:'+msc+'">'+msi+' 200MA: '+f'{ep:,.0f}'+' vs '+f'{bma:,.0f}'+' \u2014 '+mst+'</div>'
+    h+='<div style="font-size:12px;color:'+vsc+'">'+vsi+' VIX: '+f'{vix_in:.1f}'+' \u2014 '+vst+'</div></div></div>'
+    st.markdown(h,unsafe_allow_html=True)
+with mc3:
+    h='<div style="background:#E3F2FD;border-left:6px solid #1565C0;border-radius:10px;padding:20px;text-align:center">'
+    h+='<div style="font-size:14px;color:#555;font-weight:600">52-WEEK TRAILING HIGH</div>'
+    h+='<div style="font-size:42px;font-weight:800;color:#1565C0;margin:8px 0">\U0001f4ca '+f'{tp:,.2f}'+'</div>'
+    h+='<div style="font-size:12px;color:#777">Peak: '+pds+'</div>'
+    h+='<div style="font-size:11px;color:#aaa;margin-top:8px;padding-top:8px;border-top:1px solid #D0D0D0">ATH: '+f'{ath_val:,.2f}'+' ('+ath_ds+')</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
 
-if current_dd <= -35:
-    deploy_pct = 0.50
-elif current_dd <= -25:
-    deploy_pct = 0.35
-elif current_dd <= -15:
-    deploy_pct = 0.20
-elif current_dd <= -8:
-    deploy_pct = 0.10
-else:
-    deploy_pct = 0.00
+st.markdown('<br>',unsafe_allow_html=True)
+if pulse: pcss='<style>@keyframes zp{0%{box-shadow:0 0 0 0 rgba(211,47,47,.6)}50%{box-shadow:0 0 25px 10px rgba(211,47,47,.3)}100%{box-shadow:0 0 0 0 rgba(211,47,47,.6)}}.zb{animation:zp 2s infinite}</style>'
+else: pcss='<style>.zb{}</style>'
+bh=pcss+'<div class="zb" style="background:linear-gradient(135deg,'+zc+','+zc+'DD);border-radius:16px;padding:30px 40px;text-align:center;border:2px solid '+zc+'">'
+bh+='<div style="font-size:50px;margin-bottom:5px">'+ze+'</div>'
+bh+='<div style="font-size:32px;font-weight:900;color:'+ztc+';margin:10px 0;letter-spacing:2px">'+zpt+'</div>'
+bh+='<div style="font-size:16px;color:'+ztc+';opacity:.9">'+zs+'</div>'
+bh+='<div style="margin-top:15px;display:flex;justify-content:center;gap:30px">'
+bh+='<div style="background:rgba(255,255,255,0.2);border-radius:8px;padding:8px 16px"><div style="font-size:11px;color:'+ztc+';opacity:.7">Regime</div><div style="font-size:16px;font-weight:700;color:'+ztc+'">'+regime_emoji+' '+regime+'</div></div>'
+bh+='<div style="background:rgba(255,255,255,0.2);border-radius:8px;padding:8px 16px"><div style="font-size:11px;color:'+ztc+';opacity:.7">Confidence</div><div style="font-size:16px;font-weight:700;color:'+ztc+'">'+str(confidence_pct)+'%</div></div>'
+bh+='<div style="background:rgba(255,255,255,0.2);border-radius:8px;padding:8px 16px"><div style="font-size:11px;color:'+ztc+';opacity:.7">Deploy</div><div style="font-size:16px;font-weight:700;color:'+ztc+'">'+str(deploy_pct)+'%</div></div>'
+bh+='</div></div>'
+st.markdown(bh,unsafe_allow_html=True)
+st.markdown('<br>',unsafe_allow_html=True)
 
-available_cash = max(cash_balance - emergency_buffer, 0)
-available_srs = srs_balance
-cpf_floor = 20000 if preserve_cpf else 0
-available_cpf = max(cpf_oa_balance - cpf_floor, 0)
-total_available = available_cash + available_srs + available_cpf
-deploy_amount = total_available * deploy_pct
+st.markdown('### \U0001f3af Executive Command Centre')
+ec1,ec2,ec3,ec4=st.columns(4)
+with ec1:
+    h='<div style="background:'+regime_color+';border-radius:12px;padding:20px;text-align:center">'
+    h+='<div style="font-size:12px;color:#FFF;opacity:.8">MARKET REGIME</div>'
+    h+='<div style="font-size:28px;font-weight:900;color:#FFF;margin:8px 0">'+regime_emoji+' '+regime+'</div>'
+    h+='<div style="font-size:11px;color:#FFF;opacity:.7">'+regime_label+'</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
+with ec2:
+    sb='#2E7D32' if opp_score>=70 else ('#E65100' if opp_score>=50 else '#999')
+    h='<div style="background:#F5F5F5;border:3px solid '+sb+';border-radius:12px;padding:20px;text-align:center">'
+    h+='<div style="font-size:12px;color:#555">OPPORTUNITY SCORE</div>'
+    h+='<div style="font-size:36px;font-weight:900;color:'+sb+';margin:8px 0">'+str(opp_score)+' / 100</div>'
+    h+='<div style="font-size:12px;color:'+sb+';font-weight:600">'+opp_label+'</div>'
+    h+='<div style="margin-top:8px;font-size:10px;color:#888">DD:'+str(dd_score)+' VIX:'+str(vix_score)+' PMI:'+str(pmi_score)+' Trend:'+str(trend_score)+' Yield:'+str(yield_score)+'</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
+with ec3:
+    h='<div style="background:#E8F5E9;border:3px solid #2E7D32;border-radius:12px;padding:20px;text-align:center">'
+    h+='<div style="font-size:12px;color:#555">DEPLOY NOW</div>'
+    h+='<div style="font-size:28px;font-weight:900;color:#2E7D32;margin:8px 0">S$'+f'{deploy_amount:,.0f}'+'</div>'
+    h+='<div style="font-size:12px;color:#777">'+str(deploy_pct)+'% of S$'+f'{avail_capital:,.0f}'+'</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
+with ec4:
+    h='<div style="background:#FFF;border:2px solid #DDD;border-radius:12px;padding:20px;text-align:center">'
+    h+='<div style="font-size:12px;color:#555">HOLD / RESERVE</div>'
+    h+='<div style="font-size:28px;font-weight:900;color:#555;margin:8px 0">S$'+f'{hold_amount:,.0f}'+'</div>'
+    h+='<div style="font-size:12px;color:#999">Dry powder</div></div>'
+    st.markdown(h,unsafe_allow_html=True)
 
-c1,c2,c3,c4,c5 = st.columns(5)
-with c1:
-    st.metric('Index Level', f'{live_close:,.0f}')
-with c2:
-    st.metric('Current Drawdown', f'{current_dd:.1f}%')
-with c3:
-    st.metric('Trend', trend_status)
-with c4:
-    st.metric('Action Zone', zone)
-with c5:
-    st.metric('Suggested Deploy', f'S${deploy_amount:,.0f}')
+try:
+    with st.spinner('Ranking ETFs...'): etf_all=fetch_etf_perf()
+    flat_etfs=[]
+    for cat,recs in etf_all.items():
+        for r in recs:
+            if r['1y'] is not None:
+                y1=r['1y']
+                if y1<-20: sc=90+abs(y1)
+                elif y1<0: sc=70+abs(y1)
+                elif y1<20: sc=50+y1
+                else: sc=40+y1*0.3
+                flat_etfs.append({'name':r['name'],'ticker':r['ticker'],'score':round(sc,1),'ret_1y':y1,'cat':cat})
+    flat_etfs.sort(key=lambda x:x['score'],reverse=True)
+    top3=flat_etfs[:3]
+    if top3 and deploy_amount>0:
+        st.markdown('#### \U0001f947 Top 3 Opportunities & Suggested Capital Split')
+        splits=[0.50,0.30,0.20]
+        t3='<table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0"><thead><tr style="background:#F0F2F6;border-bottom:2px solid #DDD">'
+        t3+='<th style="padding:10px">Rank</th><th style="text-align:left;padding:10px">ETF</th><th style="text-align:center;padding:10px">Ticker</th><th style="text-align:center;padding:10px">Score</th><th style="text-align:center;padding:10px">1Y Return</th><th style="text-align:center;padding:10px">Suggested Deploy</th></tr></thead><tbody>'
+        medals=['\U0001f947','\U0001f948','\U0001f949']
+        for i,etf in enumerate(top3):
+            amt=deploy_amount*splits[i]
+            rc='#2E7D32' if etf['ret_1y']>=0 else '#D32F2F'; ar='\u25b2' if etf['ret_1y']>=0 else '\u25bc'
+            act='STRONG BUY' if etf['score']>=80 else 'BUY'; ac='#D32F2F' if act=='STRONG BUY' else '#E65100'
+            yf_link='https://finance.yahoo.com/quote/'+etf['ticker']
+            t3+='<tr style="border-bottom:1px solid #EEE"><td style="padding:10px;text-align:center;font-size:20px">'+medals[i]+'</td>'
+            t3+='<td style="padding:10px;font-weight:600">'+etf['name']+'</td>'
+            t3+='<td style="text-align:center;padding:10px"><a href="'+yf_link+'" target="_blank" style="color:#1565C0;text-decoration:none;font-family:monospace">'+etf['ticker']+'</a></td>'
+            t3+='<td style="text-align:center;padding:10px"><span style="background:'+ac+';color:#FFF;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600">'+str(etf['score'])+'</span></td>'
+            t3+='<td style="text-align:center;padding:10px;color:'+rc+';font-weight:600">'+ar+' '+f"{etf['ret_1y']:.1f}%"+'</td>'
+            t3+='<td style="text-align:center;padding:10px;font-weight:700;color:#2E7D32">S$'+f'{amt:,.0f}'+'</td></tr>'
+        t3+='</tbody></table>'
+        st.markdown(t3,unsafe_allow_html=True)
+except Exception as e: st.caption(f'Top 3 unavailable: {e}')
 
-st.markdown(f"""
-<div style='padding:14px;border-left:6px solid {zone_colour};background:#FAFAFA;border-radius:10px;margin-top:8px'>
-<b>Current tactical interpretation:</b> {sel_idx} is in <b>{zone}</b> territory with a drawdown of <b>{current_dd:.1f}%</b> from its available historical peak. Suggested deployment is based on drawdown severity and capital safeguards.
-</div>
-""", unsafe_allow_html=True)
+with st.expander('\U0001f4ca Opportunity Score Breakdown'):
+    sc_tbl='| Factor | Input | Score |'+chr(10)+'|:---|:---|:---:|'+chr(10)
+    sc_tbl+=f'| Drawdown | {edd:.1f}% | **{dd_score}/20** |'+chr(10)
+    sc_tbl+=f'| VIX | {vix_in:.1f} | **{vix_score}/20** |'+chr(10)
+    sc_tbl+=f'| PMI | {pmi_in:.1f} | **{pmi_score}/20** |'+chr(10)
+    sc_tbl+=f'| Trend | {"Below" if mt else "Above"} 200MA | **{trend_score}/20** |'+chr(10)
+    sc_tbl+=f'| Yield Spread | {ys_in:.2f} | **{yield_score}/20** |'+chr(10)
+    sc_tbl+=f'| **TOTAL** | | **{opp_score}/100** |'+chr(10)
+    st.markdown(sc_tbl)
 
-a1,a2,a3 = st.columns(3)
-with a1:
-    st.markdown('#### 💵 Cash')
-    st.metric('Deploy', f'S${available_cash * deploy_pct:,.0f}')
-    st.caption(f'Available after buffer: S${available_cash:,.0f}')
-with a2:
-    st.markdown('#### 📈 SRS')
-    st.metric('Deploy', f'S${available_srs * deploy_pct:,.0f}')
-    st.caption(f'Available: S${available_srs:,.0f}')
-with a3:
-    st.markdown('#### 🛡️ CPF-OA')
-    st.metric('Deploy', f'S${available_cpf * deploy_pct:,.0f}')
-    st.caption(f'Available after floor: S${available_cpf:,.0f}')
+st.markdown('---')
+st.markdown('### \U0001f4cb Tactical Allocation')
+with st.expander('\U0001f4d0 Allocation Rules'):
+    zd=[('STRONG BUY','\u2264-35%','100%','100%','100%','Generational'),('BUY','\u2264-20%','50%','75%','40%','Scale in'),('INITIAL BUY','\u2264-10%','20%','30%','15%','Nibble'),('HOLD/DCA','Normal','0%','0%','0%','DCA'),('STRONG SELL','Bubble','0%','0%','0%','Pause')]
+    tb='| Zone | Trigger | Cash | SRS | CPF-OA | Action |'+chr(10)+'|:---|:---|:---:|:---:|:---:|:---|'+chr(10)
+    for z,t,c,s,p,r in zd:
+        ac=(z=='STRONG BUY' and azn=='STRONG BUY') or (z=='BUY' and azn=='BUY') or (z=='INITIAL BUY' and azn=='INITIAL BUY') or (z=='HOLD/DCA' and azn=='HOLD') or (z=='STRONG SELL' and azn=='STRONG SELL')
+        if ac: tb+=f'| \U0001f449 **{z}** | **{t}** | **{c}** | **{s}** | **{p}** | **{r}** |'+chr(10)
+        else: tb+=f'| {z} | {t} | {c} | {s} | {p} | {r} |'+chr(10)
+    st.markdown(tb)
+
+if azn=='STRONG SELL': st.warning('\u26a0\ufe0f Bubble. Pausing.')
+elif azn=='HOLD': st.info('\u2139\ufe0f Normal. Maintain DCA.')
+d1,d2,d3=st.columns(3)
+with d1: st.markdown('#### \U0001f4b5 Cash'); st.metric('Deploy',f'S${co:,.2f}'); st.caption(f'Left: S${cash_balance-co:,.2f}')
+with d2: st.markdown('#### \U0001f4c8 SRS'); st.metric('Deploy',f'S${so:,.2f}'); st.caption(f'Left: S${srs_balance-so:,.2f}')
+with d3: st.markdown('#### \U0001f6e1\ufe0f CPF-OA'); st.metric('Deploy',f'S${cpfo:,.2f}'); st.caption(f'Left: S${cpf_oa_balance-cpfo:,.2f}')
+st.markdown('---')
+st.subheader(f'Total Deploy: :green[S${deploy_amount:,.2f}]')
+
+
+st.markdown('---')
 
 # =========================
-# Market Conditions & Scenario Modeler
+# CONSOLIDATED LOWER DASHBOARD
 # =========================
-with st.expander('🌦️ MARKET CONDITIONS & SCENARIO MODELER', expanded=False):
-    st.markdown("""
-    <h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Scenario Modeler</h1>
-    <p style='font-size:16px;color:gray;margin-top:0'>Scenario-based risk adjustment for deployment planning.</p>
-    """, unsafe_allow_html=True)
 
-    s1,s2,s3,s4 = st.columns(4)
-    with s1:
-        vix_assumption = st.slider('VIX Assumption', 10, 60, 22)
-    with s2:
-        pmi_assumption = st.slider('PMI Assumption', 35, 60, 50)
-    with s3:
-        yield_assumption = st.slider('10Y Yield Assumption (%)', 1.0, 7.0, 4.0, 0.1)
-    with s4:
-        scenario_dd = st.slider('Scenario Drawdown (%)', 0, 60, int(abs(current_dd)))
-
-    risk_score = 0
-    risk_score += min(max((vix_assumption - 15) * 1.5, 0), 40)
-    risk_score += min(max((50 - pmi_assumption) * 2, 0), 30)
-    risk_score += min(max((yield_assumption - 3.5) * 8, 0), 20)
-    risk_score += min(max(scenario_dd * 0.5, 0), 30)
-    risk_score = min(risk_score, 100)
-
-    suggested_scenario_deploy = max(0, min(50, 50 - risk_score * 0.35))
-    m1,m2,m3 = st.columns(3)
-    with m1:
-        st.metric('Scenario Risk Score', f'{risk_score:.0f}/100')
-    with m2:
-        st.metric('Scenario Deploy Cap', f'{suggested_scenario_deploy:.0f}%')
-    with m3:
-        st.metric('Scenario Action', 'Preserve Cash' if risk_score >= 70 else ('Partial Deploy' if risk_score >= 40 else 'Accumulate'))
-
-# =========================
-# Market Performance & ETF Tracker
-# =========================
 with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=False):
     st.markdown("""
     <h1 style='font-size:34px;margin-bottom:0'>📊 Market Performance & ETF Tracker</h1>
-    <p style='font-size:16px;color:gray;margin-top:0'>Global indices, ETFs, benchmarks and tactical opportunity tracking.</p>
+    <p style='font-size:16px;color:gray;margin-top:0'>Global indices, ETFs, benchmarks and tactical opportunity tracking</p>
     """, unsafe_allow_html=True)
 
     def bpt(recs):
@@ -344,68 +435,104 @@ with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=False):
 
     try:
         with st.spinner('Fetching benchmarks...'):
-            bd = fetch_bench()
-        for group, recs in bd.items():
-            st.markdown(f'### {group}')
-            st.markdown(bpt(recs), unsafe_allow_html=True)
+            bd=fetch_bench()
+        if bd:
+            for gn,recs in bd.items():
+                ic='🌍' if 'Indic' in gn else '🛢️'
+                st.markdown('<div style="font-size:22px;font-weight:800;margin:18px 0 8px">'+ic+' '+gn+'</div>', unsafe_allow_html=True)
+                st.markdown(bpt(recs), unsafe_allow_html=True)
     except Exception as e:
         st.warning(f'Benchmarks unavailable: {e}')
 
     try:
         with st.spinner('Fetching ETFs...'):
-            ed = fetch_etf_perf()
-        display_order = []
-        if sel_idx in ETF_UNIVERSE:
-            display_order.append(sel_idx)
-        for ix in ETF_UNIVERSE:
-            if ix not in display_order:
-                display_order.append(ix)
-        for ix in display_order:
-            if ix not in ed:
-                continue
-            badge = ' ✅ SELECTED' if ix == sel_idx else ''
-            st.markdown(f"### {ETF_UNIVERSE[ix]['label']}{badge}")
-            st.markdown(bpt(ed[ix]), unsafe_allow_html=True)
+            ed=fetch_etf_perf()
+        if ed:
+            st.markdown('<div style="font-size:24px;font-weight:800;margin:24px 0 8px">📈 Investable ETFs</div>', unsafe_allow_html=True)
+            display_order=[]
+            if sel_idx in ETF_UNIVERSE:
+                display_order.append(sel_idx)
+            for ix in ETF_UNIVERSE:
+                if ix not in display_order:
+                    display_order.append(ix)
+            for ix in display_order:
+                if ix not in ed:
+                    continue
+                gi=ETF_UNIVERSE[ix]
+                badge=' <span style="background:#E8F5E9;color:#2E7D32;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700">✅ SELECTED</span>' if ix==sel_idx else ''
+                st.markdown('<div style="font-size:20px;font-weight:800;margin:16px 0 8px">'+gi['label']+badge+'</div>', unsafe_allow_html=True)
+                st.markdown(bpt(ed[ix]), unsafe_allow_html=True)
     except Exception as e:
         st.warning(f'ETFs unavailable: {e}')
 
-# =========================
-# Crash & Recovery Analytics
-# =========================
 with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
     st.markdown("""
     <h1 style='font-size:34px;margin-bottom:0'>🏆 Crash & Recovery Analytics</h1>
-    <p style='font-size:16px;color:gray;margin-top:0'>Historical drawdown analytics, event filtering, selected-event deployment outcome and market cycle education.</p>
+    <p style='font-size:16px;color:gray;margin-top:0'>Historical drawdown analytics, crash deployment validation and recovery analysis</p>
     """, unsafe_allow_html=True)
 
-    bt_c1,bt_c2,bt_c3 = st.columns(3)
+    bt_c1,bt_c2,bt_c3=st.columns(3)
     with bt_c1:
-        bt_amount = st.number_input('Investment per selected crash (S$)', min_value=1000, value=10000, step=1000)
+        bt_amount=st.number_input('Investment per crash ($)',min_value=1000,value=10000,step=1000)
     with bt_c2:
-        bt_min_date = ud.index.min().to_pydatetime().date()
-        bt_max_date = ud.index.max().to_pydatetime().date()
-        bt_start = st.date_input('Start backtest from', value=bt_min_date, min_value=bt_min_date, max_value=bt_max_date)
+        bt_min_date=ud.index.min().to_pydatetime().date()
+        bt_max_date=ud.index.max().to_pydatetime().date()
+        bt_start=st.date_input('Start backtest from',value=bt_min_date,min_value=bt_min_date,max_value=bt_max_date)
     with bt_c3:
-        bt_threshold = st.slider('Min drawdown threshold (%)', min_value=5, max_value=50, value=10, step=5)
+        bt_threshold=st.slider('Min drawdown threshold (%)',min_value=5,max_value=50,value=10,step=5)
 
     try:
-        bt = ud.loc[pd.Timestamp(bt_start):].copy()
-        bt['rm'] = bt['Close'].rolling(252, min_periods=1).max()
-        bt['dd_pct'] = ((bt['Close'] - bt['rm']) / bt['rm']) * 100
-        lc_ = safe_float(bt['Close'].iloc[-1])
+        bt=ud.loc[pd.Timestamp(bt_start):].copy()
+        bt['rm']=bt['Close'].rolling(252,min_periods=1).max()
+        bt['dd_pct']=((bt['Close']-bt['rm'])/bt['rm'])*100
+        lc_=float(bt['Close'].iloc[-1])
 
-        troughs = build_drawdown_events(bt, bt_threshold, bt_amount, lc_)
+        troughs=[]
+        in_dd=False
+        ep_s=None
 
-        if not troughs:
-            st.info('No drawdown events found with selected parameters.')
-        else:
-            years_span = max((bt.index.max() - bt.index.min()).days / 365.25, 1)
-            dd10 = len([t for t in troughs if -20 < t['dd'] <= -10])
-            dd20 = len([t for t in troughs if -30 < t['dd'] <= -20])
-            dd30 = len([t for t in troughs if t['dd'] <= -30])
+        for i in range(len(bt)):
+            dv=bt['dd_pct'].iloc[i]
+            if dv<=-bt_threshold and not in_dd:
+                in_dd=True
+                ep_s=i
+            elif dv>-5 and in_dd:
+                in_dd=False
+                episode=bt.iloc[ep_s:i]
+                ti=episode['dd_pct'].idxmin()
+                tr=bt.loc[ti]
+                if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
+                    d_=float(tr['dd_pct'])
+                    p_=float(tr['Close'])
+                    pk_=float(tr['rm'])
+                    lkb=bt.loc[:ti]
+                    lk252=lkb.iloc[max(0,len(lkb)-252):]
+                    pk_dt=lk252['Close'].idxmax()
+                    z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
+                    troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
 
-            st.markdown('### 📚 Full Market Cycle Statistics')
-            c1,c2,c3 = st.columns(3)
+        if in_dd and ep_s is not None:
+            episode=bt.iloc[ep_s:]
+            ti=episode['dd_pct'].idxmin()
+            tr=bt.loc[ti]
+            if len(troughs)==0 or (ti-troughs[-1]['date']).days>=60:
+                d_=float(tr['dd_pct'])
+                p_=float(tr['Close'])
+                pk_=float(tr['rm'])
+                lkb=bt.loc[:ti]
+                lk252=lkb.iloc[max(0,len(lkb)-252):]
+                pk_dt=lk252['Close'].idxmax()
+                z_='STRONG BUY' if d_<=-35 else ('BUY' if d_<=-20 else 'INITIAL BUY')
+                troughs.append({'date':ti,'price':p_,'dd':d_,'zone':z_,'cv':bt_amount*(lc_/p_),'ret':((lc_/p_)-1)*100,'peak':pk_,'peak_dt':pk_dt})
+
+        if troughs:
+            years_span=max((bt.index.max()-bt.index.min()).days/365.25,1)
+            dd10=len([t for t in troughs if -20<t['dd']<=-10])
+            dd20=len([t for t in troughs if -30<t['dd']<=-20])
+            dd30=len([t for t in troughs if t['dd']<=-30])
+
+            st.markdown('### 📚 Market Cycle Statistics')
+            c1,c2,c3=st.columns(3)
             with c1:
                 st.info(f"📉 10–20% corrections historically occur every ~{round(years_span/dd10,1) if dd10 else 'N/A'} years")
             with c2:
@@ -413,16 +540,16 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
             with c3:
                 st.error(f"🔥 30%+ crashes historically occur every ~{round(years_span/dd30,1) if dd30 else 'N/A'} years")
 
-            total_deployed = len(troughs) * bt_amount
-            total_value_today = sum(t['cv'] for t in troughs)
-            aggregate_return = ((total_value_today - total_deployed) / total_deployed) * 100 if total_deployed else 0
+            ti_=len(troughs)*bt_amount
+            tc_=sum(t['cv'] for t in troughs)
+            tr_=((tc_-ti_)/ti_)*100
 
-            st.markdown('### 📊 Executive Crash Summary')
-            k1,k2,k3,k4,k5 = st.columns(5)
+            st.markdown('### 📊 Executive Summary')
+            k1,k2,k3,k4,k5=st.columns(5)
             with k1:
                 st.metric('Crash Events', len(troughs))
             with k2:
-                st.metric('Success Rate', f"{sum(1 for t in troughs if t['ret'] > 0) / len(troughs) * 100:.0f}%")
+                st.metric('Success Rate', f"{sum(1 for t in troughs if t['ret']>0)/len(troughs)*100:.0f}%")
             with k3:
                 st.metric('Avg Recovery', f"{np.mean([t['ret'] for t in troughs]):.1f}%")
             with k4:
@@ -430,16 +557,16 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
             with k5:
                 st.metric('Current Drawdown', f"{bt['dd_pct'].iloc[-1]:.1f}%")
 
-            event_df = pd.DataFrame([
+            st.markdown('### 🔍 Interactive Event Explorer')
+            event_df=pd.DataFrame([
                 {
-                    'Peak Date': t['peak_dt'].strftime('%Y-%m-%d'),
-                    'Peak Index': round(t['peak'], 0),
-                    'Trough Date': t['date'].strftime('%Y-%m-%d'),
-                    'Trough Index': round(t['price'], 0),
-                    'Drawdown %': round(t['dd'], 1),
-                    'Recovery Return %': round(t['ret'], 1),
-                    'Zone': t['zone'],
-                    'Value Today From Selected Deployment': round(t['cv'], 0)
+                    'Peak Date':t['peak_dt'].strftime('%Y-%m-%d'),
+                    'Peak Index':round(t['peak'],0),
+                    'Trough Date':t['date'].strftime('%Y-%m-%d'),
+                    'Trough Index':round(t['price'],0),
+                    'Drawdown %':round(t['dd'],1),
+                    'Recovery Return %':round(t['ret'],1),
+                    'Zone':t['zone']
                 }
                 for t in troughs
             ])
@@ -447,44 +574,29 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
             def sev_bucket(v):
                 if v <= -30:
                     return '30%+'
-                if v <= -20:
+                elif v <= -20:
                     return '20-30%'
                 return '10-20%'
 
-            event_df['Severity'] = event_df['Drawdown %'].apply(sev_bucket)
+            event_df['Severity']=event_df['Drawdown %'].apply(sev_bucket)
 
-            st.markdown('### 🔍 Interactive Event Explorer')
-            f1,f2 = st.columns(2)
+            f1,f2=st.columns(2)
             with f1:
-                severity_filter = st.multiselect('Severity filters', ['10-20%','20-30%','30%+'], default=['10-20%','20-30%','30%+'])
+                severity_filter=st.multiselect('Severity filters',['10-20%','20-30%','30%+'],default=['10-20%','20-30%','30%+'])
             with f2:
-                zone_filter = st.multiselect('Buy Zone filters', ['INITIAL BUY','BUY','STRONG BUY'], default=['INITIAL BUY','BUY','STRONG BUY'])
+                zone_filter=st.multiselect('Buy Zone filters',['INITIAL BUY','BUY','STRONG BUY'],default=['INITIAL BUY','BUY','STRONG BUY'])
 
-            filtered_df = event_df[event_df['Severity'].isin(severity_filter) & event_df['Zone'].isin(zone_filter)].copy()
+            filtered_df=event_df[event_df['Severity'].isin(severity_filter) & event_df['Zone'].isin(zone_filter)].copy()
+            st.markdown('#### 📉 Filtered Event Table')
+            st.dataframe(filtered_df,use_container_width=True,hide_index=True)
 
-            st.markdown('#### 🔎 Filtered Event Statistics')
-            if filtered_df.empty:
-                st.info('No events match the selected filters.')
-            else:
-                fs1,fs2,fs3,fs4 = st.columns(4)
-                with fs1:
-                    st.metric('Filtered Events', len(filtered_df))
-                with fs2:
-                    st.metric('Avg Drawdown', f"{filtered_df['Drawdown %'].mean():.1f}%")
-                with fs3:
-                    st.metric('Avg Recovery', f"{filtered_df['Recovery Return %'].mean():.1f}%")
-                with fs4:
-                    st.metric('Best Recovery', f"{filtered_df['Recovery Return %'].max():.1f}%")
-
-                st.markdown('#### 📉 Filtered Event Table')
-                st.dataframe(filtered_df, use_container_width=True, hide_index=True)
-
-                event_options = [f"{r['Peak Date']} → {r['Trough Date']} ({r['Drawdown %']}%)" for _, r in filtered_df.iterrows()]
-                selected_event = st.selectbox('Historical Crash Explorer', event_options)
-                selected_row = filtered_df.iloc[event_options.index(selected_event)]
+            if not filtered_df.empty:
+                event_options=[f"{r['Peak Date']} → {r['Trough Date']} ({r['Drawdown %']}%)" for _,r in filtered_df.iterrows()]
+                selected_event=st.selectbox('Historical Crash Explorer',event_options)
+                selected_row=filtered_df.iloc[event_options.index(selected_event)]
 
                 st.markdown('#### 📊 Detailed Event Breakdown')
-                d1,d2,d3,d4 = st.columns(4)
+                d1,d2,d3,d4=st.columns(4)
                 with d1:
                     st.metric('Peak Index', f"{selected_row['Peak Index']:,.0f}")
                 with d2:
@@ -494,76 +606,43 @@ with st.expander('🏆 CRASH & RECOVERY ANALYTICS', expanded=False):
                 with d4:
                     st.metric('Recovery Return', f"{selected_row['Recovery Return %']:.1f}%")
 
-                peak_date = pd.Timestamp(selected_row['Peak Date'])
-                trough_date = pd.Timestamp(selected_row['Trough Date'])
-                days_to_trough = max((trough_date - peak_date).days, 0)
-                if days_to_trough <= 90:
-                    crash_speed = 'Fast crash'
-                elif days_to_trough <= 365:
-                    crash_speed = 'Medium-speed bear market'
-                else:
-                    crash_speed = 'Slow grinding bear market'
-
-                st.markdown('#### 🧭 Pre-Crash Context')
-                st.info(
-                    f"Before this drawdown, {sel_idx} peaked at approximately {selected_row['Peak Index']:,.0f} on {selected_row['Peak Date']}. "
-                    f"The index then declined to approximately {selected_row['Trough Index']:,.0f} by {selected_row['Trough Date']}, "
-                    f"a drawdown of {selected_row['Drawdown %']:.1f}% over about {days_to_trough} days. "
-                    f"This was classified as a {crash_speed} and entered the {selected_row['Zone']} zone based on drawdown severity."
-                )
-
-                st.markdown('#### 💰 Selected Event Deployment Outcome')
-                selected_value_today = safe_float(selected_row['Value Today From Selected Deployment'])
-                selected_return = safe_float(selected_row['Recovery Return %'])
-                o1,o2,o3,o4 = st.columns(4)
-                with o1:
-                    st.metric('Deployment Amount', f'S${bt_amount:,.0f}')
-                with o2:
-                    st.metric('Entry Level', f"{selected_row['Trough Index']:,.0f}")
-                with o3:
-                    st.metric('Value Today', f'S${selected_value_today:,.0f}')
-                with o4:
-                    st.metric('Return Since Trough', f'{selected_return:.1f}%')
-
-                chart_start = peak_date
-                chart_end = trough_date
-                chart_df = bt.loc[chart_start:chart_end].copy()
+                chart_start=pd.Timestamp(selected_row['Peak Date'])
+                chart_end=pd.Timestamp(selected_row['Trough Date'])
+                chart_df=bt.loc[chart_start:chart_end].copy()
                 if not chart_df.empty:
-                    st.markdown('#### 📉 Mini Historical Crash Chart')
-                    fig = go.Figure()
-                    fig.add_trace(go.Scatter(
-                        x=chart_df.index,
-                        y=chart_df['Close'],
-                        mode='lines',
-                        line=dict(color='#D32F2F', width=3),
-                        name='Peak → Trough Path'
-                    ))
-                    fig.add_trace(go.Scatter(
-                        x=[chart_start], y=[selected_row['Peak Index']], mode='markers+text',
-                        marker=dict(color='#555', size=10), text=['Peak'], textposition='top center', name='Peak'
-                    ))
-                    fig.add_trace(go.Scatter(
-                        x=[chart_end], y=[selected_row['Trough Index']], mode='markers+text',
-                        marker=dict(color='#D32F2F', size=10), text=['Trough'], textposition='bottom center', name='Trough'
-                    ))
-                    fig.update_layout(
-                        height=340,
-                        margin=dict(l=10,r=10,t=40,b=10),
-                        title='Mini Historical Crash Chart: Peak → Trough',
-                        plot_bgcolor='white',
-                        paper_bgcolor='white',
-                        xaxis_title='Date',
-                        yaxis_title='Index Level',
-                        showlegend=False
-                    )
-                    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar':False})
+                    fig=go.Figure()
+                    fig.add_trace(go.Scatter(x=chart_df.index,y=chart_df['Close'],mode='lines',line=dict(color='#D32F2F',width=3),name='Crash Path'))
+                    fig.update_layout(height=330,margin=dict(l=10,r=10,t=40,b=10),title='Mini Historical Crash Chart: Peak → Trough',plot_bgcolor='white',paper_bgcolor='white',xaxis_title='Date',yaxis_title='Index Level',showlegend=False)
+                    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+            else:
+                st.info('No events match the selected filters.')
 
-            st.info('📌 Historical insight: severe drawdowns have historically produced stronger forward return potential, but recovery timing varies materially across cycles. This section is educational and does not guarantee future outcomes.')
-            st.download_button('⬇️ Export Crash Analytics CSV', event_df.to_csv(index=False), file_name='crash_recovery_analytics.csv', mime='text/csv')
+            st.markdown('### ⚖️ Compact DCA vs Crash Buying')
+            dca_dates=pd.date_range(bt.index.min(),bt.index.max(),freq='QS')
+            dca_units=0
+            for d in dca_dates:
+                nearest=bt.index[bt.index.get_indexer([d],method='nearest')[0]]
+                dca_units += bt_amount/float(bt.loc[nearest]['Close'])
+            dca_total=len(dca_dates)*bt_amount
+            dca_value=dca_units*lc_
+            dca_ret=((dca_value-dca_total)/dca_total)*100 if dca_total else 0
 
+            dc1,dc2=st.columns(2)
+            with dc1:
+                st.metric('Crash Buying Return', f'{tr_:.1f}%')
+            with dc2:
+                st.metric('Quarterly DCA Return', f'{dca_ret:.1f}%')
+            winner='Crash Buying' if tr_>dca_ret else 'Quarterly DCA'
+            st.success(f'🏆 {winner} historically delivered stronger returns for {sel_idx} based on available historical data.')
+            st.info('📌 Severe drawdowns historically generated stronger forward returns, though recovery periods varied materially across cycles. Past performance does not guarantee future results.')
+
+            st.download_button('⬇️ Export Crash Analytics CSV',event_df.to_csv(index=False),file_name='crash_recovery_analytics.csv',mime='text/csv')
+        else:
+            st.info('No drawdown events found with selected parameters.')
     except Exception as e:
         st.warning(f'Crash analytics unavailable: {e}')
 
+from datetime import datetime
 st.markdown('---')
 st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
 st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed advisor.')
