@@ -11,10 +11,10 @@ st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", ini
 
 st.markdown("""
 <style>
-.block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
+.block-container {padding-top: 1.1rem; padding-bottom: 2rem;}
 [data-testid="stMetric"] {background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; padding:14px 16px; min-height:112px; overflow-wrap:anywhere;}
 [data-testid="stMetricLabel"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.2 !important; color:#6B7280 !important;}
-[data-testid="stMetricValue"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.1 !important; font-size:1.75rem !important;}
+[data-testid="stMetricValue"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.08 !important; font-size:1.72rem !important;}
 .small-note {font-size:0.88rem;color:#6B7280;line-height:1.35;margin-top:0.25rem;}
 .section-card {padding:16px;border:1px solid #E5E7EB;border-radius:14px;background:#FAFAFA;margin:10px 0 16px 0;}
 .alert-card {padding:18px;border-radius:16px;margin:10px 0 18px 0;}
@@ -22,7 +22,9 @@ st.markdown("""
 .alert-watch {background:#FEF3C7;border:1px solid #F59E0B;color:#92400E;}
 .alert-warning {background:#FFEDD5;border:1px solid #F97316;color:#9A3412;}
 .alert-risk {background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;}
-.table-wrap {overflow-x:auto;}
+.risk-row {padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;}
+.risk-label {font-size:0.95rem;color:#374151;line-height:1.25;}
+.risk-value {font-size:0.95rem;font-weight:700;white-space:nowrap;}
 </style>
 """, unsafe_allow_html=True)
 
@@ -201,15 +203,33 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
     with c: st.metric("Latest PMI", f"{latest_pmi:.1f}")
     with d: st.metric("Current Drawdown", f"{dd:.1f}%")
     with e: st.metric("Live Risk Score", f"{live_score:.0f}/100")
-    st.markdown("#### 📡 Live Trigger Monitor")
-    trig=pd.DataFrame([
-        {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No"},
-        {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No"},
-        {"Trigger":"PMI < 50","Status":"Yes" if latest_pmi<50 else "No"},
-        {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No"},
-        {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No"},
-    ])
-    st.dataframe(trig,use_container_width=True,hide_index=True)
+    left,right=st.columns([1,1])
+    with left:
+        st.markdown("#### 📡 Live Trigger Monitor")
+        trig=pd.DataFrame([
+            {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No","Detail":"Volatility warning zone"},
+            {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No","Detail":"10Y minus 13W proxy"},
+            {"Trigger":"PMI < 50","Status":"Yes" if latest_pmi<50 else "No","Detail":"Contraction threshold"},
+            {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No","Detail":"Correction threshold"},
+            {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No","Detail":"Trend deterioration"},
+        ])
+        st.dataframe(trig,use_container_width=True,hide_index=True)
+    with right:
+        st.markdown("#### 🧮 Live Risk Score Engine")
+        st.markdown(f"<div class='risk-row'><span class='risk-label'>VIX Score</span><span class='risk-value'>{vix_score:.0f} / 30</span></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='risk-row'><span class='risk-label'>Yield Curve Score</span><span class='risk-value'>{curve_score:.0f} / 20</span></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='risk-row'><span class='risk-label'>PMI Score</span><span class='risk-value'>{pmi_score:.0f} / 20</span></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='risk-row'><span class='risk-label'>Drawdown Score</span><span class='risk-value'>{dd_score:.0f} / 25</span></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='risk-row'><span class='risk-label'>Trend Score</span><span class='risk-value'>{trend_score:.0f} / 15</span></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
+    with st.expander("🧪 What-if Scenario Override", expanded=False):
+        st.caption("Optional manual stress test. This does not replace the live alert.")
+        w1,w2,w3,w4=st.columns(4)
+        with w1: vix_s=st.slider("Override VIX",10,60,int(vix if vix else 20))
+        with w2: pmi_s=st.slider("Override PMI",35,60,int(latest_pmi))
+        with w3: curve_s=st.slider("Override 10Y-13W Spread",-2.0,3.0,float(curve_spread if curve_spread is not None else 0.5),0.1)
+        with w4: dd_s=st.slider("Override Drawdown (%)",0,60,int(abs(dd)))
+        st.info("Simulation output only: use this to stress-test assumptions, not as the live market alert.")
 
 with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>📊 Market Performance & ETF Tracker</h1>",unsafe_allow_html=True)
