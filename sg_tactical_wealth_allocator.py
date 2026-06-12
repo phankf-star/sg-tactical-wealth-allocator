@@ -9,7 +9,12 @@ from datetime import datetime
 
 st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="collapsed")
 
-AMBER="#F59E0B"; AMBER_BG="#FEF3C7"; AMBER_TEXT="#92400E"; BLUE="#2563EB"; GREEN="#16A34A"; ORANGE="#F97316"; RED="#EF4444"; RED_BG="#FEE2E2"; SLATE="#64748B"; GREY_BORDER="#E5E7EB"; GREY_TEXT="#6B7280"
+# =========================
+# Colour palette / CSS
+# =========================
+AMBER="#F59E0B"; AMBER_BG="#FEF3C7"; AMBER_TEXT="#92400E"
+BLUE="#2563EB"; GREEN="#16A34A"; ORANGE="#F97316"; RED="#EF4444"; RED_BG="#FEE2E2"
+SLATE="#64748B"; GREY_BORDER="#E5E7EB"; GREY_TEXT="#6B7280"
 
 st.markdown(f"""
 <style>
@@ -29,8 +34,6 @@ st.markdown(f"""
 .alert-watch {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};}}
 .alert-warning {{background:#FFEDD5;border:1px solid {ORANGE};color:#9A3412;}}
 .alert-risk {{background:{RED_BG};border:1px solid {RED};color:#991B1B;}}
-.decision-banner {{padding:18px 20px;border-radius:18px;background:{AMBER_BG};border:2px solid {AMBER};color:{AMBER_TEXT};margin:16px 0 18px 0;}}
-.decision-chip {{display:inline-block;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid {AMBER};margin:4px 6px 4px 0;font-weight:700;color:{AMBER_TEXT};}}
 .col-card {{background:#FFFFFF;border:1px solid {GREY_BORDER};border-radius:16px;padding:14px 16px;min-height:126px;position:relative;overflow:hidden;}}
 .col-card:before {{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--accent);}}
 .col-card-title {{font-size:0.88rem;color:{GREY_TEXT};margin-left:12px;line-height:1.2;}}
@@ -41,23 +44,57 @@ st.markdown(f"""
 """, unsafe_allow_html=True)
 
 st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator")
-st.caption("Singapore wealth allocation dashboard with tactical allocation, market-specific PMI, live risk monitoring, staged deployment and crash-recovery analytics.")
+st.caption("Singapore wealth allocation dashboard with market-specific PMI, live risk monitoring, staged deployment and crash-recovery analytics.")
 
-INDEX_TICKERS={"S&P 500 (US Market Core)":"^GSPC","Nasdaq 100 (Tech Growth)":"^IXIC","Straits Times Index (SG Value/REITs)":"^STI","Hang Seng Index (HK Cyclical/Beta)":"^HSI"}
-DISPLAY_NAME={"S&P 500 (US Market Core)":"S&P 500","Nasdaq 100 (Tech Growth)":"Nasdaq 100","Straits Times Index (SG Value/REITs)":"Straits Times Index","Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index"}
+# =========================
+# Static mappings
+# =========================
+INDEX_TICKERS={
+    "S&P 500 (US Market Core)":"^GSPC",
+    "Nasdaq 100 (Tech Growth)":"^IXIC",
+    "Straits Times Index (SG Value/REITs)":"^STI",
+    "Hang Seng Index (HK Cyclical/Beta)":"^HSI",
+}
+DISPLAY_NAME={
+    "S&P 500 (US Market Core)":"S&P 500",
+    "Nasdaq 100 (Tech Growth)":"Nasdaq 100",
+    "Straits Times Index (SG Value/REITs)":"Straits Times Index",
+    "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
+}
 PMI_PROXY_MAP={
-"S&P 500 (US Market Core)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
-"Nasdaq 100 (Tech Growth)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
-"Hang Seng Index (HK Cyclical/Beta)":{"label":"China PMI","region":"China / Hong Kong proxy","source":"Caixin / RatingDog / S&P Global / economic calendar","default":51.5},
-"Straits Times Index (SG Value/REITs)":{"label":"Singapore PMI","region":"Singapore","source":"SIPMM / S&P Global / economic calendar","default":51.0}}
+    "S&P 500 (US Market Core)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
+    "Nasdaq 100 (Tech Growth)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
+    "Hang Seng Index (HK Cyclical/Beta)":{"label":"China PMI","region":"China / Hong Kong proxy","source":"Caixin / RatingDog / S&P Global / economic calendar","default":51.5},
+    "Straits Times Index (SG Value/REITs)":{"label":"Singapore PMI","region":"Singapore","source":"SIPMM / S&P Global / economic calendar","default":51.0},
+}
 PMI_FALLBACK={"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.5}
-BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
-ETF_UNIVERSE={"Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},"Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},"Nasdaq 100 (Tech Growth)":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},"S&P 500 (US Market Core)":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]}}
+BENCHMARK_TICKERS={
+    "Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],
+    "Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]
+}
+ETF_UNIVERSE={
+"Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
+"Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
+"Nasdaq 100 (Tech Growth)":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},
+"S&P 500 (US Market Core)":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]},
+"AI & Technology":{"label":"🤖 AI & Technology","etfs":[("AI basket","iShares AI Innovation","BAI","AI-themed exposure"),("Technology basket","Global X AI & Tech","AIQ","AI and technology exposure"),("Robotics satellite","Global X Robotics & AI","BOTZ","Robotics and AI sensitivity")]},
+"Semiconductors":{"label":"💡 Semiconductors","etfs":[("Semiconductor core","iShares Semiconductor","SOXX","Semiconductor exposure"),("Semiconductor satellite","VanEck Semiconductor","SMH","Semiconductor leaders exposure")]},
+"China Internet":{"label":"🇨🇳 China Internet","etfs":[("China internet satellite","KraneShares China Internet","KWEB","China internet exposure")]},
+"Emerging Markets":{"label":"🌏 Emerging Markets","etfs":[("EM core","iShares MSCI EM","EEM","Emerging market exposure")]},
+"US REITs":{"label":"🏠 US REITs","etfs":[("REIT exposure","Vanguard Real Estate","VNQ","US real estate exposure")]},
+"Dividend":{"label":"💸 Dividend","etfs":[("Dividend exposure","Schwab US Dividend","SCHD","US dividend quality exposure")]},
+"Global":{"label":"🌍 Global","etfs":[("Global core","Vanguard Total World","VT","Global equity exposure")]},
+"Bonds":{"label":"📉 Bonds","etfs":[("Duration hedge","iShares 20+ Year Treasury","TLT","Long-duration Treasury exposure")]} }
 
+# =========================
+# Helpers
+# =========================
 def safe_float(v,fb=0.0):
     try:
-        x=float(v); return fb if math.isnan(x) or math.isinf(x) else x
-    except Exception: return fb
+        x=float(v)
+        return fb if math.isnan(x) or math.isinf(x) else x
+    except Exception:
+        return fb
 
 def tz_naive(df):
     df=df.copy(); df.index=pd.to_datetime(df.index)
@@ -89,7 +126,8 @@ def live_macro_data():
             df=hist(ticker,"2025-01-01")
             if df.empty: return None
             return safe_float(df.Close.iloc[-1])
-        except Exception: return None
+        except Exception:
+            return None
     return {"vix":last_close("^VIX"),"tnx":last_close("^TNX"),"irx":last_close("^IRX")}
 
 @st.cache_data(ttl=14400)
@@ -100,14 +138,17 @@ def perf(items):
         else: name,ticker=item[:2]
         try:
             df=hist(ticker,"2018-01-01")
-            if df.empty: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None}); continue
+            if df.empty:
+                rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None}); continue
             last=safe_float(df.Close.iloc[-1])
             def r(days):
                 if len(df)<=days: return None
                 s=safe_float(df.Close.iloc[-days]); return round(((last/s)-1)*100,1) if s else None
             rec.append({"Name":name,"Ticker":ticker,"Price":round(last,2),"1Y %":r(252),"3Y %":r(756),"5Y %":r(1260)})
-        except Exception: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None})
+        except Exception:
+            rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None})
     return rec
+
 @st.cache_data(ttl=14400)
 def bench(): return {g:perf(v) for g,v in BENCHMARK_TICKERS.items()}
 @st.cache_data(ttl=14400)
@@ -144,10 +185,14 @@ def deploy_rule(dd):
 def capital_breakdown(zone,deploy_amount,available_cash,available_srs,available_cpf):
     cash=srs=cpf=0.0
     if deploy_amount<=0: return cash,srs,cpf,"Current market action does not trigger deployment; capital preserved."
-    if zone=="INITIAL BUY": cash=min(deploy_amount,available_cash); reason="INITIAL BUY zone uses cash first; SRS/CPF-OA are preserved for deeper drawdowns."
-    elif zone=="BUY": cash=min(deploy_amount,available_cash); rem=max(deploy_amount-cash,0); srs=min(rem,available_srs); reason="BUY zone uses cash first, then SRS if cash is insufficient. CPF-OA remains reserved."
-    elif zone=="STRONG BUY": cash=min(deploy_amount,available_cash); rem=max(deploy_amount-cash,0); srs=min(rem,available_srs); rem=max(rem-srs,0); cpf=min(rem,available_cpf); reason="STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor."
-    else: reason="No deployment suggested under current drawdown zone."
+    if zone=="INITIAL BUY":
+        cash=min(deploy_amount,available_cash); reason="INITIAL BUY zone uses cash first; SRS/CPF-OA are preserved for deeper drawdowns."
+    elif zone=="BUY":
+        cash=min(deploy_amount,available_cash); rem=max(deploy_amount-cash,0); srs=min(rem,available_srs); reason="BUY zone uses cash first, then SRS if cash is insufficient. CPF-OA remains reserved."
+    elif zone=="STRONG BUY":
+        cash=min(deploy_amount,available_cash); rem=max(deploy_amount-cash,0); srs=min(rem,available_srs); rem=max(rem-srs,0); cpf=min(rem,available_cpf); reason="STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor."
+    else:
+        reason="No deployment suggested under current drawdown zone."
     return cash,srs,cpf,reason
 
 def label_event(date):
@@ -167,7 +212,8 @@ def events(bt,thr,current):
     ev=[]; in_dd=False; start=None
     for i in range(len(bt)):
         dv=bt.dd_pct.iloc[i]
-        if dv<=-thr and not in_dd: in_dd=True; start=i
+        if dv<=-thr and not in_dd:
+            in_dd=True; start=i
         elif dv>-5 and in_dd:
             in_dd=False; e=bt.iloc[start:i]
             if e.empty: continue
@@ -179,26 +225,38 @@ def events(bt,thr,current):
     return ev
 
 def mini_trend_chart(df,title,subtitle,colour,fill_colour,y_title=""):
-    if df is None or df.empty: st.info(f"{title}: data unavailable"); return
-    fig=go.Figure(); fig.add_trace(go.Scatter(x=df.index,y=df.iloc[:,0],mode="lines",line=dict(color=colour,width=3),fill="tozeroy",fillcolor=fill_colour,name=title))
+    if df is None or df.empty:
+        st.info(f"{title}: data unavailable"); return
+    fig=go.Figure()
+    fig.add_trace(go.Scatter(x=df.index,y=df.iloc[:,0],mode="lines",line=dict(color=colour,width=3),fill="tozeroy",fillcolor=fill_colour,name=title))
     fig.update_layout(height=240,margin=dict(l=10,r=10,t=48,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title=y_title)
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
 def mini_pmi_bar_chart(df,title,subtitle):
-    if df is None or df.empty or "PMI" not in df.columns: st.info(f"{title}: data unavailable"); return
+    if df is None or df.empty or "PMI" not in df.columns:
+        st.info(f"{title}: data unavailable"); return
     colours=[GREEN if v>=50 else RED for v in df["PMI"]]
-    fig=go.Figure(); fig.add_trace(go.Bar(x=df.index,y=df["PMI"],marker_color=colours,text=[f"{v:.1f}" for v in df["PMI"]],textposition="outside",textfont=dict(size=10,color="#374151"),cliponaxis=False,name="PMI"))
+    fig=go.Figure()
+    fig.add_trace(go.Bar(x=df.index,y=df["PMI"],marker_color=colours,text=[f"{v:.1f}" for v in df["PMI"]],textposition="outside",textfont=dict(size=10,color="#374151"),cliponaxis=False,name="PMI"))
     fig.add_hline(y=50,line_dash="dash",line_color=SLATE,annotation_text="50 Expansion / Contraction",annotation_position="top left")
     ymin=max(0,float(df["PMI"].min())-4); ymax=float(df["PMI"].max())+4
-    fig.update_yaxes(range=[ymin,ymax]); fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title="PMI")
+    fig.update_yaxes(range=[ymin,ymax])
+    fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title="PMI")
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
-def html_card(title,value,sub,accent): return f"""<div class='col-card' style='--accent:{accent}'><div class='col-card-title'>{title}</div><div class='col-card-value'>{value}</div><div class='col-card-sub'>{sub}</div></div>"""
-def preview_row(label,value,colour="#111827"): return f"<div class='preview-row'><span class='preview-label'>{label}</span><span class='preview-value' style='color:{colour}'>{value}</span></div>"
+def html_card(title,value,sub,accent):
+    return f"""<div class='col-card' style='--accent:{accent}'><div class='col-card-title'>{title}</div><div class='col-card-value'>{value}</div><div class='col-card-sub'>{sub}</div></div>"""
+
+def preview_row(label,value,colour="#111827"):
+    return f"<div class='preview-row'><span class='preview-label'>{label}</span><span class='preview-value' style='color:{colour}'>{value}</span></div>"
+
 def confidence_score(dd, live_score, trend_below):
     score=35+(15 if dd<=-8 else 0)+(10 if trend_below else 0)+(10 if live_score<50 else 0)-(25 if live_score>=70 else 0)
     return max(0,min(100,score))
-def confidence_label(score): return "High" if score>=70 else "Medium" if score>=45 else "Low"
+
+def confidence_label(score):
+    return "High" if score>=70 else "Medium" if score>=45 else "Low"
+
 def do_not_deploy_flags(live_score,vix,latest_pmi,available_cash):
     flags=[]
     if live_score>70: flags.append("Live Risk Score > 70")
@@ -207,16 +265,23 @@ def do_not_deploy_flags(live_score,vix,latest_pmi,available_cash):
     if available_cash<=0: flags.append("Emergency buffer breached")
     return flags
 
+# =========================
 # Data load
+# =========================
 with st.spinner("Loading market data..."):
     m=market_data()
-if not m: st.error("Market data unavailable. Try Refresh Market Data."); st.stop()
+if not m:
+    st.error("Market data unavailable. Try Refresh Market Data."); st.stop()
 sel=st.selectbox("Select Market Index",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
 ud=m[sel]["df"]; ticker=m[sel]["ticker"]; index_label=DISPLAY_NAME.get(sel,sel); pmi_proxy_default=PMI_PROXY_MAP.get(sel,PMI_FALLBACK)
 
+# =========================
 # Executive Tactical Allocation Centre
-st.markdown("---"); st.markdown("## 🧠 Executive Tactical Allocation Centre")
-st.caption("Input and calculation engine: capital settings, drawdown reference, market-specific PMI, refresh controls and core metric outputs.")
+# =========================
+st.markdown("---")
+st.markdown("## 🧠 Executive Tactical Allocation Centre")
+st.caption("Single top-level decision area: inputs, calculation result, risk regime, confidence and concise decision note.")
+
 with st.expander("💰 Capital Pools & Safeguards", expanded=False):
     cap1,cap2,cap3,cap4,cap5=st.columns(5)
     with cap1: cash_balance=st.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
@@ -233,60 +298,78 @@ with ref_col:
     st.caption("Default remains Rolling 252D Peak. Longer references provide medium-cycle and long-cycle context.")
 with refresh_col:
     st.markdown("<div style='height:34px'></div>", unsafe_allow_html=True)
-    if st.button("🔄 Refresh Market Data", use_container_width=True): st.cache_data.clear(); st.toast("Market data refreshed.", icon="🔄")
+    if st.button("🔄 Refresh Market Data", use_container_width=True):
+        st.cache_data.clear(); st.toast("Market data refreshed.", icon="🔄")
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
-available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
+available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0)
+total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf)
-macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx"); curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None; trend_below=close < m[sel]["ma200"]
+macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx")
+curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
+trend_below=close < m[sel]["ma200"]
 
-# PMI row with update button restored
+# PMI row with Update PMI button
 st.markdown("#### 🟢 Market-Specific PMI Monthly Signal")
 pmi1,pmi2,pmi3,pmi4,pmi5,pmi6,pmi7=st.columns([1.05,1.05,1.45,0.75,0.75,0.8,0.55])
 proxy_options=list(dict.fromkeys([PMI_PROXY_MAP.get(k,PMI_FALLBACK)["label"] for k in INDEX_TICKERS.keys()] + ["Global PMI"]))
 def_label=pmi_proxy_default["label"]
-with pmi1: pmi_proxy_label=st.selectbox("PMI Proxy Used", proxy_options, index=proxy_options.index(def_label) if def_label in proxy_options else 0)
-with pmi2: pmi_region=st.text_input("PMI Region", value=pmi_proxy_default["region"] if pmi_proxy_label==def_label else pmi_proxy_label.replace(" PMI", ""))
-with pmi3: pmi_source=st.text_input("PMI Source", value=pmi_proxy_default["source"] if pmi_proxy_label==def_label else "Economic calendar / manual source")
+with pmi1:
+    pmi_proxy_label=st.selectbox("PMI Proxy Used", proxy_options, index=proxy_options.index(def_label) if def_label in proxy_options else 0)
+with pmi2:
+    pmi_region=st.text_input("PMI Region", value=pmi_proxy_default["region"] if pmi_proxy_label==def_label else pmi_proxy_label.replace(" PMI", ""))
+with pmi3:
+    pmi_source=st.text_input("PMI Source", value=pmi_proxy_default["source"] if pmi_proxy_label==def_label else "Economic calendar / manual source")
 with pmi4:
     if "latest_pmi_value" not in st.session_state or st.session_state.get("pmi_proxy_label")!=pmi_proxy_label:
         st.session_state.latest_pmi_value=float(pmi_proxy_default.get("default",51.5)); st.session_state.pmi_proxy_label=pmi_proxy_label
     latest_pmi=st.number_input("Latest PMI",min_value=30.0,max_value=70.0,value=float(st.session_state.latest_pmi_value),step=0.1,help="PMI is monthly and not intraday live data.")
-with pmi5: pmi_month=st.text_input("PMI Month", value=st.session_state.get("latest_pmi_month","May 2026"))
+with pmi5:
+    pmi_month=st.text_input("PMI Month", value=st.session_state.get("latest_pmi_month","May 2026"))
 with pmi6:
     st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True)
     if st.button("🔄 Update PMI", use_container_width=True):
-        st.session_state.latest_pmi_value=latest_pmi; st.session_state.latest_pmi_month=pmi_month; st.session_state.pmi_proxy_label=pmi_proxy_label; st.toast("PMI signal refreshed.", icon="🔄")
+        st.session_state.latest_pmi_value=latest_pmi
+        st.session_state.latest_pmi_month=pmi_month
+        st.session_state.pmi_proxy_label=pmi_proxy_label
+        st.toast("PMI signal refreshed.", icon="🔄")
 with pmi7:
-    st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True); manual_override=st.toggle("Manual", value=True, help="Manual override stays available as a fallback.")
+    st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True)
+    manual_override=st.toggle("Manual", value=True, help="Manual override stays available as a fallback.")
 st.session_state.latest_pmi_value=latest_pmi; st.session_state.latest_pmi_month=pmi_month; st.session_state.pmi_proxy_label=pmi_proxy_label
 st.markdown(f"<div class='note-amber'>Current PMI proxy: <b>{pmi_proxy_label}</b> for <b>{pmi_region}</b>. PMI is monthly, not intraday live data. Manual override remains available if the source update fails.</div>", unsafe_allow_html=True)
 
 # Risk score
-vix_score=0 if vix is None else min(max((vix-15)*2,0),30); curve_score=10 if curve_spread is None else (20 if curve_spread<0 else 10 if curve_spread<0.5 else 0); pmi_score=0 if latest_pmi>=52 else 8 if latest_pmi>=50 else 16 if latest_pmi>=47 else 20; dd_score=min(abs(dd)*1.2,25); trend_score=15 if trend_below else 0; live_score=min(vix_score+curve_score+pmi_score+dd_score+trend_score,100)
+vix_score=0 if vix is None else min(max((vix-15)*2,0),30)
+curve_score=10 if curve_spread is None else (20 if curve_spread<0 else 10 if curve_spread<0.5 else 0)
+pmi_score=0 if latest_pmi>=52 else 8 if latest_pmi>=50 else 16 if latest_pmi>=47 else 20
+dd_score=min(abs(dd)*1.2,25); trend_score=15 if trend_below else 0
+live_score=min(vix_score+curve_score+pmi_score+dd_score+trend_score,100)
 if live_score>=70: alert,klass="CRASH RISK","alert-risk"
 elif live_score>=50: alert,klass="WARNING","alert-warning"
 elif live_score>=30: alert,klass="WATCH","alert-watch"
 else: alert,klass="NORMAL","alert-normal"
-conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); flags=do_not_deploy_flags(live_score,vix,latest_pmi,available_cash)
+conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score)
+flags=do_not_deploy_flags(live_score,vix,latest_pmi,available_cash)
+funding_source="Cash First" if cash_deploy>0 else "No deployment"
+next_trigger="-15% DD" if zone in ["HOLD","STRONG SELL"] else "Next zone"
+decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."
 
-c1,c2,c3,c4=st.columns(4)
-with c1: st.metric(index_label,f"{close:,.0f}"); st.caption(f"{ticker} · Index Level")
-with c2: st.metric("Current Drawdown",f"{dd:.1f}%")
-with c3: st.metric("Current Market Action",zone)
-with c4: st.metric("Suggested Deploy",f"S${deploy:,.0f}")
-st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.</div>",unsafe_allow_html=True)
+# Metric cards row 1
+r1c1,r1c2,r1c3,r1c4=st.columns(4)
+with r1c1: st.metric(index_label,f"{close:,.0f}"); st.caption(f"{ticker} · Index Level")
+with r1c2: st.metric("Current Drawdown",f"{dd:.1f}%")
+with r1c3: st.metric("Current Market Action",zone)
+with r1c4: st.metric("Suggested Deploy",f"S${deploy:,.0f}")
 
-# Tactical Decision Banner
-funding_source="Cash First" if cash_deploy>0 else "No deployment"; decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."; reason_line=f"Current market action is {zone}; risk regime is {alert}; PMI proxy used is {pmi_proxy_label}."
-st.markdown(f"""
-<div class='decision-banner'>
-<h2 style='margin:0 0 8px 0'>🎯 Tactical Decision</h2>
-<span class='decision-chip'>Verdict: {zone}</span><span class='decision-chip'>Deploy: S${deploy:,.0f}</span><span class='decision-chip'>Funding: {funding_source}</span><span class='decision-chip'>Risk: {alert}</span><span class='decision-chip'>Confidence: {conf_label}</span>
-<p style='font-size:1.02rem;margin:10px 0 4px 0'><b>Decision:</b> {decision_line}</p>
-<p style='font-size:0.92rem;margin:0'><b>Reason:</b> {reason_line}</p>
-</div>
-""", unsafe_allow_html=True)
+# Metric cards row 2: added Risk + Confidence; standalone banner removed
+r2c1,r2c2,r2c3,r2c4=st.columns(4)
+with r2c1: st.metric("Risk Regime",alert); st.caption(f"Live Risk Score: {live_score:.0f} / 100")
+with r2c2: st.metric("Signal Confidence",conf_label); st.caption(f"Approx. {conf_score:.0f} / 100")
+with r2c3: st.metric("Funding Source",funding_source); st.caption("Capital preserved" if deploy<=0 else "Cash first")
+with r2c4: st.metric("Next Trigger",next_trigger); st.caption("Increase allocation zone")
+
+st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.<br><br><b>Decision note:</b> {decision_line}</div>",unsafe_allow_html=True)
 
 # Supporting detail expanders
 with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deploy>0)):
@@ -298,30 +381,52 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
     with s5: st.markdown(html_card("Drawdown Basis",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
     st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p></div>",unsafe_allow_html=True)
     left,right=st.columns([1,1])
-    with left: st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Priority ladder: Cash first → SRS later → CPF-OA only in deeper crash zones.</p>"+preview_row("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+preview_row("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+preview_row("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+f"<div class='note-amber'>Reason: {capital_reason}</div></div>", unsafe_allow_html=True)
+    with left:
+        st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Priority ladder: Cash first → SRS later → CPF-OA only in deeper crash zones.</p>"+preview_row("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+preview_row("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+preview_row("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+f"<div class='note-amber'>Reason: {capital_reason}</div></div>", unsafe_allow_html=True)
     with right:
         ladder_html="<div class='preview-panel'><h3 style='margin-top:0'>🧭 Deployment Rule Ladder</h3>"+preview_row("HOLD / small drawdown","0% deploy · Preserve capital",SLATE)+preview_row("INITIAL BUY","10% deploy · Cash only",AMBER)+preview_row("BUY","20–35% deploy · Cash first, then SRS",ORANGE)+preview_row("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED)+"</div>"
         st.markdown(ladder_html,unsafe_allow_html=True)
     options=ETF_UNIVERSE.get(sel,{}).get("etfs",[])
     if options:
-        st.markdown("#### 🎯 Suggested Investment Options"); st.caption("ETF-based educational options linked to the selected market. Not a personalised buy list."); st.dataframe(pd.DataFrame([{"Role":r,"Instrument":n,"Ticker":t,"Use case":u} for r,n,t,u in options]),use_container_width=True,hide_index=True)
+        st.markdown("#### 🎯 Suggested Investment Options")
+        st.caption("ETF-based educational options linked to the selected market. Not a personalised buy list.")
+        st.dataframe(pd.DataFrame([{"Role":r,"Instrument":n,"Ticker":t,"Use case":u} for r,n,t,u in options]),use_container_width=True,hide_index=True)
 
 with st.expander("📊 Signal Confidence Details", expanded=False):
-    st.markdown(preview_row("Drawdown Signal","Active" if dd<=-8 else "Inactive",ORANGE if dd<=-8 else SLATE),unsafe_allow_html=True); st.markdown(preview_row("Macro Stress",alert,AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED if alert=="CRASH RISK" else GREEN),unsafe_allow_html=True); st.markdown(preview_row("Technical Trend","Weak" if trend_below else "Stable",BLUE),unsafe_allow_html=True); st.progress(conf_score/100, text=f"Signal Confidence: {conf_label} · {conf_score:.0f}/100")
+    st.markdown(preview_row("Drawdown Signal","Active" if dd<=-8 else "Inactive",ORANGE if dd<=-8 else SLATE),unsafe_allow_html=True)
+    st.markdown(preview_row("Macro Stress",alert,AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED if alert=="CRASH RISK" else GREEN),unsafe_allow_html=True)
+    st.markdown(preview_row("Technical Trend","Weak" if trend_below else "Stable",BLUE),unsafe_allow_html=True)
+    st.progress(conf_score/100, text=f"Signal Confidence: {conf_label} · {conf_score:.0f}/100")
+
 with st.expander("🧱 Tranche Deployment Plan", expanded=(deploy>0)):
     if deploy>0:
-        for label,amt,col,cap in [("Tranche 1 — Deploy now",deploy*0.5,AMBER,"Use 50% of suggested deploy while market is in the current buy zone."),("Tranche 2 — If drawdown deepens",deploy*0.25,ORANGE,"Deploy if selected index drawdown reaches the next trigger zone."),("Tranche 3 — If stabilisation appears",deploy*0.25,BLUE,"Deploy if risk score remains below WARNING and trend stabilises.")]: st.markdown(preview_row(label,f"S${amt:,.0f}",col),unsafe_allow_html=True); st.caption(cap)
-    else: st.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.")
+        for label,amt,col,cap in [
+            ("Tranche 1 — Deploy now",deploy*0.5,AMBER,"Use 50% of suggested deploy while market is in the current buy zone."),
+            ("Tranche 2 — If drawdown deepens",deploy*0.25,ORANGE,"Deploy if selected index drawdown reaches the next trigger zone."),
+            ("Tranche 3 — If stabilisation appears",deploy*0.25,BLUE,"Deploy if risk score remains below WARNING and trend stabilises.")]:
+            st.markdown(preview_row(label,f"S${amt:,.0f}",col),unsafe_allow_html=True); st.caption(cap)
+    else:
+        st.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.")
+
 with st.expander("🛑 Do Not Deploy Safeguards", expanded=False):
     checks=[("Live Risk Score > 70", live_score>70),("VIX > 35", vix is not None and vix>35),("PMI < 47", latest_pmi<47),("Emergency buffer breached", available_cash<=0)]
-    for lab,active in checks: st.markdown(preview_row(lab,"Active" if active else "Inactive",RED if active else GREEN),unsafe_allow_html=True)
+    for lab,active in checks:
+        st.markdown(preview_row(lab,"Active" if active else "Inactive",RED if active else GREEN),unsafe_allow_html=True)
+
 with st.expander("📡 Data Source & Freshness", expanded=False):
-    st.markdown(preview_row("Market Data","Yahoo Finance",BLUE),unsafe_allow_html=True); st.markdown(preview_row("PMI Proxy",pmi_proxy_label,GREEN),unsafe_allow_html=True); st.markdown(preview_row("PMI Source",pmi_source,GREEN),unsafe_allow_html=True); st.markdown(preview_row("Last Refreshed",datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE),unsafe_allow_html=True)
+    st.markdown(preview_row("Market Data","Yahoo Finance",BLUE),unsafe_allow_html=True)
+    st.markdown(preview_row("PMI Proxy",pmi_proxy_label,GREEN),unsafe_allow_html=True)
+    st.markdown(preview_row("PMI Source",pmi_source,GREEN),unsafe_allow_html=True)
+    st.markdown(preview_row("Last Refreshed",datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE),unsafe_allow_html=True)
+
 with st.expander("📤 Tactical Snapshot Export", expanded=False):
     snap=pd.DataFrame([{"Timestamp":datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),"Selected Index":index_label,"Ticker":ticker,"Drawdown Reference":ref,"Current Drawdown %":round(dd,2),"Action Zone":zone,"Suggested Deploy S$":round(deploy,2),"Funding Source":funding_source,"PMI Proxy":pmi_proxy_label,"PMI Value":latest_pmi,"Live Risk Score":round(live_score,1),"Risk Regime":alert,"Signal Confidence":conf_label,"Do Not Deploy Flags":"; ".join(flags) if flags else "None"}])
-    st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button("⬇️ Export Tactical Snapshot CSV",snap.to_csv(index=False),file_name="tactical_snapshot.csv",mime="text/csv")
+    st.dataframe(snap,use_container_width=True,hide_index=True)
+    st.download_button("⬇️ Export Tactical Snapshot CSV",snap.to_csv(index=False),file_name="tactical_snapshot.csv",mime="text/csv")
 
+# =========================
 # Market Conditions & Live Risk Monitor
+# =========================
 with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>Live Risk Score = Global Macro Stress Overlay + Market-Specific PMI + Selected Market Technical Risk.</p>",unsafe_allow_html=True)
     st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>This is a rules-based stress indicator, not a crash prediction. PMI proxy used: <b>{pmi_proxy_label}</b>.</div></div>",unsafe_allow_html=True)
@@ -334,19 +439,45 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
     left4,right4=st.columns([1,1])
     with left4:
         st.markdown("#### 📡 Live Trigger Monitor")
-        trig=pd.DataFrame([{"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No","Detail":"Global volatility proxy"},{"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No","Detail":"US macro/liquidity proxy"},{"Trigger":f"{pmi_proxy_label} < 50","Status":"Yes" if latest_pmi<50 else "No","Detail":"Monthly contraction threshold"},{"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No","Detail":f"{index_label} correction threshold"},{"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No","Detail":f"{index_label} trend deterioration"}])
+        trig=pd.DataFrame([
+            {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No","Detail":"Global volatility proxy"},
+            {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No","Detail":"US macro/liquidity proxy"},
+            {"Trigger":f"{pmi_proxy_label} < 50","Status":"Yes" if latest_pmi<50 else "No","Detail":"Monthly contraction threshold"},
+            {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No","Detail":f"{index_label} correction threshold"},
+            {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No","Detail":f"{index_label} trend deterioration"}])
         st.dataframe(trig,use_container_width=True,hide_index=True)
     with right4:
         st.markdown("#### 🧮 Live Risk Score Engine")
-        st.markdown(preview_row("VIX Score",f"{vix_score:.0f} / 30",AMBER),unsafe_allow_html=True); st.markdown(preview_row("Yield Curve Score",f"{curve_score:.0f} / 20",BLUE),unsafe_allow_html=True); st.markdown(preview_row(f"{pmi_proxy_label} Score",f"{pmi_score:.0f} / 20",GREEN),unsafe_allow_html=True); st.markdown(preview_row("Drawdown Score",f"{dd_score:.0f} / 25",ORANGE),unsafe_allow_html=True); st.markdown(preview_row("Trend Score",f"{trend_score:.0f} / 15",RED),unsafe_allow_html=True); st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
-        with st.expander("ℹ️ How to read Live Risk Score", expanded=False): st.markdown(f"""**Live Risk Score = Global Macro Stress Overlay + Market-Specific PMI + Selected Market Technical Risk.**\n\nThis score is a **rules-based market stress indicator — not a crash prediction**.\n\n- **0–29 NORMAL:** low current stress signal.\n- **30–49 WATCH:** some caution signals are appearing.\n- **50–69 WARNING:** multiple indicators are deteriorating.\n- **70–100 CRASH RISK:** high stress regime.\n\nInputs currently include **VIX, US yield curve, {pmi_proxy_label}, selected index drawdown and selected index 200D trend**.""")
+        st.markdown(preview_row("VIX Score",f"{vix_score:.0f} / 30",AMBER),unsafe_allow_html=True)
+        st.markdown(preview_row("Yield Curve Score",f"{curve_score:.0f} / 20",BLUE),unsafe_allow_html=True)
+        st.markdown(preview_row(f"{pmi_proxy_label} Score",f"{pmi_score:.0f} / 20",GREEN),unsafe_allow_html=True)
+        st.markdown(preview_row("Drawdown Score",f"{dd_score:.0f} / 25",ORANGE),unsafe_allow_html=True)
+        st.markdown(preview_row("Trend Score",f"{trend_score:.0f} / 15",RED),unsafe_allow_html=True)
+        st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
+        with st.expander("ℹ️ How to read Live Risk Score", expanded=False):
+            st.markdown(f"""**Live Risk Score = Global Macro Stress Overlay + Market-Specific PMI + Selected Market Technical Risk.**
+
+This score is a **rules-based market stress indicator — not a crash prediction**.
+
+- **0–29 NORMAL:** low current stress signal.
+- **30–49 WATCH:** some caution signals are appearing.
+- **50–69 WARNING:** multiple indicators are deteriorating.
+- **70–100 CRASH RISK:** high stress regime.
+
+Inputs currently include **VIX, US yield curve, {pmi_proxy_label}, selected index drawdown and selected index 200D trend**.""")
     with st.expander("📈 12M Trend Snapshot", expanded=False):
         st.caption("PMI is market-specific and shown as monthly bars with small values above each bar.")
-        vix_raw=hist("^VIX","2025-06-01"); vix_df=vix_raw[["Close"]].rename(columns={"Close":"VIX"}) if not vix_raw.empty else pd.DataFrame(); tnx_raw=hist("^TNX","2025-06-01"); irx_raw=hist("^IRX","2025-06-01"); tnx_df=tnx_raw[["Close"]].rename(columns={"Close":"TNX"}) if not tnx_raw.empty else pd.DataFrame(); irx_df=irx_raw[["Close"]].rename(columns={"Close":"IRX"}) if not irx_raw.empty else pd.DataFrame(); curve_df=pd.DataFrame()
+        vix_raw=hist("^VIX","2025-06-01"); vix_df=vix_raw[["Close"]].rename(columns={"Close":"VIX"}) if not vix_raw.empty else pd.DataFrame()
+        tnx_raw=hist("^TNX","2025-06-01"); irx_raw=hist("^IRX","2025-06-01")
+        tnx_df=tnx_raw[["Close"]].rename(columns={"Close":"TNX"}) if not tnx_raw.empty else pd.DataFrame(); irx_df=irx_raw[["Close"]].rename(columns={"Close":"IRX"}) if not irx_raw.empty else pd.DataFrame()
+        curve_df=pd.DataFrame()
         if not tnx_df.empty and not irx_df.empty:
             aligned=tnx_df.join(irx_df,how="inner")
             if not aligned.empty: curve_df=pd.DataFrame({"10Y-13W":aligned["TNX"]-aligned["IRX"]},index=aligned.index)
-        pmi_dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq="ME"); pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12); pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates); idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][["Close"]].rename(columns={"Close":"Index"})
+        pmi_dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq="ME")
+        pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12)
+        pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates)
+        idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][["Close"]].rename(columns={"Close":"Index"})
         ch1,ch2=st.columns(2)
         with ch1: mini_trend_chart(vix_df,"VIX 12M","Volatility regime",AMBER,"rgba(245,158,11,0.18)","VIX")
         with ch2: mini_trend_chart(curve_df,"Yield Curve 12M","10Y minus 13W spread",BLUE,"rgba(37,99,235,0.16)","Spread %")
@@ -361,24 +492,38 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         with w4: st.slider("Override Drawdown (%)",0,60,int(abs(dd)))
         st.info("Simulation output only: use this to stress-test assumptions, not as the live market alert.")
 
+# =========================
+# Market Performance & ETF Tracker
+# =========================
 with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     try:
-        for g,recs in bench().items(): st.markdown(f"### {g}"); st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
-    except Exception as e: st.warning(f"Benchmarks unavailable: {e}")
+        for g,recs in bench().items():
+            st.markdown(f"### {g}")
+            st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
+    except Exception as e:
+        st.warning(f"Benchmarks unavailable: {e}")
     try:
         ed=etfs(); order=[sel] if sel in ETF_UNIVERSE else []; order += [x for x in ETF_UNIVERSE if x not in order]
         for k in order:
-            if k in ed: st.markdown(f"### {ETF_UNIVERSE[k]['label']}{' ✅ SELECTED' if k==sel else ''}"); st.dataframe(pd.DataFrame(ed[k]),use_container_width=True,hide_index=True)
-    except Exception as e: st.warning(f"ETFs unavailable: {e}")
+            if k in ed:
+                st.markdown(f"### {ETF_UNIVERSE[k]['label']}{' ✅ SELECTED' if k==sel else ''}")
+                st.dataframe(pd.DataFrame(ed[k]),use_container_width=True,hide_index=True)
+    except Exception as e:
+        st.warning(f"ETFs unavailable: {e}")
 
+# =========================
+# Crash & Recovery Analytics
+# =========================
 with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
     try:
         st.markdown("### 📊 Executive Crash Summary")
         p,q=st.columns(2)
         with p: start=st.date_input("Historical analysis start date",value=ud.index.min().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date())
         with q: thr=st.slider("Min drawdown threshold (%)",5,50,10,5)
-        bt=ud.loc[pd.Timestamp(start):].copy(); bt["rm"]=bt.Close.rolling(252,min_periods=1).max(); bt["dd_pct"]=((bt.Close-bt.rm)/bt.rm)*100; cur=safe_float(bt.Close.iloc[-1]); ev=events(bt,thr,cur)
-        if not ev: st.info("No drawdown events found with selected parameters.")
+        bt=ud.loc[pd.Timestamp(start):].copy(); bt["rm"]=bt.Close.rolling(252,min_periods=1).max(); bt["dd_pct"]=((bt.Close-bt.rm)/bt.rm)*100; cur=safe_float(bt.Close.iloc[-1])
+        ev=events(bt,thr,cur)
+        if not ev:
+            st.info("No drawdown events found with selected parameters.")
         else:
             k1,k2,k3,k4,k5=st.columns(5)
             with k1: st.metric("Crash Events",len(ev))
@@ -389,7 +534,8 @@ with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
             event_df=pd.DataFrame([{"Peak Date":t['peak_dt'].strftime('%Y-%m-%d'),"Peak Index":round(t['peak'],0),"Trough Date":t['date'].strftime('%Y-%m-%d'),"Trough Index":round(t['price'],0),"Drawdown %":round(t['dd'],1),"Recovery Return %":round(t['ret'],1),"Zone":t['zone'],"Historical Label":label_event(t['date'])} for t in ev])
             st.dataframe(event_df,use_container_width=True,hide_index=True)
             st.download_button("⬇️ Export Crash Analytics CSV",event_df.to_csv(index=False),file_name="crash_recovery_analytics.csv",mime="text/csv")
-    except Exception as e: st.warning(f"Crash analytics unavailable: {e}")
+    except Exception as e:
+        st.warning(f"Crash analytics unavailable: {e}")
 
 st.markdown("---")
 st.caption(f"🕒 Last refreshed: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} SGT")
