@@ -168,6 +168,15 @@ def mini_trend_chart(df, title, subtitle, colour, fill_colour, y_title=""):
     fig.update_layout(height=240,margin=dict(l=10,r=10,t=48,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title=y_title)
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
+def make_pmi_fallback_series(latest_pmi):
+    """Create a pandas-version-safe monthly PMI fallback series.
+    Fixes pandas 3.x error where freq='M' is invalid by using month-end timestamps without deprecated alias.
+    """
+    end=pd.Timestamp.today().normalize()
+    dates=pd.date_range(end=end, periods=12, freq="ME")
+    vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12)
+    return pd.DataFrame({"PMI":vals},index=dates)
+
 with st.spinner("Loading market data..."):
     m=market_data()
 if not m:
@@ -237,17 +246,18 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
     with st.expander("📈 12M Trend Snapshot", expanded=False):
         st.caption("Compact mini charts using preview colours: VIX amber, yield curve blue, PMI green, index drawdown red/orange.")
-        vix_df=hist("^VIX","2025-06-01")[["Close"]].rename(columns={"Close":"VIX"})
-        tnx_df=hist("^TNX","2025-06-01")[["Close"]].rename(columns={"Close":"TNX"})
-        irx_df=hist("^IRX","2025-06-01")[["Close"]].rename(columns={"Close":"IRX"})
+        vix_raw=hist("^VIX","2025-06-01")
+        vix_df=vix_raw[["Close"]].rename(columns={"Close":"VIX"}) if not vix_raw.empty else pd.DataFrame()
+        tnx_raw=hist("^TNX","2025-06-01")
+        irx_raw=hist("^IRX","2025-06-01")
+        tnx_df=tnx_raw[["Close"]].rename(columns={"Close":"TNX"}) if not tnx_raw.empty else pd.DataFrame()
+        irx_df=irx_raw[["Close"]].rename(columns={"Close":"IRX"}) if not irx_raw.empty else pd.DataFrame()
         curve_df=pd.DataFrame()
         if not tnx_df.empty and not irx_df.empty:
             aligned=tnx_df.join(irx_df,how="inner")
             if not aligned.empty:
                 curve_df=pd.DataFrame({"10Y-13W":aligned["TNX"]-aligned["IRX"]},index=aligned.index)
-        pmi_dates=pd.date_range(end=pd.Timestamp.today(),periods=12,freq="M")
-        pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12)
-        pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates)
+        pmi_df=make_pmi_fallback_series(latest_pmi)
         idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][["Close"]]
         idx12=idx12.rename(columns={"Close":"Index"})
         ch1,ch2=st.columns(2)
