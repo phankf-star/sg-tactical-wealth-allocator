@@ -9,7 +9,9 @@ from datetime import datetime
 
 st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="expanded")
 
+# =========================
 # Preview colour palette
+# =========================
 AMBER="#F59E0B"; AMBER_BG="#FEF3C7"; AMBER_TEXT="#92400E"
 BLUE="#2563EB"; GREEN="#16A34A"; GREEN_BTN="#10B981"; ORANGE="#F97316"; RED="#EF4444"; RED_BG="#FEE2E2"
 SLATE="#64748B"; GREY_BORDER="#E5E7EB"; GREY_TEXT="#6B7280"
@@ -37,6 +39,7 @@ st.markdown(f"""
 .col-card-value {{font-size:1.65rem;font-weight:700;color:#111827;margin-left:12px;margin-top:4px;line-height:1.12;word-break:break-word;}}
 .col-card-sub {{font-size:0.82rem;color:{GREY_TEXT};margin-left:12px;margin-top:8px;line-height:1.3;}}
 .note-amber {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 14px;font-size:0.86rem;line-height:1.35;margin-top:12px;}}
+.risk-guide {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:16px;padding:16px;margin-top:8px;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -55,6 +58,7 @@ DISPLAY_NAME={
     "Straits Times Index (SG Value/REITs)":"Straits Times Index",
     "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
 }
+BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
 ETF_UNIVERSE={
 "Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
 "Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
@@ -68,12 +72,11 @@ ETF_UNIVERSE={
 "Dividend":{"label":"💸 Dividend","etfs":[("Dividend exposure","Schwab US Dividend","SCHD","US dividend quality exposure")]},
 "Global":{"label":"🌍 Global","etfs":[("Global core","Vanguard Total World","VT","Global equity exposure")]},
 "Bonds":{"label":"📉 Bonds","etfs":[("Duration hedge","iShares 20+ Year Treasury","TLT","Long-duration Treasury exposure")]} }
-BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
 
-# Sidebar now only keeps refresh / secondary controls. Capital pools are in Executive Centre.
-if st.sidebar.button("🔄 Force Refresh"):
-    st.cache_data.clear(); st.toast("Market data cache cleared.",icon="🔄")
+# Sidebar is intentionally minimal now.
+st.sidebar.caption("Market controls are now inside Executive Tactical Allocation Centre.")
 
+# ------------------------- Helpers -------------------------
 def safe_float(v,fb=0.0):
     try:
         x=float(v); return fb if math.isnan(x) or math.isinf(x) else x
@@ -86,7 +89,7 @@ def tz_naive(df):
 
 @st.cache_data(ttl=14400)
 def hist(ticker,start="1997-01-01"):
-    df=yf.Ticker(ticker).history(start=start); time.sleep(0.10)
+    df=yf.Ticker(ticker).history(start=start); time.sleep(0.08)
     if df is None or df.empty: return pd.DataFrame()
     return tz_naive(df.dropna(subset=["Close"]).copy())
 
@@ -203,14 +206,6 @@ def events(bt,thr,current):
                 look=bt.loc[:ti].iloc[max(0,len(bt.loc[:ti])-252):]
                 dd=safe_float(row.dd_pct); price=safe_float(row.Close); peak=safe_float(row.rm); pkdt=look.Close.idxmax(); z,c=classify(dd)
                 ev.append({"date":ti,"price":price,"dd":dd,"zone":z,"peak":peak,"peak_dt":pkdt,"ret":((current/price)-1)*100 if price else 0})
-    if in_dd and start is not None:
-        e=bt.iloc[start:]
-        if not e.empty:
-            ti=e.dd_pct.idxmin(); row=bt.loc[ti]
-            if len(ev)==0 or (ti-ev[-1]["date"]).days>=60:
-                look=bt.loc[:ti].iloc[max(0,len(bt.loc[:ti])-252):]
-                dd=safe_float(row.dd_pct); price=safe_float(row.Close); peak=safe_float(row.rm); pkdt=look.Close.idxmax(); z,c=classify(dd)
-                ev.append({"date":ti,"price":price,"dd":dd,"zone":z,"peak":peak,"peak_dt":pkdt,"ret":((current/price)-1)*100 if price else 0})
     return ev
 
 def mini_trend_chart(df, title, subtitle, colour, fill_colour, y_title=""):
@@ -227,17 +222,21 @@ def html_card(title,value,sub,accent):
 def preview_row(label,value,colour="#111827"):
     return f"<div class='preview-row'><span class='preview-label'>{label}</span><span class='preview-value' style='color:{colour}'>{value}</span></div>"
 
+# =========================
 # Data load
+# =========================
 with st.spinner("Loading market data..."):
     m=market_data()
 if not m:
-    st.error("Market data unavailable. Try Force Refresh."); st.stop()
+    st.error("Market data unavailable. Try Refresh Market Data."); st.stop()
 sel=st.selectbox("Select Market Index",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
 ud=m[sel]["df"]
 ticker=m[sel]["ticker"]
 index_label=DISPLAY_NAME.get(sel,sel)
 
+# =========================
 # Executive Tactical Allocation Centre
+# =========================
 st.markdown("---")
 st.markdown("## 🧠 Executive Tactical Allocation Centre")
 st.caption("Always-visible decision engine for deployment sizing, capital pools and current market opportunity zone.")
@@ -251,16 +250,23 @@ with st.expander("💰 Capital Pools & Safeguards", expanded=True):
     with cap5: preserve_cpf=st.checkbox("Preserve S$20k CPF-OA Floor",value=True)
     st.caption("These capital inputs directly affect Suggested Deploy and the Capital Source Breakdown.")
 
-st.markdown("#### 📐 Current Drawdown Reference")
-drawdown_method=st.radio(
-    "Current drawdown reference",
-    ["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],
-    index=0,
-    horizontal=True,
-    label_visibility="collapsed",
-    help="Shorter references are tactical; longer references capture deeper market cycles."
-)
-st.caption("Default remains Rolling 252D Peak. Longer references provide medium-cycle and long-cycle context.")
+ref_col, refresh_col = st.columns([4,1])
+with ref_col:
+    st.markdown("#### 📐 Current Drawdown Reference")
+    drawdown_method=st.radio(
+        "Current drawdown reference",
+        ["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],
+        index=0,
+        horizontal=True,
+        label_visibility="collapsed",
+        help="Shorter references are tactical; longer references capture deeper market cycles."
+    )
+    st.caption("Default remains Rolling 252D Peak. Longer references provide medium-cycle and long-cycle context.")
+with refresh_col:
+    st.markdown("<div style='height:34px'></div>", unsafe_allow_html=True)
+    if st.button("🔄 Refresh Market Data", use_container_width=True):
+        st.cache_data.clear()
+        st.toast("Market data refreshed.", icon="🔄")
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd)
 deploy_pct=deploy_rule(dd)
@@ -271,7 +277,6 @@ total_available=available_cash+available_srs+available_cpf
 deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf)
 
-# First card changed from generic Index Level to selected index name
 c1,c2,c3,c4=st.columns(4)
 with c1:
     st.metric(index_label,f"{close:,.0f}")
@@ -321,7 +326,9 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
         opt_df=pd.DataFrame([{"Role":r,"Instrument":n,"Ticker":t,"Use case":u} for r,n,t,u in options])
         st.dataframe(opt_df,use_container_width=True,hide_index=True)
 
+# =========================
 # Market Conditions & Live Risk Monitor
+# =========================
 with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>Auto-updated where market data is available. PMI is monthly/latest-release input rather than intraday live data.</p>",unsafe_allow_html=True)
     macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx")
@@ -369,6 +376,7 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
     with c: st.metric("Latest PMI", f"{latest_pmi:.1f}")
     with d: st.metric("Current Drawdown", f"{dd:.1f}%")
     with e: st.metric("Live Risk Score", f"{live_score:.0f}/100")
+
     left2,right2=st.columns([1,1])
     with left2:
         st.markdown("#### 📡 Live Trigger Monitor")
@@ -388,6 +396,17 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         st.markdown(preview_row("Drawdown Score",f"{dd_score:.0f} / 25",ORANGE),unsafe_allow_html=True)
         st.markdown(preview_row("Trend Score",f"{trend_score:.0f} / 15",RED),unsafe_allow_html=True)
         st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
+        with st.expander("ℹ️ How to read Live Risk Score", expanded=False):
+            st.markdown("""
+            **Live Risk Score is a rules-based market stress indicator — not a crash prediction.**
+
+            - **0–29 NORMAL:** low current stress signal; monitored indicators do not show elevated crash-risk conditions.
+            - **30–49 WATCH:** some caution signals are appearing; monitor closely.
+            - **50–69 WARNING:** multiple indicators are deteriorating; preserve more cash and avoid aggressive deployment.
+            - **70–100 CRASH RISK:** high stress regime; severe drawdown conditions are active.
+
+            The score summarises current readings from **VIX, yield curve, PMI, current drawdown and 200D trend**.
+            """)
     with st.expander("📈 12M Trend Snapshot", expanded=False):
         st.caption("Compact mini charts using preview colours: VIX amber, yield curve blue, PMI green, index drawdown red/orange.")
         vix_raw=hist("^VIX","2025-06-01"); vix_df=vix_raw[["Close"]].rename(columns={"Close":"VIX"}) if not vix_raw.empty else pd.DataFrame()
@@ -414,7 +433,9 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         with w4: st.slider("Override Drawdown (%)",0,60,int(abs(dd)))
         st.info("Simulation output only: use this to stress-test assumptions, not as the live market alert.")
 
+# =========================
 # Market Performance & ETF Tracker
+# =========================
 with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>📊 Market Performance & ETF Tracker</h1>",unsafe_allow_html=True)
     try:
@@ -426,7 +447,9 @@ with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
             if k in ed: st.markdown(f"### {ETF_UNIVERSE[k]['label']}{' ✅ SELECTED' if k==sel else ''}"); st.dataframe(pd.DataFrame(ed[k]),use_container_width=True,hide_index=True)
     except Exception as e: st.warning(f"ETFs unavailable: {e}")
 
+# =========================
 # Crash & Recovery Analytics
+# =========================
 with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🏆 Crash & Recovery Analytics</h1>",unsafe_allow_html=True)
     try:
