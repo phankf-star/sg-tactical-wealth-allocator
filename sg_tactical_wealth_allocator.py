@@ -43,8 +43,18 @@ st.markdown(f"""
 st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator")
 st.caption("Singapore wealth allocation dashboard with tactical allocation, live risk monitoring, ETF tracking and crash-recovery analytics.")
 
-INDEX_TICKERS={"S&P 500 (US Market Core)":"^GSPC","Nasdaq 100 (Tech Growth)":"^IXIC","Straits Times Index (SG Value/REITs)":"^STI","Hang Seng Index (HK Cyclical/Beta)":"^HSI"}
-BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("SSE A Share","000002.SS"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
+INDEX_TICKERS={
+    "S&P 500 (US Market Core)":"^GSPC",
+    "Nasdaq 100 (Tech Growth)":"^IXIC",
+    "Straits Times Index (SG Value/REITs)":"^STI",
+    "Hang Seng Index (HK Cyclical/Beta)":"^HSI",
+}
+DISPLAY_NAME={
+    "S&P 500 (US Market Core)":"S&P 500",
+    "Nasdaq 100 (Tech Growth)":"Nasdaq 100",
+    "Straits Times Index (SG Value/REITs)":"Straits Times Index",
+    "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
+}
 ETF_UNIVERSE={
 "Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
 "Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
@@ -58,17 +68,9 @@ ETF_UNIVERSE={
 "Dividend":{"label":"💸 Dividend","etfs":[("Dividend exposure","Schwab US Dividend","SCHD","US dividend quality exposure")]},
 "Global":{"label":"🌍 Global","etfs":[("Global core","Vanguard Total World","VT","Global equity exposure")]},
 "Bonds":{"label":"📉 Bonds","etfs":[("Duration hedge","iShares 20+ Year Treasury","TLT","Long-duration Treasury exposure")]} }
+BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
 
-# Sidebar — drawdown reference moved out to Executive Tactical Allocation Centre
-st.sidebar.markdown("## 💰 Capital Pools")
-cash_balance=st.sidebar.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
-srs_balance=st.sidebar.number_input("SRS (S$)",0.0,value=35000.0,step=5000.0)
-cpf_oa_balance=st.sidebar.number_input("CPF-OA (S$)",0.0,value=180000.0,step=5000.0)
-st.sidebar.markdown("---")
-st.sidebar.markdown("## ⚙️ Safeguards")
-emergency_buffer=st.sidebar.number_input("Emergency Buffer (S$)",0.0,value=20000.0,step=1000.0)
-preserve_cpf=st.sidebar.checkbox("Preserve S$20k CPF-OA Floor",value=True)
-st.sidebar.markdown("---")
+# Sidebar now only keeps refresh / secondary controls. Capital pools are in Executive Centre.
 if st.sidebar.button("🔄 Force Refresh"):
     st.cache_data.clear(); st.toast("Market data cache cleared.",icon="🔄")
 
@@ -144,7 +146,13 @@ def classify(dd):
 def current_dd(df,method):
     c=safe_float(df.Close.iloc[-1])
     if method.startswith("Rolling"):
-        peak=safe_float(df.Close.rolling(252,min_periods=1).max().iloc[-1],c); label="Rolling 252D Peak"
+        days=252; peak=safe_float(df.Close.rolling(days,min_periods=1).max().iloc[-1],c); label="Rolling 252D Peak"
+    elif method.startswith("2Y"):
+        days=504; peak=safe_float(df.Close.rolling(days,min_periods=1).max().iloc[-1],c); label="2Y Peak"
+    elif method.startswith("3Y"):
+        days=756; peak=safe_float(df.Close.rolling(days,min_periods=1).max().iloc[-1],c); label="3Y Peak"
+    elif method.startswith("5Y"):
+        days=1260; peak=safe_float(df.Close.rolling(days,min_periods=1).max().iloc[-1],c); label="5Y Peak"
     else:
         peak=safe_float(df.Close.max(),c); label="All-Time High Peak"
     return c,peak,((c-peak)/peak)*100 if peak else 0,label
@@ -226,23 +234,33 @@ if not m:
     st.error("Market data unavailable. Try Force Refresh."); st.stop()
 sel=st.selectbox("Select Market Index",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
 ud=m[sel]["df"]
+ticker=m[sel]["ticker"]
+index_label=DISPLAY_NAME.get(sel,sel)
 
 # Executive Tactical Allocation Centre
 st.markdown("---")
 st.markdown("## 🧠 Executive Tactical Allocation Centre")
 st.caption("Always-visible decision engine for deployment sizing, capital pools and current market opportunity zone.")
 
-# Latest change #1: drawdown reference toggle moved here from sidebar
-st.markdown("#### 📐 Current drawdown reference")
+with st.expander("💰 Capital Pools & Safeguards", expanded=True):
+    cap1,cap2,cap3,cap4,cap5=st.columns(5)
+    with cap1: cash_balance=st.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
+    with cap2: srs_balance=st.number_input("SRS (S$)",0.0,value=35000.0,step=5000.0)
+    with cap3: cpf_oa_balance=st.number_input("CPF-OA (S$)",0.0,value=180000.0,step=5000.0)
+    with cap4: emergency_buffer=st.number_input("Emergency Buffer (S$)",0.0,value=20000.0,step=1000.0)
+    with cap5: preserve_cpf=st.checkbox("Preserve S$20k CPF-OA Floor",value=True)
+    st.caption("These capital inputs directly affect Suggested Deploy and the Capital Source Breakdown.")
+
+st.markdown("#### 📐 Current Drawdown Reference")
 drawdown_method=st.radio(
     "Current drawdown reference",
-    ["Rolling 252D Peak (previous backtest formula)","All-Time High Peak"],
+    ["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],
     index=0,
     horizontal=True,
     label_visibility="collapsed",
-    help="This reference directly drives Current Drawdown, Current Market Action and Suggested Deploy."
+    help="Shorter references are tactical; longer references capture deeper market cycles."
 )
-st.caption("This reference directly drives Current Drawdown, Current Market Action and Suggested Deploy.")
+st.caption("Default remains Rolling 252D Peak. Longer references provide medium-cycle and long-cycle context.")
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd)
 deploy_pct=deploy_rule(dd)
@@ -253,15 +271,16 @@ total_available=available_cash+available_srs+available_cpf
 deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf)
 
-# Drawdown Ref metric card removed; reference is in formula box instead
+# First card changed from generic Index Level to selected index name
 c1,c2,c3,c4=st.columns(4)
-with c1: st.metric("Index Level",f"{close:,.0f}")
+with c1:
+    st.metric(index_label,f"{close:,.0f}")
+    st.caption(f"{ticker} · Index Level")
 with c2: st.metric("Current Drawdown",f"{dd:.1f}%")
 with c3: st.metric("Current Market Action",zone)
 with c4: st.metric("Suggested Deploy",f"S${deploy:,.0f}")
-st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>.</div>",unsafe_allow_html=True)
+st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.</div>",unsafe_allow_html=True)
 
-# Latest change #2: suggested deploy block collapses if deploy is zero
 if deploy <= 0:
     st.info("💰 Suggested Deploy: S$0 — current market action does not trigger deployment; capital preserved. Expand the section below if you want to inspect the rule engine.")
 
@@ -272,7 +291,6 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
     with s3: st.markdown(html_card("Available Capital",f"S${total_available:,.0f}","After safeguards",GREEN),unsafe_allow_html=True)
     with s4: st.markdown(html_card("Action Zone",zone,"Drawdown based",ORANGE),unsafe_allow_html=True)
     with s5: st.markdown(html_card("Drawdown Basis",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
-
     st.markdown(f"""
     <div class='preview-panel'>
     <h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3>
@@ -281,7 +299,6 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
     <p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p>
     </div>
     """,unsafe_allow_html=True)
-
     left,right=st.columns([1,1])
     with left:
         st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Priority ladder: Cash first → SRS later → CPF-OA only in deeper crash zones.</p>"+
@@ -297,7 +314,6 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
         ladder_html+=preview_row("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED)
         ladder_html+="</div>"
         st.markdown(ladder_html,unsafe_allow_html=True)
-
     options=ETF_UNIVERSE.get(sel,{}).get("etfs",[])
     if options:
         st.markdown("#### 🎯 Suggested Investment Options")
