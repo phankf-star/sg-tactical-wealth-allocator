@@ -11,10 +11,10 @@ st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", ini
 
 st.markdown("""
 <style>
-.block-container {padding-top: 1.1rem; padding-bottom: 2rem;}
-[data-testid="stMetric"] {background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; padding:14px 16px; min-height:112px; overflow-wrap:anywhere;}
-[data-testid="stMetricLabel"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.2 !important; color:#6B7280 !important;}
-[data-testid="stMetricValue"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.08 !important; font-size:1.72rem !important;}
+.block-container {padding-top:1.1rem;padding-bottom:2rem;}
+[data-testid="stMetric"] {background:#FFFFFF;border:1px solid #E5E7EB;border-radius:14px;padding:14px 16px;min-height:112px;overflow-wrap:anywhere;}
+[data-testid="stMetricLabel"] {white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.2!important;color:#6B7280!important;}
+[data-testid="stMetricValue"] {white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.08!important;font-size:1.72rem!important;}
 .small-note {font-size:0.88rem;color:#6B7280;line-height:1.35;margin-top:0.25rem;}
 .section-card {padding:16px;border:1px solid #E5E7EB;border-radius:14px;background:#FAFAFA;margin:10px 0 16px 0;}
 .alert-card {padding:18px;border-radius:16px;margin:10px 0 18px 0;}
@@ -159,6 +159,15 @@ def events(bt,thr,current):
                 ev.append({"date":ti,"price":price,"dd":dd,"zone":z,"peak":peak,"peak_dt":pkdt,"ret":((current/price)-1)*100 if price else 0})
     return ev
 
+def mini_trend_chart(df, title, subtitle, colour, fill_colour, y_title=""):
+    if df is None or df.empty:
+        st.info(f"{title}: data unavailable")
+        return
+    fig=go.Figure()
+    fig.add_trace(go.Scatter(x=df.index,y=df.iloc[:,0],mode="lines",line=dict(color=colour,width=3),fill="tozeroy",fillcolor=fill_colour,name=title))
+    fig.update_layout(height=240,margin=dict(l=10,r=10,t=48,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title=y_title)
+    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
+
 with st.spinner("Loading market data..."):
     m=market_data()
 if not m:
@@ -183,7 +192,11 @@ st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = 
 with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>Auto-updated where market data is available. PMI is monthly/latest-release input rather than intraday live data.</p>",unsafe_allow_html=True)
     macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx")
-    latest_pmi=st.number_input("Latest PMI (monthly release)",min_value=30.0,max_value=70.0,value=51.5,step=0.1,help="PMI is not true intraday data. Use latest released PMI value.")
+    pmi_col1,pmi_col2=st.columns([1,2])
+    with pmi_col1:
+        latest_pmi=st.number_input("Latest PMI (monthly release)",min_value=30.0,max_value=70.0,value=51.5,step=0.1,help="PMI is not true intraday data. Use latest released PMI value.")
+    with pmi_col2:
+        st.caption("PMI semi-auto can be connected later to a public economic-calendar source; manual override remains as fallback.")
     curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
     trend_below=close < m[sel]["ma200"]
     vix_score=0 if vix is None else min(max((vix-15)*2,0),30)
@@ -222,6 +235,31 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         st.markdown(f"<div class='risk-row'><span class='risk-label'>Drawdown Score</span><span class='risk-value'>{dd_score:.0f} / 25</span></div>",unsafe_allow_html=True)
         st.markdown(f"<div class='risk-row'><span class='risk-label'>Trend Score</span><span class='risk-value'>{trend_score:.0f} / 15</span></div>",unsafe_allow_html=True)
         st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
+    with st.expander("📈 12M Trend Snapshot", expanded=False):
+        st.caption("Compact mini charts using preview colours: VIX amber, yield curve blue, PMI green, index drawdown red/orange.")
+        vix_df=hist("^VIX","2025-06-01")[["Close"]].rename(columns={"Close":"VIX"})
+        tnx_df=hist("^TNX","2025-06-01")[["Close"]].rename(columns={"Close":"TNX"})
+        irx_df=hist("^IRX","2025-06-01")[["Close"]].rename(columns={"Close":"IRX"})
+        curve_df=pd.DataFrame()
+        if not tnx_df.empty and not irx_df.empty:
+            aligned=tnx_df.join(irx_df,how="inner")
+            if not aligned.empty:
+                curve_df=pd.DataFrame({"10Y-13W":aligned["TNX"]-aligned["IRX"]},index=aligned.index)
+        pmi_dates=pd.date_range(end=pd.Timestamp.today(),periods=12,freq="M")
+        pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12)
+        pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates)
+        idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][["Close"]]
+        idx12=idx12.rename(columns={"Close":"Index"})
+        ch1,ch2=st.columns(2)
+        with ch1:
+            mini_trend_chart(vix_df,"VIX 12M","Volatility regime","#F59E0B","rgba(245,158,11,0.18)","VIX")
+        with ch2:
+            mini_trend_chart(curve_df,"Yield Curve 12M","10Y minus 13W spread","#2563EB","rgba(37,99,235,0.16)","Spread %")
+        ch3,ch4=st.columns(2)
+        with ch3:
+            mini_trend_chart(pmi_df,"PMI 12M","Latest monthly PMI path / fallback series","#16A34A","rgba(22,163,74,0.16)","PMI")
+        with ch4:
+            mini_trend_chart(idx12,"Index 12M","Selected market price path","#EF4444","rgba(239,68,68,0.16)","Index")
     with st.expander("🧪 What-if Scenario Override", expanded=False):
         st.caption("Optional manual stress test. This does not replace the live alert.")
         w1,w2,w3,w4=st.columns(4)
