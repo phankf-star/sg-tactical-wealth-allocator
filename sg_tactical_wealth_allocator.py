@@ -8,8 +8,26 @@ import math, time
 from datetime import datetime
 
 st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="expanded")
+
+st.markdown("""
+<style>
+.block-container {padding-top: 1.2rem; padding-bottom: 2rem;}
+[data-testid="stMetric"] {background:#FFFFFF; border:1px solid #E5E7EB; border-radius:14px; padding:14px 16px; min-height:112px; overflow-wrap:anywhere;}
+[data-testid="stMetricLabel"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.2 !important; color:#6B7280 !important;}
+[data-testid="stMetricValue"] {white-space:normal !important; overflow-wrap:anywhere !important; line-height:1.1 !important; font-size:1.75rem !important;}
+.small-note {font-size:0.88rem;color:#6B7280;line-height:1.35;margin-top:0.25rem;}
+.section-card {padding:16px;border:1px solid #E5E7EB;border-radius:14px;background:#FAFAFA;margin:10px 0 16px 0;}
+.alert-card {padding:18px;border-radius:16px;margin:10px 0 18px 0;}
+.alert-normal {background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;}
+.alert-watch {background:#FEF3C7;border:1px solid #F59E0B;color:#92400E;}
+.alert-warning {background:#FFEDD5;border:1px solid #F97316;color:#9A3412;}
+.alert-risk {background:#FEE2E2;border:1px solid #EF4444;color:#991B1B;}
+.table-wrap {overflow-x:auto;}
+</style>
+""", unsafe_allow_html=True)
+
 st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator")
-st.caption("Singapore wealth allocation dashboard with tactical allocation, scenario model, ETF tracker and crash-recovery analytics.")
+st.caption("Singapore wealth allocation dashboard with tactical allocation, live risk monitoring, ETF tracking and crash-recovery analytics.")
 
 INDEX_TICKERS={"S&P 500 (US Market Core)":"^GSPC","Nasdaq 100 (Tech Growth)":"^IXIC","Straits Times Index (SG Value/REITs)":"^STI","Hang Seng Index (HK Cyclical/Beta)":"^HSI"}
 BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("SSE A Share","000002.SS"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
@@ -26,6 +44,7 @@ preserve_cpf=st.sidebar.checkbox("Preserve S$20k CPF-OA Floor",value=True)
 st.sidebar.markdown("---")
 st.sidebar.markdown("## 📐 Drawdown Formula")
 drawdown_method=st.sidebar.radio("Current drawdown reference",["Rolling 252D Peak (previous backtest formula)","All-Time High Peak"],index=0)
+st.sidebar.markdown("---")
 if st.sidebar.button("🔄 Force Refresh"):
     st.cache_data.clear(); st.toast("Market data cache cleared.",icon="🔄")
 
@@ -41,7 +60,7 @@ def tz_naive(df):
 
 @st.cache_data(ttl=14400)
 def hist(ticker,start="1997-01-01"):
-    df=yf.Ticker(ticker).history(start=start); time.sleep(0.15)
+    df=yf.Ticker(ticker).history(start=start); time.sleep(0.12)
     if df is None or df.empty: return pd.DataFrame()
     return tz_naive(df.dropna(subset=["Close"]).copy())
 
@@ -57,19 +76,29 @@ def market_data():
         except Exception: pass
     return out
 
+@st.cache_data(ttl=3600)
+def live_macro_data():
+    def last_close(ticker):
+        try:
+            df=hist(ticker,"2025-01-01")
+            if df.empty: return None
+            return safe_float(df.Close.iloc[-1])
+        except Exception: return None
+    return {"vix":last_close("^VIX"),"tnx":last_close("^TNX"),"irx":last_close("^IRX")}
+
 @st.cache_data(ttl=14400)
 def perf(items):
     rec=[]
     for name,ticker in items:
         try:
             df=hist(ticker,"2018-01-01")
-            if df.empty: rec.append({"name":name,"ticker":ticker,"price":None,"1y":None,"3y":None,"5y":None}); continue
+            if df.empty: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None}); continue
             last=safe_float(df.Close.iloc[-1])
             def r(days):
                 if len(df)<=days: return None
-                s=safe_float(df.Close.iloc[-days]); return ((last/s)-1)*100 if s else None
-            rec.append({"name":name,"ticker":ticker,"price":last,"1y":r(252),"3y":r(756),"5y":r(1260)})
-        except Exception: rec.append({"name":name,"ticker":ticker,"price":None,"1y":None,"3y":None,"5y":None})
+                s=safe_float(df.Close.iloc[-days]); return round(((last/s)-1)*100,1) if s else None
+            rec.append({"Name":name,"Ticker":ticker,"Price":round(last,2),"1Y %":r(252),"3Y %":r(756),"5Y %":r(1260)})
+        except Exception: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None})
     return rec
 
 @st.cache_data(ttl=14400)
@@ -145,38 +174,53 @@ c1,c2,c3,c4,c5=st.columns(5)
 with c1: st.metric("Index Level",f"{close:,.0f}")
 with c2: st.metric("Current Drawdown",f"{dd:.1f}%")
 with c3: st.metric("Drawdown Ref.",ref)
-with c4: st.metric("Action Zone",zone)
+with c4: st.metric("Current Market Action",zone)
 with c5: st.metric("Suggested Deploy",f"S${deploy:,.0f}")
-st.markdown(f"<div style='padding:14px;border-left:6px solid {zc};background:#FAFAFA;border-radius:10px'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference. Current reference is <b>{ref}</b> at approximately <b>{peak:,.0f}</b>.</div>",unsafe_allow_html=True)
+st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference. Current reference is <b>{ref}</b> at approximately <b>{peak:,.0f}</b>.</div>",unsafe_allow_html=True)
 
-with st.expander("🌦️ MARKET CONDITIONS & SCENARIO MODELER",expanded=False):
-    st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Scenario Modeler</h1>",unsafe_allow_html=True)
-    a,b,c,d=st.columns(4)
-    with a: vix=st.slider("VIX Assumption",10,60,22)
-    with b: pmi=st.slider("PMI Assumption",35,60,50)
-    with c: yld=st.slider("10Y Yield Assumption (%)",1.0,7.0,4.0,0.1)
-    with d: scen=st.slider("Scenario Drawdown (%)",0,60,int(abs(dd)))
-    risk=min(min(max((vix-15)*1.5,0),40)+min(max((50-pmi)*2,0),30)+min(max((yld-3.5)*8,0),20)+min(max(scen*0.5,0),30),100)
-    x,y,z=st.columns(3)
-    with x: st.metric("Scenario Risk Score",f"{risk:.0f}/100")
-    with y: st.metric("Scenario Deploy Cap",f"{max(0,min(50,50-risk*0.35)):.0f}%")
-    with z: st.metric("Scenario Action","Preserve Cash" if risk>=70 else "Partial Deploy" if risk>=40 else "Accumulate")
+with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
+    st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>Auto-updated where market data is available. PMI is monthly/latest-release input rather than intraday live data.</p>",unsafe_allow_html=True)
+    macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx")
+    latest_pmi=st.number_input("Latest PMI (monthly release)",min_value=30.0,max_value=70.0,value=51.5,step=0.1,help="PMI is not true intraday data. Use latest released PMI value.")
+    curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
+    trend_below=close < m[sel]["ma200"]
+    vix_score=0 if vix is None else min(max((vix-15)*2,0),30)
+    curve_score=10 if curve_spread is None else (20 if curve_spread<0 else 10 if curve_spread<0.5 else 0)
+    pmi_score=0 if latest_pmi>=52 else 8 if latest_pmi>=50 else 16 if latest_pmi>=47 else 20
+    dd_score=min(abs(dd)*1.2,25)
+    trend_score=15 if trend_below else 0
+    live_score=min(vix_score+curve_score+pmi_score+dd_score+trend_score,100)
+    if live_score>=70: alert,klass="CRASH RISK","alert-risk"
+    elif live_score>=50: alert,klass="WARNING","alert-warning"
+    elif live_score>=30: alert,klass="WATCH","alert-watch"
+    else: alert,klass="NORMAL","alert-normal"
+    st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>Risk score is calculated from VIX, yield curve, PMI, current drawdown and 200D trend.</div></div>",unsafe_allow_html=True)
+    a,b,c,d,e=st.columns(5)
+    with a: st.metric("VIX Live", "N/A" if vix is None else f"{vix:.1f}")
+    with b: st.metric("Yield Curve", "N/A" if curve_spread is None else f"10Y-13W {curve_spread:.2f}%")
+    with c: st.metric("Latest PMI", f"{latest_pmi:.1f}")
+    with d: st.metric("Current Drawdown", f"{dd:.1f}%")
+    with e: st.metric("Live Risk Score", f"{live_score:.0f}/100")
+    st.markdown("#### 📡 Live Trigger Monitor")
+    trig=pd.DataFrame([
+        {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No"},
+        {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No"},
+        {"Trigger":"PMI < 50","Status":"Yes" if latest_pmi<50 else "No"},
+        {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No"},
+        {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No"},
+    ])
+    st.dataframe(trig,use_container_width=True,hide_index=True)
 
 with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>📊 Market Performance & ETF Tracker</h1>",unsafe_allow_html=True)
-    def table(recs):
-        rows=[]
-        for r in recs:
-            rows.append({"Name":r["name"],"Ticker":r["ticker"],"Price":r["price"],"1Y %":r["1y"],"3Y %":r["3y"],"5Y %":r["5y"]})
-        st.dataframe(pd.DataFrame(rows),use_container_width=True,hide_index=True)
     try:
-        for g,recs in bench().items(): st.markdown(f"### {g}"); table(recs)
+        for g,recs in bench().items(): st.markdown(f"### {g}"); st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
     except Exception as e: st.warning(f"Benchmarks unavailable: {e}")
     try:
         ed=etfs(); order=[sel] if sel in ETF_UNIVERSE else []
         order += [x for x in ETF_UNIVERSE if x not in order]
         for k in order:
-            if k in ed: st.markdown(f"### {ETF_UNIVERSE[k]['label']}{' ✅ SELECTED' if k==sel else ''}"); table(ed[k])
+            if k in ed: st.markdown(f"### {ETF_UNIVERSE[k]['label']}{' ✅ SELECTED' if k==sel else ''}"); st.dataframe(pd.DataFrame(ed[k]),use_container_width=True,hide_index=True)
     except Exception as e: st.warning(f"ETFs unavailable: {e}")
 
 with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
@@ -216,20 +260,14 @@ with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
             with f3: rng=st.date_input("Historical event date range",value=(event_df["Trough Date_dt"].min(),event_df["Trough Date_dt"].max()),min_value=event_df["Trough Date_dt"].min(),max_value=event_df["Trough Date_dt"].max())
             rs,re=rng if isinstance(rng,tuple) and len(rng)==2 else (event_df["Trough Date_dt"].min(),event_df["Trough Date_dt"].max())
             filt=event_df[event_df.Severity.isin(sev)&event_df.Zone.isin(zones)&(event_df["Trough Date_dt"]>=rs)&(event_df["Trough Date_dt"]<=re)].copy()
-            st.markdown("#### 🔎 Filtered Event Statistics")
             if filt.empty: st.info("No events match the selected filters.")
             else:
-                s1,s2,s3,s4=st.columns(4)
-                with s1: st.metric("Filtered Events",len(filt))
-                with s2: st.metric("Avg Drawdown",f"{filt['Drawdown %'].mean():.1f}%")
-                with s3: st.metric("Avg Recovery",f"{filt['Recovery Return %'].mean():.1f}%")
-                with s4: st.metric("Best Recovery",f"{filt['Recovery Return %'].max():.1f}%")
                 st.markdown("#### 📉 Filtered Event Table")
                 st.dataframe(filt.drop(columns=["Trough Date_dt"]),use_container_width=True,hide_index=True)
                 opts=[f"{r['Historical Label']} | {r['Peak Date']} → {r['Trough Date']} ({r['Drawdown %']}%)" for _,r in filt.iterrows()]
                 picked=st.selectbox("Historical Crash Explorer",opts); row=filt.iloc[opts.index(picked)]
                 if st.toggle("📌 Show Selected Event Deep Dive",value=True):
-                    st.markdown("<div style='padding:16px;border:1px solid #E0E0E0;border-radius:12px;background:#FAFAFA;margin-top:12px;margin-bottom:16px'><h3>📌 Selected Event Deep Dive</h3><p style='color:#666'>Deployment controls, event-level breakdown, historical label, pre-crash context and crash path visualisation.</p></div>",unsafe_allow_html=True)
+                    st.markdown("<div class='section-card'><h3 style='margin-top:0'>📌 Selected Event Deep Dive</h3><p class='small-note'>Deployment controls, event-level breakdown, historical label, pre-crash context and crash path visualisation.</p></div>",unsafe_allow_html=True)
                     st.markdown(f"**Historical Label:** {row['Historical Label']}")
                     amount=st.number_input("Investment for selected event (S$)",1000,value=15000,step=1000)
                     trough=safe_float(row["Trough Index"]); val=amount*(cur/trough) if trough else 0; ret=((cur/trough)-1)*100 if trough else 0
