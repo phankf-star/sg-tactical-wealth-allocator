@@ -7,7 +7,11 @@ import plotly.graph_objects as go
 import math, time
 from datetime import datetime
 
-st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="SG Tactical Wealth Allocator",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+)
 
 # =========================
 # Preview colour palette
@@ -19,6 +23,7 @@ SLATE="#64748B"; GREY_BORDER="#E5E7EB"; GREY_TEXT="#6B7280"
 st.markdown(f"""
 <style>
 .block-container {{padding-top:1.1rem;padding-bottom:2rem;}}
+[data-testid="stSidebar"] {{display:none;}}
 [data-testid="stMetric"] {{background:#FFFFFF;border:1px solid {GREY_BORDER};border-radius:14px;padding:14px 16px;min-height:112px;overflow-wrap:anywhere;}}
 [data-testid="stMetricLabel"] {{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.2!important;color:{GREY_TEXT}!important;}}
 [data-testid="stMetricValue"] {{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.08!important;font-size:1.72rem!important;}}
@@ -39,7 +44,6 @@ st.markdown(f"""
 .col-card-value {{font-size:1.65rem;font-weight:700;color:#111827;margin-left:12px;margin-top:4px;line-height:1.12;word-break:break-word;}}
 .col-card-sub {{font-size:0.82rem;color:{GREY_TEXT};margin-left:12px;margin-top:8px;line-height:1.3;}}
 .note-amber {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 14px;font-size:0.86rem;line-height:1.35;margin-top:12px;}}
-.risk-guide {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:16px;padding:16px;margin-top:8px;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -72,9 +76,6 @@ ETF_UNIVERSE={
 "Dividend":{"label":"💸 Dividend","etfs":[("Dividend exposure","Schwab US Dividend","SCHD","US dividend quality exposure")]},
 "Global":{"label":"🌍 Global","etfs":[("Global core","Vanguard Total World","VT","Global equity exposure")]},
 "Bonds":{"label":"📉 Bonds","etfs":[("Duration hedge","iShares 20+ Year Treasury","TLT","Long-duration Treasury exposure")]} }
-
-# Sidebar is intentionally minimal now.
-st.sidebar.caption("Market controls are now inside Executive Tactical Allocation Centre.")
 
 # ------------------------- Helpers -------------------------
 def safe_float(v,fb=0.0):
@@ -214,6 +215,28 @@ def mini_trend_chart(df, title, subtitle, colour, fill_colour, y_title=""):
     fig=go.Figure()
     fig.add_trace(go.Scatter(x=df.index,y=df.iloc[:,0],mode="lines",line=dict(color=colour,width=3),fill="tozeroy",fillcolor=fill_colour,name=title))
     fig.update_layout(height=240,margin=dict(l=10,r=10,t=48,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title=y_title)
+    st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
+
+def mini_pmi_bar_chart(df, title, subtitle):
+    if df is None or df.empty or "PMI" not in df.columns:
+        st.info(f"{title}: data unavailable"); return
+    colours=[GREEN if v>=50 else RED for v in df["PMI"]]
+    fig=go.Figure()
+    fig.add_trace(go.Bar(
+        x=df.index,
+        y=df["PMI"],
+        marker_color=colours,
+        text=[f"{v:.1f}" for v in df["PMI"]],
+        textposition="outside",
+        textfont=dict(size=10,color="#374151"),
+        cliponaxis=False,
+        name="PMI"
+    ))
+    fig.add_hline(y=50,line_dash="dash",line_color=SLATE,annotation_text="50 Expansion / Contraction",annotation_position="top left")
+    ymin=max(0,float(df["PMI"].min())-4)
+    ymax=float(df["PMI"].max())+4
+    fig.update_yaxes(range=[ymin,ymax])
+    fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title="PMI")
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
 def html_card(title,value,sub,accent):
@@ -369,23 +392,23 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
     elif live_score>=50: alert,klass="WARNING","alert-warning"
     elif live_score>=30: alert,klass="WATCH","alert-watch"
     else: alert,klass="NORMAL","alert-normal"
-    st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>Risk score is calculated from VIX, yield curve, PMI, current drawdown and 200D trend.</div></div>",unsafe_allow_html=True)
+    st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>Global Macro Stress Overlay + Selected Market Technical Risk. This is a rules-based stress indicator, not a crash prediction.</div></div>",unsafe_allow_html=True)
     a,b,c,d,e=st.columns(5)
     with a: st.metric("VIX Live", "N/A" if vix is None else f"{vix:.1f}")
     with b: st.metric("Yield Curve", "N/A" if curve_spread is None else f"10Y-13W {curve_spread:.2f}%")
     with c: st.metric("Latest PMI", f"{latest_pmi:.1f}")
-    with d: st.metric("Current Drawdown", f"{dd:.1f}%")
+    with d: st.metric(f"{index_label} Drawdown", f"{dd:.1f}%")
     with e: st.metric("Live Risk Score", f"{live_score:.0f}/100")
 
     left2,right2=st.columns([1,1])
     with left2:
         st.markdown("#### 📡 Live Trigger Monitor")
         trig=pd.DataFrame([
-            {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No","Detail":"Volatility warning zone"},
-            {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No","Detail":"10Y minus 13W proxy"},
-            {"Trigger":"PMI < 50","Status":"Yes" if latest_pmi<50 else "No","Detail":"Contraction threshold"},
-            {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No","Detail":"Correction threshold"},
-            {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No","Detail":"Trend deterioration"},
+            {"Trigger":"VIX > 25","Status":"Yes" if vix is not None and vix>25 else "No","Detail":"Global volatility proxy"},
+            {"Trigger":"Yield curve inverted","Status":"Yes" if curve_spread is not None and curve_spread<0 else "No","Detail":"US macro/liquidity proxy"},
+            {"Trigger":"PMI < 50","Status":"Yes" if latest_pmi<50 else "No","Detail":"Monthly contraction threshold"},
+            {"Trigger":"Drawdown < -10%","Status":"Yes" if dd<-10 else "No","Detail":f"{index_label} correction threshold"},
+            {"Trigger":"Below 200D MA","Status":"Yes" if trend_below else "No","Detail":f"{index_label} trend deterioration"},
         ])
         st.dataframe(trig,use_container_width=True,hide_index=True)
     with right2:
@@ -398,17 +421,20 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         st.markdown(f"<div class='alert-card {klass}'><b>Total Live Risk Score: {live_score:.0f} / 100 → {alert}</b></div>",unsafe_allow_html=True)
         with st.expander("ℹ️ How to read Live Risk Score", expanded=False):
             st.markdown("""
-            **Live Risk Score is a rules-based market stress indicator — not a crash prediction.**
+            **Live Risk Score = Global Macro Stress Overlay + Selected Market Technical Risk.**
+
+            This score is a **rules-based market stress indicator — not a crash prediction**.
+            It combines global macro stress proxies with the selected market’s own drawdown and trend signals.
 
             - **0–29 NORMAL:** low current stress signal; monitored indicators do not show elevated crash-risk conditions.
             - **30–49 WATCH:** some caution signals are appearing; monitor closely.
             - **50–69 WARNING:** multiple indicators are deteriorating; preserve more cash and avoid aggressive deployment.
             - **70–100 CRASH RISK:** high stress regime; severe drawdown conditions are active.
 
-            The score summarises current readings from **VIX, yield curve, PMI, current drawdown and 200D trend**.
+            Inputs currently include **VIX, US yield curve, PMI proxy, selected index drawdown and selected index 200D trend**.
             """)
     with st.expander("📈 12M Trend Snapshot", expanded=False):
-        st.caption("Compact mini charts using preview colours: VIX amber, yield curve blue, PMI green, index drawdown red/orange.")
+        st.caption("Compact mini charts using preview colours. PMI is shown as monthly bars with small values above each bar.")
         vix_raw=hist("^VIX","2025-06-01"); vix_df=vix_raw[["Close"]].rename(columns={"Close":"VIX"}) if not vix_raw.empty else pd.DataFrame()
         tnx_raw=hist("^TNX","2025-06-01"); irx_raw=hist("^IRX","2025-06-01")
         tnx_df=tnx_raw[["Close"]].rename(columns={"Close":"TNX"}) if not tnx_raw.empty else pd.DataFrame(); irx_df=irx_raw[["Close"]].rename(columns={"Close":"IRX"}) if not irx_raw.empty else pd.DataFrame()
@@ -416,14 +442,16 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         if not tnx_df.empty and not irx_df.empty:
             aligned=tnx_df.join(irx_df,how="inner")
             if not aligned.empty: curve_df=pd.DataFrame({"10Y-13W":aligned["TNX"]-aligned["IRX"]},index=aligned.index)
-        pmi_dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq="ME"); pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12); pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates)
+        pmi_dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq="ME")
+        pmi_vals=np.linspace(max(latest_pmi+1.0,30),latest_pmi,12)
+        pmi_df=pd.DataFrame({"PMI":pmi_vals},index=pmi_dates)
         idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][["Close"]].rename(columns={"Close":"Index"})
         ch1,ch2=st.columns(2)
         with ch1: mini_trend_chart(vix_df,"VIX 12M","Volatility regime",AMBER,"rgba(245,158,11,0.18)","VIX")
         with ch2: mini_trend_chart(curve_df,"Yield Curve 12M","10Y minus 13W spread",BLUE,"rgba(37,99,235,0.16)","Spread %")
         ch3,ch4=st.columns(2)
-        with ch3: mini_trend_chart(pmi_df,"PMI 12M","Latest monthly PMI path / fallback series",GREEN,"rgba(22,163,74,0.16)","PMI")
-        with ch4: mini_trend_chart(idx12,"Index 12M","Selected market price path",RED,"rgba(239,68,68,0.16)","Index")
+        with ch3: mini_pmi_bar_chart(pmi_df,"PMI 12M Monthly Releases",f"{pmi_month} latest monthly signal")
+        with ch4: mini_trend_chart(idx12,f"{index_label} 12M",f"{ticker} · 12M price path",RED,"rgba(239,68,68,0.16)","Index Level")
     with st.expander("🧪 What-if Scenario Override", expanded=False):
         st.caption("Optional manual stress test. This does not replace the live alert.")
         w1,w2,w3,w4=st.columns(4)
