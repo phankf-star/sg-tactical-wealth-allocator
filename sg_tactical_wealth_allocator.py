@@ -12,17 +12,22 @@ st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", ini
 # =========================
 # Colour palette / CSS
 # =========================
-AMBER="#F59E0B"; AMBER_BG="#FEF3C7"; AMBER_TEXT="#92400E"
-BLUE="#2563EB"; GREEN="#16A34A"; ORANGE="#F97316"; RED="#EF4444"; RED_BG="#FEE2E2"
-SLATE="#64748B"; GREY_BORDER="#E5E7EB"; GREY_TEXT="#6B7280"
+BLUE="#2563EB"
+RED="#EF4444"
+ORANGE="#F97316"
+AMBER="#F59E0B"
+AMBER_BG="#FEF3C7"
+AMBER_TEXT="#92400E"
+GREEN="#16A34A"
+SLATE="#64748B"
+GREY_BORDER="#E5E7EB"
+GREY_TEXT="#6B7280"
+RED_BG="#FEE2E2"
 
 st.markdown(f"""
 <style>
 .block-container {{padding-top:1.1rem;padding-bottom:2rem;}}
 [data-testid="stSidebar"], [data-testid="collapsedControl"] {{display:none;}}
-[data-testid="stMetric"] {{background:#FFFFFF;border:1px solid {GREY_BORDER};border-radius:14px;padding:14px 16px;min-height:112px;overflow-wrap:anywhere;}}
-[data-testid="stMetricLabel"] {{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.2!important;color:{GREY_TEXT}!important;}}
-[data-testid="stMetricValue"] {{white-space:normal!important;overflow-wrap:anywhere!important;line-height:1.08!important;font-size:1.72rem!important;}}
 .small-note {{font-size:0.88rem;color:{GREY_TEXT};line-height:1.35;margin-top:0.25rem;}}
 .section-card {{padding:16px;border:1px solid {GREY_BORDER};border-radius:14px;background:#FAFAFA;margin:10px 0 16px 0;}}
 .preview-panel {{padding:18px;border:1px solid {GREY_BORDER};border-radius:18px;background:#FFFFFF;margin:12px 0 18px 0;}}
@@ -34,12 +39,36 @@ st.markdown(f"""
 .alert-watch {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};}}
 .alert-warning {{background:#FFEDD5;border:1px solid {ORANGE};color:#9A3412;}}
 .alert-risk {{background:{RED_BG};border:1px solid {RED};color:#991B1B;}}
+.note-amber {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 14px;font-size:0.86rem;line-height:1.35;margin-top:12px;}}
+
+/* Executive metric cards - exact preview style */
+.exec-card {{
+    background:#FFFFFF;
+    border:1px solid {GREY_BORDER};
+    border-radius:14px;
+    padding:14px 14px 13px 18px;
+    min-height:112px;
+    position:relative;
+    overflow:hidden;
+    box-shadow:0 1px 2px rgba(17,24,39,0.03);
+}}
+.exec-card:before {{
+    content:"";
+    position:absolute;
+    left:0;
+    top:0;
+    bottom:0;
+    width:7px;
+    background:var(--accent);
+}}
+.exec-card-title {{font-size:0.78rem;color:#6B7280;line-height:1.15;margin:0 0 4px 0;}}
+.exec-card-value {{font-size:1.55rem;font-weight:800;color:#111827;line-height:1.08;margin:0 0 6px 0;letter-spacing:-0.01em;}}
+.exec-card-sub {{font-size:0.78rem;color:#6B7280;line-height:1.2;margin:0;}}
 .col-card {{background:#FFFFFF;border:1px solid {GREY_BORDER};border-radius:16px;padding:14px 16px;min-height:126px;position:relative;overflow:hidden;}}
 .col-card:before {{content:"";position:absolute;left:0;top:0;bottom:0;width:8px;background:var(--accent);}}
 .col-card-title {{font-size:0.88rem;color:{GREY_TEXT};margin-left:12px;line-height:1.2;}}
 .col-card-value {{font-size:1.65rem;font-weight:700;color:#111827;margin-left:12px;margin-top:4px;line-height:1.12;word-break:break-word;}}
 .col-card-sub {{font-size:0.82rem;color:{GREY_TEXT};margin-left:12px;margin-top:8px;line-height:1.3;}}
-.note-amber {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 14px;font-size:0.86rem;line-height:1.35;margin-top:12px;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -61,13 +90,35 @@ DISPLAY_NAME={
     "Straits Times Index (SG Value/REITs)":"Straits Times Index",
     "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
 }
+
+# Updated PMI defaults after verification.
 PMI_PROXY_MAP={
-    "S&P 500 (US Market Core)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
-    "Nasdaq 100 (Tech Growth)":{"label":"US PMI","region":"United States","source":"S&P Global / ISM / economic calendar","default":52.0},
-    "Hang Seng Index (HK Cyclical/Beta)":{"label":"China PMI","region":"China / Hong Kong proxy","source":"Caixin / RatingDog / S&P Global / economic calendar","default":51.5},
-    "Straits Times Index (SG Value/REITs)":{"label":"Singapore PMI","region":"Singapore","source":"SIPMM / S&P Global / economic calendar","default":51.0},
+    "S&P 500 (US Market Core)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+    "Nasdaq 100 (Tech Growth)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+    "Hang Seng Index (HK Cyclical/Beta)":{"label":"China RatingDog / Caixin Manufacturing PMI","region":"China / Hong Kong proxy","source":"RatingDog / S&P Global / economic calendar","default":51.8},
+    "Straits Times Index (SG Value/REITs)":{"label":"Singapore S&P Global PMI","region":"Singapore","source":"S&P Global Singapore PMI / economic calendar","default":56.7},
 }
 PMI_FALLBACK={"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.5}
+
+# Latest verified actuals used by Update PMI. These are hard-coded monthly actuals, not live API values.
+LATEST_PMI_ACTUALS={
+    "US Composite PMI":{"value":51.5,"month":"May 2026","source":"S&P Global US Composite PMI / economic calendar"},
+    "China RatingDog / Caixin Manufacturing PMI":{"value":51.8,"month":"May 2026","source":"RatingDog / S&P Global / economic calendar"},
+    "Singapore S&P Global PMI":{"value":56.7,"month":"May 2026","source":"S&P Global Singapore PMI / economic calendar"},
+    "Singapore Manufacturing PMI (SIPMM)":{"value":51.0,"month":"May 2026","source":"SIPMM / economic calendar"},
+    "Singapore Electronics PMI (SIPMM)":{"value":51.9,"month":"May 2026","source":"SIPMM / economic calendar"},
+    "Global PMI":{"value":51.8,"month":"May 2026","source":"S&P Global / JPMorgan Global Composite PMI"},
+}
+
+PMI_PROXY_OPTIONS=[
+    "US Composite PMI",
+    "China RatingDog / Caixin Manufacturing PMI",
+    "Singapore S&P Global PMI",
+    "Singapore Manufacturing PMI (SIPMM)",
+    "Singapore Electronics PMI (SIPMM)",
+    "Global PMI",
+]
+
 BENCHMARK_TICKERS={
     "Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],
     "Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]
@@ -247,6 +298,9 @@ def mini_pmi_bar_chart(df,title,subtitle):
 def html_card(title,value,sub,accent):
     return f"""<div class='col-card' style='--accent:{accent}'><div class='col-card-title'>{title}</div><div class='col-card-value'>{value}</div><div class='col-card-sub'>{sub}</div></div>"""
 
+def exec_card(title,value,sub,accent):
+    return f"""<div class='exec-card' style='--accent:{accent}'><p class='exec-card-title'>{title}</p><p class='exec-card-value'>{value}</p><p class='exec-card-sub'>{sub}</p></div>"""
+
 def preview_row(label,value,colour="#111827"):
     return f"<div class='preview-row'><span class='preview-label'>{label}</span><span class='preview-value' style='color:{colour}'>{value}</span></div>"
 
@@ -309,35 +363,53 @@ macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.g
 curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
 trend_below=close < m[sel]["ma200"]
 
-# PMI row with Update PMI button
+# PMI row with corrected defaults and Update PMI behaviour.
 st.markdown("#### 🟢 Market-Specific PMI Monthly Signal")
-pmi1,pmi2,pmi3,pmi4,pmi5,pmi6,pmi7=st.columns([1.05,1.05,1.45,0.75,0.75,0.8,0.55])
-proxy_options=list(dict.fromkeys([PMI_PROXY_MAP.get(k,PMI_FALLBACK)["label"] for k in INDEX_TICKERS.keys()] + ["Global PMI"]))
+pmi1,pmi2,pmi3,pmi4,pmi5,pmi6,pmi7=st.columns([1.15,1.05,1.45,0.75,0.75,0.8,0.55])
 def_label=pmi_proxy_default["label"]
 with pmi1:
-    pmi_proxy_label=st.selectbox("PMI Proxy Used", proxy_options, index=proxy_options.index(def_label) if def_label in proxy_options else 0)
+    pmi_proxy_label=st.selectbox("PMI Proxy Used", PMI_PROXY_OPTIONS, index=PMI_PROXY_OPTIONS.index(def_label) if def_label in PMI_PROXY_OPTIONS else 0)
+# Resolve selected proxy source / defaults.
+selected_actual=LATEST_PMI_ACTUALS.get(pmi_proxy_label,{"value":pmi_proxy_default.get("default",51.5),"month":"May 2026","source":pmi_proxy_default.get("source","Economic calendar / manual source")})
+selected_region=("United States" if pmi_proxy_label.startswith("US") else "China / Hong Kong proxy" if pmi_proxy_label.startswith("China") else "Singapore" if pmi_proxy_label.startswith("Singapore") else "Global")
 with pmi2:
-    pmi_region=st.text_input("PMI Region", value=pmi_proxy_default["region"] if pmi_proxy_label==def_label else pmi_proxy_label.replace(" PMI", ""))
+    pmi_region=st.text_input("PMI Region", value=selected_region)
 with pmi3:
-    pmi_source=st.text_input("PMI Source", value=pmi_proxy_default["source"] if pmi_proxy_label==def_label else "Economic calendar / manual source")
+    pmi_source=st.text_input("PMI Source", value=selected_actual["source"])
 with pmi4:
     if "latest_pmi_value" not in st.session_state or st.session_state.get("pmi_proxy_label")!=pmi_proxy_label:
-        st.session_state.latest_pmi_value=float(pmi_proxy_default.get("default",51.5)); st.session_state.pmi_proxy_label=pmi_proxy_label
+        st.session_state.latest_pmi_value=float(selected_actual["value"])
+        st.session_state.latest_pmi_month=selected_actual["month"]
+        st.session_state.latest_pmi_source=selected_actual["source"]
+        st.session_state.pmi_proxy_label=pmi_proxy_label
     latest_pmi=st.number_input("Latest PMI",min_value=30.0,max_value=70.0,value=float(st.session_state.latest_pmi_value),step=0.1,help="PMI is monthly and not intraday live data.")
 with pmi5:
-    pmi_month=st.text_input("PMI Month", value=st.session_state.get("latest_pmi_month","May 2026"))
+    pmi_month=st.text_input("PMI Month", value=st.session_state.get("latest_pmi_month",selected_actual["month"]))
 with pmi6:
     st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True)
     if st.button("🔄 Update PMI", use_container_width=True):
-        st.session_state.latest_pmi_value=latest_pmi
-        st.session_state.latest_pmi_month=pmi_month
-        st.session_state.pmi_proxy_label=pmi_proxy_label
-        st.toast("PMI signal refreshed.", icon="🔄")
+        latest=LATEST_PMI_ACTUALS.get(pmi_proxy_label)
+        if latest:
+            st.session_state.latest_pmi_value=float(latest["value"])
+            st.session_state.latest_pmi_month=latest["month"]
+            st.session_state.latest_pmi_source=latest["source"]
+            st.session_state.pmi_proxy_label=pmi_proxy_label
+            st.toast(f"{pmi_proxy_label} updated to {latest['value']} for {latest['month']}.", icon="🔄")
+            st.rerun()
+        else:
+            st.session_state.latest_pmi_value=latest_pmi
+            st.session_state.latest_pmi_month=pmi_month
+            st.session_state.latest_pmi_source=pmi_source
+            st.session_state.pmi_proxy_label=pmi_proxy_label
+            st.toast("PMI manual value saved.", icon="✏️")
 with pmi7:
     st.markdown("<div style='height:27px'></div>", unsafe_allow_html=True)
     manual_override=st.toggle("Manual", value=True, help="Manual override stays available as a fallback.")
-st.session_state.latest_pmi_value=latest_pmi; st.session_state.latest_pmi_month=pmi_month; st.session_state.pmi_proxy_label=pmi_proxy_label
-st.markdown(f"<div class='note-amber'>Current PMI proxy: <b>{pmi_proxy_label}</b> for <b>{pmi_region}</b>. PMI is monthly, not intraday live data. Manual override remains available if the source update fails.</div>", unsafe_allow_html=True)
+
+latest_pmi=float(st.session_state.get("latest_pmi_value",latest_pmi))
+pmi_month=st.session_state.get("latest_pmi_month",pmi_month)
+pmi_source=st.session_state.get("latest_pmi_source",pmi_source)
+st.markdown(f"<div class='note-amber'>Current PMI proxy: <b>{pmi_proxy_label}</b> for <b>{pmi_region}</b>. Latest verified value: <b>{latest_pmi:.1f}</b> for <b>{pmi_month}</b>. PMI is monthly, not intraday live data. Manual override remains available if the source update fails.</div>", unsafe_allow_html=True)
 
 # Risk score
 vix_score=0 if vix is None else min(max((vix-15)*2,0),30)
@@ -355,37 +427,36 @@ funding_source="Cash First" if cash_deploy>0 else "No deployment"
 next_trigger="-15% DD" if zone in ["HOLD","STRONG SELL"] else "Next zone"
 decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."
 
-# Metric cards row 1
-r1c1,r1c2,r1c3,r1c4=st.columns(4)
-with r1c1: st.metric(index_label,f"{close:,.0f}"); st.caption(f"{ticker} · Index Level")
-with r1c2: st.metric("Current Drawdown",f"{dd:.1f}%")
-with r1c3: st.metric("Current Market Action",zone)
-with r1c4: st.metric("Suggested Deploy",f"S${deploy:,.0f}")
-
-# Metric cards row 2: added Risk + Confidence; standalone banner removed
-r2c1,r2c2,r2c3,r2c4=st.columns(4)
-with r2c1: st.metric("Risk Regime",alert); st.caption(f"Live Risk Score: {live_score:.0f} / 100")
-with r2c2: st.metric("Signal Confidence",conf_label); st.caption(f"Approx. {conf_score:.0f} / 100")
-with r2c3: st.metric("Funding Source",funding_source); st.caption("Capital preserved" if deploy<=0 else "Cash first")
-with r2c4: st.metric("Next Trigger",next_trigger); st.caption("Increase allocation zone")
+# Executive metric cards in exact preview style and colouring.
+row1=st.columns(4)
+with row1[0]: st.markdown(exec_card(index_label,f"{close:,.0f}",f"{ticker} · Index Level",BLUE),unsafe_allow_html=True)
+with row1[1]: st.markdown(exec_card("Current Drawdown",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
+with row1[2]: st.markdown(exec_card("Current Market Action",zone,"Drawdown-based rule",ORANGE),unsafe_allow_html=True)
+with row1[3]: st.markdown(exec_card("Suggested Deploy",f"S${deploy:,.0f}","Calculation output",AMBER),unsafe_allow_html=True)
+row2=st.columns(4)
+risk_colour=GREEN if alert=="NORMAL" else AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED
+with row2[0]: st.markdown(exec_card("Risk Regime",alert,f"Live Risk Score: {live_score:.0f} / 100",risk_colour),unsafe_allow_html=True)
+with row2[1]: st.markdown(exec_card("Signal Confidence",conf_label,f"Approx. {conf_score:.0f} / 100",BLUE),unsafe_allow_html=True)
+with row2[2]: st.markdown(exec_card("Funding Source",funding_source,"Capital preserved" if deploy<=0 else "Cash deployment priority",GREEN),unsafe_allow_html=True)
+with row2[3]: st.markdown(exec_card("Next Trigger",next_trigger,"Increase allocation zone",ORANGE),unsafe_allow_html=True)
 
 st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.<br><br><b>Decision note:</b> {decision_line}</div>",unsafe_allow_html=True)
 
+# =========================
 # Supporting detail expanders
+# =========================
 with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deploy>0)):
-    s1,s2,s3,s4,s5=st.columns(5)
-    with s1: st.markdown(html_card("Suggested Deploy",f"S${deploy:,.0f}","Total action amount",AMBER),unsafe_allow_html=True)
-    with s2: st.markdown(html_card("Deployment Rule",f"{deploy_pct:.0%}",f"{zone.title()} zone",BLUE),unsafe_allow_html=True)
-    with s3: st.markdown(html_card("Available Capital",f"S${total_available:,.0f}","After safeguards",GREEN),unsafe_allow_html=True)
-    with s4: st.markdown(html_card("Action Zone",zone,"Drawdown based",ORANGE),unsafe_allow_html=True)
-    with s5: st.markdown(html_card("Drawdown Basis",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
-    st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p></div>",unsafe_allow_html=True)
-    left,right=st.columns([1,1])
-    with left:
+    s1,s2,s3=st.columns([1,1,1])
+    with s1:
+        st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p></div>",unsafe_allow_html=True)
+    with s2:
         st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Priority ladder: Cash first → SRS later → CPF-OA only in deeper crash zones.</p>"+preview_row("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+preview_row("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+preview_row("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+f"<div class='note-amber'>Reason: {capital_reason}</div></div>", unsafe_allow_html=True)
-    with right:
-        ladder_html="<div class='preview-panel'><h3 style='margin-top:0'>🧭 Deployment Rule Ladder</h3>"+preview_row("HOLD / small drawdown","0% deploy · Preserve capital",SLATE)+preview_row("INITIAL BUY","10% deploy · Cash only",AMBER)+preview_row("BUY","20–35% deploy · Cash first, then SRS",ORANGE)+preview_row("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED)+"</div>"
-        st.markdown(ladder_html,unsafe_allow_html=True)
+    with s3:
+        if deploy>0:
+            t1,t2,t3=deploy*0.5,deploy*0.25,deploy*0.25
+            st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🧱 Tranche Deployment Plan</h3>"+preview_row("Tranche 1 — Deploy now",f"S${t1:,.0f}",AMBER)+preview_row("Tranche 2 — If drawdown deepens",f"S${t2:,.0f}",ORANGE)+preview_row("Tranche 3 — If stabilisation appears",f"S${t3:,.0f}",BLUE)+"<p class='small-note'>Tranches are staged to avoid one-shot deployment.</p></div>",unsafe_allow_html=True)
+        else:
+            st.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.")
     options=ETF_UNIVERSE.get(sel,{}).get("etfs",[])
     if options:
         st.markdown("#### 🎯 Suggested Investment Options")
@@ -394,33 +465,41 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source", expanded=(deplo
 
 with st.expander("📊 Signal Confidence Details", expanded=False):
     st.markdown(preview_row("Drawdown Signal","Active" if dd<=-8 else "Inactive",ORANGE if dd<=-8 else SLATE),unsafe_allow_html=True)
-    st.markdown(preview_row("Macro Stress",alert,AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED if alert=="CRASH RISK" else GREEN),unsafe_allow_html=True)
+    st.markdown(preview_row("Macro Stress",alert,risk_colour),unsafe_allow_html=True)
     st.markdown(preview_row("Technical Trend","Weak" if trend_below else "Stable",BLUE),unsafe_allow_html=True)
     st.progress(conf_score/100, text=f"Signal Confidence: {conf_label} · {conf_score:.0f}/100")
 
-with st.expander("🧱 Tranche Deployment Plan", expanded=(deploy>0)):
-    if deploy>0:
-        for label,amt,col,cap in [
-            ("Tranche 1 — Deploy now",deploy*0.5,AMBER,"Use 50% of suggested deploy while market is in the current buy zone."),
-            ("Tranche 2 — If drawdown deepens",deploy*0.25,ORANGE,"Deploy if selected index drawdown reaches the next trigger zone."),
-            ("Tranche 3 — If stabilisation appears",deploy*0.25,BLUE,"Deploy if risk score remains below WARNING and trend stabilises.")]:
-            st.markdown(preview_row(label,f"S${amt:,.0f}",col),unsafe_allow_html=True); st.caption(cap)
-    else:
-        st.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.")
+with st.expander("🧭 Deployment Rule Ladder & Safeguards", expanded=False):
+    left,right=st.columns(2)
+    with left:
+        st.markdown("#### 🧭 Deployment Rule Ladder")
+        st.markdown(preview_row("HOLD / small drawdown","0% deploy · Preserve capital",SLATE),unsafe_allow_html=True)
+        st.markdown(preview_row("INITIAL BUY","10% deploy · Cash only",AMBER),unsafe_allow_html=True)
+        st.markdown(preview_row("BUY","20–35% deploy · Cash first, then SRS",ORANGE),unsafe_allow_html=True)
+        st.markdown(preview_row("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED),unsafe_allow_html=True)
+    with right:
+        st.markdown("#### 🛑 Do Not Deploy Safeguards")
+        checks=[("Live Risk Score > 70", live_score>70),("VIX > 35", vix is not None and vix>35),("PMI < 47", latest_pmi<47),("Emergency buffer breached", available_cash<=0)]
+        for lab,active in checks:
+            st.markdown(preview_row(lab,"Active" if active else "Inactive",RED if active else GREEN),unsafe_allow_html=True)
 
-with st.expander("🛑 Do Not Deploy Safeguards", expanded=False):
-    checks=[("Live Risk Score > 70", live_score>70),("VIX > 35", vix is not None and vix>35),("PMI < 47", latest_pmi<47),("Emergency buffer breached", available_cash<=0)]
-    for lab,active in checks:
-        st.markdown(preview_row(lab,"Active" if active else "Inactive",RED if active else GREEN),unsafe_allow_html=True)
-
-with st.expander("📡 Data Source & Freshness", expanded=False):
-    st.markdown(preview_row("Market Data","Yahoo Finance",BLUE),unsafe_allow_html=True)
-    st.markdown(preview_row("PMI Proxy",pmi_proxy_label,GREEN),unsafe_allow_html=True)
-    st.markdown(preview_row("PMI Source",pmi_source,GREEN),unsafe_allow_html=True)
-    st.markdown(preview_row("Last Refreshed",datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE),unsafe_allow_html=True)
-
-with st.expander("📤 Tactical Snapshot Export", expanded=False):
+with st.expander("📡 Audit Trail & Export", expanded=False):
+    left,right=st.columns([1,1])
+    with left:
+        st.markdown("#### 📡 Data Source & Freshness")
+        st.markdown(preview_row("Market Data","Yahoo Finance",BLUE),unsafe_allow_html=True)
+        st.markdown(preview_row("PMI Proxy",pmi_proxy_label,GREEN),unsafe_allow_html=True)
+        st.markdown(preview_row("PMI Value",f"{latest_pmi:.1f} · {pmi_month}",GREEN),unsafe_allow_html=True)
+        st.markdown(preview_row("PMI Source",pmi_source,GREEN),unsafe_allow_html=True)
+        st.markdown(preview_row("Last Refreshed",datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE),unsafe_allow_html=True)
+    with right:
+        st.markdown("#### 🧾 Methodology Notes")
+        st.markdown("- Live Risk Score is rules-based and not a crash prediction.")
+        st.markdown("- PMI is monthly, not intraday live data.")
+        st.markdown("- Drawdown uses the selected peak reference.")
+        st.markdown("- Funding source follows Cash → SRS → CPF-OA staging rules.")
     snap=pd.DataFrame([{"Timestamp":datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),"Selected Index":index_label,"Ticker":ticker,"Drawdown Reference":ref,"Current Drawdown %":round(dd,2),"Action Zone":zone,"Suggested Deploy S$":round(deploy,2),"Funding Source":funding_source,"PMI Proxy":pmi_proxy_label,"PMI Value":latest_pmi,"Live Risk Score":round(live_score,1),"Risk Regime":alert,"Signal Confidence":conf_label,"Do Not Deploy Flags":"; ".join(flags) if flags else "None"}])
+    st.markdown("#### 📤 Tactical Snapshot Export")
     st.dataframe(snap,use_container_width=True,hide_index=True)
     st.download_button("⬇️ Export Tactical Snapshot CSV",snap.to_csv(index=False),file_name="tactical_snapshot.csv",mime="text/csv")
 
