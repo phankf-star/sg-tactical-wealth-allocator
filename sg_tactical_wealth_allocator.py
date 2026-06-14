@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import math, time
 from datetime import datetime
 
-st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(page_title="SG Tactical Wealth Allocator", layout="wide", initial_sidebar_state="expanded")
 
 # =========================================================
 # Palette / CSS — preview colours
@@ -18,7 +18,6 @@ AMBER_BG="#FEF3C7"; AMBER_TEXT="#92400E"; RED_BG="#FEE2E2"; GREY_BORDER="#E5E7EB
 st.markdown(f"""
 <style>
 .block-container {{padding-top:1.1rem;padding-bottom:2rem;}}
-[data-testid="stSidebar"], [data-testid="collapsedControl"] {{display:none;}}
 .small-note {{font-size:.88rem;color:{GREY_TEXT};line-height:1.35;margin-top:.25rem;}}
 .section-card {{padding:16px;border:1px solid {GREY_BORDER};border-radius:14px;background:#FAFAFA;margin:10px 0 16px 0;}}
 .preview-panel {{padding:18px;border:1px solid {GREY_BORDER};border-radius:18px;background:#FFFFFF;margin:12px 0 18px 0;}}
@@ -36,11 +35,9 @@ st.markdown(f"""
 .exec-card-title {{font-size:.78rem;color:#6B7280;line-height:1.15;margin:0 0 4px 0;}}
 .exec-card-value {{font-size:1.55rem;font-weight:800;color:#111827;line-height:1.08;margin:0 0 6px 0;letter-spacing:-.01em;}}
 .exec-card-sub {{font-size:.78rem;color:#6B7280;line-height:1.2;margin:0;}}
+.sidebar-note {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 12px;font-size:.78rem;line-height:1.32;margin-top:8px;}}
 </style>
 """, unsafe_allow_html=True)
-
-st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator")
-st.caption("Singapore wealth allocation dashboard with market-specific PMI, live risk monitoring, staged deployment and crash-recovery analytics.")
 
 # =========================================================
 # Static mappings
@@ -219,21 +216,45 @@ def mini_pmi_bar_chart(df,title,subtitle):
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
 # =========================================================
-# Load data
+# Load data before sidebar quick settings
 # =========================================================
 with st.spinner("Loading market data..."):
     m=market_data()
 if not m:
     st.error("Market data unavailable. Try Refresh Market Data."); st.stop()
-sel=st.selectbox("Select Market Index",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
+
+# =========================================================
+# Sidebar — navigation + quick settings only
+# =========================================================
+with st.sidebar:
+    st.markdown("## 📍 Navigation")
+    st.markdown("[🧠 Executive Centre](#executive-centre)")
+    st.markdown("[💰 Suggested Deploy](#suggested-deploy)")
+    st.markdown("[🌦️ Market Conditions](#market-conditions)")
+    st.markdown("[📊 Market Performance](#market-performance)")
+    st.markdown("[🏆 Crash Analytics](#crash-analytics)")
+    st.markdown("[📡 Audit Trail & Export](#audit-trail)")
+    st.markdown("---")
+    st.markdown("## ⚙️ Quick Settings")
+    sel=st.selectbox("Selected Market",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
+    drawdown_method=st.radio("Drawdown Reference",["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],index=0)
+    if st.button("🔄 Refresh Market Data",use_container_width=True):
+        st.cache_data.clear(); st.toast("Market data refreshed.",icon="🔄")
+    st.caption(f"Last refreshed: {datetime.now().strftime('%d %b %Y %H:%M SGT')}")
+    st.markdown("<div class='sidebar-note'><b>Sidebar rule:</b><br>Use the side panel only for navigation and quick settings. Keep analytical content in the main page.</div>",unsafe_allow_html=True)
+
 ud=m[sel]["df"]; ticker=m[sel]["ticker"]; index_label=DISPLAY_NAME.get(sel,sel); pmi_proxy_default=PMI_PROXY_MAP.get(sel,PMI_FALLBACK)
+
+st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator")
+st.caption("Singapore wealth allocation dashboard with market-specific PMI, live risk monitoring, staged deployment and crash-recovery analytics.")
 
 # =========================================================
 # 1. Executive Tactical Allocation Centre — 6 cards only
 # =========================================================
+st.markdown('<a id="executive-centre"></a>',unsafe_allow_html=True)
 st.markdown("---")
 st.markdown("## 🧠 Executive Tactical Allocation Centre")
-st.caption("Summary only: six decision cards, drawdown reference, formula and decision note. Funding Source is inside Suggested Deploy Basis & Capital Source; PMI controls are inside Market Conditions & Live Risk Monitor.")
+st.caption("Summary only: six decision cards, drawdown reference, formula and decision note. Funding details are inside the deployment section; PMI controls are inside Market Conditions & Live Risk Monitor.")
 
 with st.expander("💰 Capital Pools & Safeguards", expanded=False):
     cap1,cap2,cap3,cap4,cap5=st.columns(5)
@@ -244,14 +265,8 @@ with st.expander("💰 Capital Pools & Safeguards", expanded=False):
     with cap5: preserve_cpf=st.checkbox("Preserve S$20k CPF-OA Floor",value=True)
     st.caption("Capital inputs affect Suggested Deploy and the capital source breakdown.")
 
-ref_col, refresh_col=st.columns([4,1])
-with ref_col:
-    st.markdown("#### 📐 Current Drawdown Reference")
-    drawdown_method=st.radio("Current drawdown reference",["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],index=0,horizontal=True,label_visibility="collapsed")
-    st.caption("Default remains Rolling 252D Peak. Longer references provide medium-cycle and long-cycle context.")
-with refresh_col:
-    st.markdown("<div style='height:34px'></div>",unsafe_allow_html=True)
-    if st.button("🔄 Refresh Market Data",use_container_width=True): st.cache_data.clear(); st.toast("Market data refreshed.",icon="🔄")
+st.markdown(f"#### 📐 Current Drawdown Reference: {drawdown_method}")
+st.caption("Drawdown reference is controlled from the sidebar quick settings.")
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0)
@@ -285,7 +300,7 @@ conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_la
 decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."
 next_trigger=next_trigger_label(zone)
 
-# Six executive cards only — Funding Source and Next Trigger removed from Executive Centre.
+# Six executive cards only — funding and trigger details are handled below.
 row1=st.columns(3)
 with row1[0]: st.markdown(exec_card(index_label,f"{close:,.0f}",f"{ticker} · Index Level",BLUE),unsafe_allow_html=True)
 with row1[1]: st.markdown(exec_card("Current Drawdown",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
@@ -300,6 +315,7 @@ st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = 
 # =========================================================
 # 2. Suggested Deploy Basis & Capital Source — includes Funding Source, Ladder & Safeguards
 # =========================================================
+st.markdown('<a id="suggested-deploy"></a>',unsafe_allow_html=True)
 with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy>0)):
     s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
     with s1:
@@ -329,6 +345,7 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy
 # =========================================================
 # 3. Market Conditions & Live Risk Monitor — PMI and Signal Confidence live here
 # =========================================================
+st.markdown('<a id="market-conditions"></a>',unsafe_allow_html=True)
 with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>PMI controls, signal confidence, live triggers, risk-score engine, 12M trend snapshot and scenario override.</p>",unsafe_allow_html=True)
     st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>This is a rules-based stress indicator, not a crash prediction. PMI proxy used: <b>{pmi_proxy_label}</b>.</div></div>",unsafe_allow_html=True)
@@ -407,6 +424,7 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
 # =========================================================
 # 4. Market Performance & ETF Tracker
 # =========================================================
+st.markdown('<a id="market-performance"></a>',unsafe_allow_html=True)
 with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     try:
         for g,recs in bench().items(): st.markdown(f"### {g}"); st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
@@ -420,12 +438,14 @@ with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
 # =========================================================
 # 5. Crash & Recovery Analytics
 # =========================================================
+st.markdown('<a id="crash-analytics"></a>',unsafe_allow_html=True)
 with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
     st.info("Crash analytics module retained as compact placeholder in this consolidated build. Use the prior full historical-event version if full event explorer detail is needed.")
 
 # =========================================================
 # 6. Audit Trail & Export — final section at bottom
 # =========================================================
+st.markdown('<a id="audit-trail"></a>',unsafe_allow_html=True)
 with st.expander("📡 AUDIT TRAIL & EXPORT",expanded=False):
     left,right=st.columns([1,1])
     with left:
