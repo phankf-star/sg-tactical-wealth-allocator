@@ -51,18 +51,24 @@ INDEX_TICKERS={
     "Nasdaq 100 (Tech Growth)":"^IXIC",
     "Straits Times Index (SG Value/REITs)":"^STI",
     "Hang Seng Index (HK Cyclical/Beta)":"^HSI",
+ "Dow Jones Industrial Average (US Blue Chips)":"^DJI",
+ "FTSE Bursa Malaysia KLCI (Malaysia Core)":"^KLSE",
 }
 DISPLAY_NAME={
     "S&P 500 (US Market Core)":"S&P 500",
     "Nasdaq 100 (Tech Growth)":"Nasdaq 100",
     "Straits Times Index (SG Value/REITs)":"Straits Times Index",
     "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
+ "Dow Jones Industrial Average (US Blue Chips)":"DJIA",
+ "FTSE Bursa Malaysia KLCI (Malaysia Core)":"KLSE",
 }
 PMI_PROXY_MAP={
     "S&P 500 (US Market Core)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
     "Nasdaq 100 (Tech Growth)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
     "Hang Seng Index (HK Cyclical/Beta)":{"label":"China RatingDog / Caixin Manufacturing PMI","region":"China / Hong Kong proxy","source":"RatingDog / S&P Global / economic calendar","default":51.8},
     "Straits Times Index (SG Value/REITs)":{"label":"Singapore S&P Global PMI","region":"Singapore","source":"S&P Global Singapore PMI / economic calendar","default":56.7},
+ "Dow Jones Industrial Average (US Blue Chips)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+ "FTSE Bursa Malaysia KLCI (Malaysia Core)":{"label":"Malaysia Manufacturing PMI","region":"Malaysia","source":"S&P Global Malaysia PMI / economic calendar","default":49.8},
 }
 PMI_FALLBACK={"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.5}
 LATEST_PMI_ACTUALS={
@@ -71,6 +77,7 @@ LATEST_PMI_ACTUALS={
     "Singapore S&P Global PMI":{"value":56.7,"month":"May 2026","source":"S&P Global Singapore PMI / economic calendar"},
     "Singapore Manufacturing PMI (SIPMM)":{"value":51.0,"month":"May 2026","source":"SIPMM / economic calendar"},
     "Singapore Electronics PMI (SIPMM)":{"value":51.9,"month":"May 2026","source":"SIPMM / economic calendar"},
+ "Malaysia Manufacturing PMI":{"value":49.8,"month":"May 2026","source":"S&P Global Malaysia PMI / economic calendar"},
     "Global PMI":{"value":51.8,"month":"May 2026","source":"S&P Global / JPMorgan Global Composite PMI"},
 }
 PMI_PROXY_OPTIONS=list(LATEST_PMI_ACTUALS.keys())
@@ -82,6 +89,8 @@ ETF_UNIVERSE={
 "Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
 "Nasdaq 100 (Tech Growth)":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},
 "S&P 500 (US Market Core)":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]},
+ "Dow Jones Industrial Average (US Blue Chips)":{"label":"🇺🇸 DJIA","etfs":[("Core exposure","SPDR Dow Jones Industrial Average ETF","DIA","Blue-chip US exposure")]},
+ "FTSE Bursa Malaysia KLCI (Malaysia Core)":{"label":"🇲🇾 Malaysia","etfs":[("Core exposure","FTSE Bursa Malaysia KLCI ETF","0820EA.KL","Broad Malaysia market exposure")]},
 }
 
 # =========================
@@ -445,7 +454,14 @@ def render_market(expanded=False):
             ch3,ch4=st.columns(2)
             with ch3: mini_pmi_bar_chart(pmi_df,f"{chosen} 12M Monthly Releases",f"{month_in} latest monthly signal")
             with ch4: mini_trend_chart(idx12,f"{index_label} 12M",f"{ticker} · 12M price path",RED,"rgba(239,68,68,0.16)","Index Level")
-        with st.expander("🧪 What-if Scenario Override",expanded=False):
+        
+
+        with st.expander("📈 曾氏通道 (Trend Channel Line) — Secular Valuation Engine", expanded=False):
+            st.markdown("### 📈 Secular Valuation & Market Regime Engine")
+            st.caption("Monthly logarithmic regression channel analysis with dynamic valuation bands.")
+            render_trend_channel(ud, index_label)
+
+with st.expander("🧪 What-if Scenario Override",expanded=False):
             w1,w2,w3,w4=st.columns(4)
             with w1: st.slider("Override VIX",10,60,int(vix if vix else 20))
             with w2: st.slider(f"Override {chosen}",35,60,int(latest_in))
