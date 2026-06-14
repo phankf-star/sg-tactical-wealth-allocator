@@ -23,7 +23,7 @@ st.markdown(f"""
 .preview-panel {{padding:18px;border:1px solid {GREY_BORDER};border-radius:18px;background:#FFFFFF;margin:12px 0 18px 0;}}
 .preview-row {{padding:10px 12px;border:1px solid {GREY_BORDER};border-radius:10px;background:#F9FAFB;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center;}}
 .preview-label {{font-size:.95rem;color:#374151;line-height:1.25;}}
-.preview-value {{font-size:.95rem;font-weight:700;white-space:nowrap;}}
+.preview-value {{font-size:.95rem;font-weight:700;white-space:nowrap;text-align:right;}}
 .alert-card {{padding:18px;border-radius:16px;margin:10px 0 18px 0;}}
 .alert-normal {{background:#ECFDF5;border:1px solid #A7F3D0;color:#065F46;}}
 .alert-watch {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};}}
@@ -107,9 +107,11 @@ def market_data():
         try:
             df=hist(ticker)
             if df.empty: continue
-            close=safe_float(df.Close.iloc[-1]); ma=safe_float(df.Close.rolling(200).mean().dropna().iloc[-1],close) if len(df)>=200 else close
+            close=safe_float(df.Close.iloc[-1])
+            ma=safe_float(df.Close.rolling(200).mean().dropna().iloc[-1],close) if len(df)>=200 else close
             out[name]={"ticker":ticker,"df":df,"close":close,"ma200":ma}
-        except Exception: pass
+        except Exception:
+            pass
     return out
 
 @st.cache_data(ttl=3600)
@@ -136,8 +138,10 @@ def perf(items):
                 if len(df)<=days: return None
                 s=safe_float(df.Close.iloc[-days]); return round(((last/s)-1)*100,1) if s else None
             rec.append({"Name":name,"Ticker":ticker,"Price":round(last,2),"1Y %":r(252),"3Y %":r(756),"5Y %":r(1260)})
-        except Exception: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None})
+        except Exception:
+            rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None})
     return rec
+
 @st.cache_data(ttl=14400)
 def bench(): return {g:perf(v) for g,v in BENCHMARK_TICKERS.items()}
 @st.cache_data(ttl=14400)
@@ -226,22 +230,27 @@ if not m:
 # =========================================================
 # Sidebar — navigation + quick settings only
 # =========================================================
+NAV_OPTIONS=["🧠 Executive Centre","💰 Suggested Deploy","🌦️ Market Conditions","📊 Market Performance","🏆 Crash Analytics","📡 Audit Trail & Export"]
 with st.sidebar:
     st.markdown("## 📍 Navigation")
-    st.markdown("[🧠 Executive Centre](#executive-centre)")
-    st.markdown("[💰 Suggested Deploy](#suggested-deploy)")
-    st.markdown("[🌦️ Market Conditions](#market-conditions)")
-    st.markdown("[📊 Market Performance](#market-performance)")
-    st.markdown("[🏆 Crash Analytics](#crash-analytics)")
-    st.markdown("[📡 Audit Trail & Export](#audit-trail)")
+    active_section=st.radio("Go to section", NAV_OPTIONS, index=0, label_visibility="collapsed")
     st.markdown("---")
     st.markdown("## ⚙️ Quick Settings")
     sel=st.selectbox("Selected Market",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
+
+    # Part 1 update: capital inputs moved to sidebar below Selected Market.
+    st.markdown("### 💰 Capital Pools & Safeguards")
+    cash_balance=st.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
+    srs_balance=st.number_input("SRS (S$)",0.0,value=35000.0,step=5000.0)
+    cpf_oa_balance=st.number_input("CPF-OA (S$)",0.0,value=180000.0,step=5000.0)
+    emergency_buffer=st.number_input("Emergency Buffer (S$)",0.0,value=20000.0,step=1000.0)
+    preserve_cpf=st.checkbox("Preserve S$20k CPF-OA Floor",value=True)
+
     drawdown_method=st.radio("Drawdown Reference",["Rolling 252D Peak","2Y Peak","3Y Peak","5Y Peak","All-Time High Peak"],index=0)
     if st.button("🔄 Refresh Market Data",use_container_width=True):
         st.cache_data.clear(); st.toast("Market data refreshed.",icon="🔄")
     st.caption(f"Last refreshed: {datetime.now().strftime('%d %b %Y %H:%M SGT')}")
-    st.markdown("<div class='sidebar-note'><b>Sidebar rule:</b><br>Use the side panel only for navigation and quick settings. Keep analytical content in the main page.</div>",unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-note'><b>Sidebar rule:</b><br>Navigation + quick settings only. Capital inputs are settings; analysis stays in the main page.</div>",unsafe_allow_html=True)
 
 ud=m[sel]["df"]; ticker=m[sel]["ticker"]; index_label=DISPLAY_NAME.get(sel,sel); pmi_proxy_default=PMI_PROXY_MAP.get(sel,PMI_FALLBACK)
 
@@ -254,19 +263,10 @@ st.caption("Singapore wealth allocation dashboard with market-specific PMI, live
 st.markdown('<a id="executive-centre"></a>',unsafe_allow_html=True)
 st.markdown("---")
 st.markdown("## 🧠 Executive Tactical Allocation Centre")
-st.caption("Summary only: six decision cards, drawdown reference, formula and decision note. Funding details are inside the deployment section; PMI controls are inside Market Conditions & Live Risk Monitor.")
-
-with st.expander("💰 Capital Pools & Safeguards", expanded=False):
-    cap1,cap2,cap3,cap4,cap5=st.columns(5)
-    with cap1: cash_balance=st.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
-    with cap2: srs_balance=st.number_input("SRS (S$)",0.0,value=35000.0,step=5000.0)
-    with cap3: cpf_oa_balance=st.number_input("CPF-OA (S$)",0.0,value=180000.0,step=5000.0)
-    with cap4: emergency_buffer=st.number_input("Emergency Buffer (S$)",0.0,value=20000.0,step=1000.0)
-    with cap5: preserve_cpf=st.checkbox("Preserve S$20k CPF-OA Floor",value=True)
-    st.caption("Capital inputs affect Suggested Deploy and the capital source breakdown.")
+st.caption("Summary only: six decision cards, drawdown reference, formula and decision note. Capital inputs and funding details are handled outside the Executive Centre.")
 
 st.markdown(f"#### 📐 Current Drawdown Reference: {drawdown_method}")
-st.caption("Drawdown reference is controlled from the sidebar quick settings.")
+st.caption("Drawdown reference and capital pools are controlled from the sidebar quick settings.")
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0)
@@ -313,13 +313,13 @@ with row2[2]: st.markdown(exec_card("Signal Confidence",conf_label,f"Approx. {co
 st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.<br><br><b>Decision note:</b> {decision_line}</div>",unsafe_allow_html=True)
 
 # =========================================================
-# 2. Suggested Deploy Basis & Capital Source — includes Funding Source, Ladder & Safeguards
+# 2. Suggested Deploy Basis & Capital Source — auto-opens via sidebar navigation
 # =========================================================
 st.markdown('<a id="suggested-deploy"></a>',unsafe_allow_html=True)
-with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy>0)):
+with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(active_section=="💰 Suggested Deploy") or (deploy>0 and active_section=="🧠 Executive Centre")):
     s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
     with s1:
-        st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p></div>",unsafe_allow_html=True)
+        st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and sidebar capital inputs.</p></div>",unsafe_allow_html=True)
     with s2:
         st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Funding source has been moved here from the Executive Centre.</p>"+
                     preview_row("Funding Source",funding_source,GREEN if cash_deploy>0 else SLATE)+
@@ -343,10 +343,10 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy
         st.dataframe(pd.DataFrame([{"Role":r,"Instrument":n,"Ticker":t,"Use case":u} for r,n,t,u in options]),use_container_width=True,hide_index=True)
 
 # =========================================================
-# 3. Market Conditions & Live Risk Monitor — PMI and Signal Confidence live here
+# 3. Market Conditions & Live Risk Monitor — auto-opens via sidebar navigation
 # =========================================================
 st.markdown('<a id="market-conditions"></a>',unsafe_allow_html=True)
-with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False):
+with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=(active_section=="🌦️ Market Conditions")):
     st.markdown("<h1 style='font-size:34px;margin-bottom:0'>🌦️ Market Conditions & Live Risk Monitor</h1><p class='small-note'>PMI controls, signal confidence, live triggers, risk-score engine, 12M trend snapshot and scenario override.</p>",unsafe_allow_html=True)
     st.markdown(f"<div class='alert-card {klass}'><h2 style='margin:0'>LIVE MARKET RISK ALERT: {alert}</h2><div class='small-note'>This is a rules-based stress indicator, not a crash prediction. PMI proxy used: <b>{pmi_proxy_label}</b>.</div></div>",unsafe_allow_html=True)
 
@@ -422,10 +422,10 @@ with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR",expanded=False)
         st.info("Simulation output only: use this to stress-test assumptions, not as the live market alert.")
 
 # =========================================================
-# 4. Market Performance & ETF Tracker
+# 4. Market Performance & ETF Tracker — auto-opens via sidebar navigation
 # =========================================================
 st.markdown('<a id="market-performance"></a>',unsafe_allow_html=True)
-with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
+with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=(active_section=="📊 Market Performance")):
     try:
         for g,recs in bench().items(): st.markdown(f"### {g}"); st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
     except Exception as e: st.warning(f"Benchmarks unavailable: {e}")
@@ -436,17 +436,17 @@ with st.expander("📊 MARKET PERFORMANCE & ETF TRACKER",expanded=False):
     except Exception as e: st.warning(f"ETFs unavailable: {e}")
 
 # =========================================================
-# 5. Crash & Recovery Analytics
+# 5. Crash & Recovery Analytics — auto-opens via sidebar navigation
 # =========================================================
 st.markdown('<a id="crash-analytics"></a>',unsafe_allow_html=True)
-with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=False):
+with st.expander("🏆 CRASH & RECOVERY ANALYTICS",expanded=(active_section=="🏆 Crash Analytics")):
     st.info("Crash analytics module retained as compact placeholder in this consolidated build. Use the prior full historical-event version if full event explorer detail is needed.")
 
 # =========================================================
-# 6. Audit Trail & Export — final section at bottom
+# 6. Audit Trail & Export — final section at bottom, auto-opens via sidebar navigation
 # =========================================================
 st.markdown('<a id="audit-trail"></a>',unsafe_allow_html=True)
-with st.expander("📡 AUDIT TRAIL & EXPORT",expanded=False):
+with st.expander("📡 AUDIT TRAIL & EXPORT",expanded=(active_section=="📡 Audit Trail & Export")):
     left,right=st.columns([1,1])
     with left:
         st.markdown("#### 📡 Data Source & Freshness")
