@@ -30,11 +30,6 @@ st.markdown(f"""
 .exec-card-value {{font-size:1.55rem;font-weight:800;color:#111827;line-height:1.08;margin:0 0 6px 0;letter-spacing:-.01em;}}
 .exec-card-sub {{font-size:.78rem;color:#6B7280;line-height:1.2;margin:0;}}
 .sidebar-note {{background:{AMBER_BG};border:1px solid {AMBER};color:{AMBER_TEXT};border-radius:12px;padding:10px 12px;font-size:.78rem;line-height:1.32;margin-top:8px;}}
-
-.severity-card {{border-radius:12px;padding:16px 18px;min-height:74px;border:1px solid transparent;font-weight:600;line-height:1.45;}}
-.severity-blue {{background:#DBEAFE;border-color:#BFDBFE;color:#075985;}}
-.severity-yellow {{background:#FEF9C3;border-color:#FEF08A;color:#92400E;}}
-.severity-red {{background:#FEE2E2;border-color:#FECACA;color:#B91C1C;}}
 </style>
 """, unsafe_allow_html=True)
 
@@ -369,13 +364,7 @@ def render_performance(expanded=False):
 
 def render_crash(expanded=False):
     with st.expander("🏆 Crash & Recovery Analytics",expanded=expanded):
-        st.markdown("## 📊 Executive Crash & Cycle Summary")
-        st.caption("Historical drawdown severity bands used to classify correction, bear-market and crash-regime events.")
-        sev1,sev2,sev3=st.columns(3)
-        with sev1: st.markdown("<div class='severity-card severity-blue'>📉 <b>10–20% corrections</b> represent normal correction-zone events in this dashboard.</div>",unsafe_allow_html=True)
-        with sev2: st.markdown("<div class='severity-card severity-yellow'>⚠️ <b>20–30% corrections</b> represent deeper bear-market drawdowns.</div>",unsafe_allow_html=True)
-        with sev3: st.markdown("<div class='severity-card severity-red'>🚨 <b>&gt;30% crashes</b> represent severe crash-regime drawdowns.</div>",unsafe_allow_html=True)
-        st.markdown("---")
+        st.markdown("### 📊 Executive Crash Summary")
         try:
             p,q=st.columns([1,1])
             with p: start=st.date_input("Historical analysis start date",value=ud.index.min().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key="crash_start")
@@ -393,6 +382,11 @@ def render_crash(expanded=False):
             with k5: st.metric("Current Drawdown",f"{bt.dd_pct.iloc[-1]:.1f}%")
 
             st.markdown("---")
+            st.markdown("### 🧮 Full Market Cycle Statistics")
+            c1,c2,c3=st.columns(3)
+            with c1: st.info("📉 **10–20% corrections** represent normal correction-zone events in this dashboard.")
+            with c2: st.warning("⚠️ **20–30% corrections** represent deeper bear-market drawdowns.")
+            with c3: st.error("🚨 **>30% crashes** represent severe crash-regime drawdowns.")
 
             st.markdown("### 🔍 Interactive Event Explorer")
             f1,f2,f3=st.columns(3)
