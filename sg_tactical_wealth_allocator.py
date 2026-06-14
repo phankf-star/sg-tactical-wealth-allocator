@@ -45,8 +45,18 @@ st.caption("Singapore wealth allocation dashboard with market-specific PMI, live
 # =========================================================
 # Static mappings
 # =========================================================
-INDEX_TICKERS={"S&P 500 (US Market Core)":"^GSPC","Nasdaq 100 (Tech Growth)":"^IXIC","Straits Times Index (SG Value/REITs)":"^STI","Hang Seng Index (HK Cyclical/Beta)":"^HSI"}
-DISPLAY_NAME={"S&P 500 (US Market Core)":"S&P 500","Nasdaq 100 (Tech Growth)":"Nasdaq 100","Straits Times Index (SG Value/REITs)":"Straits Times Index","Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index"}
+INDEX_TICKERS={
+    "S&P 500 (US Market Core)":"^GSPC",
+    "Nasdaq 100 (Tech Growth)":"^IXIC",
+    "Straits Times Index (SG Value/REITs)":"^STI",
+    "Hang Seng Index (HK Cyclical/Beta)":"^HSI",
+}
+DISPLAY_NAME={
+    "S&P 500 (US Market Core)":"S&P 500",
+    "Nasdaq 100 (Tech Growth)":"Nasdaq 100",
+    "Straits Times Index (SG Value/REITs)":"Straits Times Index",
+    "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
+}
 PMI_PROXY_MAP={
     "S&P 500 (US Market Core)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
     "Nasdaq 100 (Tech Growth)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
@@ -63,7 +73,10 @@ LATEST_PMI_ACTUALS={
     "Global PMI":{"value":51.8,"month":"May 2026","source":"S&P Global / JPMorgan Global Composite PMI"},
 }
 PMI_PROXY_OPTIONS=list(LATEST_PMI_ACTUALS.keys())
-BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
+BENCHMARK_TICKERS={
+    "Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],
+    "Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]
+}
 ETF_UNIVERSE={
 "Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
 "Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
@@ -119,7 +132,8 @@ def perf(items):
         name,ticker=(item[1],item[2]) if len(item)==4 else item[:2]
         try:
             df=hist(ticker,"2018-01-01")
-            if df.empty: rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None}); continue
+            if df.empty:
+                rec.append({"Name":name,"Ticker":ticker,"Price":None,"1Y %":None,"3Y %":None,"5Y %":None}); continue
             last=safe_float(df.Close.iloc[-1])
             def r(days):
                 if len(df)<=days: return None
@@ -168,6 +182,12 @@ def capital_breakdown(zone,deploy_amount,available_cash,available_srs,available_
     else: reason="STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor."
     return cash,srs,cpf,reason
 
+def next_trigger_label(zone):
+    if zone in ["HOLD", "STRONG SELL"]: return "Initial buy zone near -8% to -10% drawdown"
+    if zone=="INITIAL BUY": return "BUY zone if drawdown deepens toward -20%"
+    if zone=="BUY": return "STRONG BUY zone if drawdown deepens beyond -35%"
+    return "Already in deepest deployment zone"
+
 def exec_card(title,value,sub,accent):
     return f"""<div class='exec-card' style='--accent:{accent}'><p class='exec-card-title'>{title}</p><p class='exec-card-value'>{value}</p><p class='exec-card-sub'>{sub}</p></div>"""
 def preview_row(label,value,colour="#111827"):
@@ -209,11 +229,11 @@ sel=st.selectbox("Select Market Index",list(m.keys()),index=list(m.keys()).index
 ud=m[sel]["df"]; ticker=m[sel]["ticker"]; index_label=DISPLAY_NAME.get(sel,sel); pmi_proxy_default=PMI_PROXY_MAP.get(sel,PMI_FALLBACK)
 
 # =========================================================
-# 1. Executive Tactical Allocation Centre — no PMI controls here
+# 1. Executive Tactical Allocation Centre — 6 cards only
 # =========================================================
 st.markdown("---")
 st.markdown("## 🧠 Executive Tactical Allocation Centre")
-st.caption("Summary only: decision cards, drawdown reference, formula and decision note. PMI controls are inside Market Conditions & Live Risk Monitor.")
+st.caption("Summary only: six decision cards, drawdown reference, formula and decision note. Funding Source is inside Suggested Deploy Basis & Capital Source; PMI controls are inside Market Conditions & Live Risk Monitor.")
 
 with st.expander("💰 Capital Pools & Safeguards", expanded=False):
     cap1,cap2,cap3,cap4,cap5=st.columns(5)
@@ -237,6 +257,7 @@ close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_p
 available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0)
 total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf)
+funding_source="Cash First" if cash_deploy>0 else "No deployment"
 macro=live_macro_data(); vix=macro.get("vix"); tnx=macro.get("tnx"); irx=macro.get("irx")
 curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
 trend_below=close<m[sel]["ma200"]
@@ -261,30 +282,35 @@ elif live_score>=50: alert,klass="WARNING","alert-warning"
 elif live_score>=30: alert,klass="WATCH","alert-watch"
 else: alert,klass="NORMAL","alert-normal"
 conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); flags=do_not_deploy_flags(live_score,vix,latest_pmi,available_cash)
-funding_source="Cash First" if cash_deploy>0 else "No deployment"; next_trigger="-15% DD" if zone in ["HOLD","STRONG SELL"] else "Next zone"; decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."
+decision_line="Deploy a small initial tranche only. Preserve SRS and CPF-OA for deeper drawdown zones." if deploy>0 else "No deployment now. Capital is preserved until a deployment trigger appears."
+next_trigger=next_trigger_label(zone)
 
-row1=st.columns(4)
+# Six executive cards only — Funding Source and Next Trigger removed from Executive Centre.
+row1=st.columns(3)
 with row1[0]: st.markdown(exec_card(index_label,f"{close:,.0f}",f"{ticker} · Index Level",BLUE),unsafe_allow_html=True)
 with row1[1]: st.markdown(exec_card("Current Drawdown",f"{dd:.1f}%",ref,RED),unsafe_allow_html=True)
 with row1[2]: st.markdown(exec_card("Current Market Action",zone,"Drawdown-based rule",ORANGE),unsafe_allow_html=True)
-with row1[3]: st.markdown(exec_card("Suggested Deploy",f"S${deploy:,.0f}","Calculation output",AMBER),unsafe_allow_html=True)
-row2=st.columns(4); risk_colour=GREEN if alert=="NORMAL" else AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED
-with row2[0]: st.markdown(exec_card("Risk Regime",alert,f"Live Risk Score: {live_score:.0f} / 100",risk_colour),unsafe_allow_html=True)
-with row2[1]: st.markdown(exec_card("Signal Confidence",conf_label,f"Approx. {conf_score:.0f} / 100",BLUE),unsafe_allow_html=True)
-with row2[2]: st.markdown(exec_card("Funding Source",funding_source,"Capital preserved" if deploy<=0 else "Cash deployment priority",GREEN),unsafe_allow_html=True)
-with row2[3]: st.markdown(exec_card("Next Trigger",next_trigger,"Increase allocation zone",ORANGE),unsafe_allow_html=True)
+row2=st.columns(3); risk_colour=GREEN if alert=="NORMAL" else AMBER if alert=="WATCH" else ORANGE if alert=="WARNING" else RED
+with row2[0]: st.markdown(exec_card("Suggested Deploy",f"S${deploy:,.0f}","Calculation output",AMBER),unsafe_allow_html=True)
+with row2[1]: st.markdown(exec_card("Risk Regime",alert,f"Live Risk Score: {live_score:.0f} / 100",risk_colour),unsafe_allow_html=True)
+with row2[2]: st.markdown(exec_card("Signal Confidence",conf_label,f"Approx. {conf_score:.0f} / 100",BLUE),unsafe_allow_html=True)
 
 st.markdown(f"<div class='section-card'><b>Formula used:</b> Current drawdown = (current close − selected peak reference) ÷ selected peak reference.<br><b>Selected reference:</b> {ref} at approximately <b>{peak:,.0f}</b>. Shorter references are tactical; longer references capture deeper market cycles.<br><br><b>Decision note:</b> {decision_line}</div>",unsafe_allow_html=True)
 
 # =========================================================
-# 2. Suggested Deploy Basis & Capital Source — includes Ladder & Safeguards
+# 2. Suggested Deploy Basis & Capital Source — includes Funding Source, Ladder & Safeguards
 # =========================================================
 with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy>0)):
-    s1,s2,s3,s4=st.columns([1,1,1,1.1])
+    s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
     with s1:
         st.markdown(f"<div class='preview-panel'><h3 style='margin-top:0'>📌 Suggested Deploy Basis</h3><p>Suggested Deploy = Available Deployable Capital × Deployment Rule</p><h2 style='margin-top:0;color:{AMBER_TEXT}'>S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}</h2><p class='small-note'>Source: selected index price data, {ref} drawdown formula, and user-entered capital pool inputs.</p></div>",unsafe_allow_html=True)
     with s2:
-        st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Priority ladder: Cash first → SRS later → CPF-OA only in deeper crash zones.</p>"+preview_row("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+preview_row("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+preview_row("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+f"<div class='note-amber'>Reason: {capital_reason}</div></div>",unsafe_allow_html=True)
+        st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🏦 Capital Source Breakdown</h3><p class='small-note'>Funding source has been moved here from the Executive Centre.</p>"+
+                    preview_row("Funding Source",funding_source,GREEN if cash_deploy>0 else SLATE)+
+                    preview_row("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+
+                    preview_row("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+
+                    preview_row("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+
+                    f"<div class='note-amber'>Reason: {capital_reason}</div></div>",unsafe_allow_html=True)
     with s3:
         if deploy>0:
             t1,t2,t3=deploy*.5,deploy*.25,deploy*.25
@@ -293,7 +319,7 @@ with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=(deploy
     with s4:
         st.markdown("<div class='preview-panel'><h3 style='margin-top:0'>🧭 Deployment Ladder & 🛑 Safeguards</h3>"+
                     preview_row("HOLD / small drawdown","0% deploy",SLATE)+preview_row("INITIAL BUY","10% deploy · Cash only",AMBER)+preview_row("BUY","20–35% deploy · Cash then SRS",ORANGE)+preview_row("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED)+
-                    preview_row("Hard-stop flags",f"{len(flags)} active",RED if flags else GREEN)+"</div>",unsafe_allow_html=True)
+                    preview_row("Next Trigger",next_trigger,ORANGE)+preview_row("Hard-stop flags",f"{len(flags)} active",RED if flags else GREEN)+"</div>",unsafe_allow_html=True)
     options=ETF_UNIVERSE.get(sel,{}).get("etfs",[])
     if options:
         st.markdown("#### 🎯 Suggested Investment Options")
