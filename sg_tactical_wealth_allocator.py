@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="SG Tactical Wealth Allocator v35i", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="SG Tactical Wealth Allocator v35j", layout="wide", initial_sidebar_state="expanded")
 
 # =========================
 # Colours / CSS
@@ -53,9 +53,17 @@ INDEX_TICKERS = {
     "HSI": "^HSI",
     "STI": "^STI",
     "KLSE": "^KLSE",
+    "A-Share": "000001.SS",
+    "Nikkei 225": "^N225",
     "Gold": "GC=F",
     "Bitcoin": "BTC-USD",
 }
+
+ASSET_GROUPS = {
+    "Market / Equity Index": ["S&P 500", "Nasdaq", "DJIA", "HSI", "STI", "KLSE", "A-Share", "Nikkei 225"],
+    "Alternative Assets": ["Gold", "Bitcoin"],
+}
+
 DISPLAY_NAME = {k: k for k in INDEX_TICKERS}
 
 PMI_FRED_MARKETS = {"S&P 500", "Nasdaq", "DJIA"}
@@ -68,6 +76,8 @@ PMI_PROXY_MAP = {
     "HSI": {"label": "China Caixin Manufacturing PMI", "region": "China / Hong Kong", "source": "NBS / Caixin / manual input", "default": 50.0},
     "STI": {"label": "Singapore S&P Global PMI", "region": "Singapore", "source": "SIPMM / S&P Global Singapore PMI / manual input", "default": 51.0},
     "KLSE": {"label": "Malaysia Manufacturing PMI", "region": "Malaysia", "source": "S&P Global Malaysia PMI / manual input", "default": 49.9},
+    "A-Share": {"label": "China Caixin Manufacturing PMI", "region": "China", "source": "NBS / Caixin / manual input", "default": 50.0},
+    "Nikkei 225": {"label": "Japan Jibun Bank Manufacturing PMI", "region": "Japan", "source": "Jibun Bank / S&P Global Japan PMI / manual input", "default": 50.4},
     "Gold": {"label": "N/A", "region": "N/A", "source": "PMI not applicable for Gold", "default": 0.0},
     "Bitcoin": {"label": "N/A", "region": "N/A", "source": "PMI not applicable for Bitcoin", "default": 0.0},
 }
@@ -77,6 +87,7 @@ LATEST_PMI_ACTUALS = {
     "China Caixin Manufacturing PMI": {"value": 50.0, "month": "Jun 2026", "source": "NBS / Caixin / manual input"},
     "Singapore S&P Global PMI": {"value": 51.0, "month": "Jun 2026", "source": "SIPMM / S&P Global Singapore PMI / manual input"},
     "Malaysia Manufacturing PMI": {"value": 49.9, "month": "Jun 2026", "source": "S&P Global Malaysia PMI / manual input"},
+    "Japan Jibun Bank Manufacturing PMI": {"value": 50.4, "month": "Jun 2026", "source": "Jibun Bank / S&P Global Japan PMI / manual input"},
     "N/A": {"value": 0.0, "month": "N/A", "source": "PMI not applicable for this asset class"},
 }
 PMI_PROXY_OPTIONS = list(LATEST_PMI_ACTUALS.keys())
@@ -97,6 +108,11 @@ DEFAULT_PMI_HISTORY = {
         "2025-11": 49.2, "2025-12": 49.0, "2026-01": 48.8, "2026-02": 48.6,
         "2026-03": 48.8, "2026-04": 49.0, "2026-05": 49.9, "2026-06": 49.9,
     },
+    "Japan Jibun Bank Manufacturing PMI": {
+        "2025-07": 49.7, "2025-08": 49.9, "2025-09": 50.1, "2025-10": 50.0,
+        "2025-11": 49.8, "2025-12": 49.9, "2026-01": 50.0, "2026-02": 50.2,
+        "2026-03": 50.3, "2026-04": 50.2, "2026-05": 50.4, "2026-06": 50.4,
+    },
 }
 
 ETF_UNIVERSE = {
@@ -106,12 +122,14 @@ ETF_UNIVERSE = {
     "HSI": {"label": "🇭🇰 Hong Kong", "etfs": [("Core exposure", "Tracker Fund of Hong Kong", "2800.HK", "Broad HSI exposure"), ("Broad HSI ETF", "iShares HSI ETF", "3115.HK", "Alternative HSI exposure"), ("Higher beta satellite", "iShares Hang Seng TECH ETF", "3067.HK", "Growth / tech sensitivity")]},
     "STI": {"label": "🇸🇬 Singapore", "etfs": [("Core exposure", "SPDR STI ETF", "ES3.SI", "Broad STI exposure"), ("Core alternative", "Nikko AM STI ETF", "G3B.SI", "Alternative STI exposure")]},
     "KLSE": {"label": "🇲🇾 Malaysia", "etfs": [("Core exposure", "FTSE Bursa Malaysia KLCI ETF", "0820EA.KL", "Broad Malaysia exposure")]},
+    "A-Share": {"label": "🇨🇳 China A-Share", "etfs": [("Core exposure", "Xtrackers Harvest CSI 300 China A-Shares ETF", "ASHR", "China A-share exposure"), ("Satellite", "KraneShares Bosera MSCI China A 50 Connect ETF", "KBA", "China A-share alternative")]},
+    "Nikkei 225": {"label": "🇯🇵 Nikkei 225", "etfs": [("Core exposure", "NEXT FUNDS Nikkei 225 ETF", "1321.T", "Nikkei 225 exposure"), ("International proxy", "iShares MSCI Japan ETF", "EWJ", "Broad Japan equity exposure")]},
     "Gold": {"label": "🪙 Gold", "etfs": [("Core exposure", "SPDR Gold Shares", "GLD", "Physical gold ETF"), ("Alternative", "iShares Gold Trust", "IAU", "Lower-cost gold ETF")]},
     "Bitcoin": {"label": "₿ Bitcoin", "etfs": [("Core exposure", "iShares Bitcoin Trust", "IBIT", "Spot Bitcoin ETF"), ("Alternative", "Grayscale Bitcoin Trust", "GBTC", "Bitcoin trust")]},
 }
 
 BENCHMARK_TICKERS = {
-    "Global Indices": [("STI", "^STI"), ("Nasdaq", "^IXIC"), ("S&P 500", "^GSPC"), ("DJIA", "^DJI"), ("HSI", "^HSI"), ("KLSE", "^KLSE")],
+    "Global Indices": [("STI", "^STI"), ("Nasdaq", "^IXIC"), ("S&P 500", "^GSPC"), ("DJIA", "^DJI"), ("HSI", "^HSI"), ("KLSE", "^KLSE"), ("A-Share", "000001.SS"), ("Nikkei 225", "^N225")],
     "Commodities & Crypto": [("Crude Oil", "CL=F"), ("Gold", "GC=F"), ("Silver", "SI=F"), ("Bitcoin", "BTC-USD")],
 }
 
@@ -670,7 +688,12 @@ with st.sidebar:
     active_section = st.radio("Go to section", NAV_OPTIONS, index=0, label_visibility="collapsed")
     st.markdown("---")
     st.markdown("## ⚙️ Quick Settings")
-    sel = st.selectbox("Selected Market", list(m.keys()), index=list(m.keys()).index("STI") if "STI" in m else 0)
+    available_groups = {g: [x for x in names if x in m] for g, names in ASSET_GROUPS.items()}
+    available_groups = {g: names for g, names in available_groups.items() if names}
+    asset_group = st.selectbox("Asset Group", list(available_groups.keys()), index=0, key="asset_group_select")
+    default_item = "STI" if asset_group == "Market / Equity Index" and "STI" in available_groups[asset_group] else available_groups[asset_group][0]
+    sel = st.selectbox("Selected Market" if asset_group == "Market / Equity Index" else "Selected Alternative Asset", available_groups[asset_group], index=available_groups[asset_group].index(default_item), key="selected_asset_select")
+    st.session_state.selected_asset_group = asset_group
     st.session_state.selected_market_name = DISPLAY_NAME.get(sel, sel)
     st.markdown("### 💰 Capital Pools & Safeguards")
     cash_balance = st.number_input("Liquid Cash (S$)", 0.0, value=100000.0, step=5000.0)
@@ -688,7 +711,8 @@ ticker = m[sel]["ticker"]
 index_label = DISPLAY_NAME.get(sel, sel)
 pmi_proxy_default = PMI_PROXY_MAP.get(sel, {"label": "N/A", "region": "N/A", "source": "N/A", "default": 0})
 
-# R1 FIX: selected market change must reset PMI proxy/value/source/month.
+# PART 1 FIX — selected market change resets PMI proxy/value/source/month.
+# Prevents stale state such as S&P 500 selected while Singapore PMI remains displayed.
 if st.session_state.get("pmi_selected_market") != sel:
     st.session_state.pmi_selected_market = sel
     st.session_state.pmi_proxy_label = pmi_proxy_default["label"]
@@ -697,7 +721,7 @@ if st.session_state.get("pmi_selected_market") != sel:
     st.session_state.latest_pmi_month = _pmi_actual["month"]
     st.session_state.latest_pmi_source = pmi_proxy_default["source"]
 
-st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator v35i")
+st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator v35j")
 st.caption("Singapore wealth allocation dashboard with market-specific PMI, live risk monitoring, staged deployment, crash analytics and secular valuation channel.")
 
 close, peak, dd, ref = current_dd(ud, drawdown_method)
@@ -794,7 +818,7 @@ def get_pmi_df(chosen, latest_in):
 def render_market(expanded=False):
     with st.expander("🌦️ MARKET CONDITIONS & LIVE RISK MONITOR", expanded=expanded):
         st.markdown("## 🌦️ Market Conditions & Live Risk Monitor")
-        # R1 FIX: selected market is authoritative for default PMI proxy.
+        # PART 1 FIX — selected market is authoritative for default PMI proxy.
         current_proxy = st.session_state.get("pmi_proxy_label", pmi_proxy_default["label"])
         if st.session_state.get("pmi_selected_market") != sel:
             current_proxy = pmi_proxy_default["label"]
@@ -802,12 +826,12 @@ def render_market(expanded=False):
             current_proxy = pmi_proxy_default["label"] if pmi_proxy_default["label"] in PMI_PROXY_OPTIONS else "N/A"
         actual = LATEST_PMI_ACTUALS.get(current_proxy, LATEST_PMI_ACTUALS["N/A"])
         st.markdown(f"### LIVE MARKET RISK ALERT: {alert}")
-        st.caption(f"Rules-based stress indicator, not a crash prediction. PMI proxy used: {current_proxy}.")
+        st.caption(f"Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.")
 
         p1, p2, p3, p4, p5, p6, p7 = st.columns([1.15, 1.05, 1.45, .75, .75, .8, .55])
         with p1:
             default_idx = PMI_PROXY_OPTIONS.index(current_proxy) if current_proxy in PMI_PROXY_OPTIONS else 0
-            chosen = st.selectbox("PMI Proxy Used", PMI_PROXY_OPTIONS, index=default_idx, key="market_pmi_proxy_select")
+            chosen = st.selectbox("PMI Proxy Used (Cycle Signal)", PMI_PROXY_OPTIONS, index=default_idx, key="market_pmi_proxy_select", help="Market-specific manufacturing PMI used as an economic-cycle input in the Live Risk Score.")
         actual = LATEST_PMI_ACTUALS.get(chosen, LATEST_PMI_ACTUALS["N/A"])
         with p2:
             pmi_region = st.text_input("PMI Region", value=PMI_PROXY_MAP.get(sel, {}).get("region", "N/A"))
@@ -944,7 +968,6 @@ def render_crash(expanded=False):
     with st.expander("🏆 Crash & Recovery Analytics", expanded=expanded):
         st.markdown("## 📊 Executive Crash & Cycle Summary")
         st.caption("Historical drawdown severity bands used to classify correction, bear-market and crash-regime events.")
-
         b1, b2, b3 = st.columns(3)
         b1.markdown('<div style="background:#DBEAFE;border:1px solid #93C5FD;border-radius:10px;padding:14px;color:#075985;font-weight:600;">📉 10-20% corrections represent normal correction-zone events in this dashboard.</div>', unsafe_allow_html=True)
         b2.markdown('<div style="background:#FEF9C3;border:1px solid #FACC15;border-radius:10px;padding:14px;color:#92400E;font-weight:600;">⚠️ 20-30% corrections represent deeper bear-market drawdowns.</div>', unsafe_allow_html=True)
@@ -966,14 +989,9 @@ def render_crash(expanded=False):
         if event_df.empty:
             st.info("No drawdown events found with the selected parameters.")
             return
-
         rets = event_df["Recovery Return %"].astype(float)
         k1, k2, k3, k4, k5 = st.columns(5)
-        k1.metric("Crash Events", len(event_df))
-        k2.metric("Success Rate", f"{rets.gt(0).mean()*100:.0f}%")
-        k3.metric("Avg Recovery", f"{rets.mean():.1f}%")
-        k4.metric("Best Recovery", f"{rets.max():.1f}%")
-        k5.metric("Current Drawdown", f"{bt.dd_pct.iloc[-1]:.1f}%")
+        k1.metric("Crash Events", len(event_df)); k2.metric("Success Rate", f"{rets.gt(0).mean()*100:.0f}%"); k3.metric("Avg Recovery", f"{rets.mean():.1f}%"); k4.metric("Best Recovery", f"{rets.max():.1f}%"); k5.metric("Current Drawdown", f"{bt.dd_pct.iloc[-1]:.1f}%")
         st.markdown("---")
 
         st.markdown("## 🔍 Interactive Event Explorer")
@@ -981,30 +999,21 @@ def render_crash(expanded=False):
         sev_opts = sorted(event_df["Severity"].dropna().unique().tolist())
         zone_opts = sorted(event_df["Zone"].dropna().unique().tolist())
         label_opts = ["All"] + sorted(event_df["Historical Label"].dropna().unique().tolist())
-        with f1:
-            sev_sel = st.multiselect("Severity filter", sev_opts, default=sev_opts, key="crash_sev_filter")
-        with f2:
-            zone_sel = st.multiselect("Buy zone filter", zone_opts, default=zone_opts, key="crash_zone_filter")
-        with f3:
-            label_sel = st.selectbox("Historical label group", label_opts, index=0, key="crash_label_filter")
-
+        with f1: sev_sel = st.multiselect("Severity filter", sev_opts, default=sev_opts, key="crash_sev_filter")
+        with f2: zone_sel = st.multiselect("Buy zone filter", zone_opts, default=zone_opts, key="crash_zone_filter")
+        with f3: label_sel = st.selectbox("Historical label group", label_opts, index=0, key="crash_label_filter")
         filtered_df = event_df.copy()
-        if sev_sel:
-            filtered_df = filtered_df[filtered_df["Severity"].isin(sev_sel)]
-        if zone_sel:
-            filtered_df = filtered_df[filtered_df["Zone"].isin(zone_sel)]
-        if label_sel != "All":
-            filtered_df = filtered_df[filtered_df["Historical Label"] == label_sel]
+        if sev_sel: filtered_df = filtered_df[filtered_df["Severity"].isin(sev_sel)]
+        if zone_sel: filtered_df = filtered_df[filtered_df["Zone"].isin(zone_sel)]
+        if label_sel != "All": filtered_df = filtered_df[filtered_df["Historical Label"] == label_sel]
 
         st.markdown("## 📋 Filtered Event Table")
         filtered_display = filtered_df.copy()
         if filtered_display.empty:
             st.info("No events match the selected filters.")
         else:
-            for c in ["Peak Date", "Trough Date"]:
-                filtered_display[c] = pd.to_datetime(filtered_display[c]).dt.strftime("%Y-%m-%d")
-            for c in ["Peak Index", "Trough Index", "Drawdown %", "Recovery Return %"]:
-                filtered_display[c] = filtered_display[c].round(1)
+            for c in ["Peak Date", "Trough Date"]: filtered_display[c] = pd.to_datetime(filtered_display[c]).dt.strftime("%Y-%m-%d")
+            for c in ["Peak Index", "Trough Index", "Drawdown %", "Recovery Return %"]: filtered_display[c] = filtered_display[c].round(1)
             st.dataframe(filtered_display, use_container_width=True, hide_index=True)
             st.download_button("⬇️ Export Filtered Crash Events CSV", filtered_display.to_csv(index=False), file_name="filtered_crash_events.csv", mime="text/csv")
 
@@ -1012,90 +1021,49 @@ def render_crash(expanded=False):
         def event_label(row):
             return f"{row['Historical Label']} | {pd.to_datetime(row['Peak Date']).strftime('%Y-%m-%d')} > {pd.to_datetime(row['Trough Date']).strftime('%Y-%m-%d')} ({row['Drawdown %']:.1f}%)"
         labels = [event_label(r) for _, r in src.iterrows()]
-
         st.markdown("### Historical Crash Explorer")
         chosen_event = st.selectbox("Select event", labels, index=0, label_visibility="collapsed", key="selected_crash_event")
         show_deep = st.toggle("📌 Show Selected Event Deep Dive", value=True, key="show_crash_deep_dive")
         if show_deep and labels:
             row = src.iloc[labels.index(chosen_event)]
-            peak_date = pd.to_datetime(row["Peak Date"])
-            trough_date = pd.to_datetime(row["Trough Date"])
+            peak_date = pd.to_datetime(row["Peak Date"]); trough_date = pd.to_datetime(row["Trough Date"])
             duration = max((trough_date - peak_date).days, 0)
             st.markdown("## 📌 Selected Event Deep Dive")
             st.caption("Deployment controls, event-level breakdown, historical label, pre-crash context and crash path visualisation.")
             st.markdown(f"**Historical Label:** {row['Historical Label']}")
             inv_one = st.number_input("Investment for selected event (S$)", min_value=1000.0, value=15000.0, step=1000.0, key="selected_event_invest")
-            entry = safe_float(row["Trough Index"])
-            val_today = inv_one * (cur / entry) if entry else 0
-            ret_today = (val_today / inv_one - 1) * 100 if inv_one else 0
-            d1,d2,d3,d4 = st.columns(4)
-            d1.metric("Deployment Amount", f"S${inv_one:,.0f}")
-            d2.metric("Entry Level", f"{entry:,.0f}")
-            d3.metric("Value Today", f"S${val_today:,.0f}")
-            d4.metric("Return Since Trough", f"{ret_today:.1f}%")
-            d5,d6,d7,d8 = st.columns(4)
-            d5.metric("Peak Index", f"{safe_float(row['Peak Index']):,.0f}")
-            d6.metric("Trough Index", f"{entry:,.0f}")
-            d7.metric("Drawdown", f"{safe_float(row['Drawdown %']):.1f}%")
-            d8.metric("Recovery Return", f"{safe_float(row['Recovery Return %']):.1f}%")
+            entry = safe_float(row["Trough Index"]); val_today = inv_one * (cur / entry) if entry else 0; ret_today = (val_today / inv_one - 1) * 100 if inv_one else 0
+            d1,d2,d3,d4 = st.columns(4); d1.metric("Deployment Amount", f"S${inv_one:,.0f}"); d2.metric("Entry Level", f"{entry:,.0f}"); d3.metric("Value Today", f"S${val_today:,.0f}"); d4.metric("Return Since Trough", f"{ret_today:.1f}%")
+            d5,d6,d7,d8 = st.columns(4); d5.metric("Peak Index", f"{safe_float(row['Peak Index']):,.0f}"); d6.metric("Trough Index", f"{entry:,.0f}"); d7.metric("Drawdown", f"{safe_float(row['Drawdown %']):.1f}%"); d8.metric("Recovery Return", f"{safe_float(row['Recovery Return %']):.1f}%")
             speed = "Fast crash" if duration <= 90 else "Prolonged drawdown" if duration <= 365 else "Long bear-market drawdown"
             st.info(f"Before this drawdown, {index_label} peaked at approximately {safe_float(row['Peak Index']):,.0f} on {peak_date.strftime('%Y-%m-%d')}. The index then declined to approximately {entry:,.0f} by {trough_date.strftime('%Y-%m-%d')}, a drawdown of {safe_float(row['Drawdown %']):.1f}% over about {duration} days. Historical label: {row['Historical Label']}. This was classified as a {speed} and entered the {row['Zone']} zone based on drawdown severity.")
             st.markdown("### Mini Historical Crash Chart: Peak → Trough")
             cs = ud.loc[peak_date:trough_date].copy()
-            if cs.empty:
-                st.info("No price path available for this event window.")
+            if cs.empty: st.info("No price path available for this event window.")
             else:
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=cs.index, y=cs["Close"], mode="lines", line=dict(color=RED, width=2), name="Price path"))
-                fig.add_trace(go.Scatter(x=[peak_date], y=[safe_float(row["Peak Index"])], mode="markers+text", text=["Peak"], textposition="top center", marker=dict(size=8, color=BLUE), name="Peak"))
-                fig.add_trace(go.Scatter(x=[trough_date], y=[entry], mode="markers+text", text=["Trough"], textposition="bottom center", marker=dict(size=8, color=RED), name="Trough"))
-                fig.update_layout(height=280, margin=dict(l=10,r=10,t=10,b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Index Level")
-                st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+                fig = go.Figure(); fig.add_trace(go.Scatter(x=cs.index, y=cs["Close"], mode="lines", line=dict(color=RED, width=2), name="Price path")); fig.add_trace(go.Scatter(x=[peak_date], y=[safe_float(row["Peak Index"])], mode="markers+text", text=["Peak"], textposition="top center", marker=dict(size=8, color=BLUE), name="Peak")); fig.add_trace(go.Scatter(x=[trough_date], y=[entry], mode="markers+text", text=["Trough"], textposition="bottom center", marker=dict(size=8, color=RED), name="Trough")); fig.update_layout(height=280, margin=dict(l=10,r=10,t=10,b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Index Level"); st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.info("📌 Historical labels are broad reference tags, not causal claims. Past performance does not guarantee future outcomes.")
             st.download_button("⬇️ Export Crash Analytics CSV", filtered_display.to_csv(index=False) if not filtered_display.empty else event_df.to_csv(index=False), file_name="crash_analytics.csv", mime="text/csv")
 
         with st.expander("🧪 Master Crash Deployment Simulator", expanded=False):
             st.caption("Simulates investing a fixed amount at every selected crash/correction event and holding until today or a user-selected end date.")
             s1,s2,s3 = st.columns([1,1,1])
-            with s1:
-                inv = st.number_input("Investment per event (S$)", min_value=1000.0, value=10000.0, step=1000.0, key="master_invest")
-            with s2:
-                end_date = st.date_input("Simulation end date", value=ud.index.max().date(), min_value=ud.index.min().date(), max_value=ud.index.max().date(), key="master_end")
-            with s3:
-                use_filtered = st.checkbox("Use currently filtered events only", value=True, key="master_use_filtered")
+            with s1: inv = st.number_input("Investment per event (S$)", min_value=1000.0, value=10000.0, step=1000.0, key="master_invest")
+            with s2: end_date = st.date_input("Simulation end date", value=ud.index.max().date(), min_value=ud.index.min().date(), max_value=ud.index.max().date(), key="master_end")
+            with s3: use_filtered = st.checkbox("Use currently filtered events only", value=True, key="master_use_filtered")
             end_slice = ud.loc[:pd.Timestamp(end_date)]
-            if end_slice.empty:
-                st.info("No end-date price available.")
-                return
-            end_index = safe_float(end_slice.Close.iloc[-1])
-            sim_base = filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy()
-            sim = sim_base[pd.to_datetime(sim_base["Trough Date"]) <= pd.Timestamp(end_date)].copy()
-            if sim.empty:
-                st.info("No events before selected end date.")
-                return
-            sim["Investment Amount"] = inv
-            sim["End Index"] = end_index
-            sim["Ending Value"] = inv * (sim["End Index"] / sim["Trough Index"])
-            sim["Gain / Loss"] = sim["Ending Value"] - sim["Investment Amount"]
-            sim["Return %"] = (sim["Ending Value"] / sim["Investment Amount"] - 1) * 100
-            sim["Holding Days"] = (pd.Timestamp(end_date) - pd.to_datetime(sim["Trough Date"])).dt.days.clip(lower=0)
-            total = sim["Investment Amount"].sum(); ending = sim["Ending Value"].sum(); gain = ending-total
-            tr=(ending/total-1)*100 if total else 0; avg=sim["Return %"].mean(); best=sim["Return %"].max(); hit=sim["Return %"].gt(0).mean()*100
-            m1,m2,m3,m4,m5 = st.columns(5)
-            m1.metric("Deployments", len(sim)); m2.metric("Capital Deployed", f"S${total:,.0f}"); m3.metric("Ending Value", f"S${ending:,.0f}"); m4.metric("Total Gain / Loss", f"S${gain:,.0f}"); m5.metric("Total Return", f"{tr:.1f}%")
-            m6,m7,m8 = st.columns(3)
-            m6.metric("Avg Return / Event", f"{avg:.1f}%"); m7.metric("Best Event", f"{best:.1f}%"); m8.metric("Positive Hit Rate", f"{hit:.0f}%")
-            sim_display = sim[["Trough Date","Historical Label","Severity","Zone","Trough Index","End Index","Investment Amount","Ending Value","Gain / Loss","Return %","Holding Days"]].copy()
-            sim_display["Trough Date"] = pd.to_datetime(sim_display["Trough Date"]).dt.strftime("%Y-%m-%d")
-            for c in ["Trough Index","End Index","Investment Amount","Ending Value","Gain / Loss","Return %"]:
-                sim_display[c] = sim_display[c].astype(float).round(1)
+            if end_slice.empty: st.info("No end-date price available."); return
+            end_index = safe_float(end_slice.Close.iloc[-1]); sim_base = filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy(); sim = sim_base[pd.to_datetime(sim_base["Trough Date"]) <= pd.Timestamp(end_date)].copy()
+            if sim.empty: st.info("No events before selected end date."); return
+            sim["Investment Amount"] = inv; sim["End Index"] = end_index; sim["Ending Value"] = inv * (sim["End Index"] / sim["Trough Index"]); sim["Gain / Loss"] = sim["Ending Value"] - sim["Investment Amount"]; sim["Return %"] = (sim["Ending Value"] / sim["Investment Amount"] - 1) * 100; sim["Holding Days"] = (pd.Timestamp(end_date) - pd.to_datetime(sim["Trough Date"])).dt.days.clip(lower=0)
+            total = sim["Investment Amount"].sum(); ending = sim["Ending Value"].sum(); gain = ending-total; tr=(ending/total-1)*100 if total else 0; avg=sim["Return %"].mean(); best=sim["Return %"].max(); hit=sim["Return %"].gt(0).mean()*100
+            m1,m2,m3,m4,m5 = st.columns(5); m1.metric("Deployments", len(sim)); m2.metric("Capital Deployed", f"S${total:,.0f}"); m3.metric("Ending Value", f"S${ending:,.0f}"); m4.metric("Total Gain / Loss", f"S${gain:,.0f}"); m5.metric("Total Return", f"{tr:.1f}%")
+            m6,m7,m8 = st.columns(3); m6.metric("Avg Return / Event", f"{avg:.1f}%"); m7.metric("Best Event", f"{best:.1f}%"); m8.metric("Positive Hit Rate", f"{hit:.0f}%")
+            sim_display = sim[["Trough Date","Historical Label","Severity","Zone","Trough Index","End Index","Investment Amount","Ending Value","Gain / Loss","Return %","Holding Days"]].copy(); sim_display["Trough Date"] = pd.to_datetime(sim_display["Trough Date"]).dt.strftime("%Y-%m-%d")
+            for c in ["Trough Index","End Index","Investment Amount","Ending Value","Gain / Loss","Return %"]: sim_display[c] = sim_display[c].astype(float).round(1)
             st.dataframe(sim_display, use_container_width=True, hide_index=True)
             st.markdown("### Master Simulator Return by Event")
-            cmap={"10-20% correction": BLUE, "20-30% correction": AMBER, ">30% crash": RED, "Below 10% move": SLATE}
-            fig=go.Figure()
-            fig.add_trace(go.Bar(x=pd.to_datetime(sim["Trough Date"]), y=sim["Return %"], marker_color=[cmap.get(x, SLATE) for x in sim["Severity"]], text=[f"{v:.0f}%" for v in sim["Return %"]], textposition="outside", cliponaxis=False))
-            fig.update_layout(height=320, margin=dict(l=10,r=10,t=10,b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Return %")
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            cmap={"10-20% correction": BLUE, "20-30% correction": AMBER, ">30% crash": RED, "Below 10% move": SLATE}; fig=go.Figure(); fig.add_trace(go.Bar(x=pd.to_datetime(sim["Trough Date"]), y=sim["Return %"], marker_color=[cmap.get(x, SLATE) for x in sim["Severity"]], text=[f"{v:.0f}%" for v in sim["Return %"]], textposition="outside", cliponaxis=False)); fig.update_layout(height=320, margin=dict(l=10,r=10,t=10,b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Return %"); st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.download_button("⬇️ Export Master Simulator CSV", sim_display.to_csv(index=False), file_name="master_crash_simulator.csv", mime="text/csv")
 
 def render_audit(expanded=False):
