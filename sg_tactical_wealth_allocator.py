@@ -114,7 +114,7 @@ def tz_naive(df):
     return df
 
 @st.cache_data(ttl=14400)
-def hist(ticker,start="1997-01-01"):
+def hist(ticker,start="1950-01-01"):
     df=yf.Ticker(ticker).history(start=start); time.sleep(.05)
     if df is None or df.empty: return pd.DataFrame()
     return tz_naive(df.dropna(subset=["Close"]).copy())
@@ -288,11 +288,11 @@ def mini_pmi_bar_chart(df,title,subtitle):
 # Trend Channel Engine (Enhanced — Preview Version)
 # =========================
 CRISIS_EVENTS = [
-    ("1987-10-19", "1987\nBlack Monday"),
-    ("2000-03-24", "2000-2002\nDot-com Bust"),
-    ("2008-09-15", "2008\nGlobal Financial\nCrisis"),
-    ("2020-03-23", "2020\nCOVID-19 Crash"),
-    ("2022-06-16", "2022\nInflation &\nRate Hike"),
+    ("1987-10-19", "1987 Black Monday"),
+    ("2000-03-24", "2000-2002 Dot-com Bust"),
+    ("2008-09-15", "2008 Global Financial Crisis"),
+    ("2020-03-23", "2020 COVID-19 Crash"),
+    ("2022-06-16", "2022 Inflation & Rate Hike"),
 ]
 
 def build_trend_channel(df, projection_year=2040):
@@ -423,26 +423,31 @@ def render_trend_channel(df, market_name):
             fig.add_trace(go.Scatter(x=proj.index, y=proj[col], line=dict(color=clr, dash="dot", width=1), showlegend=False))
         # Right-side price annotations
         last_proj = proj.iloc[-1]
-        for col, lbl_short in [("Upper2","+2SD"),("Upper1","+1SD"),("TrendPrice","Trend"),("Lower1","-1SD"),("Lower2","-2SD")]:
-            fig.add_annotation(x=proj.index[-1], y=last_proj[col], text=f"{last_proj[col]:,.0f}", showarrow=False, xanchor="left", font=dict(size=10))
+        for col, lbl_short, clr_r in [("Upper2","+2SD","#EF4444"),("Upper1","+1SD","#F59E0B"),("TrendPrice","Trend","#7C3AED"),("Lower1","-1SD","#10B981"),("Lower2","-2SD","#059669")]:
+            fig.add_annotation(x=proj.index[-1], y=last_proj[col], text=f"<b>{last_proj[col]:,.0f}</b>", showarrow=False, xanchor="left", xshift=5, font=dict(size=11, color=clr_r))
 
-    # Crisis annotations
+    # Crisis annotations — vertical reference lines + bold labels (FIX 1)
     for evt_date, evt_label in CRISIS_EVENTS:
         evt_ts = pd.Timestamp(evt_date)
         if tdf.index.min() <= evt_ts <= tdf.index.max():
-            fig.add_annotation(x=evt_ts, y=1.08, yref="paper", text=evt_label, showarrow=True, arrowhead=2, ax=0, ay=-30, font=dict(size=9, color="#374151"), align="center")
+            fig.add_vline(x=evt_ts.timestamp() * 1000, line_dash="dot", line_color="#D1D5DB", line_width=1)
+            fig.add_annotation(x=evt_ts, y=1.12, yref="paper", text=f"<b>{evt_label}</b>", showarrow=True, arrowhead=2, ax=0, ay=-35, font=dict(size=12, color="#374151"), align="center")
 
-    # Today marker
-    fig.add_annotation(x=tdf.index[-1], y=1.05, yref="paper", text=f"Today\n{tdf.index[-1].strftime('%b %d, %Y')}", showarrow=True, arrowhead=2, ax=0, ay=-25, font=dict(size=9, color="#2563EB", weight="bold"))
+    # Today marker (FIX 1)
+    fig.add_annotation(x=tdf.index[-1], y=1.10, yref="paper", text=f"<b>Today</b><br>{tdf.index[-1].strftime('%b %d, %Y')}", showarrow=True, arrowhead=2, ax=0, ay=-35, font=dict(size=12, color="#EF4444"))
 
-    subtitle = f"{tc_freq} Data • {tc_period}"
+    # Projection label
+    if not proj.empty:
+        fig.add_annotation(x=proj.index[-1], y=1.08, yref="paper", text=f"<b>Projection to {tc_proj}</b>", showarrow=False, font=dict(size=11, color="#7C3AED"))
+
+    subtitle = f"{tc_freq}, {tc_period} ({tdf.index[0].strftime('%b %Y')} – {tdf.index[-1].strftime('%b %Y')})"
     fig.update_layout(
-        height=550,
+        height=580,
         title=dict(text=f"{market_name} 曾氏通道 (Trend Channel Line) — {subtitle}", font=dict(size=16)),
         yaxis_type="log", yaxis_title="Price (Log Scale)",
         plot_bgcolor="white", paper_bgcolor="white",
-        margin=dict(l=10, r=80, t=60, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.18, xanchor="center", x=0.5, font=dict(size=10)),
+        margin=dict(l=10, r=90, t=110, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5, font=dict(size=10)),
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
@@ -478,7 +483,7 @@ def render_trend_channel(df, market_name):
         zfig.add_trace(go.Scatter(x=tdf.index, y=zhist, mode="lines", line=dict(color="#2563EB", width=1.5), fill="tozeroy", fillcolor="rgba(37,99,235,0.12)"))
         for lv, clr_lv in [(2,"#EF4444"),(1,"#F59E0B"),(0,"#94A3B8"),(-1,"#10B981"),(-2,"#059669")]:
             zfig.add_hline(y=lv, line_dash="dash", line_color=clr_lv, line_width=1)
-        zfig.add_annotation(x=tdf.index[-1], y=z, text=f"{z:+.2f}", showarrow=True, arrowhead=2, ax=30, ay=-20, font=dict(size=11, color=status_col, weight="bold"), bgcolor="white", bordercolor=status_col)
+        zfig.add_annotation(x=tdf.index[-1], y=z, text=f"<b>{z:+.2f}</b>", showarrow=True, arrowhead=2, ax=30, ay=-20, font=dict(size=12, color=status_col), bgcolor="white", bordercolor=status_col)
         zfig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Z-Score")
         st.plotly_chart(zfig, use_container_width=True, config={"displayModeBar": False})
 
