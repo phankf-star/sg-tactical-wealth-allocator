@@ -95,9 +95,9 @@ ETF_UNIVERSE={
 "HSI":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
 "Nasdaq":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},
 "S&P 500":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]},
- "DJIA":{"label":"🇺🇸 DJIA","etfs":[("Core exposure","SPDR Dow Jones Industrial Average ETF","DIA","Blue-chip US large-cap exposure")]},
- "KLSE":{"label":"🇲🇾 Malaysia","etfs":[("Core exposure","FTSE Bursa Malaysia KLCI ETF","0820EA.KL","Broad Malaysia market exposure")]},
- "Gold":{"label":"🪙 Gold","etfs":[("Core exposure","SPDR Gold Shares","GLD","Physical gold-backed ETF"),("Lower-cost alternative","iShares Gold Trust","IAU","Lower-cost gold ETF")]},
+ "DJIA":{"label":"🇺🇸 DJIA","etfs":[("Core exposure","SPDR DJIA ETF","DIA","Blue-chip US exposure")]},
+ "KLSE":{"label":"🇲🇾 Malaysia","etfs":[("Core exposure","FTSE Bursa Malaysia KLCI ETF","0820EA.KL","Broad Malaysia exposure")]},
+ "Gold":{"label":"🪙 Gold","etfs":[("Core exposure","SPDR Gold Shares","GLD","Physical gold ETF"),("Alternative","iShares Gold Trust","IAU","Lower-cost gold ETF")]},
 }
 
 # =========================
@@ -285,9 +285,17 @@ def mini_pmi_bar_chart(df,title,subtitle):
 
 
 # =========================
-# Trend Channel Engine
+# Trend Channel Engine (Enhanced — Preview Version)
 # =========================
-def build_trend_channel(df):
+CRISIS_EVENTS = [
+    ("1987-10-19", "1987\nBlack Monday"),
+    ("2000-03-24", "2000-2002\nDot-com Bust"),
+    ("2008-09-15", "2008\nGlobal Financial\nCrisis"),
+    ("2020-03-23", "2020\nCOVID-19 Crash"),
+    ("2022-06-16", "2022\nInflation &\nRate Hike"),
+]
+
+def build_trend_channel(df, projection_year=2040):
     if df is None or df.empty or len(df) < 36:
         return None
     monthly = df[["Close"]].resample("ME").last().dropna().copy()
@@ -303,30 +311,265 @@ def build_trend_channel(df):
     monthly["Lower1"] = np.exp(monthly["Trend"] - sd)
     monthly["Lower2"] = np.exp(monthly["Trend"] - 2 * sd)
     z_score = (monthly["LogPrice"].iloc[-1] - monthly["Trend"].iloc[-1]) / sd if sd else 0
-    return {"data": monthly, "slope": slope, "intercept": intercept, "sd": sd, "z_score": z_score}
+    pct_rank = (monthly["Residual"] < monthly["Residual"].iloc[-1]).mean() * 100
+    reg_cagr = (np.exp(slope * 12) - 1) * 100
+    first_p = monthly["Close"].iloc[0]; last_p = monthly["Close"].iloc[-1]
+    years = len(monthly) / 12
+    actual_cagr = ((last_p / first_p) ** (1 / years) - 1) * 100 if years > 0 and first_p > 0 else 0
+    # Future projection
+    last_date = monthly.index[-1]; last_seq = monthly["Seq"].iloc[-1]
+    proj_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), end=f"{projection_year}-12-31", freq="ME")
+    proj_seq = np.arange(last_seq + 1, last_seq + 1 + len(proj_dates))
+    proj_trend = intercept + slope * proj_seq
+    proj_df = pd.DataFrame({
+        "Seq": proj_seq, "TrendPrice": np.exp(proj_trend),
+        "Upper1": np.exp(proj_trend + sd), "Upper2": np.exp(proj_trend + 2 * sd),
+        "Lower1": np.exp(proj_trend - sd), "Lower2": np.exp(proj_trend - 2 * sd),
+    }, index=proj_dates)
+    # Historical extremes — top 3 highest + top 2 lowest z-scores
+    monthly["ZHist"] = monthly["Residual"] / sd
+    top_high = monthly.nlargest(3, "ZHist")[["Close", "ZHist"]]
+    top_low = monthly.nsmallest(2, "ZHist")[["Close", "ZHist"]]
+    extremes = pd.concat([top_high, top_low]).sort_index()
+    return {
+        "data": monthly, "proj": proj_df, "slope": slope, "intercept": intercept,
+        "sd": sd, "z_score": z_score, "pct_rank": pct_rank,
+        "reg_cagr": reg_cagr, "actual_cagr": actual_cagr, "extremes": extremes,
+    }
+
+def _valuation_status(z):
+    if z > 2: return "Extreme Overvaluation", "#EF4444"
+    if z > 1: return "Expensive", "#F97316"
+    if z > -1: return "Neutral / Fair", "#2563EB"
+    if z > -2: return "Attractive", "#16A34A"
+    return "Extreme Undervaluation", "#059669"
+
+def _tactical_implication(z):
+    if z > 2: return "Above long-term trend significantly", "Very High", "Very Defensive", "Reduce Aggression"
+    if z > 1: return "Above trend by >1 SD", "Moderately High", "Slow DCA / Maintain Cash Buffer", "Reduce Aggression"
+    if z > -1: return "Near long-term fair value", "Moderate", "Neutral Deployment", "Normal"
+    if z > -2: return "Below trend — historically attractive", "Moderate-Low", "Accumulation Phase", "Increase Allocation"
+    return "Deeply below trend — rare opportunity", "Low", "Aggressive Deployment", "Maximum Allocation"
+
+def _label_extreme(date):
+    y = date.year
+    if 1987 <= y <= 1988: return "Black Monday"
+    if 1997 <= y <= 1998: return "Asian Financial Crisis"
+    if 2000 <= y <= 2002: return "Dot-com Peak/Bust"
+    if 2003 <= y <= 2004: return "Post Dot-com Recovery"
+    if 2007 <= y <= 2009: return "GFC Peak/Bottom"
+    if y == 2020: return "COVID Crash Bottom"
+    if 2021 <= y <= 2022: return "Post-COVID / Rate Hike"
+    return f"Market Event ({y})"
 
 def render_trend_channel(df, market_name):
-    tc = build_trend_channel(df)
+    # ── Controls ──
+    tc_c1, tc_c2, tc_c3 = st.columns(3)
+    with tc_c1:
+        tc_freq = st.selectbox("Data Frequency", ["Monthly", "Weekly", "Daily"], index=0, key="tc_freq")
+    with tc_c2:
+        tc_period = st.selectbox("Regression Period", ["Full History", "Rolling 15Y", "Post-GFC", "Post-COVID"], index=0, key="tc_period")
+    with tc_c3:
+        tc_proj = st.selectbox("Projection Horizon", [2030, 2035, 2040, 2050], index=2, key="tc_proj")
+
+    # ── Resample ──
+    if tc_freq == "Weekly":
+        wdf = df[["Close"]].resample("W").last().dropna()
+    elif tc_freq == "Daily":
+        wdf = df[["Close"]].copy()
+    else:
+        wdf = df[["Close"]].resample("ME").last().dropna()
+
+    # ── Period filter ──
+    if tc_period == "Rolling 15Y":
+        wdf = wdf.loc[wdf.index >= wdf.index.max() - pd.DateOffset(years=15)]
+    elif tc_period == "Post-GFC":
+        wdf = wdf.loc[wdf.index >= "2009-01-01"]
+    elif tc_period == "Post-COVID":
+        wdf = wdf.loc[wdf.index >= "2020-01-01"]
+
+    tc = build_trend_channel(wdf, projection_year=tc_proj)
     if tc is None:
         st.warning("Insufficient data for trend channel analysis.")
         return
-    tdf = tc["data"]; z = tc["z_score"]
-    status = ("Extreme Overvaluation" if z > 2 else "Expensive" if z > 1 else "Neutral" if z > -1 else "Attractive" if z > -2 else "Extreme Undervaluation")
-    status_colour = RED if z > 2 else ORANGE if z > 1 else BLUE if z > -1 else GREEN if z > -2 else GREEN
-    dist_from_trend = ((tdf["Close"].iloc[-1] / tdf["TrendPrice"].iloc[-1]) - 1) * 100
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Market Status", status)
-    c2.metric("Z-Score", f"{z:.2f}")
-    c3.metric("Distance from Trend", f"{dist_from_trend:.1f}%")
-    c4.metric("Regression SD", f"{tc['sd']:.4f}")
+
+    tdf = tc["data"]; proj = tc["proj"]; z = tc["z_score"]
+    status, status_col = _valuation_status(z)
+    dist = ((tdf["Close"].iloc[-1] / tdf["TrendPrice"].iloc[-1]) - 1) * 100
+
+    # ── Top Metrics ──
+    mc1, mc2, mc3, mc4 = st.columns(4)
+    mc1.metric("Market Status", status)
+    mc2.metric("Z-Score", f"{z:+.2f}")
+    mc3.metric("Percentile Rank", f"{tc['pct_rank']:.0f}th")
+    mc4.metric("Distance from Trend", f"{dist:+.1f}%")
+
+    # ════════════════════════════════════════════
+    # MAIN CHART
+    # ════════════════════════════════════════════
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["Close"], name="Market Price", line=dict(color="#2563EB", width=2.5)))
-    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["TrendPrice"], name="Trend (Regression)", line=dict(color="#7C3AED", width=2)))
-    for col, name, colour in [("Upper1", "+1 SD (Expensive)", "#F59E0B"), ("Upper2", "+2 SD (Bubble)", "#EF4444"), ("Lower1", "-1 SD (Attractive)", "#10B981"), ("Lower2", "-2 SD (Crisis Buy)", "#059669")]:
-        fig.add_trace(go.Scatter(x=tdf.index, y=tdf[col], name=name, line=dict(color=colour, dash="dash")))
-    fig.update_layout(height=520, title=f"{market_name} 曾氏通道 (Trend Channel Line)", yaxis_type="log", plot_bgcolor="white", paper_bgcolor="white", margin=dict(l=10, r=10, t=50, b=10), legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5))
+    # Price
+    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["Close"], name=f"{market_name} (Adj Close)", line=dict(color="#2563EB", width=2)))
+    # Trend
+    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["TrendPrice"], name="Trend (Log Regression)", line=dict(color="#7C3AED", width=2)))
+    # Bands — historical
+    band_cfg = [("Upper2","+2 SD (95%)","#EF4444"),("Upper1","+1 SD (75%)","#F59E0B"),("Lower1","-1 SD (75%)","#10B981"),("Lower2","-2 SD (95%)","#059669")]
+    for col, lbl, clr in band_cfg:
+        fig.add_trace(go.Scatter(x=tdf.index, y=tdf[col], name=lbl, line=dict(color=clr, dash="dash", width=1.5)))
+    # Bands — future projection
+    if not proj.empty:
+        fig.add_trace(go.Scatter(x=proj.index, y=proj["TrendPrice"], name="Projection (Trend)", line=dict(color="#7C3AED", dash="dot", width=1.5), showlegend=False))
+        for col, _, clr in band_cfg:
+            fig.add_trace(go.Scatter(x=proj.index, y=proj[col], line=dict(color=clr, dash="dot", width=1), showlegend=False))
+        # Right-side price annotations
+        last_proj = proj.iloc[-1]
+        for col, lbl_short in [("Upper2","+2SD"),("Upper1","+1SD"),("TrendPrice","Trend"),("Lower1","-1SD"),("Lower2","-2SD")]:
+            fig.add_annotation(x=proj.index[-1], y=last_proj[col], text=f"{last_proj[col]:,.0f}", showarrow=False, xanchor="left", font=dict(size=10))
+
+    # Crisis annotations
+    for evt_date, evt_label in CRISIS_EVENTS:
+        evt_ts = pd.Timestamp(evt_date)
+        if tdf.index.min() <= evt_ts <= tdf.index.max():
+            fig.add_annotation(x=evt_ts, y=1.08, yref="paper", text=evt_label, showarrow=True, arrowhead=2, ax=0, ay=-30, font=dict(size=9, color="#374151"), align="center")
+
+    # Today marker
+    fig.add_annotation(x=tdf.index[-1], y=1.05, yref="paper", text=f"Today\n{tdf.index[-1].strftime('%b %d, %Y')}", showarrow=True, arrowhead=2, ax=0, ay=-25, font=dict(size=9, color="#2563EB", weight="bold"))
+
+    subtitle = f"{tc_freq} Data • {tc_period}"
+    fig.update_layout(
+        height=550,
+        title=dict(text=f"{market_name} 曾氏通道 (Trend Channel Line) — {subtitle}", font=dict(size=16)),
+        yaxis_type="log", yaxis_title="Price (Log Scale)",
+        plot_bgcolor="white", paper_bgcolor="white",
+        margin=dict(l=10, r=80, t=60, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.18, xanchor="center", x=0.5, font=dict(size=10)),
+    )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-    st.caption("Monthly logarithmic regression trend channel with ±1 SD and ±2 SD valuation bands. Z-Score > +2 = bubble risk, < -2 = generational buy zone.")
+
+    # ════════════════════════════════════════════
+    # ROW 2: Summary | Z-Score Chart | Guide | Gauge
+    # ════════════════════════════════════════════
+    r2c1, r2c2, r2c3, r2c4 = st.columns([1, 1.2, 1.1, 0.8])
+
+    with r2c1:
+        st.markdown("#### 📋 Current Valuation Summary")
+        cur_price = tdf["Close"].iloc[-1]
+        trend_val = tdf["TrendPrice"].iloc[-1]
+        rows_html = ""
+        for lbl, val, clr in [
+            ("Current Price", f"{cur_price:,.2f}", "#111827"),
+            ("Trend Value (Log)", f"{trend_val:,.2f}", "#7C3AED"),
+            ("Distance from Trend", f"{dist:+.1f}%", "#F97316" if dist > 0 else "#16A34A"),
+            ("Z-Score", f"{z:+.2f}", status_col),
+            ("Valuation Zone", status, status_col),
+            ("Historical Percentile", f"{tc['pct_rank']:.0f}th", "#111827"),
+            ("Regression CAGR", f"{tc['reg_cagr']:.2f}%", "#111827"),
+            ("Actual CAGR", f"{tc['actual_cagr']:.2f}%", "#111827"),
+            ("Volatility (SD - Log)", f"{tc['sd']:.4f}", "#111827"),
+            ("Total Months", f"{len(tdf)}", "#111827"),
+        ]:
+            rows_html += f'<div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px solid #334155"><span style="color:#94A3B8;font-size:13px">{lbl}</span><span style="color:{clr};font-weight:600;font-size:13px">{val}</span></div>'
+        st.markdown(f'<div style="background:#1E293B;border-radius:8px;padding:10px 4px;margin-top:4px">{rows_html}</div>', unsafe_allow_html=True)
+
+    with r2c2:
+        st.markdown("#### 📈 Historical Z-Score")
+        zfig = go.Figure()
+        zhist = tdf["Residual"] / tc["sd"]
+        zfig.add_trace(go.Scatter(x=tdf.index, y=zhist, mode="lines", line=dict(color="#2563EB", width=1.5), fill="tozeroy", fillcolor="rgba(37,99,235,0.12)"))
+        for lv, clr_lv in [(2,"#EF4444"),(1,"#F59E0B"),(0,"#94A3B8"),(-1,"#10B981"),(-2,"#059669")]:
+            zfig.add_hline(y=lv, line_dash="dash", line_color=clr_lv, line_width=1)
+        zfig.add_annotation(x=tdf.index[-1], y=z, text=f"{z:+.2f}", showarrow=True, arrowhead=2, ax=30, ay=-20, font=dict(size=11, color=status_col, weight="bold"), bgcolor="white", bordercolor=status_col)
+        zfig.update_layout(height=300, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Z-Score")
+        st.plotly_chart(zfig, use_container_width=True, config={"displayModeBar": False})
+
+    with r2c3:
+        st.markdown("#### 🎯 Z-Score Guide (Valuation Zones)")
+        guide_html = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
+        guide_html += '<tr style="border-bottom:2px solid #E5E7EB"><th style="text-align:left;padding:4px">Z-Score</th><th style="text-align:left;padding:4px">Market State</th><th style="text-align:left;padding:4px">Suggested Stance</th></tr>'
+        for dot, zr, state, stance in [
+            ("🔴", "> +2.0", "Extreme Overvaluation", "Very Defensive"),
+            ("🟠", "+1.0 to +2.0", "Expensive", "Defensive"),
+            ("🟡", "-1.0 to +1.0", "Neutral / Fair", "Neutral"),
+            ("🟢", "-2.0 to -1.0", "Attractive", "Accumulation"),
+            ("🟢", "< -2.0", "Extreme Undervaluation", "Aggressive"),
+        ]:
+            guide_html += f'<tr style="border-bottom:1px solid #F3F4F6"><td style="padding:5px">{dot} {zr}</td><td style="padding:5px">{state}</td><td style="padding:5px">{stance}</td></tr>'
+        guide_html += '</table>'
+        st.markdown(guide_html, unsafe_allow_html=True)
+
+    with r2c4:
+        st.markdown("#### 📊 Z-Score")
+        gfig = go.Figure(go.Indicator(
+            mode="gauge+number", value=z, number={"suffix": "", "font": {"size": 28}},
+            gauge={
+                "axis": {"range": [-3, 3], "tickwidth": 1},
+                "bar": {"color": status_col},
+                "steps": [
+                    {"range": [-3, -2], "color": "#D1FAE5"},
+                    {"range": [-2, -1], "color": "#A7F3D0"},
+                    {"range": [-1, 1], "color": "#FEF9C3"},
+                    {"range": [1, 2], "color": "#FED7AA"},
+                    {"range": [2, 3], "color": "#FECACA"},
+                ],
+                "threshold": {"line": {"color": "#111827", "width": 3}, "thickness": 0.8, "value": z},
+            }
+        ))
+        gfig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10))
+        st.plotly_chart(gfig, use_container_width=True, config={"displayModeBar": False})
+        st.markdown(f'<div style="text-align:center;font-size:13px"><b style="color:{status_col}">{status}</b><br>Percentile Rank: <b>{tc["pct_rank"]:.0f}th</b></div>', unsafe_allow_html=True)
+
+    # ════════════════════════════════════════════
+    # ROW 3: Extremes | Projection | Tactical
+    # ════════════════════════════════════════════
+    r3c1, r3c2, r3c3 = st.columns([1, 1.2, 1])
+
+    with r3c1:
+        st.markdown("#### 📜 Historical Extremes (Z-Score)")
+        ext = tc["extremes"]
+        ext_rows = []
+        for dt, row in ext.iterrows():
+            zv = row["ZHist"]; prc = row["Close"]
+            state_e, _ = _valuation_status(zv)
+            ext_rows.append({"Date": dt.strftime("%b %Y"), "Event": _label_extreme(dt), "Z-Score": f"{zv:+.2f}", "Price": f"{prc:,.0f}", "Market State": state_e})
+        st.dataframe(pd.DataFrame(ext_rows), use_container_width=True, hide_index=True)
+
+    with r3c2:
+        st.markdown("#### 🔮 Future Projection (Price Scale)")
+        if not proj.empty:
+            proj_rows = []
+            for yr in sorted(set([tc_proj] + [y for y in [2025,2030,2035,2040] if y <= tc_proj])):
+                yr_data = proj.loc[proj.index.year == yr]
+                if yr_data.empty: continue
+                last_yr = yr_data.iloc[-1]
+                proj_rows.append({
+                    "Year": yr,
+                    "Trend (Mean)": f"{last_yr['TrendPrice']:,.0f}",
+                    "+1 SD (75%)": f"{last_yr['Upper1']:,.0f}",
+                    "+2 SD (95%)": f"{last_yr['Upper2']:,.0f}",
+                    "-1 SD (75%)": f"{last_yr['Lower1']:,.0f}",
+                    "-2 SD (95%)": f"{last_yr['Lower2']:,.0f}",
+                })
+            if proj_rows:
+                st.dataframe(pd.DataFrame(proj_rows), use_container_width=True, hide_index=True)
+            else:
+                st.info("No projection data available for selected horizon.")
+        else:
+            st.info("No projection data available.")
+
+    with r3c3:
+        st.markdown("#### 🎯 Tactical Implication")
+        val_txt, risk_txt, stance_txt, bias_txt = _tactical_implication(z)
+        for emoji, lbl, val in [
+            ("📊", "Valuation", val_txt),
+            ("⚠️", "Risk Level", risk_txt),
+            ("🧭", "Suggested Stance", stance_txt),
+            ("📈", "Deployment Bias", bias_txt),
+        ]:
+            clr = "#16A34A" if "Accumulation" in val or "Increase" in val or "Aggressive" in val or "Maximum" in val else "#F97316" if "Defensive" in val or "Reduce" in val or "High" in val else "#2563EB"
+            st.markdown(f'<div style="padding:6px 10px;margin:4px 0;border-left:3px solid {clr};background:#F8FAFC;border-radius:4px"><span style="font-size:12px;color:#6B7280">{emoji} {lbl}</span><br><span style="font-size:14px;font-weight:600;color:{clr}">{val}</span></div>', unsafe_allow_html=True)
+
+    st.caption("This engine uses logarithmic regression channel (曾氏通道) with standard deviation bands (75% and 95%) to evaluate long-term market valuation and regime. Disclaimer: For educational purposes only. Not financial advice.")
+
 
 # =========================
 # Load data + sidebar
@@ -507,8 +750,8 @@ def render_market(expanded=False):
             with ch3: mini_pmi_bar_chart(pmi_df,f"{chosen} 12M Monthly Releases",f"{month_in} latest monthly signal")
             with ch4: mini_trend_chart(idx12,f"{index_label} 12M",f"{ticker} · 12M price path",RED,"rgba(239,68,68,0.16)","Index Level")
         with st.expander("📈 曾氏通道 (Trend Channel Line) — Secular Valuation Engine", expanded=False):
-            st.markdown("### 📈 Secular Valuation & Market Regime Engine")
-            st.caption("Monthly logarithmic regression channel analysis with dynamic valuation bands. Chart changes according to selected market.")
+            st.markdown("### 曾氏通道 (TREND CHANNEL LINE) — SECULAR VALUATION ENGINE")
+            st.caption("Long-term Logarithmic Regression Trend Channel Analysis. Chart changes dynamically according to selected market.")
             render_trend_channel(ud, index_label)
 
         with st.expander("🧪 What-if Scenario Override",expanded=False):
