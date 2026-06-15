@@ -295,6 +295,22 @@ CRISIS_EVENTS = [
     ("2022-06-16", "2022 Inflation & Rate Hike"),
 ]
 
+@st.cache_data(ttl=14400)
+def fetch_trend_data(ticker, start="1950-01-01"):
+    """Fetch maximum available history for trend channel analysis."""
+    try:
+        t = yf.Ticker(ticker)
+        df = t.history(start=start)
+        time.sleep(.05)
+        if df is not None and not df.empty:
+            df.index = pd.to_datetime(df.index)
+            if getattr(df.index, "tz", None) is not None:
+                df.index = df.index.tz_convert(None)
+            return df.dropna(subset=["Close"])
+    except Exception:
+        pass
+    return pd.DataFrame()
+
 def build_trend_channel(df, projection_year=2040):
     if df is None or df.empty or len(df) < 36:
         return None
@@ -372,13 +388,24 @@ def render_trend_channel(df, market_name):
     with tc_c3:
         tc_proj = st.selectbox("Projection Horizon", [2030, 2035, 2040, 2050], index=2, key="tc_proj")
 
+    # ── Fetch maximum history for trend channel (FIX 2) ──
+    tc_ticker = INDEX_TICKERS.get(market_name, None)
+    if tc_ticker:
+        tc_raw = fetch_trend_data(tc_ticker, start="1950-01-01")
+        if tc_raw is not None and not tc_raw.empty:
+            src_df = tc_raw
+        else:
+            src_df = df
+    else:
+        src_df = df
+
     # ── Resample ──
     if tc_freq == "Weekly":
-        wdf = df[["Close"]].resample("W").last().dropna()
+        wdf = src_df[["Close"]].resample("W").last().dropna()
     elif tc_freq == "Daily":
-        wdf = df[["Close"]].copy()
+        wdf = src_df[["Close"]].copy()
     else:
-        wdf = df[["Close"]].resample("ME").last().dropna()
+        wdf = src_df[["Close"]].resample("ME").last().dropna()
 
     # ── Period filter ──
     if tc_period == "Rolling 15Y":
@@ -405,7 +432,7 @@ def render_trend_channel(df, market_name):
     mc4.metric("Distance from Trend", f"{dist:+.1f}%")
 
     # ════════════════════════════════════════════
-    # MAIN CHART
+    # MAIN CHART (FIX 1 — annotations INSIDE chart)
     # ════════════════════════════════════════════
     fig = go.Figure()
     # Price
@@ -426,28 +453,52 @@ def render_trend_channel(df, market_name):
         for col, lbl_short, clr_r in [("Upper2","+2SD","#EF4444"),("Upper1","+1SD","#F59E0B"),("TrendPrice","Trend","#7C3AED"),("Lower1","-1SD","#10B981"),("Lower2","-2SD","#059669")]:
             fig.add_annotation(x=proj.index[-1], y=last_proj[col], text=f"<b>{last_proj[col]:,.0f}</b>", showarrow=False, xanchor="left", xshift=5, font=dict(size=11, color=clr_r))
 
-    # Crisis annotations — vertical reference lines + bold labels (FIX 1)
-    for evt_date, evt_label in CRISIS_EVENTS:
+    # Crisis annotations — INSIDE chart area (FIX 1)
+    y_max = tdf["Upper2"].max() if "Upper2" in tdf.columns else tdf["Close"].max()
+    evt_y_stagger = [0.95, 0.95, 0.95, 0.95, 0.88]  # stagger 2020/2022
+    for idx_evt, (evt_date, evt_label) in enumerate(CRISIS_EVENTS):
         evt_ts = pd.Timestamp(evt_date)
         if tdf.index.min() <= evt_ts <= tdf.index.max():
-            fig.add_vline(x=evt_ts.timestamp() * 1000, line_dash="dot", line_color="#D1D5DB", line_width=1)
-            fig.add_annotation(x=evt_ts, y=1.12, yref="paper", text=f"<b>{evt_label}</b>", showarrow=True, arrowhead=2, ax=0, ay=-35, font=dict(size=12, color="#374151"), align="center")
+            fig.add_vline(x=evt_ts.timestamp() * 1000, line_dash="dot", line_color="#CBD5E1", line_width=1)
+            y_frac = evt_y_stagger[idx_evt] if idx_evt < len(evt_y_stagger) else 0.95
+            fig.add_annotation(
+                x=evt_ts, y=y_frac, yref="paper",
+                text=f"<b>{evt_label}</b>",
+                showarrow=True, arrowhead=2, arrowcolor="#9CA3AF",
+                ax=0, ay=-30,
+                font=dict(size=11, color="#1F2937"),
+                bgcolor="rgba(255,255,255,0.85)", bordercolor="#D1D5DB", borderwidth=1, borderpad=3,
+                align="center"
+            )
 
-    # Today marker (FIX 1)
-    fig.add_annotation(x=tdf.index[-1], y=1.10, yref="paper", text=f"<b>Today</b><br>{tdf.index[-1].strftime('%b %d, %Y')}", showarrow=True, arrowhead=2, ax=0, ay=-35, font=dict(size=12, color="#EF4444"))
+    # Today marker — INSIDE chart area (FIX 1)
+    fig.add_vline(x=tdf.index[-1].timestamp() * 1000, line_dash="dash", line_color="#EF4444", line_width=1.5)
+    fig.add_annotation(
+        x=tdf.index[-1], y=0.82, yref="paper",
+        text=f"<b>Today</b><br>{tdf.index[-1].strftime('%b %d, %Y')}",
+        showarrow=True, arrowhead=2, arrowcolor="#EF4444",
+        ax=0, ay=-30,
+        font=dict(size=11, color="#EF4444"),
+        bgcolor="rgba(255,255,255,0.9)", bordercolor="#EF4444", borderwidth=1, borderpad=3,
+    )
 
     # Projection label
     if not proj.empty:
-        fig.add_annotation(x=proj.index[-1], y=1.08, yref="paper", text=f"<b>Projection to {tc_proj}</b>", showarrow=False, font=dict(size=11, color="#7C3AED"))
+        fig.add_annotation(
+            x=proj.index[len(proj)//2], y=0.97, yref="paper",
+            text=f"<b>Projection to {tc_proj}</b>",
+            showarrow=False, font=dict(size=11, color="#7C3AED"),
+            bgcolor="rgba(255,255,255,0.8)", borderpad=2,
+        )
 
     subtitle = f"{tc_freq}, {tc_period} ({tdf.index[0].strftime('%b %Y')} – {tdf.index[-1].strftime('%b %Y')})"
     fig.update_layout(
-        height=580,
-        title=dict(text=f"{market_name} 曾氏通道 (Trend Channel Line) — {subtitle}", font=dict(size=16)),
+        height=600,
+        title=dict(text=f"<b>{market_name} 曾氏通道 (Trend Channel Line)</b> — {subtitle}", font=dict(size=15)),
         yaxis_type="log", yaxis_title="Price (Log Scale)",
         plot_bgcolor="white", paper_bgcolor="white",
-        margin=dict(l=10, r=90, t=110, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.15, xanchor="center", x=0.5, font=dict(size=10)),
+        margin=dict(l=10, r=90, t=50, b=10),
+        legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="center", x=0.5, font=dict(size=10)),
     )
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
