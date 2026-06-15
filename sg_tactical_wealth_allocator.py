@@ -767,12 +767,12 @@ def get_pmi_df(chosen, latest_in):
     if market in PMI_FRED_MARKETS:
         fred = fetch_fred_pmi("NAPM")
         if not fred.empty:
-            return fred.last("12ME")
+            return fred.tail(12)
     hist_map = st.session_state.pmi_history.get(chosen) or DEFAULT_PMI_HISTORY.get(chosen)
     if hist_map:
         idx = pd.to_datetime([k + "-01" for k in sorted(hist_map.keys())])
         vals = [hist_map[k] for k in sorted(hist_map.keys())]
-        return pd.DataFrame({"PMI": vals}, index=idx).last("12ME")
+        return pd.DataFrame({"PMI": vals}, index=idx).tail(12)
     dates = pd.date_range(end=pd.Timestamp.today().normalize(), periods=12, freq="ME")
     vals = np.linspace(max(latest_in + 1.0, 30), latest_in, 12)
     st.caption("⚠️ Simulated PMI trend — click 🔄 Update PMI to fetch/save actual data.")
@@ -815,7 +815,7 @@ def render_market(expanded=False):
                         st.session_state.latest_pmi_month = latest_month
                         st.session_state.latest_pmi_source = "FRED (ISM Manufacturing PMI)"
                         st.session_state.pmi_proxy_label = "US ISM Manufacturing PMI"
-                        st.session_state.pmi_history["US ISM Manufacturing PMI"] = {d.strftime("%Y-%m"): float(v) for d, v in fred.last("12ME")["PMI"].items()}
+                        st.session_state.pmi_history["US ISM Manufacturing PMI"] = {d.strftime("%Y-%m"): float(v) for d, v in fred.tail(12)["PMI"].items()}
                         st.toast(f"✅ ISM PMI fetched from FRED: {latest_val:.1f} for {latest_month}", icon="🔄")
                     else:
                         st.toast("❌ Failed to fetch from FRED. Please try again.", icon="⚠️")
