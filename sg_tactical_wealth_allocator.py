@@ -53,7 +53,7 @@ INDEX_TICKERS={
  "HSI":"^HSI",
  "STI":"^STI",
  "KLSE":"^KLSE",
- "Gold":"GLD",
+ "Gold":"GC=F",
  "Bitcoin":"BTC-USD",
 }
 DISPLAY_NAME={
@@ -295,6 +295,11 @@ CRISIS_EVENTS = [
     ("2022-06-16", "2022 Inflation & Rate Hike"),
 ]
 
+TREND_CHANNEL_OVERRIDE = {
+    "Gold":"GC=F",
+    "Bitcoin":"BTC-USD",
+}
+
 @st.cache_data(ttl=14400)
 def fetch_trend_data(ticker, start="1950-01-01"):
     """Fetch maximum available history for trend channel analysis."""
@@ -332,7 +337,6 @@ def build_trend_channel(df, projection_year=2040):
     first_p = monthly["Close"].iloc[0]; last_p = monthly["Close"].iloc[-1]
     years = len(monthly) / 12
     actual_cagr = ((last_p / first_p) ** (1 / years) - 1) * 100 if years > 0 and first_p > 0 else 0
-    # Future projection
     last_date = monthly.index[-1]; last_seq = monthly["Seq"].iloc[-1]
     proj_dates = pd.date_range(start=last_date + pd.DateOffset(months=1), end=f"{projection_year}-12-31", freq="ME")
     proj_seq = np.arange(last_seq + 1, last_seq + 1 + len(proj_dates))
@@ -342,7 +346,6 @@ def build_trend_channel(df, projection_year=2040):
         "Upper1": np.exp(proj_trend + sd), "Upper2": np.exp(proj_trend + 2 * sd),
         "Lower1": np.exp(proj_trend - sd), "Lower2": np.exp(proj_trend - 2 * sd),
     }, index=proj_dates)
-    # Historical extremes — top 3 highest + top 2 lowest z-scores
     monthly["ZHist"] = monthly["Residual"] / sd
     top_high = monthly.nlargest(3, "ZHist")[["Close", "ZHist"]]
     top_low = monthly.nsmallest(2, "ZHist")[["Close", "ZHist"]]
@@ -379,7 +382,6 @@ def _label_extreme(date):
     return f"Market Event ({y})"
 
 def render_trend_channel(df, market_name):
-    # ── Controls ──
     tc_c1, tc_c2, tc_c3 = st.columns(3)
     with tc_c1:
         tc_freq = st.selectbox("Data Frequency", ["Monthly", "Weekly", "Daily"], index=0, key="tc_freq")
@@ -388,8 +390,8 @@ def render_trend_channel(df, market_name):
     with tc_c3:
         tc_proj = st.selectbox("Projection Horizon", [2030, 2035, 2040, 2050], index=2, key="tc_proj")
 
-    # ── Fetch maximum history for trend channel (FIX 2) ──
-    tc_ticker = INDEX_TICKERS.get(market_name, None)
+    # Fetch maximum history — use override ticker if available
+    tc_ticker = TREND_CHANNEL_OVERRIDE.get(market_name, INDEX_TICKERS.get(market_name, None))
     if tc_ticker:
         tc_raw = fetch_trend_data(tc_ticker, start="1950-01-01")
         if tc_raw is not None and not tc_raw.empty:
@@ -399,7 +401,6 @@ def render_trend_channel(df, market_name):
     else:
         src_df = df
 
-    # ── Resample ──
     if tc_freq == "Weekly":
         wdf = src_df[["Close"]].resample("W").last().dropna()
     elif tc_freq == "Daily":
@@ -407,7 +408,6 @@ def render_trend_channel(df, market_name):
     else:
         wdf = src_df[["Close"]].resample("ME").last().dropna()
 
-    # ── Period filter ──
     if tc_period == "Rolling 15Y":
         wdf = wdf.loc[wdf.index >= wdf.index.max() - pd.DateOffset(years=15)]
     elif tc_period == "Post-GFC":
@@ -424,105 +424,67 @@ def render_trend_channel(df, market_name):
     status, status_col = _valuation_status(z)
     dist = ((tdf["Close"].iloc[-1] / tdf["TrendPrice"].iloc[-1]) - 1) * 100
 
-    # ── Top Metrics ──
     mc1, mc2, mc3, mc4 = st.columns(4)
     mc1.metric("Market Status", status)
     mc2.metric("Z-Score", f"{z:+.2f}")
     mc3.metric("Percentile Rank", f"{tc['pct_rank']:.0f}th")
     mc4.metric("Distance from Trend", f"{dist:+.1f}%")
 
-    # ════════════════════════════════════════════
-    # MAIN CHART (FIX 1 — annotations INSIDE chart)
-    # ════════════════════════════════════════════
+    # ══════ MAIN CHART ══════
     fig = go.Figure()
-    # Price
     fig.add_trace(go.Scatter(x=tdf.index, y=tdf["Close"], name=f"{market_name} (Adj Close)", line=dict(color="#2563EB", width=2)))
-    # Trend
     fig.add_trace(go.Scatter(x=tdf.index, y=tdf["TrendPrice"], name="Trend (Log Regression)", line=dict(color="#7C3AED", width=2)))
-    # Bands — historical
     band_cfg = [("Upper2","+2 SD (95%)","#EF4444"),("Upper1","+1 SD (75%)","#F59E0B"),("Lower1","-1 SD (75%)","#10B981"),("Lower2","-2 SD (95%)","#059669")]
     for col, lbl, clr in band_cfg:
         fig.add_trace(go.Scatter(x=tdf.index, y=tdf[col], name=lbl, line=dict(color=clr, dash="dash", width=1.5)))
-    # Bands — future projection
     if not proj.empty:
-        fig.add_trace(go.Scatter(x=proj.index, y=proj["TrendPrice"], name="Projection (Trend)", line=dict(color="#7C3AED", dash="dot", width=1.5), showlegend=False))
+        fig.add_trace(go.Scatter(x=proj.index, y=proj["TrendPrice"], name="Projection", line=dict(color="#7C3AED", dash="dot", width=1.5), showlegend=False))
         for col, _, clr in band_cfg:
             fig.add_trace(go.Scatter(x=proj.index, y=proj[col], line=dict(color=clr, dash="dot", width=1), showlegend=False))
-        # Right-side price annotations
         last_proj = proj.iloc[-1]
-        for col, lbl_short, clr_r in [("Upper2","+2SD","#EF4444"),("Upper1","+1SD","#F59E0B"),("TrendPrice","Trend","#7C3AED"),("Lower1","-1SD","#10B981"),("Lower2","-2SD","#059669")]:
+        for col, lbl_s, clr_r in [("Upper2","+2SD","#EF4444"),("Upper1","+1SD","#F59E0B"),("TrendPrice","Trend","#7C3AED"),("Lower1","-1SD","#10B981"),("Lower2","-2SD","#059669")]:
             fig.add_annotation(x=proj.index[-1], y=last_proj[col], text=f"<b>{last_proj[col]:,.0f}</b>", showarrow=False, xanchor="left", xshift=5, font=dict(size=11, color=clr_r))
 
-    # Crisis annotations — INSIDE chart area (FIX 1)
-    y_max = tdf["Upper2"].max() if "Upper2" in tdf.columns else tdf["Close"].max()
-    evt_y_stagger = [0.95, 0.95, 0.95, 0.95, 0.88]  # stagger 2020/2022
-    for idx_evt, (evt_date, evt_label) in enumerate(CRISIS_EVENTS):
+    # Crisis annotations INSIDE chart
+    evt_y = [0.95, 0.95, 0.95, 0.95, 0.88]
+    for idx_e, (evt_date, evt_label) in enumerate(CRISIS_EVENTS):
         evt_ts = pd.Timestamp(evt_date)
         if tdf.index.min() <= evt_ts <= tdf.index.max():
-            fig.add_vline(x=evt_ts.timestamp() * 1000, line_dash="dot", line_color="#CBD5E1", line_width=1)
-            y_frac = evt_y_stagger[idx_evt] if idx_evt < len(evt_y_stagger) else 0.95
-            fig.add_annotation(
-                x=evt_ts, y=y_frac, yref="paper",
-                text=f"<b>{evt_label}</b>",
-                showarrow=True, arrowhead=2, arrowcolor="#9CA3AF",
-                ax=0, ay=-30,
-                font=dict(size=11, color="#1F2937"),
-                bgcolor="rgba(255,255,255,0.85)", bordercolor="#D1D5DB", borderwidth=1, borderpad=3,
-                align="center"
-            )
+            fig.add_vline(x=evt_ts.timestamp()*1000, line_dash="dot", line_color="#CBD5E1", line_width=1)
+            fig.add_annotation(x=evt_ts, y=evt_y[idx_e] if idx_e < len(evt_y) else 0.95, yref="paper",
+                text=f"<b>{evt_label}</b>", showarrow=True, arrowhead=2, arrowcolor="#9CA3AF", ax=0, ay=-30,
+                font=dict(size=11, color="#1F2937"), bgcolor="rgba(255,255,255,0.85)", bordercolor="#D1D5DB", borderwidth=1, borderpad=3)
 
-    # Today marker — INSIDE chart area (FIX 1)
-    fig.add_vline(x=tdf.index[-1].timestamp() * 1000, line_dash="dash", line_color="#EF4444", line_width=1.5)
-    fig.add_annotation(
-        x=tdf.index[-1], y=0.82, yref="paper",
-        text=f"<b>Today</b><br>{tdf.index[-1].strftime('%b %d, %Y')}",
-        showarrow=True, arrowhead=2, arrowcolor="#EF4444",
-        ax=0, ay=-30,
-        font=dict(size=11, color="#EF4444"),
-        bgcolor="rgba(255,255,255,0.9)", bordercolor="#EF4444", borderwidth=1, borderpad=3,
-    )
+    fig.add_vline(x=tdf.index[-1].timestamp()*1000, line_dash="dash", line_color="#EF4444", line_width=1.5)
+    fig.add_annotation(x=tdf.index[-1], y=0.82, yref="paper",
+        text=f"<b>Today</b><br>{tdf.index[-1].strftime('%b %d, %Y')}", showarrow=True, arrowhead=2, arrowcolor="#EF4444", ax=0, ay=-30,
+        font=dict(size=11, color="#EF4444"), bgcolor="rgba(255,255,255,0.9)", bordercolor="#EF4444", borderwidth=1, borderpad=3)
 
-    # Projection label
     if not proj.empty:
-        fig.add_annotation(
-            x=proj.index[len(proj)//2], y=0.97, yref="paper",
-            text=f"<b>Projection to {tc_proj}</b>",
-            showarrow=False, font=dict(size=11, color="#7C3AED"),
-            bgcolor="rgba(255,255,255,0.8)", borderpad=2,
-        )
+        fig.add_annotation(x=proj.index[len(proj)//2], y=0.97, yref="paper",
+            text=f"<b>Projection to {tc_proj}</b>", showarrow=False, font=dict(size=11, color="#7C3AED"), bgcolor="rgba(255,255,255,0.8)", borderpad=2)
 
     subtitle = f"{tc_freq}, {tc_period} ({tdf.index[0].strftime('%b %Y')} – {tdf.index[-1].strftime('%b %Y')})"
-    fig.update_layout(
-        height=600,
+    fig.update_layout(height=600,
         title=dict(text=f"<b>{market_name} 曾氏通道 (Trend Channel Line)</b> — {subtitle}", font=dict(size=15)),
-        yaxis_type="log", yaxis_title="Price (Log Scale)",
-        plot_bgcolor="white", paper_bgcolor="white",
+        yaxis_type="log", yaxis_title="Price (Log Scale)", plot_bgcolor="white", paper_bgcolor="white",
         margin=dict(l=10, r=90, t=50, b=10),
-        legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="center", x=0.5, font=dict(size=10)),
-    )
+        legend=dict(orientation="h", yanchor="bottom", y=-0.12, xanchor="center", x=0.5, font=dict(size=10)))
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
-    # ════════════════════════════════════════════
-    # ROW 2: Summary | Z-Score Chart | Guide | Gauge
-    # ════════════════════════════════════════════
+    # ══════ ROW 2 ══════
     r2c1, r2c2, r2c3, r2c4 = st.columns([1, 1.2, 1.1, 0.8])
-
     with r2c1:
         st.markdown("#### 📋 Current Valuation Summary")
-        cur_price = tdf["Close"].iloc[-1]
-        trend_val = tdf["TrendPrice"].iloc[-1]
+        cur_price = tdf["Close"].iloc[-1]; trend_val = tdf["TrendPrice"].iloc[-1]
         rows_html = ""
         for lbl, val, clr in [
-            ("Current Price", f"{cur_price:,.2f}", "#111827"),
-            ("Trend Value (Log)", f"{trend_val:,.2f}", "#7C3AED"),
+            ("Current Price", f"{cur_price:,.2f}", "#111827"),("Trend Value (Log)", f"{trend_val:,.2f}", "#7C3AED"),
             ("Distance from Trend", f"{dist:+.1f}%", "#F97316" if dist > 0 else "#16A34A"),
-            ("Z-Score", f"{z:+.2f}", status_col),
-            ("Valuation Zone", status, status_col),
+            ("Z-Score", f"{z:+.2f}", status_col),("Valuation Zone", status, status_col),
             ("Historical Percentile", f"{tc['pct_rank']:.0f}th", "#111827"),
-            ("Regression CAGR", f"{tc['reg_cagr']:.2f}%", "#111827"),
-            ("Actual CAGR", f"{tc['actual_cagr']:.2f}%", "#111827"),
-            ("Volatility (SD - Log)", f"{tc['sd']:.4f}", "#111827"),
-            ("Total Months", f"{len(tdf)}", "#111827"),
+            ("Regression CAGR", f"{tc['reg_cagr']:.2f}%", "#111827"),("Actual CAGR", f"{tc['actual_cagr']:.2f}%", "#111827"),
+            ("Volatility (SD)", f"{tc['sd']:.4f}", "#111827"),("Total Months", f"{len(tdf)}", "#111827"),
         ]:
             rows_html += f'<div style="display:flex;justify-content:space-between;padding:3px 8px;border-bottom:1px solid #334155"><span style="color:#94A3B8;font-size:13px">{lbl}</span><span style="color:{clr};font-weight:600;font-size:13px">{val}</span></div>'
         st.markdown(f'<div style="background:#1E293B;border-radius:8px;padding:10px 4px;margin-top:4px">{rows_html}</div>', unsafe_allow_html=True)
@@ -541,51 +503,30 @@ def render_trend_channel(df, market_name):
     with r2c3:
         st.markdown("#### 🎯 Z-Score Guide (Valuation Zones)")
         guide_html = '<table style="width:100%;border-collapse:collapse;font-size:12px">'
-        guide_html += '<tr style="border-bottom:2px solid #E5E7EB"><th style="text-align:left;padding:4px">Z-Score</th><th style="text-align:left;padding:4px">Market State</th><th style="text-align:left;padding:4px">Suggested Stance</th></tr>'
-        for dot, zr, state, stance in [
-            ("🔴", "> +2.0", "Extreme Overvaluation", "Very Defensive"),
-            ("🟠", "+1.0 to +2.0", "Expensive", "Defensive"),
-            ("🟡", "-1.0 to +1.0", "Neutral / Fair", "Neutral"),
-            ("🟢", "-2.0 to -1.0", "Attractive", "Accumulation"),
-            ("🟢", "< -2.0", "Extreme Undervaluation", "Aggressive"),
-        ]:
+        guide_html += '<tr style="border-bottom:2px solid #E5E7EB"><th style="text-align:left;padding:4px">Z-Score</th><th style="text-align:left;padding:4px">Market State</th><th style="text-align:left;padding:4px">Stance</th></tr>'
+        for dot, zr, state, stance in [("🔴","> +2.0","Extreme Overvaluation","Very Defensive"),("🟠","+1.0 to +2.0","Expensive","Defensive"),
+            ("🟡","-1.0 to +1.0","Neutral / Fair","Neutral"),("🟢","-2.0 to -1.0","Attractive","Accumulation"),("🟢","< -2.0","Extreme Undervaluation","Aggressive")]:
             guide_html += f'<tr style="border-bottom:1px solid #F3F4F6"><td style="padding:5px">{dot} {zr}</td><td style="padding:5px">{state}</td><td style="padding:5px">{stance}</td></tr>'
         guide_html += '</table>'
         st.markdown(guide_html, unsafe_allow_html=True)
 
     with r2c4:
         st.markdown("#### 📊 Z-Score")
-        gfig = go.Figure(go.Indicator(
-            mode="gauge+number", value=z, number={"suffix": "", "font": {"size": 28}},
-            gauge={
-                "axis": {"range": [-3, 3], "tickwidth": 1},
-                "bar": {"color": status_col},
-                "steps": [
-                    {"range": [-3, -2], "color": "#D1FAE5"},
-                    {"range": [-2, -1], "color": "#A7F3D0"},
-                    {"range": [-1, 1], "color": "#FEF9C3"},
-                    {"range": [1, 2], "color": "#FED7AA"},
-                    {"range": [2, 3], "color": "#FECACA"},
-                ],
-                "threshold": {"line": {"color": "#111827", "width": 3}, "thickness": 0.8, "value": z},
-            }
-        ))
+        gfig = go.Figure(go.Indicator(mode="gauge+number", value=z, number={"suffix":"","font":{"size":28}},
+            gauge={"axis":{"range":[-3,3],"tickwidth":1},"bar":{"color":status_col},
+            "steps":[{"range":[-3,-2],"color":"#D1FAE5"},{"range":[-2,-1],"color":"#A7F3D0"},{"range":[-1,1],"color":"#FEF9C3"},{"range":[1,2],"color":"#FED7AA"},{"range":[2,3],"color":"#FECACA"}],
+            "threshold":{"line":{"color":"#111827","width":3},"thickness":0.8,"value":z}}))
         gfig.update_layout(height=220, margin=dict(l=20, r=20, t=30, b=10))
         st.plotly_chart(gfig, use_container_width=True, config={"displayModeBar": False})
         st.markdown(f'<div style="text-align:center;font-size:13px"><b style="color:{status_col}">{status}</b><br>Percentile Rank: <b>{tc["pct_rank"]:.0f}th</b></div>', unsafe_allow_html=True)
 
-    # ════════════════════════════════════════════
-    # ROW 3: Extremes | Projection | Tactical
-    # ════════════════════════════════════════════
+    # ══════ ROW 3 ══════
     r3c1, r3c2, r3c3 = st.columns([1, 1.2, 1])
-
     with r3c1:
         st.markdown("#### 📜 Historical Extremes (Z-Score)")
-        ext = tc["extremes"]
-        ext_rows = []
+        ext = tc["extremes"]; ext_rows = []
         for dt, row in ext.iterrows():
-            zv = row["ZHist"]; prc = row["Close"]
-            state_e, _ = _valuation_status(zv)
+            zv = row["ZHist"]; prc = row["Close"]; state_e, _ = _valuation_status(zv)
             ext_rows.append({"Date": dt.strftime("%b %Y"), "Event": _label_extreme(dt), "Z-Score": f"{zv:+.2f}", "Price": f"{prc:,.0f}", "Market State": state_e})
         st.dataframe(pd.DataFrame(ext_rows), use_container_width=True, hide_index=True)
 
@@ -597,34 +538,21 @@ def render_trend_channel(df, market_name):
                 yr_data = proj.loc[proj.index.year == yr]
                 if yr_data.empty: continue
                 last_yr = yr_data.iloc[-1]
-                proj_rows.append({
-                    "Year": yr,
-                    "Trend (Mean)": f"{last_yr['TrendPrice']:,.0f}",
-                    "+1 SD (75%)": f"{last_yr['Upper1']:,.0f}",
-                    "+2 SD (95%)": f"{last_yr['Upper2']:,.0f}",
-                    "-1 SD (75%)": f"{last_yr['Lower1']:,.0f}",
-                    "-2 SD (95%)": f"{last_yr['Lower2']:,.0f}",
-                })
-            if proj_rows:
-                st.dataframe(pd.DataFrame(proj_rows), use_container_width=True, hide_index=True)
-            else:
-                st.info("No projection data available for selected horizon.")
-        else:
-            st.info("No projection data available.")
+                proj_rows.append({"Year": yr, "Trend (Mean)": f"{last_yr['TrendPrice']:,.0f}",
+                    "+1 SD (75%)": f"{last_yr['Upper1']:,.0f}", "+2 SD (95%)": f"{last_yr['Upper2']:,.0f}",
+                    "-1 SD (75%)": f"{last_yr['Lower1']:,.0f}", "-2 SD (95%)": f"{last_yr['Lower2']:,.0f}"})
+            if proj_rows: st.dataframe(pd.DataFrame(proj_rows), use_container_width=True, hide_index=True)
+            else: st.info("No projection data for selected horizon.")
+        else: st.info("No projection data available.")
 
     with r3c3:
         st.markdown("#### 🎯 Tactical Implication")
         val_txt, risk_txt, stance_txt, bias_txt = _tactical_implication(z)
-        for emoji, lbl, val in [
-            ("📊", "Valuation", val_txt),
-            ("⚠️", "Risk Level", risk_txt),
-            ("🧭", "Suggested Stance", stance_txt),
-            ("📈", "Deployment Bias", bias_txt),
-        ]:
+        for emoji, lbl, val in [("📊","Valuation",val_txt),("⚠️","Risk Level",risk_txt),("🧭","Suggested Stance",stance_txt),("📈","Deployment Bias",bias_txt)]:
             clr = "#16A34A" if "Accumulation" in val or "Increase" in val or "Aggressive" in val or "Maximum" in val else "#F97316" if "Defensive" in val or "Reduce" in val or "High" in val else "#2563EB"
             st.markdown(f'<div style="padding:6px 10px;margin:4px 0;border-left:3px solid {clr};background:#F8FAFC;border-radius:4px"><span style="font-size:12px;color:#6B7280">{emoji} {lbl}</span><br><span style="font-size:14px;font-weight:600;color:{clr}">{val}</span></div>', unsafe_allow_html=True)
 
-    st.caption("This engine uses logarithmic regression channel (曾氏通道) with standard deviation bands (75% and 95%) to evaluate long-term market valuation and regime. Disclaimer: For educational purposes only. Not financial advice.")
+    st.caption("This engine uses logarithmic regression channel (曾氏通道) with standard deviation bands to evaluate long-term market valuation. For educational purposes only. Not financial advice.")
 
 
 # =========================
