@@ -327,7 +327,23 @@ def render_suggested(expanded=False):
     with st.expander("💰 Suggested Deploy Basis & Capital Source",expanded=expanded):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1]); s1.markdown(f"#### 📌 Suggested Deploy Basis\nSuggested Deploy = Available Deployable Capital × Deployment Rule\n\n### S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}\nSource: selected index price data, {ref} drawdown formula, and sidebar capital inputs.")
         s2.markdown("#### 🏦 Capital Source Breakdown"); s2.markdown('<div class="light-card">'+kv("Funding Source",funding_source,GREEN if cash_deploy>0 else SLATE)+kv("Cash Deployment",f"S${cash_deploy:,.0f}",GREEN)+kv("SRS Deployment",f"S${srs_deploy:,.0f}",SLATE)+kv("CPF-OA Deployment",f"S${cpf_deploy:,.0f}",SLATE)+kv("Reason",capital_reason,SLATE)+'</div>',unsafe_allow_html=True)
-        s3.markdown("#### 🧱 Tranche Deployment Plan"); s3.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.") if deploy<=0 else s3.markdown('<div class="light-card">'+kv("Tranche 1 — Deploy now",f"S${deploy*.5:,.0f}",AMBER)+kv("Tranche 2 — If drawdown deepens",f"S${deploy*.25:,.0f}",ORANGE)+kv("Tranche 3 — If stabilisation appears",f"S${deploy*.25:,.0f}",BLUE)+'</div>',unsafe_allow_html=True)
+        
+with s3:
+    st.markdown("#### 🧱 Tranche Deployment Plan")
+
+    if deploy <= 0:
+        st.info("No tranche plan because Suggested Deploy is S$0 under current rule engine.")
+    else:
+        st.markdown(
+            '<div class="light-card">'
+            + kv("Tranche 1 — Deploy now", f"S${deploy*.5:,.0f}", AMBER)
+            + kv("Tranche 2 — If drawdown deepens", f"S${deploy*.25:,.0f}", ORANGE)
+            + kv("Tranche 3 — If stabilisation appears", f"S${deploy*.25:,.0f}", BLUE)
+            + '</div>',
+            unsafe_allow_html=True,
+        )
+``
+
         s4.markdown("#### 🧭 Deployment Ladder"); s4.markdown('<div class="light-card">'+kv("HOLD / small drawdown","0% deploy",SLATE)+kv("INITIAL BUY","10% deploy · Cash only",AMBER)+kv("BUY","20–35% deploy · Cash then SRS",ORANGE)+kv("STRONG BUY","50% deploy · Cash + SRS + CPF-OA",RED)+kv("Next Trigger",next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         options=ETF_UNIVERSE.get(sel,{}).get("etfs",[])
         if options: st.markdown("#### 🎯 Suggested Investment Options"); st.dataframe(pd.DataFrame([{"Role":r,"Instrument":n,"Ticker":t,"Use case":u} for r,n,t,u in options]),use_container_width=True,hide_index=True)
