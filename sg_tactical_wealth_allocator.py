@@ -47,28 +47,34 @@ st.markdown(f"""
 # Static mappings
 # =========================
 INDEX_TICKERS={
-    "S&P 500 (US Market Core)":"^GSPC",
-    "Nasdaq 100 (Tech Growth)":"^IXIC",
-    "Straits Times Index (SG Value/REITs)":"^STI",
-    "Hang Seng Index (HK Cyclical/Beta)":"^HSI",
- "Dow Jones Industrial Average (US Blue Chips)":"^DJI",
- "FTSE Bursa Malaysia KLCI (Malaysia Core)":"^KLSE",
+ "S&P 500":"^GSPC",
+ "Nasdaq":"^IXIC",
+ "DJIA":"^DJI",
+ "HSI":"^HSI",
+ "STI":"^STI",
+ "KLSE":"^KLSE",
+ "Gold":"GLD",
+ "Bitcoin":"BTC-USD",
 }
 DISPLAY_NAME={
-    "S&P 500 (US Market Core)":"S&P 500",
-    "Nasdaq 100 (Tech Growth)":"Nasdaq 100",
-    "Straits Times Index (SG Value/REITs)":"Straits Times Index",
-    "Hang Seng Index (HK Cyclical/Beta)":"Hang Seng Index",
- "Dow Jones Industrial Average (US Blue Chips)":"DJIA",
- "FTSE Bursa Malaysia KLCI (Malaysia Core)":"KLSE",
+ "S&P 500":"S&P 500",
+ "Nasdaq":"Nasdaq",
+ "DJIA":"DJIA",
+ "HSI":"HSI",
+ "STI":"STI",
+ "KLSE":"KLSE",
+ "Gold":"Gold",
+ "Bitcoin":"Bitcoin",
 }
 PMI_PROXY_MAP={
-    "S&P 500 (US Market Core)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
-    "Nasdaq 100 (Tech Growth)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
-    "Hang Seng Index (HK Cyclical/Beta)":{"label":"China RatingDog / Caixin Manufacturing PMI","region":"China / Hong Kong proxy","source":"RatingDog / S&P Global / economic calendar","default":51.8},
-    "Straits Times Index (SG Value/REITs)":{"label":"Singapore S&P Global PMI","region":"Singapore","source":"S&P Global Singapore PMI / economic calendar","default":56.7},
- "Dow Jones Industrial Average (US Blue Chips)":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
- "FTSE Bursa Malaysia KLCI (Malaysia Core)":{"label":"Malaysia Manufacturing PMI","region":"Malaysia","source":"S&P Global Malaysia PMI / economic calendar","default":49.8},
+ "S&P 500":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+ "Nasdaq":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+ "DJIA":{"label":"US Composite PMI","region":"United States","source":"S&P Global US Composite PMI / economic calendar","default":51.5},
+ "HSI":{"label":"China Caixin Manufacturing PMI","region":"China / Hong Kong","source":"S&P Global Caixin PMI / economic calendar","default":51.8},
+ "STI":{"label":"Singapore S&P Global PMI","region":"Singapore","source":"S&P Global Singapore PMI / economic calendar","default":56.7},
+ "KLSE":{"label":"Malaysia Manufacturing PMI","region":"Malaysia","source":"S&P Global Malaysia PMI / economic calendar","default":49.8},
+ "Gold":{"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.0},
+ "Bitcoin":{"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.0},
 }
 PMI_FALLBACK={"label":"Global PMI","region":"Global","source":"S&P Global / JPMorgan Global Composite PMI","default":51.5}
 LATEST_PMI_ACTUALS={
@@ -77,20 +83,21 @@ LATEST_PMI_ACTUALS={
     "Singapore S&P Global PMI":{"value":56.7,"month":"May 2026","source":"S&P Global Singapore PMI / economic calendar"},
     "Singapore Manufacturing PMI (SIPMM)":{"value":51.0,"month":"May 2026","source":"SIPMM / economic calendar"},
     "Singapore Electronics PMI (SIPMM)":{"value":51.9,"month":"May 2026","source":"SIPMM / economic calendar"},
- "Malaysia Manufacturing PMI":{"value":49.8,"month":"May 2026","source":"S&P Global Malaysia PMI / economic calendar"},
-    "Global PMI":{"value":51.8,"month":"May 2026","source":"S&P Global / JPMorgan Global Composite PMI"},
+    "Malaysia Manufacturing PMI":{"value":49.8,"month":"May 2026","source":"S&P Global Malaysia PMI / economic calendar"},
+ "Global PMI":{"value":51.8,"month":"May 2026","source":"S&P Global / JPMorgan Global Composite PMI"},
 }
 PMI_PROXY_OPTIONS=list(LATEST_PMI_ACTUALS.keys())
 NAV_OPTIONS=["🧠 Executive Centre","💰 Suggested Deploy","🌦️ Market Conditions","📊 Market Performance","🏆 Crash Analytics","📡 Audit Trail & Export"]
 SECTION_ORDER=["💰 Suggested Deploy","🌦️ Market Conditions","📊 Market Performance","🏆 Crash Analytics","📡 Audit Trail & Export"]
 BENCHMARK_TICKERS={"Global Indices":[("STI","^STI"),("Nasdaq","^IXIC"),("S&P 500","^GSPC"),("DJIA","^DJI"),("Nikkei 225","^N225"),("TWSE","^TWII")],"Commodities & Crypto":[("Crude Oil","CL=F"),("Gold","GC=F"),("Silver","SI=F"),("Bitcoin","BTC-USD")]}
 ETF_UNIVERSE={
-"Straits Times Index (SG Value/REITs)":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
-"Hang Seng Index (HK Cyclical/Beta)":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
-"Nasdaq 100 (Tech Growth)":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},
-"S&P 500 (US Market Core)":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]},
- "Dow Jones Industrial Average (US Blue Chips)":{"label":"🇺🇸 DJIA","etfs":[("Core exposure","SPDR Dow Jones Industrial Average ETF","DIA","Blue-chip US exposure")]},
- "FTSE Bursa Malaysia KLCI (Malaysia Core)":{"label":"🇲🇾 Malaysia","etfs":[("Core exposure","FTSE Bursa Malaysia KLCI ETF","0820EA.KL","Broad Malaysia market exposure")]},
+"STI":{"label":"🇸🇬 Singapore","etfs":[("Core exposure","SPDR STI ETF","ES3.SI","Broad STI exposure"),("Core alternative","Nikko AM STI ETF","G3B.SI","Alternative STI exposure")]},
+"HSI":{"label":"🇭🇰 Hong Kong","etfs":[("Core exposure","Tracker Fund of Hong Kong","2800.HK","Broad HSI exposure"),("Broad HSI ETF","iShares HSI ETF","3115.HK","Alternative HSI exposure"),("Higher beta satellite","iShares Hang Seng TECH ETF","3067.HK","Growth / tech sensitivity")]},
+"Nasdaq":{"label":"🇺🇸 Nasdaq","etfs":[("Core exposure","Invesco QQQ","QQQ","Nasdaq 100 exposure"),("Lower-cost alternative","Invesco QQQM","QQQM","Nasdaq 100 lower-fee alternative")]},
+"S&P 500":{"label":"🇺🇸 S&P 500","etfs":[("Core exposure","SPDR S&P 500 ETF","SPY","Broad US large-cap exposure"),("Lower-cost core","Vanguard S&P 500 ETF","VOO","Low-cost S&P 500 exposure"),("Core alternative","iShares Core S&P 500 ETF","IVV","Broad S&P 500 exposure")]},
+ "DJIA":{"label":"🇺🇸 DJIA","etfs":[("Core exposure","SPDR Dow Jones Industrial Average ETF","DIA","Blue-chip US large-cap exposure")]},
+ "KLSE":{"label":"🇲🇾 Malaysia","etfs":[("Core exposure","FTSE Bursa Malaysia KLCI ETF","0820EA.KL","Broad Malaysia market exposure")]},
+ "Gold":{"label":"🪙 Gold","etfs":[("Core exposure","SPDR Gold Shares","GLD","Physical gold-backed ETF"),("Lower-cost alternative","iShares Gold Trust","IAU","Lower-cost gold ETF")]},
 }
 
 # =========================
@@ -276,6 +283,51 @@ def mini_pmi_bar_chart(df,title,subtitle):
     fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f"{title}<br><sup>{subtitle}</sup>",plot_bgcolor="white",paper_bgcolor="white",showlegend=False,yaxis_title="PMI")
     st.plotly_chart(fig,use_container_width=True,config={"displayModeBar":False})
 
+
+# =========================
+# Trend Channel Engine
+# =========================
+def build_trend_channel(df):
+    if df is None or df.empty or len(df) < 36:
+        return None
+    monthly = df[["Close"]].resample("ME").last().dropna().copy()
+    monthly["Seq"] = np.arange(1, len(monthly) + 1)
+    monthly["LogPrice"] = np.log(monthly["Close"])
+    slope, intercept = np.polyfit(monthly["Seq"], monthly["LogPrice"], 1)
+    monthly["Trend"] = intercept + slope * monthly["Seq"]
+    monthly["Residual"] = monthly["LogPrice"] - monthly["Trend"]
+    sd = monthly["Residual"].std()
+    monthly["TrendPrice"] = np.exp(monthly["Trend"])
+    monthly["Upper1"] = np.exp(monthly["Trend"] + sd)
+    monthly["Upper2"] = np.exp(monthly["Trend"] + 2 * sd)
+    monthly["Lower1"] = np.exp(monthly["Trend"] - sd)
+    monthly["Lower2"] = np.exp(monthly["Trend"] - 2 * sd)
+    z_score = (monthly["LogPrice"].iloc[-1] - monthly["Trend"].iloc[-1]) / sd if sd else 0
+    return {"data": monthly, "slope": slope, "intercept": intercept, "sd": sd, "z_score": z_score}
+
+def render_trend_channel(df, market_name):
+    tc = build_trend_channel(df)
+    if tc is None:
+        st.warning("Insufficient data for trend channel analysis.")
+        return
+    tdf = tc["data"]; z = tc["z_score"]
+    status = ("Extreme Overvaluation" if z > 2 else "Expensive" if z > 1 else "Neutral" if z > -1 else "Attractive" if z > -2 else "Extreme Undervaluation")
+    status_colour = RED if z > 2 else ORANGE if z > 1 else BLUE if z > -1 else GREEN if z > -2 else GREEN
+    dist_from_trend = ((tdf["Close"].iloc[-1] / tdf["TrendPrice"].iloc[-1]) - 1) * 100
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Market Status", status)
+    c2.metric("Z-Score", f"{z:.2f}")
+    c3.metric("Distance from Trend", f"{dist_from_trend:.1f}%")
+    c4.metric("Regression SD", f"{tc['sd']:.4f}")
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["Close"], name="Market Price", line=dict(color="#2563EB", width=2.5)))
+    fig.add_trace(go.Scatter(x=tdf.index, y=tdf["TrendPrice"], name="Trend (Regression)", line=dict(color="#7C3AED", width=2)))
+    for col, name, colour in [("Upper1", "+1 SD (Expensive)", "#F59E0B"), ("Upper2", "+2 SD (Bubble)", "#EF4444"), ("Lower1", "-1 SD (Attractive)", "#10B981"), ("Lower2", "-2 SD (Crisis Buy)", "#059669")]:
+        fig.add_trace(go.Scatter(x=tdf.index, y=tdf[col], name=name, line=dict(color=colour, dash="dash")))
+    fig.update_layout(height=520, title=f"{market_name} 曾氏通道 (Trend Channel Line)", yaxis_type="log", plot_bgcolor="white", paper_bgcolor="white", margin=dict(l=10, r=10, t=50, b=10), legend=dict(orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5))
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.caption("Monthly logarithmic regression trend channel with ±1 SD and ±2 SD valuation bands. Z-Score > +2 = bubble risk, < -2 = generational buy zone.")
+
 # =========================
 # Load data + sidebar
 # =========================
@@ -289,7 +341,7 @@ with st.sidebar:
     active_section=st.radio("Go to section", NAV_OPTIONS, index=0, label_visibility="collapsed")
     st.markdown("---")
     st.markdown("## ⚙️ Quick Settings")
-    sel=st.selectbox("Selected Market",list(m.keys()),index=list(m.keys()).index("Hang Seng Index (HK Cyclical/Beta)") if "Hang Seng Index (HK Cyclical/Beta)" in m else 0)
+    sel=st.selectbox("Selected Market",list(m.keys()),index=list(m.keys()).index("STI") if "STI" in m else 0)
     st.markdown("### 💰 Capital Pools & Safeguards")
     cash_balance=st.number_input("Liquid Cash (S$)",0.0,value=100000.0,step=5000.0)
     srs_balance=st.number_input("SRS (S$)",0.0,value=35000.0,step=5000.0)
@@ -454,17 +506,15 @@ def render_market(expanded=False):
             ch3,ch4=st.columns(2)
             with ch3: mini_pmi_bar_chart(pmi_df,f"{chosen} 12M Monthly Releases",f"{month_in} latest monthly signal")
             with ch4: mini_trend_chart(idx12,f"{index_label} 12M",f"{ticker} · 12M price path",RED,"rgba(239,68,68,0.16)","Index Level")
-        
-
         with st.expander("📈 曾氏通道 (Trend Channel Line) — Secular Valuation Engine", expanded=False):
             st.markdown("### 📈 Secular Valuation & Market Regime Engine")
-            st.caption("Monthly logarithmic regression channel analysis with dynamic valuation bands.")
+            st.caption("Monthly logarithmic regression channel analysis with dynamic valuation bands. Chart changes according to selected market.")
             render_trend_channel(ud, index_label)
 
-with st.expander("🧪 What-if Scenario Override",expanded=False):
+        with st.expander("🧪 What-if Scenario Override",expanded=False):
             w1,w2,w3,w4=st.columns(4)
             with w1: st.slider("Override VIX",10,60,int(vix if vix else 20))
-            with w2: st.slider(f"Override {chosen}",35,60,int(latest_in))
+            with w2: st.slider(f"Override {chosen}",35,60,int(float(st.session_state.get("latest_pmi_value",50))))
             with w3: st.slider("Override 10Y-13W Spread",-2.0,3.0,float(curve_spread if curve_spread is not None else .5),.1)
             with w4: st.slider("Override Drawdown (%)",0,60,int(abs(dd)))
             st.info("Simulation output only: use this to stress-test assumptions, not as the live market alert.")
