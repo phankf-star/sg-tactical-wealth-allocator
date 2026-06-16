@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="SG Tactical Wealth Allocator v35k", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Global Drawdown Allocation Engine v35L", layout="wide", initial_sidebar_state="expanded")
 
 # =========================
 # Colours / CSS
@@ -728,8 +728,8 @@ if st.session_state.get("pmi_selected_market") != sel:
     st.session_state.latest_pmi_month = _pmi_actual["month"]
     st.session_state.latest_pmi_source = pmi_proxy_default["source"]
 
-st.title("🇸🇬 Tactical Wealth Allocation & Future Drawdown Simulator v35k")
-st.caption("Singapore wealth allocation dashboard with market-specific PMI, live risk monitoring, staged deployment, crash analytics and secular valuation channel.")
+st.title("📉 Global Drawdown Allocation Engine")
+st.caption("v35L · Multi-market drawdown-based allocation dashboard with valuation Z-score, live risk monitoring, staged deployment and crash recovery analytics.")
 
 close, peak, dd, ref = current_dd(ud, drawdown_method)
 zone, zc = classify(dd)
@@ -756,6 +756,15 @@ conf_label = confidence_label(conf_score)
 decision_line = f"Deploy approximately S&#36;{deploy:,.0f} using staged tranches." if deploy > 0 else "No deployment now. Capital is preserved until a deployment trigger appears."
 next_trigger = next_trigger_label(zone)
 
+# Executive valuation snapshot for the top decision centre.
+try:
+    _exec_tc = build_trend_channel(ud, 2040)
+    exec_z_score = float(_exec_tc["z_score"]) if _exec_tc is not None else None
+    exec_valuation_zone, exec_valuation_colour = valuation_status(exec_z_score) if exec_z_score is not None else ("N/A", SLATE)
+except Exception:
+    exec_z_score = None
+    exec_valuation_zone, exec_valuation_colour = "N/A", SLATE
+
 # =========================
 # Render sections
 # =========================
@@ -776,7 +785,8 @@ def render_executive():
         risk_colour = RED if alert == "CRASH RISK" else ORANGE if alert == "WARNING" else AMBER if alert == "WATCH" else GREEN
         st.markdown(card("Risk Regime", alert, f"Live Risk Score: {live_score:.0f} / 100", risk_colour), unsafe_allow_html=True)
     with r2[2]:
-        st.markdown(card("Signal Confidence", conf_label, f"Approx. {conf_score:.0f} / 100", BLUE), unsafe_allow_html=True)
+        z_display = "N/A" if exec_z_score is None else f"{exec_z_score:+.2f}"
+        st.markdown(card("Valuation Z-Score", z_display, f"{exec_valuation_zone} · Trend Channel", exec_valuation_colour), unsafe_allow_html=True)
     st.markdown(f"**Formula used:** Current drawdown = (current close − selected peak reference) ÷ selected peak reference. **Selected reference:** {ref} at approximately **{peak:,.0f}**.  \n**Decision note:** {decision_line}")
 
 
