@@ -9,7 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title="Global Drawdown Allocation Engine v35M", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Global Drawdown Allocation Engine v35N", layout="wide", initial_sidebar_state="expanded")
 
 # =========================
 # Colours / CSS
@@ -729,7 +729,7 @@ if st.session_state.get("pmi_selected_market") != sel:
     st.session_state.latest_pmi_source = pmi_proxy_default["source"]
 
 st.title("📉 Global Drawdown Allocation Engine")
-st.caption("v35M · Multi-market drawdown-based allocation dashboard with valuation Z-score, live risk monitoring, staged deployment and full crash recovery analytics.")
+st.caption("v35N · Multi-market drawdown-based allocation dashboard with valuation Z-score, live risk monitoring, staged deployment and reorganised crash recovery analytics.")
 
 close, peak, dd, ref = current_dd(ud, drawdown_method)
 zone, zc = classify(dd)
@@ -1016,15 +1016,7 @@ def render_crash(expanded=False):
         k5.metric("Current Drawdown", f"{bt.dd_pct.iloc[-1]:.1f}%")
         st.markdown("---")
 
-        full_display = event_df.copy()
-        for c in ["Peak Date", "Trough Date"]:
-            full_display[c] = pd.to_datetime(full_display[c]).dt.strftime("%Y-%m-%d")
-        for c in ["Peak Index", "Trough Index", "Drawdown %", "Recovery Return %"]:
-            full_display[c] = full_display[c].round(1)
-        with st.expander("📚 Full Crash Event Universe", expanded=False):
-            st.dataframe(full_display, use_container_width=True, hide_index=True)
-            st.download_button("⬇️ Export Full Crash Events CSV", full_display.to_csv(index=False), file_name="crash_events_full.csv", mime="text/csv")
-
+        # 2. Interactive Event Explorer
         st.markdown("## 🔍 Interactive Event Explorer")
         f1, f2, f3 = st.columns([1, 1, 1])
         sev_opts = sorted(event_df["Severity"].dropna().unique().tolist())
@@ -1045,7 +1037,7 @@ def render_crash(expanded=False):
         if label_sel != "All":
             filtered_df = filtered_df[filtered_df["Historical Label"] == label_sel]
 
-        st.markdown("## 📋 Filtered Event Table")
+        st.markdown("### 📋 Filtered Event Table")
         filtered_display = filtered_df.copy()
         if filtered_display.empty:
             st.info("No events match the selected filters.")
@@ -1056,22 +1048,23 @@ def render_crash(expanded=False):
                 filtered_display[c] = filtered_display[c].round(1)
             st.dataframe(filtered_display, use_container_width=True, hide_index=True)
             st.download_button("⬇️ Export Filtered Crash Events CSV", filtered_display.to_csv(index=False), file_name="filtered_crash_events.csv", mime="text/csv")
+        st.markdown("---")
 
+        # 3. Selected Event Deep Dive
         src = filtered_df if not filtered_df.empty else event_df
         def event_label(row):
             return f"{row['Historical Label']} | {pd.to_datetime(row['Peak Date']).strftime('%Y-%m-%d')} > {pd.to_datetime(row['Trough Date']).strftime('%Y-%m-%d')} ({row['Drawdown %']:.1f}%)"
         labels = [event_label(r) for _, r in src.iterrows()]
 
-        st.markdown("### Historical Crash Explorer")
-        chosen_event = st.selectbox("Select event", labels, index=0, label_visibility="collapsed", key="selected_crash_event")
-        show_deep = st.toggle("📌 Show Selected Event Deep Dive", value=True, key="show_crash_deep_dive")
+        st.markdown("## 📌 Selected Event Deep Dive")
+        st.caption("Single-event case study: entry level, recovery path, investment outcome and crash path visualisation.")
+        chosen_event = st.selectbox("Historical Crash Explorer", labels, index=0, key="selected_crash_event")
+        show_deep = st.toggle("Show Selected Event Deep Dive", value=True, key="show_crash_deep_dive")
         if show_deep and labels:
             row = src.iloc[labels.index(chosen_event)]
             peak_date = pd.to_datetime(row["Peak Date"])
             trough_date = pd.to_datetime(row["Trough Date"])
             duration = max((trough_date - peak_date).days, 0)
-            st.markdown("## 📌 Selected Event Deep Dive")
-            st.caption("Deployment controls, event-level breakdown, historical label, pre-crash context and crash path visualisation.")
             st.markdown(f"**Historical Label:** {row['Historical Label']}")
             inv_one = st.number_input("Investment for selected event (S$)", min_value=1000.0, value=15000.0, step=1000.0, key="selected_event_invest")
             entry = safe_float(row["Trough Index"])
@@ -1101,10 +1094,12 @@ def render_crash(expanded=False):
                 fig.update_layout(height=280, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Index Level")
                 st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.info("📌 Historical labels are broad reference tags, not causal claims. Past performance does not guarantee future outcomes.")
-            st.download_button("⬇️ Export Crash Analytics CSV", filtered_display.to_csv(index=False) if not filtered_display.empty else full_display.to_csv(index=False), file_name="crash_analytics.csv", mime="text/csv")
+            st.download_button("⬇️ Export Crash Analytics CSV", filtered_display.to_csv(index=False) if not filtered_display.empty else event_df.to_csv(index=False), file_name="crash_analytics.csv", mime="text/csv")
+        st.markdown("---")
 
-        with st.expander("🧪 Master Crash Deployment Simulator", expanded=False):
-            st.caption("Simulates investing a fixed amount at every selected crash/correction event and holding until today or a user-selected end date.")
+        # 4. Master Crash Deployment Simulator
+        with st.expander("🧪 Master Crash Deployment Simulator", expanded=True):
+            st.caption("Portfolio-level simulation: deploy a fixed amount at every selected crash/correction event and hold until today or a user-selected end date.")
             s1, s2, s3 = st.columns([1, 1, 1])
             with s1:
                 inv = st.number_input("Investment per event (S$)", min_value=1000.0, value=10000.0, step=1000.0, key="master_invest")
@@ -1157,6 +1152,18 @@ def render_crash(expanded=False):
             fig.update_layout(height=320, margin=dict(l=10, r=10, t=10, b=10), plot_bgcolor="white", paper_bgcolor="white", showlegend=False, yaxis_title="Return %")
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.download_button("⬇️ Export Master Simulator CSV", sim_display.to_csv(index=False), file_name="master_crash_simulator.csv", mime="text/csv")
+        st.markdown("---")
+
+        # 5. Full Crash Event Universe / Audit Table at bottom
+        full_display = event_df.copy()
+        for c in ["Peak Date", "Trough Date"]:
+            full_display[c] = pd.to_datetime(full_display[c]).dt.strftime("%Y-%m-%d")
+        for c in ["Peak Index", "Trough Index", "Drawdown %", "Recovery Return %"]:
+            full_display[c] = full_display[c].round(1)
+        with st.expander("📚 Full Crash Event Universe / Audit Table", expanded=False):
+            st.caption("Complete unfiltered event universe used by the explorer and simulator. Kept at the bottom as the audit layer.")
+            st.dataframe(full_display, use_container_width=True, hide_index=True)
+            st.download_button("⬇️ Export Full Crash Events CSV", full_display.to_csv(index=False), file_name="crash_events_full.csv", mime="text/csv")
 
 def render_audit(expanded=False):
     with st.expander("📡 AUDIT TRAIL & EXPORT", expanded=expanded):
