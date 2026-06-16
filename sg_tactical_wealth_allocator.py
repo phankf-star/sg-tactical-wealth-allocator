@@ -337,13 +337,31 @@ def confidence_label(score):
     return "High" if score >= 70 else "Medium" if score >= 45 else "Low"
 
 
-def calc_market_scores(pmi_value, dd_value, trend_weak, vix_value, curve_value, pmi_applicable=True):
-    vix_s = 0 if vix_value is None else min(max((vix_value - 15) * 2, 0), 30)
-    curve_s = 10 if curve_value is None else (20 if curve_value < 0 else 10 if curve_value < 0.5 else 0)
-    pmi_s = 0 if not pmi_applicable else (0 if pmi_value >= 52 else 8 if pmi_value >= 50 else 16 if pmi_value >= 47 else 20)
-    dd_s = min(abs(dd_value) * 1.2, 25)
-    trend_s = 15 if trend_weak else 0
-    total = min(vix_s + curve_s + pmi_s + dd_s + trend_s, 100)
+def calc_market_scores_by_asset(
+    asset_name,
+    pmi_value,
+    dd_value,
+    trend_weak,
+    vix_value,
+    curve_value,
+):
+    asset_type = "ALTERNATIVE" if asset_name in PMI_NA_MARKETS else "EQUITY"
+
+    if asset_type == "EQUITY":
+        vix_s = 0 if vix_value is None else min(max((vix_value - 15) * 2, 0), 30)
+        curve_s = 10 if curve_value is None else (20 if curve_value < 0 else 10 if curve_value < 0.5 else 0)
+        pmi_s = 0 if pmi_value >= 52 else 8 if pmi_value >= 50 else 16 if pmi_value >= 47 else 20
+        dd_s = min(abs(dd_value) * 1.2, 25)
+        trend_s = 15 if trend_weak else 0
+        total = min(vix_s + curve_s + pmi_s + dd_s + trend_s, 100)
+    else:
+        vix_s = 0
+        curve_s = 0
+        pmi_s = 0
+        dd_s = min(abs(dd_value) * 1.5, 40)
+        trend_s = 20 if trend_weak else 0
+        total = min(dd_s + trend_s, 100)
+
     regime = "CRASH RISK" if total >= 70 else "WARNING" if total >= 50 else "WATCH" if total >= 30 else "NORMAL"
     return total, regime, vix_s, curve_s, pmi_s, dd_s, trend_s
 
@@ -750,7 +768,7 @@ trend_below = close < m[sel]["ma200"]
 pmi_label = pmi_proxy_default["label"]
 latest_pmi = float(st.session_state.get("latest_pmi_value", pmi_proxy_default["default"]))
 pmi_applicable = sel not in PMI_NA_MARKETS
-live_score, alert, vix_s, curve_s, pmi_s, dd_s, trend_s = calc_market_scores(latest_pmi, dd, trend_below, vix, curve_spread, pmi_applicable)
+live_score, alert, vix_s, curve_s, pmi_s, dd_s, trend_s = calc_market_scores_by_asset(sel, latest_pmi, dd, trend_below, vix, curve_spread)
 conf_score = confidence_score(dd, live_score, trend_below)
 conf_label = confidence_label(conf_score)
 decision_line = f"Deploy approximately S&#36;{deploy:,.0f} using staged tranches." if deploy > 0 else "No deployment now. Capital is preserved until a deployment trigger appears."
@@ -843,6 +861,7 @@ def render_market(expanded=False):
         actual = LATEST_PMI_ACTUALS.get(current_proxy, LATEST_PMI_ACTUALS["N/A"])
         st.markdown(f"### LIVE MARKET RISK ALERT: {alert}")
         st.caption(f"Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.")
+        st.caption(f"Risk model used: {'Equity macro model (VIX + PMI + Yield Curve)' if sel not in PMI_NA_MARKETS else 'Alternative asset model (Price-driven, no macro inputs)'}")
 
         p1, p2, p3, p4, p5, p6, p7 = st.columns([1.15, 1.05, 1.45, .75, .75, .8, .55])
         with p1:
@@ -896,7 +915,7 @@ def render_market(expanded=False):
 
         pmi_app = sel not in PMI_NA_MARKETS
         latest_display = 0.0 if not pmi_app else latest_in
-        local_score, local_alert, lvix, lcurve, lpmi, ldd, ltrend = calc_market_scores(latest_display, dd, trend_below, vix, curve_spread, pmi_app)
+        local_score, local_alert, lvix, lcurve, lpmi, ldd, ltrend = calc_market_scores_by_asset(sel, latest_display, dd, trend_below, vix, curve_spread)
         st.caption("PMI is monthly, not intraday. US markets fetch actual FRED data on button click; non-US markets save manual inputs; Gold/Bitcoin are N/A.")
         cols = st.columns(5)
         cols[0].metric("VIX Live", "N/A" if vix is None else f"{vix:.1f}")
@@ -911,17 +930,21 @@ def render_market(expanded=False):
             st.markdown('<div class="light-card">' + kv("Drawdown Signal", "Active" if dd <= -8 else "Inactive", ORANGE if dd <= -8 else SLATE) + kv("Macro Stress", local_alert, RED if local_alert == "CRASH RISK" else ORANGE if local_alert == "WARNING" else AMBER if local_alert == "WATCH" else GREEN) + kv("Technical Trend", "Weak" if trend_below else "Stable", BLUE) + '</div>', unsafe_allow_html=True)
         with trigger:
             st.markdown("#### 📡 Live Trigger Monitor")
+            is_alt_asset = sel in PMI_NA_MARKETS
             trig = pd.DataFrame([
-                {"Trigger": "VIX > 25", "Status": "Yes" if vix is not None and vix > 25 else "No"},
-                {"Trigger": "Yield curve inverted", "Status": "Yes" if curve_spread is not None and curve_spread < 0 else "No"},
-                {"Trigger": f"{chosen} < 50", "Status": "N/A" if not pmi_app else "Yes" if latest_in < 50 else "No"},
+                {"Trigger": "VIX > 25", "Status": "N/A" if is_alt_asset else ("Yes" if vix is not None and vix > 25 else "No")},
+                {"Trigger": "Yield curve inverted", "Status": "N/A" if is_alt_asset else ("Yes" if curve_spread is not None and curve_spread < 0 else "No")},
+                {"Trigger": f"{chosen} < 50", "Status": "N/A" if (is_alt_asset or not pmi_app) else ("Yes" if latest_in < 50 else "No")},
                 {"Trigger": "Drawdown < -10%", "Status": "Yes" if dd < -10 else "No"},
                 {"Trigger": "Below 200D MA", "Status": "Yes" if trend_below else "No"},
             ])
             st.dataframe(trig, use_container_width=True, hide_index=True)
         with engine:
             st.markdown("#### 🧮 Live Risk Score Engine")
-            st.markdown('<div class="light-card">' + kv("VIX Score", f"{lvix:.0f} / 30", AMBER) + kv("Yield Curve Score", f"{lcurve:.0f} / 20", BLUE) + kv(f"{chosen} Score", f"{lpmi:.0f} / 20", GREEN) + kv("Drawdown Score", f"{ldd:.0f} / 25", ORANGE) + kv("Trend Score", f"{ltrend:.0f} / 15", RED) + kv("Total", f"{local_score:.0f} / 100 → {local_alert}", RED if local_alert == "CRASH RISK" else ORANGE if local_alert == "WARNING" else GREEN) + '</div>', unsafe_allow_html=True)
+            if sel in PMI_NA_MARKETS:
+                st.markdown('<div class="light-card">' + kv("VIX Score", "Disabled for alternative assets", SLATE) + kv("Yield Curve Score", "Disabled for alternative assets", SLATE) + kv("PMI Score", "Not applicable", SLATE) + kv("Drawdown Score", f"{ldd:.0f} / 40", ORANGE) + kv("Trend Score", f"{ltrend:.0f} / 20", RED) + kv("Total", f"{local_score:.0f} / 100 → {local_alert}", RED if local_alert == "CRASH RISK" else ORANGE if local_alert == "WARNING" else GREEN) + '</div>', unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="light-card">' + kv("VIX Score", f"{lvix:.0f} / 30", AMBER) + kv("Yield Curve Score", f"{lcurve:.0f} / 20", BLUE) + kv(f"{chosen} Score", f"{lpmi:.0f} / 20", GREEN) + kv("Drawdown Score", f"{ldd:.0f} / 25", ORANGE) + kv("Trend Score", f"{ltrend:.0f} / 15", RED) + kv("Total", f"{local_score:.0f} / 100 → {local_alert}", RED if local_alert == "CRASH RISK" else ORANGE if local_alert == "WARNING" else GREEN) + '</div>', unsafe_allow_html=True)
 
         with st.expander("📈 12M Trend Snapshot", expanded=False):
             vix_raw = hist("^VIX", "2025-06-01")
@@ -1173,8 +1196,8 @@ def render_audit(expanded=False):
             st.markdown('<div class="light-card">' + kv("Market Data", "Yahoo Finance", BLUE) + kv("PMI Proxy", st.session_state.get("pmi_proxy_label", pmi_label), GREEN) + kv("PMI Value", f"{st.session_state.get('latest_pmi_value', latest_pmi):.1f} · {st.session_state.get('latest_pmi_month','')}", GREEN) + kv("PMI Source", st.session_state.get("latest_pmi_source", pmi_proxy_default["source"]), GREEN) + kv("Last Refreshed", datetime.now().strftime('%d %b %Y %H:%M SGT'), SLATE) + '</div>', unsafe_allow_html=True)
         with right:
             st.markdown("#### 🧾 Methodology Notes")
-            st.markdown("- Live Risk Score is rules-based and not a crash prediction.\n- PMI is monthly, not intraday live data.\n- US PMI is fetched from FRED only when Update PMI is clicked.\n- Non-US PMI uses manual input with pre-filled 12M defaults.\n- Gold / Bitcoin PMI is not applicable.")
-        snap = pd.DataFrame([{"Timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'), "Selected Index": index_label, "Ticker": ticker, "Drawdown Reference": ref, "Current Drawdown %": round(dd, 2), "Action Zone": zone, "Suggested Deploy S$": round(deploy, 2), "Funding Source": funding_source, "PMI Proxy": st.session_state.get("pmi_proxy_label", pmi_label), "PMI Value": st.session_state.get("latest_pmi_value", latest_pmi), "Live Risk Score": round(live_score, 1), "Risk Regime": alert, "Signal Confidence": conf_label}])
+            st.markdown("- Live Risk Score is rules-based and not a crash prediction.\n- PMI is monthly, not intraday live data.\n- US PMI is fetched from FRED only when Update PMI is clicked.\n- Non-US PMI uses manual input with pre-filled 12M defaults.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.")
+        snap = pd.DataFrame([{"Timestamp": datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'), "Selected Index": index_label, "Ticker": ticker, "Drawdown Reference": ref, "Current Drawdown %": round(dd, 2), "Action Zone": zone, "Suggested Deploy S$": round(deploy, 2), "Funding Source": funding_source, "PMI Proxy": st.session_state.get("pmi_proxy_label", pmi_label), "PMI Value": st.session_state.get("latest_pmi_value", latest_pmi), "Live Risk Score": round(live_score, 1), "Risk Regime": alert, "Risk Model": "Alternative asset" if sel in PMI_NA_MARKETS else "Equity macro", "Signal Confidence": conf_label}])
         st.markdown("#### 📤 Tactical Snapshot Export")
         st.dataframe(snap, use_container_width=True, hide_index=True)
         st.download_button("⬇️ Export Tactical Snapshot CSV", snap.to_csv(index=False), file_name="tactical_snapshot.csv", mime="text/csv")
