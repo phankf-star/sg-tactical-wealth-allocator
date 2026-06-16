@@ -415,7 +415,7 @@ def render_executive():
 def render_suggested(expanded=False):
     with st.expander('💰 Suggested Deploy Basis & Capital Source',expanded=expanded):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
-        s1.markdown(f'#### 📌 Suggested Deploy Basis\nSuggested Deploy = Available Deployable Capital × Deployment Rule\n\n### S${deploy:,.0f} = S${total_available:,.0f} × {deploy_pct:.0%}\nSource: selected price data, {ref} drawdown formula, and sidebar capital inputs.')
+        s1.markdown(f'#### 📌 Suggested Deploy Basis\nSuggested Deploy = Available Deployable Capital × Deployment Rule\n\n#### S\${deploy:,.0f} = S\${total_available:,.0f} × {deploy_pct:.0%}${total_available:,.0f} × {deploy_pct:.0%}\nSource: selected price data, {ref} drawdown formula, and sidebar capital inputs.')
         s2.markdown('#### 🏦 Capital Source Breakdown'); s2.markdown('<div class="light-card">'+kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',f'S${cash_deploy:,.0f}',GREEN)+kv('SRS Deployment',f'S${srs_deploy:,.0f}',SLATE)+kv('CPF-OA Deployment',f'S${cpf_deploy:,.0f}',SLATE)+kv('Reason',capital_reason,SLATE)+'</div>',unsafe_allow_html=True)
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
