@@ -622,7 +622,26 @@ def render_market(expanded=False):
         st.caption(f'Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.')
         st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
 
-        with st.expander('⚙️ PMI / Cycle Signal Settings', expanded=False):
+
+        chosen=st.session_state.get('pmi_proxy_label',current_proxy)
+        actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
+        latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
+        month_in=st.session_state.get('latest_pmi_month',actual['month'])
+        pmi_app=sel not in PMI_NA_MARKETS
+        latest_display=0.0 if not pmi_app else latest_in
+        local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
+        cols=st.columns(5)
+        cols[0].metric('VIX Live','N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}')
+        cols[1].metric('Yield Curve','N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else f'10Y-13W {curve_spread:.2f}%')
+        cols[2].metric(chosen,'N/A' if not pmi_app else f'{latest_in:.1f}')
+        cols[3].metric(f'{index_label} Drawdown',f'{dd:.1f}%')
+        cols[4].metric('Live Risk Score',f'{local_score:.0f}/100')
+
+        with st.expander('📈 Quantitative Valuation Channels',expanded=True):
+            st.markdown('### Quantitative Valuation Channels')
+            render_trend_channel(ud,index_label)
+
+        with st.expander('⚙️ Cycle Signal Settings & PMI Override', expanded=False):
             p1,p2,p3,p4,p5,p6,p7=st.columns([1.15,1.05,1.45,.75,.75,.8,.55])
             chosen=p1.selectbox('PMI Proxy Used (Cycle Signal)',PMI_PROXY_OPTIONS,index=PMI_PROXY_OPTIONS.index(current_proxy) if current_proxy in PMI_PROXY_OPTIONS else 0,help='Market-specific PMI used as economic-cycle input.')
             actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
@@ -645,23 +664,6 @@ def render_market(expanded=False):
                     st.rerun()
             p7.markdown('<br>',unsafe_allow_html=True); p7.toggle('Manual',value=sel not in PMI_FRED_MARKETS and sel not in PMI_NA_MARKETS)
 
-        chosen=st.session_state.get('pmi_proxy_label',current_proxy)
-        actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
-        latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
-        month_in=st.session_state.get('latest_pmi_month',actual['month'])
-        pmi_app=sel not in PMI_NA_MARKETS
-        latest_display=0.0 if not pmi_app else latest_in
-        local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
-        cols=st.columns(5)
-        cols[0].metric('VIX Live','N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}')
-        cols[1].metric('Yield Curve','N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else f'10Y-13W {curve_spread:.2f}%')
-        cols[2].metric(chosen,'N/A' if not pmi_app else f'{latest_in:.1f}')
-        cols[3].metric(f'{index_label} Drawdown',f'{dd:.1f}%')
-        cols[4].metric('Live Risk Score',f'{local_score:.0f}/100')
-
-        with st.expander('📈 Quantitative Valuation Channels',expanded=True):
-            st.markdown('### Quantitative Valuation Channels')
-            render_trend_channel(ud,index_label)
 
         with st.expander('🧮 Signal Diagnostics, Trigger Monitor & Score Engine', expanded=False):
             sig,trigger,engine=st.columns([1,1,1.15])
