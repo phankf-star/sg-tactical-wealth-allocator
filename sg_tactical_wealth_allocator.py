@@ -183,8 +183,10 @@ def severity_bucket(dd):
     a=abs(dd)
     if a<10: return 'Below 10% move'
     if a<20: return '10-20% correction'
-    if a<30: return '20-30% correction'
-    return '>30% crash'
+    if a<30: return '20-30% bear drawdown'
+    if a<40: return '30-40% crash'
+    if a<50: return '40-50% severe crash'
+    return '>50% crisis crash'
 
 def current_dd(df, method):
     c=safe_float(df.Close.iloc[-1])
@@ -341,6 +343,41 @@ def label_event(date):
     if 2021<=y<=2022: return 'Rate-Hike Cycle'
     return 'Unlabelled Cycle'
 
+
+def overlaps_event_window(peak_date, trough_date, start, end):
+    peak_date = pd.Timestamp(peak_date)
+    trough_date = pd.Timestamp(trough_date)
+    start = pd.Timestamp(start)
+    end = pd.Timestamp(end)
+    return peak_date <= end and trough_date >= start
+
+def label_event_window(peak_date, trough_date, drawdown_pct, recovery_return_pct=None):
+    peak_date = pd.Timestamp(peak_date)
+    trough_date = pd.Timestamp(trough_date)
+    if overlaps_event_window(peak_date, trough_date, '1987-08-01', '1987-12-31'):
+        return '1987 Black Monday'
+    if overlaps_event_window(peak_date, trough_date, '1990-07-01', '1991-03-31'):
+        return 'Gulf War / 1990 Oil Shock'
+    if overlaps_event_window(peak_date, trough_date, '1997-07-01', '1998-12-31'):
+        return 'Asian Financial Crisis'
+    if overlaps_event_window(peak_date, trough_date, '2000-03-01', '2003-03-31'):
+        return 'Dot-com Bust / Corporate Scandals'
+    if overlaps_event_window(peak_date, trough_date, '2007-10-01', '2009-03-31'):
+        return 'Global Financial Crisis'
+    if overlaps_event_window(peak_date, trough_date, '2011-07-01', '2011-12-31'):
+        return 'Eurozone / US Debt Scare'
+    if overlaps_event_window(peak_date, trough_date, '2015-06-01', '2016-03-31'):
+        return 'China Devaluation / Oil Shock'
+    if overlaps_event_window(peak_date, trough_date, '2018-01-01', '2018-12-31'):
+        return 'US-China Trade War'
+    if overlaps_event_window(peak_date, trough_date, '2020-02-01', '2020-04-30'):
+        return 'COVID Shock'
+    if overlaps_event_window(peak_date, trough_date, '2021-11-01', '2022-12-31'):
+        return 'Inflation & Rate-Hike Cycle'
+    if recovery_return_pct is not None and recovery_return_pct >= 200:
+        return 'High-Recovery Technical Correction'
+    return 'Technical Correction'
+
 def crash_events(bt, thr, current, valuation_tc=None):
     ev=[]; in_dd=False; start=None
     for i in range(len(bt)):
@@ -354,7 +391,7 @@ def crash_events(bt, thr, current, valuation_tc=None):
                 look=bt.loc[:ti].iloc[max(0,len(bt.loc[:ti])-252):]; pkdt=look.Close.idxmax()
                 ddv=safe_float(row.dd_pct); price=safe_float(row.Close); peak=safe_float(row.rm); zone,_=classify(ddv); recovery=((current/price)-1)*100 if price else 0
                 zp=get_z_at(valuation_tc, pkdt) if valuation_tc is not None else np.nan; zt=get_z_at(valuation_tc, ti) if valuation_tc is not None else np.nan
-                ev.append({'Peak Date':pkdt,'Peak Index':peak,'Trough Date':ti,'Trough Index':price,'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label_event(ti),'Severity':severity_bucket(ddv),'Z @ Peak':zp,'Z @ Trough':zt,'Valuation Classification':crash_valuation_classification(zp,zt)})
+                ev.append({'Peak Date':pkdt,'Peak Index':peak,'Trough Date':ti,'Trough Index':price,'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label_event_window(pkdt,ti,ddv,recovery),'Severity':severity_bucket(ddv),'Z @ Peak':zp,'Z @ Trough':zt,'Valuation Classification':crash_valuation_classification(zp,zt)})
     return pd.DataFrame(ev)
 
 # ------------------------- charts -------------------------
@@ -600,15 +637,21 @@ def render_performance(expanded=False):
 
 EVENT_CONTEXT_MAP = {
     '1987 Black Monday': {'primary_driver':'Market-structure shock / liquidity stress','driver_tags':['Market structure','Liquidity stress','Programme trading','Portfolio insurance'],'key_causes':['Asset-bubble concern after rapid market gains','Trade-deficit and US dollar pressure','Programme trading / portfolio-insurance selling','Margin calls and trading-system strain'],'interpretation':'A fast market-structure crash rather than a normal earnings-cycle recession.'},
+    'Gulf War / 1990 Oil Shock': {'primary_driver':'Geopolitical / oil shock','driver_tags':['War','Oil shock','Inflation risk','Recession fear'],'key_causes':['Iraq-Kuwait conflict and regional geopolitical uncertainty','Sharp oil-price increase','Risk-off market repricing','Early-1990s recession pressure'],'interpretation':'A geopolitical and energy-price shock rather than a pure valuation bubble unwind.'},
+    'Asian Financial Crisis': {'primary_driver':'Currency / capital-flow crisis','driver_tags':['Currency stress','Capital outflow','Banking stress','Regional contagion'],'key_causes':['Currency devaluation pressure','Regional capital outflows','Banking and balance-sheet stress','Contagion across Asian equity and FX markets'],'interpretation':'A regional currency and capital-flow crisis rather than a pure valuation-cycle correction.'},
     'Dot-com Bust': {'primary_driver':'Technology valuation bubble unwind','driver_tags':['Valuation bubble','Technology','Speculation','Capital tightening'],'key_causes':['Extreme internet and technology-stock valuations','Weak profitability discipline in many dot-com companies','Venture capital and IPO speculation','Rising-rate / capital-tightening pressure'],'interpretation':'A valuation-led bubble unwind.'},
+    'Dot-com Bust / Corporate Scandals': {'primary_driver':'Technology bubble unwind / corporate confidence shock','driver_tags':['Valuation bubble','Technology','Corporate scandals','Post-9/11 uncertainty'],'key_causes':['Unwinding of internet and technology-stock valuations','Accounting scandals including Enron and WorldCom','Investor confidence deterioration','Post-9/11 uncertainty'],'interpretation':'A late-stage bear-market drawdown linked to the dot-com unwind and confidence shocks.'},
     'Global Financial Crisis': {'primary_driver':'Credit / banking crisis','driver_tags':['Credit crisis','Housing bubble','Banking stress','Mortgage risk'],'key_causes':['Subprime mortgage expansion','Housing bubble and falling home prices','Mortgage-backed securities losses','Bank funding stress and credit contraction'],'interpretation':'A systemic credit crisis with broad financial-sector stress.'},
+    'Eurozone / US Debt Scare': {'primary_driver':'Sovereign-debt / policy confidence shock','driver_tags':['Sovereign debt','US downgrade','Policy risk','Risk-off'],'key_causes':['Eurozone sovereign-debt stress','US debt-ceiling and downgrade concerns','Global growth uncertainty','Risk-off equity repricing'],'interpretation':'A policy-confidence and sovereign-risk shock.'},
+    'China Devaluation / Oil Shock': {'primary_driver':'Currency / commodity shock','driver_tags':['Currency stress','Oil shock','China growth concern','Risk-off'],'key_causes':['China currency devaluation / growth concern','Oil-price weakness or commodity stress','Emerging-market risk-off sentiment','Global growth slowdown concern'],'interpretation':'A macro risk-off drawdown linked to currency and commodity stress.'},
+    'US-China Trade War': {'primary_driver':'Trade-war / geopolitical risk-off','driver_tags':['Trade war','Tariffs','Geopolitics','Growth slowdown'],'key_causes':['Tariff escalation and trade-policy uncertainty','Pressure on global manufacturing and supply chains','Risk-off rotation from cyclical and export-sensitive assets'],'interpretation':'A geopolitical and trade-policy shock with growth-slowdown risk.'},
     'COVID Shock': {'primary_driver':'Pandemic / liquidity shock','driver_tags':['Pandemic','Lockdowns','Liquidity stress','Recession fear'],'key_causes':['COVID-19 pandemic uncertainty','Lockdowns and economic-shutdown risk','Liquidity stress and forced de-risking','Sharp recession fears'],'interpretation':'A fast exogenous macro shock rather than a valuation bubble unwind.'},
     'COVID-19': {'primary_driver':'Pandemic / liquidity shock','driver_tags':['Pandemic','Lockdowns','Liquidity stress','Recession fear'],'key_causes':['COVID-19 pandemic uncertainty','Lockdowns and economic-shutdown risk','Liquidity stress and forced de-risking','Sharp recession fears'],'interpretation':'A fast exogenous macro shock rather than a valuation bubble unwind.'},
     'Rate-Hike Cycle': {'primary_driver':'Inflation and monetary tightening','driver_tags':['Inflation','Interest rates','QT','Bond yields'],'key_causes':['High inflation','Rapid central-bank rate hikes','Higher bond yields','Valuation compression in long-duration / growth assets'],'interpretation':'A policy-tightening and valuation-compression cycle.'},
+    'Inflation & Rate-Hike Cycle': {'primary_driver':'Inflation, rate hikes and geopolitical / energy shock','driver_tags':['Inflation','Interest rates','War','Energy shock','Supply chain'],'key_causes':['High inflation','Rapid central-bank tightening','Russia-Ukraine-war-related supply disruption','Energy and commodity-price pressure','Recession fears and valuation compression'],'interpretation':'A macro tightening cycle amplified by war-related supply and energy shocks.'},
     'Inflation & Rate Hike': {'primary_driver':'Inflation, rate hikes and geopolitical / energy shock','driver_tags':['Inflation','Interest rates','War','Energy shock','Supply chain'],'key_causes':['High inflation','Rapid central-bank tightening','Russia-Ukraine-war-related supply disruption','Energy and commodity-price pressure','Recession fears and valuation compression'],'interpretation':'A macro tightening cycle amplified by war-related supply and energy shocks.'},
-    'China Devaluation / Oil Shock': {'primary_driver':'Currency / commodity shock','driver_tags':['Currency stress','Oil shock','China growth concern','Risk-off'],'key_causes':['China currency devaluation / growth concern','Oil-price weakness or commodity stress','Emerging-market risk-off sentiment','Global growth slowdown concern'],'interpretation':'A macro risk-off drawdown linked to currency and commodity stress.'},
-    'Asian Financial Crisis': {'primary_driver':'Currency / capital-flow crisis','driver_tags':['Currency stress','Capital outflow','Banking stress','Regional contagion'],'key_causes':['Currency devaluation pressure','Regional capital outflows','Banking and balance-sheet stress','Contagion across Asian equity and FX markets'],'interpretation':'A regional currency and capital-flow crisis rather than a pure valuation-cycle correction.'},
-    'US-China Trade War': {'primary_driver':'Trade-war / geopolitical risk-off','driver_tags':['Trade war','Tariffs','Geopolitics','Growth slowdown'],'key_causes':['Tariff escalation and trade-policy uncertainty','Pressure on global manufacturing and supply chains','Risk-off rotation from cyclical and export-sensitive assets'],'interpretation':'A geopolitical and trade-policy shock with growth-slowdown risk.'},
+    'High-Recovery Technical Correction': {'primary_driver':'High-recovery technical correction','driver_tags':['Technical correction','High recovery','Mechanical drawdown signal'],'key_causes':['No mapped macro-crisis window was matched.','Recovery return exceeded 200%.','Use as a mechanical drawdown-rule case study rather than a labelled crisis event.'],'interpretation':'This was an economically significant technical correction. It is useful for rule testing, but should be separated from labelled macro-crisis validation.'},
+    'Technical Correction': {'primary_driver':'Price-based technical correction','driver_tags':['Technical correction','No mapped macro crisis','Data-defined drawdown'],'key_causes':['No mapped macro-crisis window was matched.','The event appears to be a price-defined correction rather than a labelled historical crisis.','Interpret using drawdown severity, Z-score path and recovery profile.'],'interpretation':'This is a model-detected correction cycle. Useful for drawdown-rule testing, but should not be treated as a known historical crisis.'},
 }
 
 def get_event_context(label):
@@ -633,11 +676,6 @@ def render_crash(expanded=False):
         st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table.')
 
         st.markdown('### 1. Executive Crash & Cycle Summary')
-        b1,b2,b3=st.columns(3)
-        b1.markdown('<div class="light-card">📉 <b>10-20%</b><br>Normal correction-zone events.</div>', unsafe_allow_html=True)
-        b2.markdown('<div class="light-card">⚠️ <b>20-30%</b><br>Deeper bear-market drawdowns.</div>', unsafe_allow_html=True)
-        b3.markdown('<div class="light-card">🚨 <b>>30%</b><br>Severe crash-regime drawdowns.</div>', unsafe_allow_html=True)
-
         st.markdown('---')
         p,q,r=st.columns([1,1,1])
         start=p.date_input('Historical analysis start date', value=ud.index.min().date(), min_value=ud.index.min().date(), max_value=ud.index.max().date(), key='crash_start')
@@ -653,6 +691,26 @@ def render_crash(expanded=False):
         if event_df.empty:
             st.info('No drawdown events found with the selected parameters.')
             return
+
+        severity_order=['10-20% correction','20-30% bear drawdown','30-40% crash','40-50% severe crash','>50% crisis crash']
+        severity_meta={
+            '10-20% correction':{'icon':'📉','title':'10-20%','desc':'Normal correction-zone events.','colour':BLUE},
+            '20-30% bear drawdown':{'icon':'⚠️','title':'20-30%','desc':'Deeper bear-market drawdowns.','colour':AMBER},
+            '30-40% crash':{'icon':'🚨','title':'30-40%','desc':'Crash-regime events.','colour':ORANGE},
+            '40-50% severe crash':{'icon':'🔥','title':'40-50%','desc':'Severe crisis drawdowns.','colour':RED},
+            '>50% crisis crash':{'icon':'🧨','title':'>50%','desc':'Rare crisis-level drawdowns.','colour':PURPLE},
+        }
+        sev_counts=event_df['Severity'].value_counts().to_dict()
+        sev_cols=st.columns(5)
+        for i,bucket in enumerate(severity_order):
+            meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'
+            sev_cols[i].markdown(f"""
+            <div class="light-card" style="border-top:4px solid {meta['colour']};">
+                <div style="font-size:0.95rem; font-weight:800; color:{meta['colour']};">{meta['icon']} {meta['title']}</div>
+                <div style="font-size:1.45rem; font-weight:900; margin-top:4px;">{count} {word}</div>
+                <div style="font-size:0.82rem; color:#6B7280; margin-top:4px;">{meta['desc']}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
         rets=event_df['Recovery Return %'].astype(float)
         k1,k2,k3,k4,k5=st.columns(5)
@@ -751,22 +809,34 @@ def render_crash(expanded=False):
         st.markdown('---')
         st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
         with st.expander('Master Crash Deployment Simulator',expanded=True):
-            s1,s2,s3=st.columns([1,1,1])
+            s1,s2,s3,s4=st.columns([1,1,1,1.25])
             inv=s1.number_input('Investment per event (S$)',min_value=1000.0,value=10000.0,step=1000.0)
             end_date=s2.date_input('Simulation end date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date())
             use_filtered=s3.checkbox('Use currently filtered events only',value=True)
+            simulation_universe=s4.selectbox('Simulation Universe',['Known Crisis Events Only','All Events Including Technical Corrections','Technical Corrections Only'],index=0)
             end_slice=ud.loc[:pd.Timestamp(end_date)]
             if end_slice.empty:
                 st.info('No end-date price available.'); return
             end_index=safe_float(end_slice.Close.iloc[-1])
-            sim_base=filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy()
+            base=filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy()
+            technical_labels=['Technical Correction','High-Recovery Technical Correction']
+            if simulation_universe=='Known Crisis Events Only':
+                sim_base=base[~base['Historical Label'].isin(technical_labels)].copy()
+            elif simulation_universe=='Technical Corrections Only':
+                sim_base=base[base['Historical Label'].isin(technical_labels)].copy()
+                st.warning('This simulation uses technical corrections only. Treat this as mechanical drawdown-rule testing, not labelled macro-crisis validation.')
+            else:
+                sim_base=base.copy()
+                if base['Historical Label'].isin(technical_labels).any():
+                    st.warning('This simulation includes technical corrections. These are model-detected price cycles without mapped macro-crisis windows, so interpret separately from crisis-regime validation.')
             sim=sim_base[pd.to_datetime(sim_base['Trough Date'])<=pd.Timestamp(end_date)].copy()
             if sim.empty:
-                st.info('No events before selected end date.'); return
+                st.info('No events before selected end date for the selected simulation universe.'); return
             sim['Investment Amount']=inv; sim['End Index']=end_index; sim['Ending Value']=inv*(sim['End Index']/sim['Trough Index']); sim['Gain / Loss']=sim['Ending Value']-sim['Investment Amount']; sim['Return %']=(sim['Ending Value']/sim['Investment Amount']-1)*100; sim['Holding Days']=(pd.Timestamp(end_date)-pd.to_datetime(sim['Trough Date'])).dt.days.clip(lower=0)
             total=sim['Investment Amount'].sum(); ending=sim['Ending Value'].sum(); gain=ending-total; tr=(ending/total-1)*100 if total else 0
-            m1,m2,m3,m4,m5=st.columns(5)
-            m1.metric('Deployments',len(sim)); m2.metric('Capital Deployed',fmt_sgd(total)); m3.metric('Ending Value',fmt_sgd(ending)); m4.metric('Total Gain / Loss',fmt_sgd(gain)); m5.metric('Total Return',f'{tr:.1f}%')
+            known_used=int((~sim['Historical Label'].isin(technical_labels)).sum()); technical_used=int(sim['Historical Label'].isin(technical_labels).sum())
+            m1,m2,m3,m4,m5,m6,m7=st.columns(7)
+            m1.metric('Deployments',len(sim)); m2.metric('Known Events Used',known_used); m3.metric('Technical Corrections',technical_used); m4.metric('Capital Deployed',fmt_sgd(total)); m5.metric('Ending Value',fmt_sgd(ending)); m6.metric('Total Gain / Loss',fmt_sgd(gain)); m7.metric('Total Return',f'{tr:.1f}%')
             sim_display=sim[['Trough Date','Historical Label','Severity','Zone','Valuation Classification','Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %','Holding Days']].copy(); sim_display['Trough Date']=pd.to_datetime(sim_display['Trough Date']).dt.strftime('%Y-%m-%d')
             for c in ['Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %']:
                 sim_display[c]=sim_display[c].astype(float).round(2)
