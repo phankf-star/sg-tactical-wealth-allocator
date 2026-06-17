@@ -721,7 +721,24 @@ def render_event_context_card(row):
     tags=' · '.join(ctx['driver_tags'])
     z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
     z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
-    st.markdown(f'<div class="light-card"><div style="font-weight:800; font-size:1.05rem; margin-bottom:8px;">📌 Event Context & Market Drivers</div><div class="kv"><div class="kv-label">Primary Driver</div><div class="kv-value" style="color:{PURPLE};">{ctx["primary_driver"]}</div></div><div class="kv"><div class="kv-label">Driver Tags</div><div class="kv-value">{tags}</div></div><div class="kv"><div class="kv-label">Z-Score Path</div><div class="kv-value">{z_line}</div></div><div style="margin-top:8px; color:#374151;"><b>Key causes / context:</b><ul style="margin-top:6px;">{causes_html}</ul></div><div style="margin-top:8px; color:#374151;"><b>Interpretation:</b> {ctx["interpretation"]}</div></div>', unsafe_allow_html=True)
+    st.markdown(f"""
+    <div class="light-card" style="padding:14px 16px 12px 16px;">
+        <div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
+        <div style="display:grid; grid-template-columns:150px minmax(0, 1fr); column-gap:18px; row-gap:8px; max-width:760px; align-items:start;">
+            <div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div>
+            <div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div>
+            <div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div>
+            <div style="font-weight:700; font-size:.90rem; text-align:left;">{tags}</div>
+            <div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div>
+            <div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
+        </div>
+        <div style="margin-top:14px; color:#374151; max-width:860px;">
+            <b>Key causes / context:</b>
+            <ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul>
+        </div>
+        <div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div>
+    </div>
+    """, unsafe_allow_html=True)
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
@@ -747,7 +764,12 @@ def render_crash(expanded=False):
         st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
-        f1,f2,f3,f4=st.columns([1,1,1,1]); sev_opts=sorted(event_df.Severity.dropna().unique().tolist()); zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
+        f1,f2,f3,f4=st.columns([1,1,1,1])
+        # Keep all severity buckets visible in the filter, including zero-event buckets such as 40-50%.
+        # If options are derived only from event_df, buckets with 0 events disappear from the filter.
+        detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
+        sev_opts=severity_order + [x for x in detected_sev_opts if x not in severity_order]
+        zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
         sev_sel=f1.multiselect('Severity filter',sev_opts,default=sev_opts); zone_sel=f2.multiselect('Buy zone filter',zone_opts,default=zone_opts); label_sel=f3.selectbox('Historical label group',label_opts,index=0); val_class_sel=f4.selectbox('Valuation classification filter',val_class_opts,index=0)
         filtered_df=event_df.copy(); filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)] if sev_sel else filtered_df; filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)] if zone_sel else filtered_df; filtered_df=filtered_df[filtered_df['Historical Label']==label_sel] if label_sel!='All' else filtered_df; filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel] if val_class_sel!='All' else filtered_df
         explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
