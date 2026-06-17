@@ -668,10 +668,8 @@ def render_crash(expanded=False):
 
         if 'crash_detail_open' not in st.session_state:
             st.session_state.crash_detail_open = False
-        def open_crash_detail():
-            st.session_state.crash_detail_open = True
-        def close_crash_detail():
-            st.session_state.crash_detail_open = False
+        if 'selected_crash_event_id' not in st.session_state:
+            st.session_state.selected_crash_event_id = None
 
         f1,f2,f3,f4=st.columns([1,1,1,1])
         sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
@@ -690,32 +688,44 @@ def render_crash(expanded=False):
         if val_class_sel!='All': filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel]
 
         explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
-        filtered_display=filtered_df[explorer_cols].copy() if not filtered_df.empty else pd.DataFrame(columns=explorer_cols)
-        table_col, action_col = st.columns([6.2, 1.0])
-        with table_col:
-            if filtered_display.empty:
-                st.info('No events match the selected filters.')
+        if filtered_df.empty:
+            st.info('No events match the selected filters.')
+        else:
+            working_df=filtered_df.copy()
+            working_df['_EventID']=working_df.index.astype(int)
+            display_df=working_df[['_EventID']+explorer_cols].copy()
+            for c in ['Peak Date','Trough Date']:
+                display_df[c]=pd.to_datetime(display_df[c]).dt.strftime('%Y-%m-%d')
+            for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
+                display_df[c]=display_df[c].astype(float).round(2)
+            display_df['Inspect Event Detail']=display_df['_EventID'].eq(st.session_state.selected_crash_event_id)
+            edited_df=st.data_editor(
+                display_df,
+                use_container_width=True,
+                hide_index=True,
+                disabled=[c for c in display_df.columns if c!='Inspect Event Detail'],
+                column_config={
+                    '_EventID': None,
+                    'Inspect Event Detail': st.column_config.CheckboxColumn('Inspect Event Detail', help='Tick one event row to expand its detail panel.'),
+                },
+                key='crash_event_inspector_table',
+            )
+            selected_ids=edited_df.loc[edited_df['Inspect Event Detail'], '_EventID'].tolist() if 'Inspect Event Detail' in edited_df.columns else []
+            if selected_ids:
+                st.session_state.selected_crash_event_id=int(selected_ids[-1])
+                st.session_state.crash_detail_open=True
             else:
-                for c in ['Peak Date','Trough Date']:
-                    filtered_display[c]=pd.to_datetime(filtered_display[c]).dt.strftime('%Y-%m-%d')
-                for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
-                    filtered_display[c]=filtered_display[c].astype(float).round(2)
-                st.dataframe(filtered_display,use_container_width=True,hide_index=True)
-                st.download_button('⬇️ Export Filtered Crash Events CSV',filtered_display.to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
-        with action_col:
-            st.markdown('<br><br>', unsafe_allow_html=True)
-            st.button('Inspect Event Detail', use_container_width=True, on_click=open_crash_detail, type='primary')
-            st.button('Collapse Detail', use_container_width=True, on_click=close_crash_detail)
-
-        src=filtered_df if not filtered_df.empty else event_df
-        def event_label(row):
-            return f'{row["Historical Label"]} | {pd.to_datetime(row["Peak Date"]).strftime("%Y-%m-%d")} > {pd.to_datetime(row["Trough Date"]).strftime("%Y-%m-%d")} ({row["Drawdown %"]:.1f}%)'
-        labels=[event_label(rw) for _,rw in src.iterrows()]
-        selected_event = st.selectbox('Selected event to inspect', labels, index=0, key='selected_crash_event_to_inspect')
+                st.session_state.selected_crash_event_id=None
+                st.session_state.crash_detail_open=False
+            export_display=display_df.drop(columns=['_EventID','Inspect Event Detail'], errors='ignore')
+            st.download_button('⬇️ Export Filtered Crash Events CSV',export_display.to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
 
         with st.expander('📌 Selected Event Detail / Historical Crash Explorer', expanded=st.session_state.crash_detail_open):
-            if labels:
-                row=src.iloc[labels.index(selected_event)]
+            selected_id=st.session_state.selected_crash_event_id
+            if selected_id is None or selected_id not in event_df.index:
+                st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
+            else:
+                row=event_df.loc[selected_id]
                 render_event_context_card(row)
                 peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date'])
                 entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
