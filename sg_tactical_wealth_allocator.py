@@ -715,27 +715,12 @@ def get_event_context(label):
         if key in label: return context
     return {'primary_driver':'Unclassified / not mapped','driver_tags':['Data-defined drawdown'],'key_causes':['No mapped major macro-crisis label is attached to this event.','Interpret using observed drawdown, Z-score movement and recovery outcome.'],'interpretation':'This should be treated as a data-defined drawdown cycle unless manually tagged.'}
 
-def render_event_context_card(row, entry_info=None):
+def render_event_context_card(row):
     ctx=get_event_context(row.get('Historical Label',''))
     causes_html=''.join([f'<li>{c}</li>' for c in ctx['key_causes']])
     tags=' · '.join(ctx['driver_tags'])
     z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
     z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
-    timeline_html=''
-    if entry_info:
-        timeline_html=f"""
-        <div style="margin-top:14px; padding:12px 14px; border:1px solid #E5E7EB; border-radius:14px; background:#F8FAFC; max-width:980px;">
-            <div style="font-weight:800; margin-bottom:8px;">🧭 Crisis Timeline & Entry Basis</div>
-            <div style="display:grid; grid-template-columns:150px minmax(0, 1fr); column-gap:18px; row-gap:7px; align-items:start;">
-                <div style="color:{MUTED}; font-size:.86rem;">Historical Label</div><div style="font-weight:800;">{entry_info['label']}</div>
-                <div style="color:{MUTED}; font-size:.86rem;">Crisis Period</div><div>{entry_info['period']}</div>
-                <div style="color:{MUTED}; font-size:.86rem;">Peak</div><div>{entry_info['peak']}</div>
-                <div style="color:{MUTED}; font-size:.86rem;">Entry Trigger</div><div style="font-weight:800; color:{BLUE};">{entry_info['entry']}</div>
-                <div style="color:{MUTED}; font-size:.86rem;">Entry Basis</div><div>{entry_info['basis']}</div>
-                <div style="color:{MUTED}; font-size:.86rem;">Trough</div><div>{entry_info['trough']}</div>
-            </div>
-        </div>
-        """
     st.markdown(f"""
     <div class="light-card" style="padding:14px 16px 12px 16px;">
         <div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
@@ -747,7 +732,6 @@ def render_event_context_card(row, entry_info=None):
             <div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div>
             <div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
         </div>
-        {timeline_html}
         <div style="margin-top:14px; color:#374151; max-width:860px;">
             <b>Key causes / context:</b>
             <ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul>
@@ -820,9 +804,18 @@ def render_crash(expanded=False):
             if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
                 row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); entry_date,entry_level,entry_dd,entry_basis=find_event_entry_point(bt,peak_date,trough_date,thr); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
+                render_event_context_card(row)
                 period_days=max((trough_date-peak_date).days,0); entry=safe_float(entry_level); peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
-                entry_info={'label':str(row['Historical Label']),'period':f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)','peak':f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}','entry':f'{entry_date.strftime("%Y-%m-%d")} · {entry:,.0f} ({entry_dd:.1f}% drawdown)','basis':entry_basis,'trough':f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'}
-                render_event_context_card(row, entry_info)
+                st.markdown('#### 🧭 Crisis Timeline & Entry Basis')
+                timeline_df=pd.DataFrame([
+                    {'Item':'Historical Label','Detail':str(row['Historical Label'])},
+                    {'Item':'Crisis Period','Detail':f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'},
+                    {'Item':'Peak','Detail':f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'},
+                    {'Item':'Entry Trigger','Detail':f'{entry_date.strftime("%Y-%m-%d")} · {entry:,.0f} ({entry_dd:.1f}% drawdown)'},
+                    {'Item':'Entry Basis','Detail':entry_basis},
+                    {'Item':'Trough','Detail':f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'},
+                ])
+                st.dataframe(timeline_df,use_container_width=True,hide_index=True)
                 inv_one=st.number_input('Investment for selected event (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount'); val_today=inv_one*(cur/entry) if entry else 0; ret_today=(val_today/inv_one-1)*100 if inv_one else 0
                 d1,d2,d3,d4,d5,d6,d7=st.columns(7); d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Date',entry_date.strftime('%Y-%m-%d')); d3.metric('Entry Level',f'{entry:,.0f}'); d4.metric('Value Today',fmt_sgd(val_today)); d5.metric('Return Since Entry',f'{ret_today:.1f}%'); d6.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d7.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
                 st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}. Entry level uses the first threshold-breach close, not the trough.")
