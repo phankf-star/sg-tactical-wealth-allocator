@@ -305,6 +305,17 @@ def build_trend_channel(df, projection_year=2040, model='Expanding Window', roll
     extremes=pd.concat([plot.nlargest(min(3,len(plot)),'ZHist')[['Close','ZHist']], plot.nsmallest(min(2,len(plot)),'ZHist')[['Close','ZHist']]]).sort_index()
     return {'data':plot,'raw_monthly':monthly,'proj':proj,'sd':sd,'z_score':z,'pct_rank':pct,'reg_cagr':reg_cagr,'actual_cagr':actual_cagr,'extremes':extremes,'model':model,'model_label':label,'bias_status':bias}
 
+
+def label_extreme(date):
+    y = pd.Timestamp(date).year
+    if 1987 <= y <= 1988: return 'Black Monday'
+    if 1997 <= y <= 1998: return 'Asian Financial Crisis'
+    if 2000 <= y <= 2002: return 'Dot-com Bust'
+    if 2007 <= y <= 2009: return 'GFC Peak/Bottom'
+    if y == 2020: return 'COVID-19 Shock'
+    if 2021 <= y <= 2022: return 'Inflation & Rate Hike'
+    return f'Market Event ({y})'
+
 def get_z_at(tc, date):
     if tc is None or tc.get('data') is None or tc['data'].empty: return np.nan
     zser=tc['data']['ZHist'].dropna(); target=pd.Timestamp(date); idx=zser.index[zser.index<=target]
@@ -461,9 +472,9 @@ def render_trend_channel(df, market_name):
     st.markdown(f'<div class="info-box"><b>Model:</b> {tc["model_label"]}<br><b>Bias status:</b> {tc["bias_status"]}</div>',unsafe_allow_html=True)
     m1,m2,m3,m4=st.columns(4); m1.metric('Market Status',status); m2.metric('Z-Score',f'{z:+.2f}'); m3.metric('Percentile Rank',f'{tc["pct_rank"]:.0f}th'); m4.metric('Distance from Trend',f'{dist:+.1f}%')
     comp=[]
-    for name,obj in [('Expanding Window (OOS)',exp_tc),('Full History',full_tc)]:
+    for name,obj in [('OOS Expanding Valuation Channel (Live Quant Model)',exp_tc),('曾氏通道 — Full-History Secular Channel (Research Only)',full_tc)]:
         if obj is not None:
-            stt,_=valuation_status(obj['z_score']); comp.append({'Model':('OOS Expanding Valuation Channel (Live Quant Model)' if name.startswith('Expanding') else '曾氏通道 — Full-History Secular Channel (Research Only)'),'Current Z-Score':f'{obj["z_score"]:+.2f}','Interpretation':stt,'Bias Status':'No look-ahead bias' if name.startswith('Expanding') else 'Research only / biased historically'})
+            stt,_=valuation_status(obj['z_score']); comp.append({'Model':name,'Current Z-Score':f'{obj["z_score"]:+.2f}','Interpretation':stt,'Bias Status':'No look-ahead bias' if name.startswith('OOS') else 'Research only / biased historically'})
     if comp: st.markdown('#### 🧭 Valuation Model Comparison'); st.dataframe(pd.DataFrame(comp),use_container_width=True,hide_index=True)
     fig=go.Figure(); fig.add_trace(go.Scatter(x=tdf.index,y=tdf.Close,name=f'{market_name} Price',line=dict(color=BLUE,width=2))); fig.add_trace(go.Scatter(x=tdf.index,y=tdf.TrendPrice,name='Trend',line=dict(color=PURPLE,width=2)))
     for col,label,colour in [('Upper2','+2 SD',RED),('Upper1','+1 SD',AMBER),('Lower1','-1 SD',GREEN),('Lower2','-2 SD','#059669')]: fig.add_trace(go.Scatter(x=tdf.index,y=tdf[col],name=label,line=dict(color=colour,dash='dash',width=1.5)))
@@ -489,6 +500,49 @@ def render_trend_channel(df, market_name):
     zfig.update_layout(height=300,margin=dict(l=10,r=10,t=10,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title='Z-Score'); r2c2.plotly_chart(zfig,use_container_width=True,config={'displayModeBar':False})
     r2c3.markdown('#### 🎯 Tactical Implication'); vals=tactical_implication(z)
     for emoji,label,value in [('📊','Valuation',vals[0]),('⚠️','Risk Level',vals[1]),('🧭','Suggested Stance',vals[2]),('📈','Deployment Bias',vals[3])]: r2c3.markdown(card(f'{emoji} {label}',value,'Model-derived',GREEN if any(x in value for x in ['Accumulation','Increase','Aggressive','Maximum','Low']) else ORANGE if any(x in value for x in ['Defensive','Reduce','High']) else BLUE),unsafe_allow_html=True)
+
+    # Useful reference tables restored: Historical Extremes and Future Projection
+    st.markdown('---')
+    ext_col, proj_col = st.columns([1.05, 1.25])
+    with ext_col:
+        st.markdown('#### 📜 Historical Extremes (Z-Score)')
+        ext_rows = []
+        for dt, row in tc['extremes'].iterrows():
+            stt, _ = valuation_status(row['ZHist'])
+            ext_rows.append({
+                'Date': dt.strftime('%b %Y'),
+                'Event': label_extreme(dt),
+                'Z-Score': f"{row['ZHist']:+.2f}",
+                'Price': f"{row['Close']:,.0f}",
+                'Market State': stt,
+            })
+        if ext_rows:
+            st.dataframe(pd.DataFrame(ext_rows), use_container_width=True, hide_index=True)
+        else:
+            st.info('No historical extremes available for the selected model/window.')
+    with proj_col:
+        st.markdown('#### 🔮 Future Projection (Price Scale)')
+        proj_rows = []
+        if proj is not None and not proj.empty:
+            years_to_show = sorted(set([y for y in [2030, 2035, 2040, proj_year] if y <= proj_year]))
+            for yr in years_to_show:
+                yd = proj.loc[proj.index.year == yr]
+                if yd.empty:
+                    continue
+                yv = yd.iloc[-1]
+                proj_rows.append({
+                    'Year': yr,
+                    'Trend (Mean)': f"{yv['TrendPrice']:,.0f}",
+                    '+1 SD (75%)': f"{yv['Upper1']:,.0f}",
+                    '+2 SD (95%)': f"{yv['Upper2']:,.0f}",
+                    '-1 SD (25%)': f"{yv['Lower1']:,.0f}",
+                    '-2 SD (5%)': f"{yv['Lower2']:,.0f}",
+                })
+        if proj_rows:
+            st.dataframe(pd.DataFrame(proj_rows), use_container_width=True, hide_index=True)
+        else:
+            st.info('No projection rows available for the selected horizon.')
+
     with st.expander('📚 曾氏通道 — Full-History Secular Channel (Research Only)',expanded=False):
         st.markdown('<div class="warn-box"><b>Research view only:</b> this model uses the full sample and therefore contains look-ahead bias when interpreting historical dates. Useful as secular reference, not live decision-grade model.</div>',unsafe_allow_html=True)
         if full_tc is not None:
@@ -578,7 +632,6 @@ def render_crash(expanded=False):
         st.markdown('## 📊 Crash & Recovery Analytics')
         st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table.')
 
-        # 1. Executive Crash & Cycle Summary
         st.markdown('### 1. Executive Crash & Cycle Summary')
         b1,b2,b3=st.columns(3)
         b1.markdown('<div class="light-card">📉 <b>10-20%</b><br>Normal correction-zone events.</div>', unsafe_allow_html=True)
@@ -609,10 +662,17 @@ def render_crash(expanded=False):
         k4.metric('Best Recovery', f'{rets.max():.1f}%')
         k5.metric('Current Drawdown', f'{bt.dd_pct.iloc[-1]:.1f}%')
 
-        # 2. Crash Event Explorer & Valuation Context
         st.markdown('---')
         st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context')
         st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
+
+        if 'crash_detail_open' not in st.session_state:
+            st.session_state.crash_detail_open = False
+        def open_crash_detail():
+            st.session_state.crash_detail_open = True
+        def close_crash_detail():
+            st.session_state.crash_detail_open = False
+
         f1,f2,f3,f4=st.columns([1,1,1,1])
         sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
         zone_opts=sorted(event_df.Zone.dropna().unique().tolist())
@@ -631,48 +691,53 @@ def render_crash(expanded=False):
 
         explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
         filtered_display=filtered_df[explorer_cols].copy() if not filtered_df.empty else pd.DataFrame(columns=explorer_cols)
-        if filtered_display.empty:
-            st.info('No events match the selected filters.')
-        else:
-            for c in ['Peak Date','Trough Date']:
-                filtered_display[c]=pd.to_datetime(filtered_display[c]).dt.strftime('%Y-%m-%d')
-            for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
-                filtered_display[c]=filtered_display[c].astype(float).round(2)
-            st.dataframe(filtered_display,use_container_width=True,hide_index=True)
-            st.download_button('⬇️ Export Filtered Crash Events CSV', filtered_display.to_csv(index=False), file_name='filtered_crash_events_phase2.csv', mime='text/csv')
+        table_col, action_col = st.columns([6.2, 1.0])
+        with table_col:
+            if filtered_display.empty:
+                st.info('No events match the selected filters.')
+            else:
+                for c in ['Peak Date','Trough Date']:
+                    filtered_display[c]=pd.to_datetime(filtered_display[c]).dt.strftime('%Y-%m-%d')
+                for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
+                    filtered_display[c]=filtered_display[c].astype(float).round(2)
+                st.dataframe(filtered_display,use_container_width=True,hide_index=True)
+                st.download_button('⬇️ Export Filtered Crash Events CSV',filtered_display.to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
+        with action_col:
+            st.markdown('<br><br>', unsafe_allow_html=True)
+            st.button('Inspect Event Detail', use_container_width=True, on_click=open_crash_detail, type='primary')
+            st.button('Collapse Detail', use_container_width=True, on_click=close_crash_detail)
 
         src=filtered_df if not filtered_df.empty else event_df
         def event_label(row):
             return f'{row["Historical Label"]} | {pd.to_datetime(row["Peak Date"]).strftime("%Y-%m-%d")} > {pd.to_datetime(row["Trough Date"]).strftime("%Y-%m-%d")} ({row["Drawdown %"]:.1f}%)'
         labels=[event_label(rw) for _,rw in src.iterrows()]
-        st.markdown('#### Inspect Event Detail')
-        chosen_event=st.selectbox('Inspect Event Detail', labels, index=0)
-        show_deep=st.toggle('Show selected event detail', value=True)
-        if show_deep and labels:
-            row=src.iloc[labels.index(chosen_event)]
-            render_event_context_card(row)
-            peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date'])
-            entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
-            inv_one=st.number_input('Investment for selected event (S$)', min_value=1000.0, value=15000.0, step=1000.0)
-            val_today=inv_one*(cur/entry) if entry else 0
-            ret_today=(val_today/inv_one-1)*100 if inv_one else 0
-            d1,d2,d3,d4,d5,d6=st.columns(6)
-            d1.metric('Deployment Amount', fmt_sgd(inv_one)); d2.metric('Entry Level', f'{entry:,.0f}'); d3.metric('Value Today', fmt_sgd(val_today)); d4.metric('Return Since Trough', f'{ret_today:.1f}%'); d5.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d6.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
-            st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}.")
-            cs=ud.loc[peak_date:trough_date].copy(); zpath=pd.Series(dtype=float)
-            if valuation_tc is not None and valuation_tc.get('data') is not None:
-                zpath=valuation_tc['data']['ZHist'].dropna().loc[peak_date:trough_date]
-            if not cs.empty:
-                fig=go.Figure()
-                fig.add_trace(go.Scatter(x=cs.index,y=cs.Close,mode='lines',line=dict(color=RED,width=2),name='Price path',yaxis='y1'))
-                fig.add_trace(go.Scatter(x=[peak_date],y=[safe_float(row['Peak Index'])],mode='markers+text',text=['Peak'],textposition='top center',marker=dict(size=8,color=BLUE),name='Peak',yaxis='y1'))
-                fig.add_trace(go.Scatter(x=[trough_date],y=[entry],mode='markers+text',text=['Trough'],textposition='bottom center',marker=dict(size=8,color=RED),name='Trough',yaxis='y1'))
-                if not zpath.empty:
-                    fig.add_trace(go.Scatter(x=zpath.index,y=zpath.values,mode='lines',line=dict(color=PURPLE,width=2,dash='dot'),name='OOS Z-Score',yaxis='y2'))
-                fig.update_layout(height=320,margin=dict(l=10,r=10,t=10,b=10),plot_bgcolor='white',paper_bgcolor='white',legend=dict(orientation='h'),yaxis=dict(title='Index Level'),yaxis2=dict(title='Z-Score',overlaying='y',side='right',showgrid=False))
-                st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+        selected_event = st.selectbox('Selected event to inspect', labels, index=0, key='selected_crash_event_to_inspect')
 
-        # 3. Master Crash Deployment Simulator
+        with st.expander('📌 Selected Event Detail / Historical Crash Explorer', expanded=st.session_state.crash_detail_open):
+            if labels:
+                row=src.iloc[labels.index(selected_event)]
+                render_event_context_card(row)
+                peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date'])
+                entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
+                inv_one=st.number_input('Investment for selected event (S$)', min_value=1000.0, value=15000.0, step=1000.0, key='selected_event_investment_amount')
+                val_today=inv_one*(cur/entry) if entry else 0
+                ret_today=(val_today/inv_one-1)*100 if inv_one else 0
+                d1,d2,d3,d4,d5,d6=st.columns(6)
+                d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Level',f'{entry:,.0f}'); d3.metric('Value Today',fmt_sgd(val_today)); d4.metric('Return Since Trough',f'{ret_today:.1f}%'); d5.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d6.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
+                st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}.")
+                cs=ud.loc[peak_date:trough_date].copy(); zpath=pd.Series(dtype=float)
+                if valuation_tc is not None and valuation_tc.get('data') is not None:
+                    zpath=valuation_tc['data']['ZHist'].dropna().loc[peak_date:trough_date]
+                if not cs.empty:
+                    fig=go.Figure()
+                    fig.add_trace(go.Scatter(x=cs.index,y=cs.Close,mode='lines',line=dict(color=RED,width=2),name='Price path',yaxis='y1'))
+                    fig.add_trace(go.Scatter(x=[peak_date],y=[safe_float(row['Peak Index'])],mode='markers+text',text=['Peak'],textposition='top center',marker=dict(size=8,color=BLUE),name='Peak',yaxis='y1'))
+                    fig.add_trace(go.Scatter(x=[trough_date],y=[entry],mode='markers+text',text=['Trough'],textposition='bottom center',marker=dict(size=8,color=RED),name='Trough',yaxis='y1'))
+                    if not zpath.empty:
+                        fig.add_trace(go.Scatter(x=zpath.index,y=zpath.values,mode='lines',line=dict(color=PURPLE,width=2,dash='dot'),name='OOS Z-Score',yaxis='y2'))
+                    fig.update_layout(height=320,margin=dict(l=10,r=10,t=10,b=10),plot_bgcolor='white',paper_bgcolor='white',legend=dict(orientation='h'),yaxis=dict(title='Index Level'),yaxis2=dict(title='Z-Score',overlaying='y',side='right',showgrid=False))
+                    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+
         st.markdown('---')
         st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
         with st.expander('Master Crash Deployment Simulator',expanded=True):
@@ -698,7 +763,6 @@ def render_crash(expanded=False):
             st.dataframe(sim_display,use_container_width=True,hide_index=True)
             st.download_button('⬇️ Export Master Simulator CSV',sim_display.to_csv(index=False),file_name='master_crash_simulator_phase2.csv',mime='text/csv')
 
-        # 4. Full Crash Event Universe / Audit Table
         st.markdown('---')
         st.markdown('### 4. Full Crash Event Universe / Audit Table')
         audit_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Drawdown %','Recovery Return %','Zone','Historical Label','Severity','Z @ Peak','Z @ Trough','Valuation Classification']
