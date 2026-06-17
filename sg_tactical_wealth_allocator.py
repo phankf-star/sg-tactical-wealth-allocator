@@ -715,12 +715,27 @@ def get_event_context(label):
         if key in label: return context
     return {'primary_driver':'Unclassified / not mapped','driver_tags':['Data-defined drawdown'],'key_causes':['No mapped major macro-crisis label is attached to this event.','Interpret using observed drawdown, Z-score movement and recovery outcome.'],'interpretation':'This should be treated as a data-defined drawdown cycle unless manually tagged.'}
 
-def render_event_context_card(row):
+def render_event_context_card(row, entry_info=None):
     ctx=get_event_context(row.get('Historical Label',''))
     causes_html=''.join([f'<li>{c}</li>' for c in ctx['key_causes']])
     tags=' · '.join(ctx['driver_tags'])
     z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
     z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
+    timeline_html=''
+    if entry_info:
+        timeline_html=f"""
+        <div style="margin-top:14px; padding:12px 14px; border:1px solid #E5E7EB; border-radius:14px; background:#F8FAFC; max-width:980px;">
+            <div style="font-weight:800; margin-bottom:8px;">🧭 Crisis Timeline & Entry Basis</div>
+            <div style="display:grid; grid-template-columns:150px minmax(0, 1fr); column-gap:18px; row-gap:7px; align-items:start;">
+                <div style="color:{MUTED}; font-size:.86rem;">Historical Label</div><div style="font-weight:800;">{entry_info['label']}</div>
+                <div style="color:{MUTED}; font-size:.86rem;">Crisis Period</div><div>{entry_info['period']}</div>
+                <div style="color:{MUTED}; font-size:.86rem;">Peak</div><div>{entry_info['peak']}</div>
+                <div style="color:{MUTED}; font-size:.86rem;">Entry Trigger</div><div style="font-weight:800; color:{BLUE};">{entry_info['entry']}</div>
+                <div style="color:{MUTED}; font-size:.86rem;">Entry Basis</div><div>{entry_info['basis']}</div>
+                <div style="color:{MUTED}; font-size:.86rem;">Trough</div><div>{entry_info['trough']}</div>
+            </div>
+        </div>
+        """
     st.markdown(f"""
     <div class="light-card" style="padding:14px 16px 12px 16px;">
         <div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
@@ -732,6 +747,7 @@ def render_event_context_card(row):
             <div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div>
             <div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
         </div>
+        {timeline_html}
         <div style="margin-top:14px; color:#374151; max-width:860px;">
             <b>Key causes / context:</b>
             <ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul>
@@ -739,6 +755,21 @@ def render_event_context_card(row):
         <div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div>
     </div>
     """, unsafe_allow_html=True)
+
+def find_event_entry_point(bt, peak_date, trough_date, threshold_pct):
+    try:
+        threshold_pct=abs(float(threshold_pct))
+        window=bt.loc[pd.Timestamp(peak_date):pd.Timestamp(trough_date)].copy()
+        trigger_rows=window[window['dd_pct'] <= -threshold_pct]
+        if trigger_rows.empty:
+            return pd.Timestamp(trough_date), safe_float(window.Close.iloc[-1]), safe_float(window.dd_pct.iloc[-1]), 'Fallback: no threshold-breach row found, so trough is used.'
+        entry_date=trigger_rows.index[0]
+        entry_level=safe_float(trigger_rows.Close.iloc[0])
+        entry_dd=safe_float(trigger_rows.dd_pct.iloc[0])
+        basis=f'First close where drawdown breached the selected event threshold of -{threshold_pct:.0f}% from the rolling peak. This is the trigger-entry reference, not the trough.'
+        return entry_date, entry_level, entry_dd, basis
+    except Exception:
+        return pd.Timestamp(trough_date), np.nan, np.nan, 'Fallback: entry trigger could not be calculated.'
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
@@ -788,9 +819,13 @@ def render_crash(expanded=False):
             selected_id=st.session_state.selected_crash_event_id
             if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
-                row=event_df.loc[selected_id]; render_event_context_card(row); peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan); inv_one=st.number_input('Investment for selected event (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount'); val_today=inv_one*(cur/entry) if entry else 0; ret_today=(val_today/inv_one-1)*100 if inv_one else 0
-                d1,d2,d3,d4,d5,d6=st.columns(6); d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Level',f'{entry:,.0f}'); d3.metric('Value Today',fmt_sgd(val_today)); d4.metric('Return Since Trough',f'{ret_today:.1f}%'); d5.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d6.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
-                st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}.")
+                row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); entry_date,entry_level,entry_dd,entry_basis=find_event_entry_point(bt,peak_date,trough_date,thr); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
+                period_days=max((trough_date-peak_date).days,0); entry=safe_float(entry_level); peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
+                entry_info={'label':str(row['Historical Label']),'period':f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)','peak':f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}','entry':f'{entry_date.strftime("%Y-%m-%d")} · {entry:,.0f} ({entry_dd:.1f}% drawdown)','basis':entry_basis,'trough':f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'}
+                render_event_context_card(row, entry_info)
+                inv_one=st.number_input('Investment for selected event (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount'); val_today=inv_one*(cur/entry) if entry else 0; ret_today=(val_today/inv_one-1)*100 if inv_one else 0
+                d1,d2,d3,d4,d5,d6,d7=st.columns(7); d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Date',entry_date.strftime('%Y-%m-%d')); d3.metric('Entry Level',f'{entry:,.0f}'); d4.metric('Value Today',fmt_sgd(val_today)); d5.metric('Return Since Entry',f'{ret_today:.1f}%'); d6.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d7.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
+                st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}. Entry level uses the first threshold-breach close, not the trough.")
         st.markdown('---'); st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
         with st.expander('Master Crash Deployment Simulator',expanded=True):
             s1,s2,s3,s4=st.columns([1,1,1,1.25]); inv=s1.number_input('Investment per event (S$)',min_value=1000.0,value=10000.0,step=1000.0); end_date=s2.date_input('Simulation end date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date()); use_filtered=s3.checkbox('Use currently filtered events only',value=True); simulation_universe=s4.selectbox('Simulation Universe',['Known Crisis Events Only','All Events Including Technical Corrections','Technical Corrections Only'],index=0)
