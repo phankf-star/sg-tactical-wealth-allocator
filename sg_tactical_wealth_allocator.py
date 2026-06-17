@@ -175,7 +175,8 @@ def card(title,value,sub,accent):
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
     # from the drawdown module; overvaluation is handled separately by Z-score.
-    if dd <= -35: return 'CRISIS BUY', RED
+    if dd <= -50: return 'MAX CRISIS BUY', RED
+    if dd <= -35: return 'CRISIS BUY', '#DC2626'
     if dd <= -25: return 'STRONG BUY', ORANGE
     if dd <= -15: return 'BUY', AMBER
     if dd <= -8: return 'INITIAL BUY', BLUE
@@ -219,25 +220,29 @@ def current_dd(df, method):
     return c, peak, ((c-peak)/peak)*100 if peak else 0, label
 
 def deploy_rule(dd):
-    if dd <= -35: return .50
-    if dd <= -25: return .35
-    if dd <= -15: return .20
+    # Cumulative deployment of available investible capital / dry powder.
+    # Example: at -50% drawdown, 100% of investible capital is deployed.
+    if dd <= -50: return 1.00
+    if dd <= -35: return .75
+    if dd <= -25: return .50
+    if dd <= -15: return .25
     if dd <= -8: return .10
     return 0.0
 
 def capital_breakdown(zone, deploy_amount, available_cash, available_srs, available_cpf):
     cash=srs=cpf=0.0
-    if deploy_amount <= 0: return cash,srs,cpf,'Current allocation stance does not trigger deployment; capital preserved.'
+    if deploy_amount <= 0: return cash,srs,cpf,'Current allocation stance does not trigger deployment; investible capital is preserved.'
     cash=min(deploy_amount, available_cash); rem=max(deploy_amount-cash,0)
-    if zone in ['BUY','STRONG BUY','CRISIS BUY']:
+    if zone in ['BUY','STRONG BUY','CRISIS BUY','MAX CRISIS BUY']:
         srs=min(rem,available_srs); rem=max(rem-srs,0)
-    if zone in ['STRONG BUY','CRISIS BUY']:
+    if zone in ['STRONG BUY','CRISIS BUY','MAX CRISIS BUY']:
         cpf=min(rem,available_cpf)
     reason = (
-        'INITIAL BUY zone uses cash first; SRS/CPF-OA are preserved for deeper drawdowns.' if zone=='INITIAL BUY' else
-        'BUY zone uses cash first, then SRS if cash is insufficient. CPF-OA remains reserved.' if zone=='BUY' else
-        'STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor.' if zone=='STRONG BUY' else
-        'CRISIS BUY zone can use cash, SRS and CPF-OA above preserved floor under the deepest drawdown rule.'
+        'INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.' if zone=='INITIAL BUY' else
+        'BUY zone uses investible cash first, then SRS if cash is insufficient. CPF-OA remains reserved.' if zone=='BUY' else
+        'STRONG BUY zone can use investible cash, SRS and CPF-OA above preserved floor.' if zone=='STRONG BUY' else
+        'CRISIS BUY zone deploys 75% of investible capital using cash, SRS and CPF-OA above preserved floor.' if zone=='CRISIS BUY' else
+        'MAX CRISIS BUY zone deploys 100% of investible dry powder after excluding safeguards.'
     )
     return cash,srs,cpf,reason
 
@@ -246,7 +251,8 @@ def next_trigger_label(zone):
     if zone=='INITIAL BUY': return 'BUY zone if drawdown deepens toward -15%'
     if zone=='BUY': return 'STRONG BUY zone if drawdown deepens beyond -25%'
     if zone=='STRONG BUY': return 'CRISIS BUY zone if drawdown deepens beyond -35%'
-    return 'Already in deepest deployment zone'
+    if zone=='CRISIS BUY': return 'MAX CRISIS BUY if drawdown deepens beyond -50%'
+    return 'Already in maximum deployment zone'
 
 def confidence_score(dd, live_score, trend_below):
     score = 35 + (15 if dd <= -8 else 0) + (10 if trend_below else 0) + (10 if live_score < 50 else 0) - (25 if live_score >= 70 else 0)
@@ -433,12 +439,13 @@ with st.sidebar:
     group_items=ASSET_GROUPS[asset_group]; default_item='STI' if asset_group=='Market / Equity Index' and 'STI' in group_items else group_items[0]
     sel=st.selectbox('Selected Market' if asset_group=='Market / Equity Index' else 'Selected Alternative Asset', group_items, index=group_items.index(default_item))
     st.session_state.selected_market_name=sel
-    st.markdown('### 💰 Capital Pools & Safeguards')
-    cash_balance=st.number_input('Liquid Cash (S$)',0.0,value=100000.0,step=5000.0)
-    srs_balance=st.number_input('SRS (S$)',0.0,value=35000.0,step=5000.0)
-    cpf_oa_balance=st.number_input('CPF-OA (S$)',0.0,value=180000.0,step=5000.0)
-    emergency_buffer=st.number_input('Emergency Buffer (S$)',0.0,value=20000.0,step=1000.0)
-    preserve_cpf=st.checkbox('Preserve S$20k CPF-OA Floor',value=True)
+    st.markdown('### 💰 Investible Capital & Safeguards')
+    st.caption('Enter only capital intended for market deployment. Emergency funds and CPF-OA minimum floor are excluded from deployable dry powder.')
+    cash_balance=st.number_input('Investible Cash Before Buffer (S$)',0.0,value=100000.0,step=5000.0)
+    srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
+    cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
+    emergency_buffer=st.number_input('Excluded Emergency Buffer (S$)',0.0,value=20000.0,step=1000.0)
+    preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
     drawdown_method=st.radio('Drawdown Reference',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
@@ -490,7 +497,7 @@ def render_suggested(expanded=False):
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
-        s4.markdown('#### 🧭 Deployment Ladder'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% deploy',SLATE)+kv('INITIAL BUY','10% deploy · Cash only',BLUE)+kv('BUY','20% deploy · Cash then SRS',AMBER)+kv('STRONG BUY','35% deploy · Cash + SRS + CPF-OA',ORANGE)+kv('CRISIS BUY','50% deploy · Deepest drawdown rule',RED)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
+        s4.markdown('#### 🧭 Deployment Ladder — Cumulative Investible Capital'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%','25% cumulative · cash then SRS',AMBER)+kv('STRONG BUY · -25%','50% cumulative · cash + SRS + CPF-OA',ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -724,7 +731,7 @@ def render_event_context_card(row):
     st.markdown(f"""
     <div class="light-card" style="padding:14px 16px 12px 16px;">
         <div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
-        <div style="display:grid; grid-template-columns:150px minmax(0, 1fr); column-gap:18px; row-gap:8px; max-width:760px; align-items:start;">
+        <div style="display:grid; grid-template-columns:120px minmax(0, 1fr); column-gap:12px; row-gap:8px; max-width:720px; align-items:start;">
             <div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div>
             <div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div>
             <div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div>
