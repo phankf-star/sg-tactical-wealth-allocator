@@ -15,8 +15,8 @@ BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN 
 
 # Currency display helpers.
 # Use HTML entity for dollar sign inside Markdown/HTML-rendered blocks to avoid Streamlit LaTeX parsing.
-SGD_TEXT = 'S$'          # for metric widgets / dataframe values
-SGD_HTML = 'S&#36;'       # for st.markdown(..., unsafe_allow_html=True)
+SGD_TEXT = 'S$'
+SGD_HTML = 'S&#36;'
 def fmt_sgd(value):
     return f'{SGD_TEXT}{value:,.0f}'
 def fmt_sgd_html(value):
@@ -90,8 +90,8 @@ BENCHMARK_TICKERS = {
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
-NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Market Conditions','📊 Market Performance','🏆 Crash Analytics','📡 Audit Trail & Export']
-SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Market Conditions','📊 Market Performance','🏆 Crash Analytics','📡 Audit Trail & Export']
+NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit Trail & Export']
+SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit Trail & Export']
 CRISIS_EVENTS = [('1987-08-01','1987-12-31','1987 Black Monday'),('2000-03-01','2002-10-31','2000-2002 Dot-com Bust'),('2007-10-01','2009-03-31','2008 Global Financial Crisis'),('2020-02-01','2020-04-30','2020 COVID-19'),('2022-01-01','2022-10-31','2022 Inflation & Rate Hike')]
 
 # ------------------------- helpers -------------------------
@@ -345,37 +345,22 @@ def label_event(date):
 
 
 def overlaps_event_window(peak_date, trough_date, start, end):
-    peak_date = pd.Timestamp(peak_date)
-    trough_date = pd.Timestamp(trough_date)
-    start = pd.Timestamp(start)
-    end = pd.Timestamp(end)
+    peak_date = pd.Timestamp(peak_date); trough_date = pd.Timestamp(trough_date)
+    start = pd.Timestamp(start); end = pd.Timestamp(end)
     return peak_date <= end and trough_date >= start
 
 def label_event_window(peak_date, trough_date, drawdown_pct, recovery_return_pct=None):
-    peak_date = pd.Timestamp(peak_date)
-    trough_date = pd.Timestamp(trough_date)
-    if overlaps_event_window(peak_date, trough_date, '1987-08-01', '1987-12-31'):
-        return '1987 Black Monday'
-    if overlaps_event_window(peak_date, trough_date, '1990-07-01', '1991-03-31'):
-        return 'Gulf War / 1990 Oil Shock'
-    if overlaps_event_window(peak_date, trough_date, '1997-07-01', '1998-12-31'):
-        return 'Asian Financial Crisis'
-    if overlaps_event_window(peak_date, trough_date, '2000-03-01', '2003-03-31'):
-        return 'Dot-com Bust / Corporate Scandals'
-    if overlaps_event_window(peak_date, trough_date, '2007-10-01', '2009-03-31'):
-        return 'Global Financial Crisis'
-    if overlaps_event_window(peak_date, trough_date, '2011-07-01', '2011-12-31'):
-        return 'Eurozone / US Debt Scare'
-    if overlaps_event_window(peak_date, trough_date, '2015-06-01', '2016-03-31'):
-        return 'China Devaluation / Oil Shock'
-    if overlaps_event_window(peak_date, trough_date, '2018-01-01', '2018-12-31'):
-        return 'US-China Trade War'
-    if overlaps_event_window(peak_date, trough_date, '2020-02-01', '2020-04-30'):
-        return 'COVID Shock'
-    if overlaps_event_window(peak_date, trough_date, '2021-11-01', '2022-12-31'):
-        return 'Inflation & Rate-Hike Cycle'
-    if recovery_return_pct is not None and recovery_return_pct >= 200:
-        return 'High-Recovery Technical Correction'
+    if overlaps_event_window(peak_date, trough_date, '1987-08-01', '1987-12-31'): return '1987 Black Monday'
+    if overlaps_event_window(peak_date, trough_date, '1990-07-01', '1991-03-31'): return 'Gulf War / 1990 Oil Shock'
+    if overlaps_event_window(peak_date, trough_date, '1997-07-01', '1998-12-31'): return 'Asian Financial Crisis'
+    if overlaps_event_window(peak_date, trough_date, '2000-03-01', '2003-03-31'): return 'Dot-com Bust / Corporate Scandals'
+    if overlaps_event_window(peak_date, trough_date, '2007-10-01', '2009-03-31'): return 'Global Financial Crisis'
+    if overlaps_event_window(peak_date, trough_date, '2011-07-01', '2011-12-31'): return 'Eurozone / US Debt Scare'
+    if overlaps_event_window(peak_date, trough_date, '2015-06-01', '2016-03-31'): return 'China Devaluation / Oil Shock'
+    if overlaps_event_window(peak_date, trough_date, '2018-01-01', '2018-12-31'): return 'US-China Trade War'
+    if overlaps_event_window(peak_date, trough_date, '2020-02-01', '2020-04-30'): return 'COVID Shock'
+    if overlaps_event_window(peak_date, trough_date, '2021-11-01', '2022-12-31'): return 'Inflation & Rate-Hike Cycle'
+    if recovery_return_pct is not None and recovery_return_pct >= 200: return 'High-Recovery Technical Correction'
     return 'Technical Correction'
 
 def crash_events(bt, thr, current, valuation_tc=None):
@@ -530,13 +515,21 @@ def render_trend_channel(df, market_name):
     fig.update_layout(height=620,title=dict(text=f'<b>{chart_title}</b> — {freq}, {tc["model_label"]}',font=dict(size=15)),yaxis_type='log',yaxis_title='Price (Log Scale)',plot_bgcolor='white',paper_bgcolor='white',margin=dict(l=10,r=90,t=60,b=10),legend=dict(orientation='h',yanchor='bottom',y=-.13,xanchor='center',x=.5,font=dict(size=10)))
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
     r2c1,r2c2,r2c3=st.columns([1,1.2,1])
+    section_header = '<div style="height:34px;display:flex;align-items:center;margin:0 0 8px 0;font-size:1.05rem;font-weight:800;color:#111827;">{title}</div>'
     rows=[('Current Price',f'{tdf.Close.iloc[-1]:,.2f}',TEXT),('Trend Value',f'{tdf.TrendPrice.iloc[-1]:,.2f}',PURPLE),('Distance from Trend',f'{dist:+.1f}%',ORANGE if dist>0 else GREEN),('Z-Score',f'{z:+.2f}',status_colour),('Valuation Zone',status,status_colour),('Historical Percentile',f'{tc["pct_rank"]:.0f}th',TEXT),('Regression CAGR',f'{tc["reg_cagr"]:.2f}%',TEXT),('Actual CAGR',f'{tc["actual_cagr"]:.2f}%',TEXT),('Model',tc['model_label'],BLUE)]
-    r2c1.markdown('#### 📋 Current Valuation Summary'); r2c1.markdown('<div class="light-card">'+''.join([kv(a,b,c) for a,b,c in rows])+'</div>',unsafe_allow_html=True)
-    r2c2.markdown('#### 📈 Historical Z-Score'); zfig=go.Figure(); zfig.add_trace(go.Scatter(x=tdf.index,y=tdf.ZHist,mode='lines',line=dict(color=BLUE,width=1.5),fill='tozeroy',fillcolor='rgba(37,99,235,.12)'))
-    for lv,colour in [(2,RED),(1,AMBER),(0,SLATE),(-1,GREEN),(-2,'#059669')]: zfig.add_hline(y=lv,line_dash='dash',line_color=colour,line_width=1)
-    zfig.update_layout(height=300,margin=dict(l=10,r=10,t=10,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title='Z-Score'); r2c2.plotly_chart(zfig,use_container_width=True,config={'displayModeBar':False})
-    r2c3.markdown('#### 🎯 Tactical Implication'); vals=tactical_implication(z)
-    for emoji,label,value in [('📊','Valuation',vals[0]),('⚠️','Risk Level',vals[1]),('🧭','Suggested Stance',vals[2]),('📈','Deployment Bias',vals[3])]: r2c3.markdown(card(f'{emoji} {label}',value,'Model-derived',GREEN if any(x in value for x in ['Accumulation','Increase','Aggressive','Maximum','Low']) else ORANGE if any(x in value for x in ['Defensive','Reduce','High']) else BLUE),unsafe_allow_html=True)
+    with r2c1:
+        st.markdown(section_header.format(title='📋 Current Valuation Summary'),unsafe_allow_html=True)
+        st.markdown('<div class="light-card" style="margin-top:0;">'+''.join([kv(a,b,c) for a,b,c in rows])+'</div>',unsafe_allow_html=True)
+    with r2c2:
+        st.markdown(section_header.format(title='📈 Historical Z-Score'),unsafe_allow_html=True)
+        zfig=go.Figure(); zfig.add_trace(go.Scatter(x=tdf.index,y=tdf.ZHist,mode='lines',line=dict(color=BLUE,width=1.5),fill='tozeroy',fillcolor='rgba(37,99,235,.12)'))
+        for lv,colour in [(2,RED),(1,AMBER),(0,SLATE),(-1,GREEN),(-2,'#059669')]: zfig.add_hline(y=lv,line_dash='dash',line_color=colour,line_width=1)
+        zfig.update_layout(height=300,margin=dict(l=10,r=10,t=0,b=10),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title='Z-Score')
+        st.plotly_chart(zfig,use_container_width=True,config={'displayModeBar':False})
+    with r2c3:
+        st.markdown(section_header.format(title='🎯 Tactical Implication'),unsafe_allow_html=True)
+        vals=tactical_implication(z)
+        for emoji,label,value in [('📊','Valuation',vals[0]),('⚠️','Risk Level',vals[1]),('🧭','Suggested Stance',vals[2]),('📈','Deployment Bias',vals[3])]: st.markdown(card(f'{emoji} {label}',value,'Model-derived',GREEN if any(x in value for x in ['Accumulation','Increase','Aggressive','Maximum','Low']) else ORANGE if any(x in value for x in ['Defensive','Reduce','High']) else BLUE),unsafe_allow_html=True)
 
     # Useful reference tables restored: Historical Extremes and Future Projection
     st.markdown('---')
@@ -589,43 +582,80 @@ def render_trend_channel(df, market_name):
 def render_market(expanded=False):
     with st.expander('🌦️ MARKET CONDITIONS & LIVE RISK MONITOR',expanded=expanded):
         st.markdown('## 🌦️ Market Conditions & Live Risk Monitor')
-        current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label']); actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
-        st.markdown(f'### LIVE MARKET RISK ALERT: {alert}'); st.caption(f'Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.'); st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
-        p1,p2,p3,p4,p5,p6,p7=st.columns([1.15,1.05,1.45,.75,.75,.8,.55])
-        chosen=p1.selectbox('PMI Proxy Used (Cycle Signal)',PMI_PROXY_OPTIONS,index=PMI_PROXY_OPTIONS.index(current_proxy) if current_proxy in PMI_PROXY_OPTIONS else 0,help='Market-specific PMI used as economic-cycle input.'); actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
-        p2.text_input('PMI Region',value=PMI_PROXY_MAP.get(sel,{}).get('region','N/A')); pmi_source_in=p3.text_input('PMI Source',value=st.session_state.get('latest_pmi_source',actual['source'])); latest_in=p4.number_input('Latest PMI',0.0,70.0,float(st.session_state.get('latest_pmi_value',actual['value'])),step=.1); month_in=p5.text_input('PMI Month',value=st.session_state.get('latest_pmi_month',actual['month']))
-        with p6:
-            st.markdown('<br>',unsafe_allow_html=True)
-            if st.button('🔄 Update PMI',use_container_width=True):
-                if sel in PMI_FRED_MARKETS:
-                    fred=fetch_fred_pmi('NAPM')
-                    if not fred.empty:
-                        st.session_state.latest_pmi_value=float(fred.PMI.iloc[-1]); st.session_state.latest_pmi_month=fred.index[-1].strftime('%b %Y'); st.session_state.latest_pmi_source='FRED (ISM Manufacturing PMI)'; st.session_state.pmi_proxy_label='US ISM Manufacturing PMI'; st.session_state.pmi_history['US ISM Manufacturing PMI']={d.strftime('%Y-%m'):float(v) for d,v in fred.tail(12).PMI.items()}; st.toast('✅ ISM PMI fetched from FRED.',icon='🔄')
-                    else: st.toast('❌ Failed to fetch from FRED. Please try again.',icon='⚠️')
-                elif sel in PMI_NA_MARKETS:
-                    st.session_state.latest_pmi_value=0.0; st.session_state.latest_pmi_month='N/A'; st.session_state.latest_pmi_source='PMI not applicable'; st.session_state.pmi_proxy_label='N/A'; st.toast('ℹ️ PMI is not applicable for this asset class.',icon='ℹ️')
-                else:
-                    st.session_state.latest_pmi_value=float(latest_in); st.session_state.latest_pmi_month=month_in; st.session_state.latest_pmi_source=pmi_source_in; st.session_state.pmi_proxy_label=chosen; hist_map=DEFAULT_PMI_HISTORY.get(chosen,{}).copy(); hist_map[pd.Timestamp.today().strftime('%Y-%m')]=float(latest_in); st.session_state.pmi_history[chosen]=hist_map; st.toast(f'✅ {chosen} saved: {latest_in:.1f} for {month_in} (manual input)',icon='🔄')
-                st.rerun()
-        p7.markdown('<br>',unsafe_allow_html=True); p7.toggle('Manual',value=sel not in PMI_FRED_MARKETS and sel not in PMI_NA_MARKETS)
-        pmi_app=sel not in PMI_NA_MARKETS; latest_display=0.0 if not pmi_app else latest_in; local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
-        cols=st.columns(5); cols[0].metric('VIX Live','N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}'); cols[1].metric('Yield Curve','N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else f'10Y-13W {curve_spread:.2f}%'); cols[2].metric(chosen,'N/A' if not pmi_app else f'{latest_in:.1f}'); cols[3].metric(f'{index_label} Drawdown',f'{dd:.1f}%'); cols[4].metric('Live Risk Score',f'{local_score:.0f}/100')
-        sig,trigger,engine=st.columns([1,1,1.15]); sig.markdown('#### 📊 Signal Confidence Details'); sig.markdown('<div class="light-card">'+kv('Drawdown Signal','Active' if dd<=-8 else 'Inactive',ORANGE if dd<=-8 else SLATE)+kv('Risk Regime',local_alert,RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else AMBER if local_alert=='WATCH' else GREEN)+kv('Technical Trend','Weak' if trend_below else 'Stable',BLUE)+'</div>',unsafe_allow_html=True)
-        is_alt=sel in PMI_NA_MARKETS; trig=pd.DataFrame([{'Trigger':'VIX > 25','Status':'N/A' if is_alt else ('Yes' if vix is not None and vix>25 else 'No')},{'Trigger':'Yield curve inverted','Status':'N/A' if is_alt else ('Yes' if curve_spread is not None and curve_spread<0 else 'No')},{'Trigger':f'{chosen} < 50','Status':'N/A' if (is_alt or not pmi_app) else ('Yes' if latest_in<50 else 'No')},{'Trigger':'Drawdown < -10%','Status':'Yes' if dd<-10 else 'No'},{'Trigger':'Below 200D MA','Status':'Yes' if trend_below else 'No'}]); trigger.markdown('#### 📡 Live Trigger Monitor'); trigger.dataframe(trig,use_container_width=True,hide_index=True)
-        engine.markdown('#### 🧮 Live Risk Score Engine')
-        if is_alt: engine.markdown('<div class="light-card">'+kv('VIX Score','Disabled for alternative assets',SLATE)+kv('Yield Curve Score','Disabled for alternative assets',SLATE)+kv('PMI Score','Not applicable',SLATE)+kv('Drawdown Score',f'{ldd:.0f} / 40',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 20',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
-        else: engine.markdown('<div class="light-card">'+kv('VIX Score',f'{lvix:.0f} / 30',AMBER)+kv('Yield Curve Score',f'{lcurve:.0f} / 20',BLUE)+kv(f'{chosen} Score',f'{lpmi:.0f} / 20',GREEN)+kv('Drawdown Score',f'{ldd:.0f} / 25',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 15',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
+        current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
+        actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
+        st.markdown(f'### LIVE MARKET RISK ALERT: {alert}')
+        st.caption(f'Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.')
+        st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
+
+        with st.expander('⚙️ PMI / Cycle Signal Settings', expanded=False):
+            p1,p2,p3,p4,p5,p6,p7=st.columns([1.15,1.05,1.45,.75,.75,.8,.55])
+            chosen=p1.selectbox('PMI Proxy Used (Cycle Signal)',PMI_PROXY_OPTIONS,index=PMI_PROXY_OPTIONS.index(current_proxy) if current_proxy in PMI_PROXY_OPTIONS else 0,help='Market-specific PMI used as economic-cycle input.')
+            actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
+            p2.text_input('PMI Region',value=PMI_PROXY_MAP.get(sel,{}).get('region','N/A'))
+            pmi_source_in=p3.text_input('PMI Source',value=st.session_state.get('latest_pmi_source',actual['source']))
+            latest_in=p4.number_input('Latest PMI',0.0,70.0,float(st.session_state.get('latest_pmi_value',actual['value'])),step=.1)
+            month_in=p5.text_input('PMI Month',value=st.session_state.get('latest_pmi_month',actual['month']))
+            with p6:
+                st.markdown('<br>',unsafe_allow_html=True)
+                if st.button('🔄 Update PMI',use_container_width=True):
+                    if sel in PMI_FRED_MARKETS:
+                        fred=fetch_fred_pmi('NAPM')
+                        if not fred.empty:
+                            st.session_state.latest_pmi_value=float(fred.PMI.iloc[-1]); st.session_state.latest_pmi_month=fred.index[-1].strftime('%b %Y'); st.session_state.latest_pmi_source='FRED (ISM Manufacturing PMI)'; st.session_state.pmi_proxy_label='US ISM Manufacturing PMI'; st.session_state.pmi_history['US ISM Manufacturing PMI']={d.strftime('%Y-%m'):float(v) for d,v in fred.tail(12).PMI.items()}; st.toast('✅ ISM PMI fetched from FRED.',icon='🔄')
+                        else: st.toast('❌ Failed to fetch from FRED. Please try again.',icon='⚠️')
+                    elif sel in PMI_NA_MARKETS:
+                        st.session_state.latest_pmi_value=0.0; st.session_state.latest_pmi_month='N/A'; st.session_state.latest_pmi_source='PMI not applicable'; st.session_state.pmi_proxy_label='N/A'; st.toast('ℹ️ PMI is not applicable for this asset class.',icon='ℹ️')
+                    else:
+                        st.session_state.latest_pmi_value=float(latest_in); st.session_state.latest_pmi_month=month_in; st.session_state.latest_pmi_source=pmi_source_in; st.session_state.pmi_proxy_label=chosen; hist_map=DEFAULT_PMI_HISTORY.get(chosen,{}).copy(); hist_map[pd.Timestamp.today().strftime('%Y-%m')]=float(latest_in); st.session_state.pmi_history[chosen]=hist_map; st.toast(f'✅ {chosen} saved: {latest_in:.1f} for {month_in} (manual input)',icon='🔄')
+                    st.rerun()
+            p7.markdown('<br>',unsafe_allow_html=True); p7.toggle('Manual',value=sel not in PMI_FRED_MARKETS and sel not in PMI_NA_MARKETS)
+
+        chosen=st.session_state.get('pmi_proxy_label',current_proxy)
+        actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
+        latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
+        month_in=st.session_state.get('latest_pmi_month',actual['month'])
+        pmi_app=sel not in PMI_NA_MARKETS
+        latest_display=0.0 if not pmi_app else latest_in
+        local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
+        cols=st.columns(5)
+        cols[0].metric('VIX Live','N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}')
+        cols[1].metric('Yield Curve','N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else f'10Y-13W {curve_spread:.2f}%')
+        cols[2].metric(chosen,'N/A' if not pmi_app else f'{latest_in:.1f}')
+        cols[3].metric(f'{index_label} Drawdown',f'{dd:.1f}%')
+        cols[4].metric('Live Risk Score',f'{local_score:.0f}/100')
+
+        with st.expander('📈 Quantitative Valuation Channels',expanded=True):
+            st.markdown('### Quantitative Valuation Channels')
+            render_trend_channel(ud,index_label)
+
+        with st.expander('🧮 Signal Diagnostics, Trigger Monitor & Score Engine', expanded=False):
+            sig,trigger,engine=st.columns([1,1,1.15])
+            sig.markdown('#### 📊 Signal Confidence Details')
+            sig.markdown('<div class="light-card">'+kv('Drawdown Signal','Active' if dd<=-8 else 'Inactive',ORANGE if dd<=-8 else SLATE)+kv('Risk Regime',local_alert,RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else AMBER if local_alert=='WATCH' else GREEN)+kv('Technical Trend','Weak' if trend_below else 'Stable',BLUE)+'</div>',unsafe_allow_html=True)
+            is_alt=sel in PMI_NA_MARKETS
+            trig=pd.DataFrame([{'Trigger':'VIX > 25','Status':'N/A' if is_alt else ('Yes' if vix is not None and vix>25 else 'No')},{'Trigger':'Yield curve inverted','Status':'N/A' if is_alt else ('Yes' if curve_spread is not None and curve_spread<0 else 'No')},{'Trigger':f'{chosen} < 50','Status':'N/A' if (is_alt or not pmi_app) else ('Yes' if latest_in<50 else 'No')},{'Trigger':'Drawdown < -10%','Status':'Yes' if dd<-10 else 'No'},{'Trigger':'Below 200D MA','Status':'Yes' if trend_below else 'No'}])
+            trigger.markdown('#### 📡 Live Trigger Monitor'); trigger.dataframe(trig,use_container_width=True,hide_index=True)
+            engine.markdown('#### 🧮 Live Risk Score Engine')
+            if is_alt:
+                engine.markdown('<div class="light-card">'+kv('VIX Score','Disabled for alternative assets',SLATE)+kv('Yield Curve Score','Disabled for alternative assets',SLATE)+kv('PMI Score','Not applicable',SLATE)+kv('Drawdown Score',f'{ldd:.0f} / 40',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 20',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
+            else:
+                engine.markdown('<div class="light-card">'+kv('VIX Score',f'{lvix:.0f} / 30',AMBER)+kv('Yield Curve Score',f'{lcurve:.0f} / 20',BLUE)+kv(f'{chosen} Score',f'{lpmi:.0f} / 20',GREEN)+kv('Drawdown Score',f'{ldd:.0f} / 25',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 15',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
+
         with st.expander('📈 12M Trend Snapshot',expanded=False):
-            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame(); tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
+            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
+            tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
             if not tnx_raw.empty and not irx_raw.empty:
                 aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
                 if not aligned.empty: curve_df=pd.DataFrame({'10Y-13W':aligned.TNX-aligned.IRX},index=aligned.index)
             pmi_df=get_pmi_df(chosen,latest_in); idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][['Close']].rename(columns={'Close':'Index'})
-            ch1,ch2=st.columns(2); mini_trend_chart(vix_df,'VIX 12M','Volatility regime',AMBER,'rgba(245,158,11,.18)','VIX'); mini_trend_chart(curve_df,'Yield Curve 12M','10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
-            ch3,ch4=st.columns(2)
-            with ch3: st.info('ℹ️ PMI is not applicable for this asset class (Gold / Bitcoin).') if sel in PMI_NA_MARKETS else mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
-            with ch4: mini_trend_chart(idx12,f'{index_label} 12M',f'{ticker} · 12M price path',RED,'rgba(239,68,68,.16)','Index Level')
-        with st.expander('📈 Quantitative Valuation Channels',expanded=False): st.markdown('### Quantitative Valuation Channels'); render_trend_channel(ud,index_label)
+            top_left,top_right=st.columns(2)
+            with top_left: mini_trend_chart(vix_df,'VIX 12M','Volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
+            with top_right: mini_trend_chart(curve_df,'Yield Curve 12M','10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
+            bottom_left,bottom_right=st.columns(2)
+            with bottom_left:
+                st.info('ℹ️ PMI is not applicable for this asset class (Gold / Bitcoin).') if sel in PMI_NA_MARKETS else mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
+            with bottom_right: mini_trend_chart(idx12,f'{index_label} 12M',f'{ticker} · 12M price path',RED,'rgba(239,68,68,.16)','Index Level')
 
 def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER',expanded=expanded):
@@ -639,222 +669,98 @@ EVENT_CONTEXT_MAP = {
     '1987 Black Monday': {'primary_driver':'Market-structure shock / liquidity stress','driver_tags':['Market structure','Liquidity stress','Programme trading','Portfolio insurance'],'key_causes':['Asset-bubble concern after rapid market gains','Trade-deficit and US dollar pressure','Programme trading / portfolio-insurance selling','Margin calls and trading-system strain'],'interpretation':'A fast market-structure crash rather than a normal earnings-cycle recession.'},
     'Gulf War / 1990 Oil Shock': {'primary_driver':'Geopolitical / oil shock','driver_tags':['War','Oil shock','Inflation risk','Recession fear'],'key_causes':['Iraq-Kuwait conflict and regional geopolitical uncertainty','Sharp oil-price increase','Risk-off market repricing','Early-1990s recession pressure'],'interpretation':'A geopolitical and energy-price shock rather than a pure valuation bubble unwind.'},
     'Asian Financial Crisis': {'primary_driver':'Currency / capital-flow crisis','driver_tags':['Currency stress','Capital outflow','Banking stress','Regional contagion'],'key_causes':['Currency devaluation pressure','Regional capital outflows','Banking and balance-sheet stress','Contagion across Asian equity and FX markets'],'interpretation':'A regional currency and capital-flow crisis rather than a pure valuation-cycle correction.'},
-    'Dot-com Bust': {'primary_driver':'Technology valuation bubble unwind','driver_tags':['Valuation bubble','Technology','Speculation','Capital tightening'],'key_causes':['Extreme internet and technology-stock valuations','Weak profitability discipline in many dot-com companies','Venture capital and IPO speculation','Rising-rate / capital-tightening pressure'],'interpretation':'A valuation-led bubble unwind.'},
     'Dot-com Bust / Corporate Scandals': {'primary_driver':'Technology bubble unwind / corporate confidence shock','driver_tags':['Valuation bubble','Technology','Corporate scandals','Post-9/11 uncertainty'],'key_causes':['Unwinding of internet and technology-stock valuations','Accounting scandals including Enron and WorldCom','Investor confidence deterioration','Post-9/11 uncertainty'],'interpretation':'A late-stage bear-market drawdown linked to the dot-com unwind and confidence shocks.'},
+    'Dot-com Bust': {'primary_driver':'Technology valuation bubble unwind','driver_tags':['Valuation bubble','Technology','Speculation','Capital tightening'],'key_causes':['Extreme internet and technology-stock valuations','Weak profitability discipline in many dot-com companies','Venture capital and IPO speculation','Rising-rate / capital-tightening pressure'],'interpretation':'A valuation-led bubble unwind.'},
     'Global Financial Crisis': {'primary_driver':'Credit / banking crisis','driver_tags':['Credit crisis','Housing bubble','Banking stress','Mortgage risk'],'key_causes':['Subprime mortgage expansion','Housing bubble and falling home prices','Mortgage-backed securities losses','Bank funding stress and credit contraction'],'interpretation':'A systemic credit crisis with broad financial-sector stress.'},
     'Eurozone / US Debt Scare': {'primary_driver':'Sovereign-debt / policy confidence shock','driver_tags':['Sovereign debt','US downgrade','Policy risk','Risk-off'],'key_causes':['Eurozone sovereign-debt stress','US debt-ceiling and downgrade concerns','Global growth uncertainty','Risk-off equity repricing'],'interpretation':'A policy-confidence and sovereign-risk shock.'},
     'China Devaluation / Oil Shock': {'primary_driver':'Currency / commodity shock','driver_tags':['Currency stress','Oil shock','China growth concern','Risk-off'],'key_causes':['China currency devaluation / growth concern','Oil-price weakness or commodity stress','Emerging-market risk-off sentiment','Global growth slowdown concern'],'interpretation':'A macro risk-off drawdown linked to currency and commodity stress.'},
     'US-China Trade War': {'primary_driver':'Trade-war / geopolitical risk-off','driver_tags':['Trade war','Tariffs','Geopolitics','Growth slowdown'],'key_causes':['Tariff escalation and trade-policy uncertainty','Pressure on global manufacturing and supply chains','Risk-off rotation from cyclical and export-sensitive assets'],'interpretation':'A geopolitical and trade-policy shock with growth-slowdown risk.'},
     'COVID Shock': {'primary_driver':'Pandemic / liquidity shock','driver_tags':['Pandemic','Lockdowns','Liquidity stress','Recession fear'],'key_causes':['COVID-19 pandemic uncertainty','Lockdowns and economic-shutdown risk','Liquidity stress and forced de-risking','Sharp recession fears'],'interpretation':'A fast exogenous macro shock rather than a valuation bubble unwind.'},
-    'COVID-19': {'primary_driver':'Pandemic / liquidity shock','driver_tags':['Pandemic','Lockdowns','Liquidity stress','Recession fear'],'key_causes':['COVID-19 pandemic uncertainty','Lockdowns and economic-shutdown risk','Liquidity stress and forced de-risking','Sharp recession fears'],'interpretation':'A fast exogenous macro shock rather than a valuation bubble unwind.'},
-    'Rate-Hike Cycle': {'primary_driver':'Inflation and monetary tightening','driver_tags':['Inflation','Interest rates','QT','Bond yields'],'key_causes':['High inflation','Rapid central-bank rate hikes','Higher bond yields','Valuation compression in long-duration / growth assets'],'interpretation':'A policy-tightening and valuation-compression cycle.'},
     'Inflation & Rate-Hike Cycle': {'primary_driver':'Inflation, rate hikes and geopolitical / energy shock','driver_tags':['Inflation','Interest rates','War','Energy shock','Supply chain'],'key_causes':['High inflation','Rapid central-bank tightening','Russia-Ukraine-war-related supply disruption','Energy and commodity-price pressure','Recession fears and valuation compression'],'interpretation':'A macro tightening cycle amplified by war-related supply and energy shocks.'},
-    'Inflation & Rate Hike': {'primary_driver':'Inflation, rate hikes and geopolitical / energy shock','driver_tags':['Inflation','Interest rates','War','Energy shock','Supply chain'],'key_causes':['High inflation','Rapid central-bank tightening','Russia-Ukraine-war-related supply disruption','Energy and commodity-price pressure','Recession fears and valuation compression'],'interpretation':'A macro tightening cycle amplified by war-related supply and energy shocks.'},
+    'Rate-Hike Cycle': {'primary_driver':'Inflation and monetary tightening','driver_tags':['Inflation','Interest rates','QT','Bond yields'],'key_causes':['High inflation','Rapid central-bank rate hikes','Higher bond yields','Valuation compression in long-duration / growth assets'],'interpretation':'A policy-tightening and valuation-compression cycle.'},
     'High-Recovery Technical Correction': {'primary_driver':'High-recovery technical correction','driver_tags':['Technical correction','High recovery','Mechanical drawdown signal'],'key_causes':['No mapped macro-crisis window was matched.','Recovery return exceeded 200%.','Use as a mechanical drawdown-rule case study rather than a labelled crisis event.'],'interpretation':'This was an economically significant technical correction. It is useful for rule testing, but should be separated from labelled macro-crisis validation.'},
     'Technical Correction': {'primary_driver':'Price-based technical correction','driver_tags':['Technical correction','No mapped macro crisis','Data-defined drawdown'],'key_causes':['No mapped macro-crisis window was matched.','The event appears to be a price-defined correction rather than a labelled historical crisis.','Interpret using drawdown severity, Z-score path and recovery profile.'],'interpretation':'This is a model-detected correction cycle. Useful for drawdown-rule testing, but should not be treated as a known historical crisis.'},
 }
 
 def get_event_context(label):
-    label = str(label)
-    for key, context in EVENT_CONTEXT_MAP.items():
-        if key in label:
-            return context
+    label=str(label)
+    for key,context in EVENT_CONTEXT_MAP.items():
+        if key in label: return context
     return {'primary_driver':'Unclassified / not mapped','driver_tags':['Data-defined drawdown'],'key_causes':['No mapped major macro-crisis label is attached to this event.','Interpret using observed drawdown, Z-score movement and recovery outcome.'],'interpretation':'This should be treated as a data-defined drawdown cycle unless manually tagged.'}
 
 def render_event_context_card(row):
-    ctx = get_event_context(row.get('Historical Label', ''))
-    causes_html = ''.join([f'<li>{c}</li>' for c in ctx['key_causes']])
-    tags = ' · '.join(ctx['driver_tags'])
-    z_peak = row.get('Z @ Peak', np.nan)
-    z_trough = row.get('Z @ Trough', np.nan)
-    z_line = 'N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
+    ctx=get_event_context(row.get('Historical Label',''))
+    causes_html=''.join([f'<li>{c}</li>' for c in ctx['key_causes']])
+    tags=' · '.join(ctx['driver_tags'])
+    z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
+    z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
     st.markdown(f'<div class="light-card"><div style="font-weight:800; font-size:1.05rem; margin-bottom:8px;">📌 Event Context & Market Drivers</div><div class="kv"><div class="kv-label">Primary Driver</div><div class="kv-value" style="color:{PURPLE};">{ctx["primary_driver"]}</div></div><div class="kv"><div class="kv-label">Driver Tags</div><div class="kv-value">{tags}</div></div><div class="kv"><div class="kv-label">Z-Score Path</div><div class="kv-value">{z_line}</div></div><div style="margin-top:8px; color:#374151;"><b>Key causes / context:</b><ul style="margin-top:6px;">{causes_html}</ul></div><div style="margin-top:8px; color:#374151;"><b>Interpretation:</b> {ctx["interpretation"]}</div></div>', unsafe_allow_html=True)
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
         st.markdown('## 📊 Crash & Recovery Analytics')
         st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table.')
-
         st.markdown('### 1. Executive Crash & Cycle Summary')
         st.markdown('---')
         p,q,r=st.columns([1,1,1])
-        start=p.date_input('Historical analysis start date', value=ud.index.min().date(), min_value=ud.index.min().date(), max_value=ud.index.max().date(), key='crash_start')
-        thr=q.slider('Minimum drawdown threshold (%)', 10, 50, 10, 5, key='crash_threshold')
-        crash_val_model=r.selectbox('Crash valuation model', ['Expanding Window','Rolling Window','Full History'], index=0, key='crash_val_model')
-
-        bt=ud.loc[pd.Timestamp(start):].copy()
-        bt['rm']=bt.Close.rolling(252, min_periods=1).max()
-        bt['dd_pct']=((bt.Close-bt.rm)/bt.rm)*100
-        cur=safe_float(bt.Close.iloc[-1])
-        valuation_tc=build_trend_channel(ud,2040,model=crash_val_model,rolling_years=15)
-        event_df=crash_events(bt,thr,cur,valuation_tc)
-        if event_df.empty:
-            st.info('No drawdown events found with the selected parameters.')
-            return
-
+        start=p.date_input('Historical analysis start date',value=ud.index.min().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key='crash_start')
+        thr=q.slider('Minimum drawdown threshold (%)',10,50,10,5,key='crash_threshold')
+        crash_val_model=r.selectbox('Crash valuation model',['Expanding Window','Rolling Window','Full History'],index=0,key='crash_val_model')
+        bt=ud.loc[pd.Timestamp(start):].copy(); bt['rm']=bt.Close.rolling(252,min_periods=1).max(); bt['dd_pct']=((bt.Close-bt.rm)/bt.rm)*100; cur=safe_float(bt.Close.iloc[-1]); valuation_tc=build_trend_channel(ud,2040,model=crash_val_model,rolling_years=15); event_df=crash_events(bt,thr,cur,valuation_tc)
+        if event_df.empty: st.info('No drawdown events found with the selected parameters.'); return
         severity_order=['10-20% correction','20-30% bear drawdown','30-40% crash','40-50% severe crash','>50% crisis crash']
-        severity_meta={
-            '10-20% correction':{'icon':'📉','title':'10-20%','desc':'Normal correction-zone events.','colour':BLUE},
-            '20-30% bear drawdown':{'icon':'⚠️','title':'20-30%','desc':'Deeper bear-market drawdowns.','colour':AMBER},
-            '30-40% crash':{'icon':'🚨','title':'30-40%','desc':'Crash-regime events.','colour':ORANGE},
-            '40-50% severe crash':{'icon':'🔥','title':'40-50%','desc':'Severe crisis drawdowns.','colour':RED},
-            '>50% crisis crash':{'icon':'🧨','title':'>50%','desc':'Rare crisis-level drawdowns.','colour':PURPLE},
-        }
-        sev_counts=event_df['Severity'].value_counts().to_dict()
-        sev_cols=st.columns(5)
+        severity_meta={'10-20% correction':{'icon':'📉','title':'10-20%','desc':'Normal correction-zone events.','colour':BLUE},'20-30% bear drawdown':{'icon':'⚠️','title':'20-30%','desc':'Deeper bear-market drawdowns.','colour':AMBER},'30-40% crash':{'icon':'🚨','title':'30-40%','desc':'Crash-regime events.','colour':ORANGE},'40-50% severe crash':{'icon':'🔥','title':'40-50%','desc':'Severe crisis drawdowns.','colour':RED},'>50% crisis crash':{'icon':'🧨','title':'>50%','desc':'Rare crisis-level drawdowns.','colour':PURPLE}}
+        sev_counts=event_df['Severity'].value_counts().to_dict(); sev_cols=st.columns(5)
         for i,bucket in enumerate(severity_order):
             meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'
-            sev_cols[i].markdown(f"""
-            <div class="light-card" style="border-top:4px solid {meta['colour']};">
-                <div style="font-size:0.95rem; font-weight:800; color:{meta['colour']};">{meta['icon']} {meta['title']}</div>
-                <div style="font-size:1.45rem; font-weight:900; margin-top:4px;">{count} {word}</div>
-                <div style="font-size:0.82rem; color:#6B7280; margin-top:4px;">{meta['desc']}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-        rets=event_df['Recovery Return %'].astype(float)
-        k1,k2,k3,k4,k5=st.columns(5)
-        k1.metric('Crash Events', len(event_df))
-        k2.metric('Success Rate', f'{rets.gt(0).mean()*100:.0f}%')
-        k3.metric('Avg Recovery', f'{rets.mean():.1f}%')
-        k4.metric('Best Recovery', f'{rets.max():.1f}%')
-        k5.metric('Current Drawdown', f'{bt.dd_pct.iloc[-1]:.1f}%')
-
-        st.markdown('---')
-        st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context')
-        st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
-
-        if 'crash_detail_open' not in st.session_state:
-            st.session_state.crash_detail_open = False
-        if 'selected_crash_event_id' not in st.session_state:
-            st.session_state.selected_crash_event_id = None
-
-        f1,f2,f3,f4=st.columns([1,1,1,1])
-        sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
-        zone_opts=sorted(event_df.Zone.dropna().unique().tolist())
-        label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist())
-        val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
-        sev_sel=f1.multiselect('Severity filter', sev_opts, default=sev_opts)
-        zone_sel=f2.multiselect('Buy zone filter', zone_opts, default=zone_opts)
-        label_sel=f3.selectbox('Historical label group', label_opts, index=0)
-        val_class_sel=f4.selectbox('Valuation classification filter', val_class_opts, index=0)
-
-        filtered_df=event_df.copy()
-        if sev_sel: filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)]
-        if zone_sel: filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)]
-        if label_sel!='All': filtered_df=filtered_df[filtered_df['Historical Label']==label_sel]
-        if val_class_sel!='All': filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel]
-
+            sev_cols[i].markdown(f'<div class="light-card" style="border-top:4px solid {meta["colour"]};"><div style="font-size:.95rem;font-weight:800;color:{meta["colour"]};">{meta["icon"]} {meta["title"]}</div><div style="font-size:1.45rem;font-weight:900;margin-top:4px;">{count} {word}</div><div style="font-size:.82rem;color:#6B7280;margin-top:4px;">{meta["desc"]}</div></div>',unsafe_allow_html=True)
+        rets=event_df['Recovery Return %'].astype(float); k1,k2,k3,k4,k5=st.columns(5); k1.metric('Crash Events',len(event_df)); k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%'); k3.metric('Avg Recovery',f'{rets.mean():.1f}%'); k4.metric('Best Recovery',f'{rets.max():.1f}%'); k5.metric('Current Drawdown',f'{bt.dd_pct.iloc[-1]:.1f}%')
+        st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
+        if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
+        if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
+        f1,f2,f3,f4=st.columns([1,1,1,1]); sev_opts=sorted(event_df.Severity.dropna().unique().tolist()); zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
+        sev_sel=f1.multiselect('Severity filter',sev_opts,default=sev_opts); zone_sel=f2.multiselect('Buy zone filter',zone_opts,default=zone_opts); label_sel=f3.selectbox('Historical label group',label_opts,index=0); val_class_sel=f4.selectbox('Valuation classification filter',val_class_opts,index=0)
+        filtered_df=event_df.copy(); filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)] if sev_sel else filtered_df; filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)] if zone_sel else filtered_df; filtered_df=filtered_df[filtered_df['Historical Label']==label_sel] if label_sel!='All' else filtered_df; filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel] if val_class_sel!='All' else filtered_df
         explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
-        if filtered_df.empty:
-            st.info('No events match the selected filters.')
+        if filtered_df.empty: st.info('No events match the selected filters.')
         else:
-            working_df=filtered_df.copy()
-            working_df['_EventID']=working_df.index.astype(int)
-            display_df=working_df[['_EventID']+explorer_cols].copy()
-            for c in ['Peak Date','Trough Date']:
-                display_df[c]=pd.to_datetime(display_df[c]).dt.strftime('%Y-%m-%d')
-            for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
-                display_df[c]=display_df[c].astype(float).round(2)
+            working_df=filtered_df.copy(); working_df['_EventID']=working_df.index.astype(int); display_df=working_df[['_EventID']+explorer_cols].copy()
+            for c in ['Peak Date','Trough Date']: display_df[c]=pd.to_datetime(display_df[c]).dt.strftime('%Y-%m-%d')
+            for c in ['Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']: display_df[c]=display_df[c].astype(float).round(2)
             display_df['Inspect Event Detail']=display_df['_EventID'].eq(st.session_state.selected_crash_event_id)
-            edited_df=st.data_editor(
-                display_df,
-                use_container_width=True,
-                hide_index=True,
-                disabled=[c for c in display_df.columns if c!='Inspect Event Detail'],
-                column_config={
-                    '_EventID': None,
-                    'Inspect Event Detail': st.column_config.CheckboxColumn('Inspect Event Detail', help='Tick one event row to expand its detail panel.'),
-                },
-                key='crash_event_inspector_table',
-            )
-            selected_ids=edited_df.loc[edited_df['Inspect Event Detail'], '_EventID'].tolist() if 'Inspect Event Detail' in edited_df.columns else []
-            if selected_ids:
-                st.session_state.selected_crash_event_id=int(selected_ids[-1])
-                st.session_state.crash_detail_open=True
-            else:
-                st.session_state.selected_crash_event_id=None
-                st.session_state.crash_detail_open=False
-            export_display=display_df.drop(columns=['_EventID','Inspect Event Detail'], errors='ignore')
-            st.download_button('⬇️ Export Filtered Crash Events CSV',export_display.to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
-
-        with st.expander('📌 Selected Event Detail / Historical Crash Explorer', expanded=st.session_state.crash_detail_open):
+            edited_df=st.data_editor(display_df,use_container_width=True,hide_index=True,disabled=[c for c in display_df.columns if c!='Inspect Event Detail'],column_config={'_EventID':None,'Inspect Event Detail':st.column_config.CheckboxColumn('Inspect Event Detail',help='Tick one event row to expand its detail panel.')},key='crash_event_inspector_table')
+            selected_ids=edited_df.loc[edited_df['Inspect Event Detail'],'_EventID'].tolist() if 'Inspect Event Detail' in edited_df.columns else []
+            if selected_ids: st.session_state.selected_crash_event_id=int(selected_ids[-1]); st.session_state.crash_detail_open=True
+            else: st.session_state.selected_crash_event_id=None; st.session_state.crash_detail_open=False
+            st.download_button('⬇️ Export Filtered Crash Events CSV',display_df.drop(columns=['_EventID','Inspect Event Detail'],errors='ignore').to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
+        with st.expander('📌 Selected Event Detail / Historical Crash Explorer',expanded=st.session_state.crash_detail_open):
             selected_id=st.session_state.selected_crash_event_id
-            if selected_id is None or selected_id not in event_df.index:
-                st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
+            if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
-                row=event_df.loc[selected_id]
-                render_event_context_card(row)
-                peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date'])
-                entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
-                inv_one=st.number_input('Investment for selected event (S$)', min_value=1000.0, value=15000.0, step=1000.0, key='selected_event_investment_amount')
-                val_today=inv_one*(cur/entry) if entry else 0
-                ret_today=(val_today/inv_one-1)*100 if inv_one else 0
-                d1,d2,d3,d4,d5,d6=st.columns(6)
-                d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Level',f'{entry:,.0f}'); d3.metric('Value Today',fmt_sgd(val_today)); d4.metric('Return Since Trough',f'{ret_today:.1f}%'); d5.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d6.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
+                row=event_df.loc[selected_id]; render_event_context_card(row); peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); entry=safe_float(row['Trough Index']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan); inv_one=st.number_input('Investment for selected event (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount'); val_today=inv_one*(cur/entry) if entry else 0; ret_today=(val_today/inv_one-1)*100 if inv_one else 0
+                d1,d2,d3,d4,d5,d6=st.columns(6); d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Level',f'{entry:,.0f}'); d3.metric('Value Today',fmt_sgd(val_today)); d4.metric('Return Since Trough',f'{ret_today:.1f}%'); d5.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d6.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
                 st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}.")
-                cs=ud.loc[peak_date:trough_date].copy(); zpath=pd.Series(dtype=float)
-                if valuation_tc is not None and valuation_tc.get('data') is not None:
-                    zpath=valuation_tc['data']['ZHist'].dropna().loc[peak_date:trough_date]
-                if not cs.empty:
-                    fig=go.Figure()
-                    fig.add_trace(go.Scatter(x=cs.index,y=cs.Close,mode='lines',line=dict(color=RED,width=2),name='Price path',yaxis='y1'))
-                    fig.add_trace(go.Scatter(x=[peak_date],y=[safe_float(row['Peak Index'])],mode='markers+text',text=['Peak'],textposition='top center',marker=dict(size=8,color=BLUE),name='Peak',yaxis='y1'))
-                    fig.add_trace(go.Scatter(x=[trough_date],y=[entry],mode='markers+text',text=['Trough'],textposition='bottom center',marker=dict(size=8,color=RED),name='Trough',yaxis='y1'))
-                    if not zpath.empty:
-                        fig.add_trace(go.Scatter(x=zpath.index,y=zpath.values,mode='lines',line=dict(color=PURPLE,width=2,dash='dot'),name='OOS Z-Score',yaxis='y2'))
-                    fig.update_layout(height=320,margin=dict(l=10,r=10,t=10,b=10),plot_bgcolor='white',paper_bgcolor='white',legend=dict(orientation='h'),yaxis=dict(title='Index Level'),yaxis2=dict(title='Z-Score',overlaying='y',side='right',showgrid=False))
-                    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
-
-        st.markdown('---')
-        st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
+        st.markdown('---'); st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
         with st.expander('Master Crash Deployment Simulator',expanded=True):
-            s1,s2,s3,s4=st.columns([1,1,1,1.25])
-            inv=s1.number_input('Investment per event (S$)',min_value=1000.0,value=10000.0,step=1000.0)
-            end_date=s2.date_input('Simulation end date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date())
-            use_filtered=s3.checkbox('Use currently filtered events only',value=True)
-            simulation_universe=s4.selectbox('Simulation Universe',['Known Crisis Events Only','All Events Including Technical Corrections','Technical Corrections Only'],index=0)
+            s1,s2,s3,s4=st.columns([1,1,1,1.25]); inv=s1.number_input('Investment per event (S$)',min_value=1000.0,value=10000.0,step=1000.0); end_date=s2.date_input('Simulation end date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date()); use_filtered=s3.checkbox('Use currently filtered events only',value=True); simulation_universe=s4.selectbox('Simulation Universe',['Known Crisis Events Only','All Events Including Technical Corrections','Technical Corrections Only'],index=0)
             end_slice=ud.loc[:pd.Timestamp(end_date)]
-            if end_slice.empty:
-                st.info('No end-date price available.'); return
-            end_index=safe_float(end_slice.Close.iloc[-1])
-            base=filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy()
-            technical_labels=['Technical Correction','High-Recovery Technical Correction']
-            if simulation_universe=='Known Crisis Events Only':
-                sim_base=base[~base['Historical Label'].isin(technical_labels)].copy()
-            elif simulation_universe=='Technical Corrections Only':
-                sim_base=base[base['Historical Label'].isin(technical_labels)].copy()
-                st.warning('This simulation uses technical corrections only. Treat this as mechanical drawdown-rule testing, not labelled macro-crisis validation.')
-            else:
-                sim_base=base.copy()
-                if base['Historical Label'].isin(technical_labels).any():
-                    st.warning('This simulation includes technical corrections. These are model-detected price cycles without mapped macro-crisis windows, so interpret separately from crisis-regime validation.')
+            if end_slice.empty: st.info('No end-date price available.'); return
+            end_index=safe_float(end_slice.Close.iloc[-1]); base=filtered_df.copy() if use_filtered and not filtered_df.empty else event_df.copy(); technical_labels=['Technical Correction','High-Recovery Technical Correction']
+            if simulation_universe=='Known Crisis Events Only': sim_base=base[~base['Historical Label'].isin(technical_labels)].copy()
+            elif simulation_universe=='Technical Corrections Only': sim_base=base[base['Historical Label'].isin(technical_labels)].copy(); st.warning('This simulation uses technical corrections only. Treat this as mechanical drawdown-rule testing, not labelled macro-crisis validation.')
+            else: sim_base=base.copy(); st.warning('This simulation includes technical corrections. Interpret separately from crisis-regime validation.') if base['Historical Label'].isin(technical_labels).any() else None
             sim=sim_base[pd.to_datetime(sim_base['Trough Date'])<=pd.Timestamp(end_date)].copy()
-            if sim.empty:
-                st.info('No events before selected end date for the selected simulation universe.'); return
+            if sim.empty: st.info('No events before selected end date for the selected simulation universe.'); return
             sim['Investment Amount']=inv; sim['End Index']=end_index; sim['Ending Value']=inv*(sim['End Index']/sim['Trough Index']); sim['Gain / Loss']=sim['Ending Value']-sim['Investment Amount']; sim['Return %']=(sim['Ending Value']/sim['Investment Amount']-1)*100; sim['Holding Days']=(pd.Timestamp(end_date)-pd.to_datetime(sim['Trough Date'])).dt.days.clip(lower=0)
-            total=sim['Investment Amount'].sum(); ending=sim['Ending Value'].sum(); gain=ending-total; tr=(ending/total-1)*100 if total else 0
-            known_used=int((~sim['Historical Label'].isin(technical_labels)).sum()); technical_used=int(sim['Historical Label'].isin(technical_labels).sum())
-            m1,m2,m3,m4,m5,m6,m7=st.columns(7)
-            m1.metric('Deployments',len(sim)); m2.metric('Known Events Used',known_used); m3.metric('Technical Corrections',technical_used); m4.metric('Capital Deployed',fmt_sgd(total)); m5.metric('Ending Value',fmt_sgd(ending)); m6.metric('Total Gain / Loss',fmt_sgd(gain)); m7.metric('Total Return',f'{tr:.1f}%')
+            total=sim['Investment Amount'].sum(); ending=sim['Ending Value'].sum(); gain=ending-total; tr=(ending/total-1)*100 if total else 0; known_used=int((~sim['Historical Label'].isin(technical_labels)).sum()); technical_used=int(sim['Historical Label'].isin(technical_labels).sum())
+            m1,m2,m3,m4,m5,m6,m7=st.columns(7); m1.metric('Deployments',len(sim)); m2.metric('Known Events Used',known_used); m3.metric('Technical Corrections',technical_used); m4.metric('Capital Deployed',fmt_sgd(total)); m5.metric('Ending Value',fmt_sgd(ending)); m6.metric('Total Gain / Loss',fmt_sgd(gain)); m7.metric('Total Return',f'{tr:.1f}%')
             sim_display=sim[['Trough Date','Historical Label','Severity','Zone','Valuation Classification','Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %','Holding Days']].copy(); sim_display['Trough Date']=pd.to_datetime(sim_display['Trough Date']).dt.strftime('%Y-%m-%d')
-            for c in ['Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %']:
-                sim_display[c]=sim_display[c].astype(float).round(2)
-            st.dataframe(sim_display,use_container_width=True,hide_index=True)
-            st.download_button('⬇️ Export Master Simulator CSV',sim_display.to_csv(index=False),file_name='master_crash_simulator_phase2.csv',mime='text/csv')
-
-        st.markdown('---')
-        st.markdown('### 4. Full Crash Event Universe / Audit Table')
-        audit_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Drawdown %','Recovery Return %','Zone','Historical Label','Severity','Z @ Peak','Z @ Trough','Valuation Classification']
-        full_display=event_df[audit_cols].copy()
-        for c in ['Peak Date','Trough Date']:
-            full_display[c]=pd.to_datetime(full_display[c]).dt.strftime('%Y-%m-%d')
-        for c in ['Peak Index','Trough Index','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']:
-            full_display[c]=full_display[c].astype(float).round(2)
-        with st.expander('📚 Full Crash Event Universe / Audit Table', expanded=False):
-            st.caption('Complete unfiltered event universe used by the explorer, valuation context layer and simulator. Kept collapsed as the audit trail.')
-            st.dataframe(full_display,use_container_width=True,hide_index=True)
-            st.download_button('⬇️ Export Full Crash Events CSV',full_display.to_csv(index=False),file_name='crash_events_full_phase2.csv',mime='text/csv')
+            for c in ['Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %']: sim_display[c]=sim_display[c].astype(float).round(2)
+            st.dataframe(sim_display,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Master Simulator CSV',sim_display.to_csv(index=False),file_name='master_crash_simulator_phase2.csv',mime='text/csv')
+        st.markdown('---'); st.markdown('### 4. Full Crash Event Universe / Audit Table'); audit_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Drawdown %','Recovery Return %','Zone','Historical Label','Severity','Z @ Peak','Z @ Trough','Valuation Classification']; full_display=event_df[audit_cols].copy()
+        for c in ['Peak Date','Trough Date']: full_display[c]=pd.to_datetime(full_display[c]).dt.strftime('%Y-%m-%d')
+        for c in ['Peak Index','Trough Index','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']: full_display[c]=full_display[c].astype(float).round(2)
+        with st.expander('📚 Full Crash Event Universe / Audit Table',expanded=False): st.caption('Complete unfiltered event universe used by the explorer, valuation context layer and simulator. Kept collapsed as the audit trail.'); st.dataframe(full_display,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Full Crash Events CSV',full_display.to_csv(index=False),file_name='crash_events_full_phase2.csv',mime='text/csv')
 
 def render_audit(expanded=False):
     with st.expander('📡 AUDIT TRAIL & EXPORT',expanded=expanded):
