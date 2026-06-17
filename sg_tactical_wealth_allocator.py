@@ -728,39 +728,86 @@ def render_event_context_card(row):
     tags=' · '.join(ctx['driver_tags'])
     z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
     z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
-    st.markdown(f"""
-    <div class="light-card" style="padding:14px 16px 12px 16px;">
-        <div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
-        <div style="display:grid; grid-template-columns:120px minmax(0, 1fr); column-gap:12px; row-gap:8px; max-width:720px; align-items:start;">
-            <div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div>
-            <div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div>
-            <div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div>
-            <div style="font-weight:700; font-size:.90rem; text-align:left;">{tags}</div>
-            <div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div>
-            <div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
-        </div>
-        <div style="margin-top:14px; color:#374151; max-width:860px;">
-            <b>Key causes / context:</b>
-            <ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul>
-        </div>
-        <div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f"""<div class="light-card" style="padding:14px 16px 12px 16px;">
+<div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
+<div style="display:grid; grid-template-columns:105px minmax(0, 1fr); column-gap:10px; row-gap:8px; max-width:700px; align-items:start;">
+<div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div><div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div>
+<div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div><div style="font-weight:700; font-size:.90rem; text-align:left;">{tags}</div>
+<div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div><div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
+</div>
+<div style="margin-top:14px; color:#374151; max-width:860px;"><b>Key causes / context:</b><ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul></div>
+<div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div>
+</div>""", unsafe_allow_html=True)
 
-def find_event_entry_point(bt, peak_date, trough_date, threshold_pct):
+def find_first_trigger(bt, peak_date, trough_date, threshold_pct):
+    threshold_pct=abs(float(threshold_pct))
+    window=bt.loc[pd.Timestamp(peak_date):pd.Timestamp(trough_date)].copy()
+    if window.empty:
+        return None
+    hit=window[window['dd_pct'] <= -threshold_pct]
+    if hit.empty:
+        return None
+    r=hit.iloc[0]
+    return hit.index[0], safe_float(r.Close), safe_float(r.dd_pct)
+
+def price_on_or_before(price_df, target_date):
     try:
-        threshold_pct=abs(float(threshold_pct))
-        window=bt.loc[pd.Timestamp(peak_date):pd.Timestamp(trough_date)].copy()
-        trigger_rows=window[window['dd_pct'] <= -threshold_pct]
-        if trigger_rows.empty:
-            return pd.Timestamp(trough_date), safe_float(window.Close.iloc[-1]), safe_float(window.dd_pct.iloc[-1]), 'Fallback: no threshold-breach row found, so trough is used.'
-        entry_date=trigger_rows.index[0]
-        entry_level=safe_float(trigger_rows.Close.iloc[0])
-        entry_dd=safe_float(trigger_rows.dd_pct.iloc[0])
-        basis=f'First close where drawdown breached the selected event threshold of -{threshold_pct:.0f}% from the rolling peak. This is the trigger-entry reference, not the trough.'
-        return entry_date, entry_level, entry_dd, basis
+        s=price_df.loc[:pd.Timestamp(target_date)]
+        if s.empty:
+            return pd.NaT, np.nan
+        return s.index[-1], safe_float(s.Close.iloc[-1])
     except Exception:
-        return pd.Timestamp(trough_date), np.nan, np.nan, 'Fallback: entry trigger could not be calculated.'
+        return pd.NaT, np.nan
+
+def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budget, ending_basis, custom_end_date=None):
+    ladder=[
+        ('Deployment 1','INITIAL BUY',8,.10),
+        ('Deployment 2','BUY',15,.25),
+        ('Deployment 3','STRONG BUY',25,.50),
+        ('Deployment 4','CRISIS BUY',35,.75),
+        ('Deployment 5','MAX CRISIS BUY',50,1.00),
+    ]
+    rows=[]; prev_cum=0.0; latest_date=price_df.index.max()
+    for dep_name,zone_name,threshold,cum_pct in ladder:
+        inc_pct=max(cum_pct-prev_cum,0)
+        trig=find_first_trigger(bt,peak_date,trough_date,threshold)
+        if trig is None:
+            rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Not triggered','Trigger Date':'—','Index Level':'—','Drawdown':'—','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':0.0,'Ending Date':'—','Ending Level':'—','Ending Value':0.0,'Return %':np.nan})
+            continue
+        entry_date,entry_level,entry_dd=trig
+        deploy_amount=event_budget*inc_pct
+        prev_cum=cum_pct
+        if ending_basis.startswith('Never'):
+            end_target=latest_date
+        elif ending_basis.startswith('1Y'):
+            end_target=entry_date+pd.DateOffset(years=1)
+        elif ending_basis.startswith('2Y'):
+            end_target=entry_date+pd.DateOffset(years=2)
+        elif ending_basis.startswith('5Y'):
+            end_target=entry_date+pd.DateOffset(years=5)
+        else:
+            end_target=pd.Timestamp(custom_end_date) if custom_end_date is not None else latest_date
+        if end_target>latest_date: end_target=latest_date
+        end_date,end_level=price_on_or_before(price_df,end_target)
+        ending_value=deploy_amount*(end_level/entry_level) if deploy_amount and entry_level and end_level else 0.0
+        ret_pct=((end_level/entry_level)-1)*100 if entry_level and end_level else np.nan
+        rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Triggered','Trigger Date':entry_date.strftime('%Y-%m-%d'),'Index Level':f'{entry_level:,.0f}','Drawdown':f'{entry_dd:.1f}%','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':deploy_amount,'Ending Date':'—' if pd.isna(end_date) else pd.Timestamp(end_date).strftime('%Y-%m-%d'),'Ending Level':'—' if pd.isna(end_level) else f'{end_level:,.0f}','Ending Value':ending_value,'Return %':ret_pct})
+    return pd.DataFrame(rows)
+
+def render_compact_timeline(row, peak_date, trough_date):
+    period_days=max((trough_date-peak_date).days,0)
+    peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
+    items=[
+        ('Historical Label',str(row['Historical Label'])),
+        ('Crisis Period',f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'),
+        ('Peak',f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'),
+        ('Trough',f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'),
+    ]
+    html=''.join([f'<div style="color:{MUTED};font-size:.86rem;">{a}</div><div style="font-weight:700;">{b}</div>' for a,b in items])
+    st.markdown(f"""<div class="light-card" style="padding:12px 14px;margin-top:10px;max-width:760px;">
+<div style="font-weight:800;margin-bottom:8px;">🧭 Crisis Timeline</div>
+<div style="display:grid;grid-template-columns:105px minmax(0,1fr);column-gap:10px;row-gap:7px;align-items:start;">{html}</div>
+</div>""", unsafe_allow_html=True)
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
@@ -788,7 +835,6 @@ def render_crash(expanded=False):
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
         f1,f2,f3,f4=st.columns([1,1,1,1])
         # Keep all severity buckets visible in the filter, including zero-event buckets such as 40-50%.
-        # If options are derived only from event_df, buckets with 0 events disappear from the filter.
         detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
         sev_opts=severity_order + [x for x in detected_sev_opts if x not in severity_order]
         zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
@@ -806,26 +852,42 @@ def render_crash(expanded=False):
             if selected_ids: st.session_state.selected_crash_event_id=int(selected_ids[-1]); st.session_state.crash_detail_open=True
             else: st.session_state.selected_crash_event_id=None; st.session_state.crash_detail_open=False
             st.download_button('⬇️ Export Filtered Crash Events CSV',display_df.drop(columns=['_EventID','Inspect Event Detail'],errors='ignore').to_csv(index=False),file_name='filtered_crash_events_phase2.csv',mime='text/csv')
-        with st.expander('📌 Selected Event Detail / Historical Crash Explorer',expanded=st.session_state.crash_detail_open):
+        with st.expander('📌 Selected Event Detail / Historical Crash Deployment Explorer',expanded=st.session_state.crash_detail_open):
             selected_id=st.session_state.selected_crash_event_id
             if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
-                row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); entry_date,entry_level,entry_dd,entry_basis=find_event_entry_point(bt,peak_date,trough_date,thr); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
+                row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
                 render_event_context_card(row)
-                period_days=max((trough_date-peak_date).days,0); entry=safe_float(entry_level); peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
-                st.markdown('#### 🧭 Crisis Timeline & Entry Basis')
-                timeline_df=pd.DataFrame([
-                    {'Item':'Historical Label','Detail':str(row['Historical Label'])},
-                    {'Item':'Crisis Period','Detail':f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'},
-                    {'Item':'Peak','Detail':f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'},
-                    {'Item':'Entry Trigger','Detail':f'{entry_date.strftime("%Y-%m-%d")} · {entry:,.0f} ({entry_dd:.1f}% drawdown)'},
-                    {'Item':'Entry Basis','Detail':entry_basis},
-                    {'Item':'Trough','Detail':f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'},
-                ])
-                st.dataframe(timeline_df,use_container_width=True,hide_index=True)
-                inv_one=st.number_input('Investment for selected event (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount'); val_today=inv_one*(cur/entry) if entry else 0; ret_today=(val_today/inv_one-1)*100 if inv_one else 0
-                d1,d2,d3,d4,d5,d6,d7=st.columns(7); d1.metric('Deployment Amount',fmt_sgd(inv_one)); d2.metric('Entry Date',entry_date.strftime('%Y-%m-%d')); d3.metric('Entry Level',f'{entry:,.0f}'); d4.metric('Value Today',fmt_sgd(val_today)); d5.metric('Return Since Entry',f'{ret_today:.1f}%'); d6.metric('Z @ Peak','N/A' if pd.isna(z_peak) else f'{z_peak:+.2f}'); d7.metric('Z @ Trough','N/A' if pd.isna(z_trough) else f'{z_trough:+.2f}')
-                st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}. Entry level uses the first threshold-breach close, not the trough.")
+                render_compact_timeline(row,peak_date,trough_date)
+                st.markdown('#### 🧪 Event-Level Staged Deployment Simulation')
+                c_amt,c_end,c_custom=st.columns([1,1,1])
+                event_budget=c_amt.number_input('Event Investible Budget (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
+                ending_basis=c_end.selectbox('Ending Date Basis',['Never sell / Latest available','1Y after each deployment','2Y after each deployment','5Y after each deployment','Custom end date'],index=0,key='selected_event_ending_basis')
+                custom_end=None
+                if ending_basis=='Custom end date':
+                    custom_end=c_custom.date_input('Custom ending date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key='selected_event_custom_end')
+                else:
+                    c_custom.caption('Default: never sell uses latest available price.')
+                plan_df=build_event_deployment_plan(bt,ud,peak_date,trough_date,event_budget,ending_basis,custom_end)
+                triggered=plan_df[plan_df['Status']=='Triggered'].copy()
+                total_deployed=float(triggered['Deploy Amount'].sum()) if not triggered.empty else 0.0
+                ending_value=float(triggered['Ending Value'].sum()) if not triggered.empty else 0.0
+                gain_loss=ending_value-total_deployed
+                total_return=(ending_value/total_deployed-1)*100 if total_deployed else 0.0
+                first_entry=triggered['Trigger Date'].iloc[0] if not triggered.empty else '—'
+                m1,m2,m3,m4,m5,m6=st.columns(6)
+                m1.metric('Number of Deployments',len(triggered))
+                m2.metric('Total Deployed',fmt_sgd(total_deployed))
+                m3.metric('Ending Value',fmt_sgd(ending_value))
+                m4.metric('Gain / Loss',fmt_sgd(gain_loss))
+                m5.metric('Total Return',f'{total_return:.1f}%')
+                m6.metric('First Entry Date',first_entry)
+                display_plan=plan_df.copy()
+                for c in ['Deploy Amount','Ending Value']:
+                    display_plan[c]=display_plan[c].apply(lambda x: fmt_sgd(x) if float(x)>0 else 'S$0')
+                display_plan['Return %']=display_plan['Return %'].apply(lambda x: '—' if pd.isna(x) else f'{x:.1f}%')
+                st.dataframe(display_plan,use_container_width=True,hide_index=True)
+                st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}. Deployments are staged by cumulative investible-capital ladder triggers, not by the final trough.")
         st.markdown('---'); st.markdown('### 3. 🧪 Master Crash Deployment Simulator')
         with st.expander('Master Crash Deployment Simulator',expanded=True):
             s1,s2,s3,s4=st.columns([1,1,1,1.25]); inv=s1.number_input('Investment per event (S$)',min_value=1000.0,value=10000.0,step=1000.0); end_date=s2.date_input('Simulation end date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date()); use_filtered=s3.checkbox('Use currently filtered events only',value=True); simulation_universe=s4.selectbox('Simulation Universe',['Known Crisis Events Only','All Events Including Technical Corrections','Technical Corrections Only'],index=0)
