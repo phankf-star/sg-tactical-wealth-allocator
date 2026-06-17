@@ -173,11 +173,13 @@ def card(title,value,sub,accent):
     return f'<div class="light-card" style="border-top:4px solid {accent};"><div style="color:{MUTED};font-size:.86rem;font-weight:600;">{title}</div><div style="font-size:1.55rem;font-weight:800;color:{TEXT};margin-top:4px;">{value}</div><div style="font-size:.82rem;color:{MUTED};margin-top:3px;">{sub}</div></div>'
 
 def classify(dd):
-    if dd <= -35: return 'STRONG BUY', RED
-    if dd <= -20: return 'BUY', ORANGE
-    if dd <= -10: return 'INITIAL BUY', AMBER
-    if dd >= 0: return 'STRONG SELL', '#6A1B9A'
-    return 'HOLD', BLUE
+    # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
+    # from the drawdown module; overvaluation is handled separately by Z-score.
+    if dd <= -35: return 'CRISIS BUY', RED
+    if dd <= -25: return 'STRONG BUY', ORANGE
+    if dd <= -15: return 'BUY', AMBER
+    if dd <= -8: return 'INITIAL BUY', BLUE
+    return 'HOLD / NO DEPLOYMENT', SLATE
 
 def severity_bucket(dd):
     a=abs(dd)
@@ -187,6 +189,23 @@ def severity_bucket(dd):
     if a<40: return '30-40% crash'
     if a<50: return '40-50% severe crash'
     return '>50% crisis crash'
+
+def years_between(start_date, end_date):
+    try:
+        return max((pd.Timestamp(end_date) - pd.Timestamp(start_date)).days / 365.25, 0.0)
+    except Exception:
+        return 0.0
+
+def frequency_label(event_count, observation_years):
+    if event_count <= 0:
+        return 'Frequency: not observed'
+    if observation_years <= 0:
+        return 'Frequency: insufficient history'
+    yrs = observation_years / event_count
+    if yrs < 1:
+        months = max(1, round(yrs * 12))
+        return f'Frequency: ~{months} mths/event'
+    return f'Frequency: ~{yrs:.1f} yrs/event'
 
 def current_dd(df, method):
     c=safe_float(df.Close.iloc[-1])
@@ -208,18 +227,25 @@ def deploy_rule(dd):
 
 def capital_breakdown(zone, deploy_amount, available_cash, available_srs, available_cpf):
     cash=srs=cpf=0.0
-    if deploy_amount <= 0: return cash,srs,cpf,'Current market action does not trigger deployment; capital preserved.'
+    if deploy_amount <= 0: return cash,srs,cpf,'Current allocation stance does not trigger deployment; capital preserved.'
     cash=min(deploy_amount, available_cash); rem=max(deploy_amount-cash,0)
-    if zone in ['BUY','STRONG BUY']:
+    if zone in ['BUY','STRONG BUY','CRISIS BUY']:
         srs=min(rem,available_srs); rem=max(rem-srs,0)
-    if zone=='STRONG BUY': cpf=min(rem,available_cpf)
-    reason = 'INITIAL BUY zone uses cash first; SRS/CPF-OA are preserved for deeper drawdowns.' if zone=='INITIAL BUY' else ('BUY zone uses cash first, then SRS if cash is insufficient. CPF-OA remains reserved.' if zone=='BUY' else 'STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor.')
+    if zone in ['STRONG BUY','CRISIS BUY']:
+        cpf=min(rem,available_cpf)
+    reason = (
+        'INITIAL BUY zone uses cash first; SRS/CPF-OA are preserved for deeper drawdowns.' if zone=='INITIAL BUY' else
+        'BUY zone uses cash first, then SRS if cash is insufficient. CPF-OA remains reserved.' if zone=='BUY' else
+        'STRONG BUY zone can use cash, SRS and CPF-OA above preserved floor.' if zone=='STRONG BUY' else
+        'CRISIS BUY zone can use cash, SRS and CPF-OA above preserved floor under the deepest drawdown rule.'
+    )
     return cash,srs,cpf,reason
 
 def next_trigger_label(zone):
-    if zone in ['HOLD','STRONG SELL']: return 'Initial buy zone near -8% to -10% drawdown'
-    if zone=='INITIAL BUY': return 'BUY zone if drawdown deepens toward -20%'
-    if zone=='BUY': return 'STRONG BUY zone if drawdown deepens beyond -35%'
+    if zone == 'HOLD / NO DEPLOYMENT': return 'Initial buy zone near -8% to -10% drawdown'
+    if zone=='INITIAL BUY': return 'BUY zone if drawdown deepens toward -15%'
+    if zone=='BUY': return 'STRONG BUY zone if drawdown deepens beyond -25%'
+    if zone=='STRONG BUY': return 'CRISIS BUY zone if drawdown deepens beyond -35%'
     return 'Already in deepest deployment zone'
 
 def confidence_score(dd, live_score, trend_below):
@@ -445,7 +471,8 @@ def render_executive():
     r1=st.columns(3)
     r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
     r1[1].markdown(card('Current Drawdown',f'{dd:.1f}%',ref,RED),unsafe_allow_html=True)
-    r1[2].markdown(card('Current Market Action',zone,'Drawdown-based rule',ORANGE),unsafe_allow_html=True)
+    action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
+    r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour),unsafe_allow_html=True)
     r2=st.columns(3)
     r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),'Calculation output',AMBER),unsafe_allow_html=True)
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
@@ -463,7 +490,7 @@ def render_suggested(expanded=False):
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
-        s4.markdown('#### 🧭 Deployment Ladder'); s4.markdown('<div class="light-card">'+kv('HOLD / small drawdown','0% deploy',SLATE)+kv('INITIAL BUY','10% deploy · Cash only',AMBER)+kv('BUY','20–35% deploy · Cash then SRS',ORANGE)+kv('STRONG BUY','50% deploy · Cash + SRS + CPF-OA',RED)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
+        s4.markdown('#### 🧭 Deployment Ladder'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% deploy',SLATE)+kv('INITIAL BUY','10% deploy · Cash only',BLUE)+kv('BUY','20% deploy · Cash then SRS',AMBER)+kv('STRONG BUY','35% deploy · Cash + SRS + CPF-OA',ORANGE)+kv('CRISIS BUY','50% deploy · Deepest drawdown rule',RED)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -710,11 +737,13 @@ def render_crash(expanded=False):
         if event_df.empty: st.info('No drawdown events found with the selected parameters.'); return
         severity_order=['10-20% correction','20-30% bear drawdown','30-40% crash','40-50% severe crash','>50% crisis crash']
         severity_meta={'10-20% correction':{'icon':'📉','title':'10-20%','desc':'Normal correction-zone events.','colour':BLUE},'20-30% bear drawdown':{'icon':'⚠️','title':'20-30%','desc':'Deeper bear-market drawdowns.','colour':AMBER},'30-40% crash':{'icon':'🚨','title':'30-40%','desc':'Crash-regime events.','colour':ORANGE},'40-50% severe crash':{'icon':'🔥','title':'40-50%','desc':'Severe crisis drawdowns.','colour':RED},'>50% crisis crash':{'icon':'🧨','title':'>50%','desc':'Rare crisis-level drawdowns.','colour':PURPLE}}
+        observation_years=years_between(bt.index.min(),bt.index.max())
         sev_counts=event_df['Severity'].value_counts().to_dict(); sev_cols=st.columns(5)
         for i,bucket in enumerate(severity_order):
-            meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'
-            sev_cols[i].markdown(f'<div class="light-card" style="border-top:4px solid {meta["colour"]};"><div style="font-size:.95rem;font-weight:800;color:{meta["colour"]};">{meta["icon"]} {meta["title"]}</div><div style="font-size:1.45rem;font-weight:900;margin-top:4px;">{count} {word}</div><div style="font-size:.82rem;color:#6B7280;margin-top:4px;">{meta["desc"]}</div></div>',unsafe_allow_html=True)
-        rets=event_df['Recovery Return %'].astype(float); k1,k2,k3,k4,k5=st.columns(5); k1.metric('Crash Events',len(event_df)); k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%'); k3.metric('Avg Recovery',f'{rets.mean():.1f}%'); k4.metric('Best Recovery',f'{rets.max():.1f}%'); k5.metric('Current Drawdown',f'{bt.dd_pct.iloc[-1]:.1f}%')
+            meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'; freq=frequency_label(count,observation_years)
+            sev_cols[i].markdown(f'<div class="light-card" style="border-top:4px solid {meta["colour"]};"><div style="font-weight:800;color:{meta["colour"]};">{meta["icon"]} {meta["title"]}</div><div style="font-size:1.35rem;font-weight:900;margin-top:8px;">{count} {word}</div><div style="font-size:.82rem;color:{TEXT};font-weight:700;margin-top:4px;">{freq}</div><div style="font-size:.82rem;color:{MUTED};margin-top:6px;">{meta["desc"]}</div></div>',unsafe_allow_html=True)
+        st.caption('Historical frequency is calculated from the selected analysis window and is not a forecast of future crash timing.')
+        rets=event_df['Recovery Return %'].astype(float); k1,k2,k3,k4,k5=st.columns(5); k1.metric('Crash Events',len(event_df),frequency_label(len(event_df),observation_years).replace('Frequency: ','')); k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%'); k3.metric('Avg Recovery',f'{rets.mean():.1f}%'); k4.metric('Best Recovery',f'{rets.max():.1f}%'); k5.metric('Current Drawdown',f'{bt.dd_pct.iloc[-1]:.1f}%')
         st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
@@ -767,7 +796,7 @@ def render_audit(expanded=False):
         left,right=st.columns([1,1])
         left.markdown('#### 📡 Data Source & Freshness'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display','S$ / Singapore dollar',GREEN)+kv('PMI Proxy',st.session_state.get('pmi_proxy_label',pmi_label),GREEN)+kv('PMI Value',f'{st.session_state.get("latest_pmi_value",latest_pmi):.1f} · {st.session_state.get("latest_pmi_month","")}',GREEN)+kv('PMI Source',st.session_state.get('latest_pmi_source',pmi_proxy_default['source']),GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
         right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score is rules-based and not a crash prediction.\n- PMI is monthly, not intraday live data.\n- US PMI is fetched from FRED only when Update PMI is clicked.\n- Non-US PMI uses manual input with pre-filled 12M defaults.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Drawdown %':round(dd,2),'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
