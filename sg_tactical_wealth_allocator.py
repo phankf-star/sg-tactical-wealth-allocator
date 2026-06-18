@@ -86,6 +86,13 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .metric-card-like .metric-sub {font-size:.86rem; color:#16A34A; font-weight:800; margin-top:2px;}
 .timeline-grid {display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
 
+.assumptions-card {background:#FFFFFF; border:1px solid #E5E7EB; border-radius:16px; padding:14px 16px; box-shadow:0 1px 2px rgba(15,23,42,.05);}
+.assumption-row {display:flex; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid #F1F5F9;}
+.assumption-row:last-child {border-bottom:0;}
+.assumption-num {flex:0 0 24px; width:24px; height:24px; border-radius:999px; background:#EFF6FF; color:#2563EB; font-weight:850; display:flex; align-items:center; justify-content:center; font-size:.78rem;}
+.assumption-text {color:#334155; font-size:.91rem; line-height:1.45;}
+
+
 /* Priority 3 — responsive / narrow-screen behaviour */
 [data-testid="stDataFrame"], [data-testid="stTable"] {overflow-x:auto;}
 @media (max-width: 1100px) {
@@ -113,6 +120,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .method-help-chip {display:flex; margin-top:6px;}
   .kv {display:block;}
   .kv-value {text-align:left !important; margin-top:2px;}
+  .assumption-row {gap:8px;}
+  .assumption-text {font-size:.86rem;}
 }
 
 </style>
@@ -748,6 +757,20 @@ def render_suggested(expanded=False):
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
 
+def render_assumptions():
+    with st.expander('🧾 Assumptions & Limits — Methodology guardrails', expanded=False):
+        assumptions=[
+            'This platform is rules-based and designed for decision support.',
+            'It does not predict crashes, market bottoms, or future returns.',
+            'Historical event frequency is descriptive only and is not a forecast.',
+            'Suggested deploy is based only on the selected investible capital / dry powder. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.',
+            'CPF-OA and SRS inclusion is user-controlled and only applies when selected.',
+            'Outputs should be reviewed alongside personal liquidity needs, risk tolerance, investment objectives, and professional advice where appropriate.',
+        ]
+        rows=''.join([f'<div class="assumption-row"><div class="assumption-num">{i}</div><div class="assumption-text">{hesc(txt)}</div></div>' for i,txt in enumerate(assumptions,1)])
+        st.markdown(f'<div class="assumptions-card">{rows}</div>',unsafe_allow_html=True)
+
+
 def get_pmi_df(chosen,latest_in):
     if sel in PMI_NA_MARKETS: return pd.DataFrame()
     if sel in PMI_FRED_MARKETS:
@@ -1149,12 +1172,15 @@ def render_audit(expanded=False):
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
 render_executive()
-if active_section != '🧠 Executive Centre':
-    RENDERERS[active_section](expanded=True)
 for section in SECTION_ORDER:
-    if section != active_section:
-        if active_section == '🧠 Executive Centre' and section == '💰 Suggested Deploy':
-            RENDERERS[section](expanded=deploy>0)
+    if section == '💰 Suggested Deploy':
+        if active_section == section:
+            RENDERERS[section](expanded=True)
         else:
-            RENDERERS[section](expanded=False)
+            RENDERERS[section](expanded=deploy>0 if active_section == '🧠 Executive Centre' else False)
+        render_assumptions()
+    elif active_section == section:
+        RENDERERS[section](expanded=True)
+    else:
+        RENDERERS[section](expanded=False)
 st.markdown('---'); st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT'); st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
