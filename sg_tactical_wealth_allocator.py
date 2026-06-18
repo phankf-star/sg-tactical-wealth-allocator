@@ -62,6 +62,23 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .kpi-sub-orange {font-size:.78rem; color:#F97316; font-weight:750; margin-top:3px;}
 .kpi-sub-muted {font-size:.78rem; color:#64748B; font-weight:650; margin-top:3px;}
 
+
+/* Executive Centre tooltip / help text */
+.light-card {overflow:visible;}
+.exec-title-row {display:flex; align-items:center; gap:7px; color:#6B7280; font-size:.86rem; font-weight:700;}
+.exec-info-dot {position:relative; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; background:#EEF2FF; color:#2563EB; border:1px solid #BFDBFE; font-size:11px; font-weight:900; cursor:help; line-height:1;}
+.exec-tooltip {visibility:hidden; opacity:0; position:absolute; z-index:9999; top:24px; left:-10px; width:340px; background:#0F172A; color:#FFFFFF; border-radius:12px; padding:12px 13px; box-shadow:0 16px 40px rgba(15,23,42,.25); transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; text-align:left;}
+.exec-tooltip::before {content:""; position:absolute; top:-7px; left:17px; width:14px; height:14px; background:#0F172A; transform:rotate(45deg);}
+.exec-info-dot:hover .exec-tooltip, .exec-info-dot:focus .exec-tooltip {visibility:visible; opacity:1; transform:translateY(0);}
+.exec-tooltip-title {font-size:13px; font-weight:850; margin-bottom:7px; color:#FFFFFF;}
+.exec-tooltip-row {display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:12px; line-height:1.45; margin:4px 0;}
+.exec-tooltip-label {color:#CBD5E1; font-weight:700;}
+.exec-tooltip-value {color:#FFFFFF; font-weight:650;}
+.exec-tooltip-footer {margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.16); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; line-height:1.45; color:#E2E8F0;}
+.exec-pill {display:inline-flex; align-items:center; gap:6px; margin-top:8px; border-radius:999px; padding:5px 9px; font-size:.78rem; font-weight:750;}
+.exec-pill-hold {background:#F0FDF4; border:1px solid #BBF7D0; color:#166534;}
+.exec-pill-action {background:#FFFBEB; border:1px solid #FDE68A; color:#92400E;}
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -207,10 +224,22 @@ def fetch_fred_pmi(series_id='NAPM'):
 
 if 'pmi_history' not in st.session_state: st.session_state.pmi_history = {}
 
-def kv(label, value, colour=TEXT): return f'<div class="kv"><div class="kv-label">{label}</div><div class="kv-value" style="color:{colour};">{value}</div></div>'
+def hesc(v):
+    return str(v).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;').replace("'",'&#39;')
 
-def card(title,value,sub,accent):
-    return f'<div class="light-card" style="border-top:4px solid {accent};"><div style="color:{MUTED};font-size:.86rem;font-weight:600;">{title}</div><div style="font-size:1.55rem;font-weight:800;color:{TEXT};margin-top:4px;">{value}</div><div style="font-size:.82rem;color:{MUTED};margin-top:3px;">{sub}</div></div>'
+def kv(label, value, colour=TEXT):
+    return f'<div class="kv"><div class="kv-label">{label}</div><div class="kv-value" style="color:{colour};">{value}</div></div>'
+
+def tooltip_html(title, rows=None, footer=None):
+    rows = rows or []
+    row_html = ''.join([f'<div class="exec-tooltip-row"><span class="exec-tooltip-label">{hesc(k)}</span><span class="exec-tooltip-value">{hesc(v)}</span></div>' for k,v in rows])
+    footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
+    return f'<span class="exec-info-dot" tabindex="0">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
+
+def card(title,value,sub,accent,tooltip=None,pill=None):
+    info = tooltip or ''
+    pill_html = pill or ''
+    return f'<div class="light-card" style="border-top:4px solid {accent};"><div class="exec-title-row">{title}{info}</div><div style="font-size:1.55rem;font-weight:800;color:{TEXT};margin-top:4px;">{value}</div><div style="font-size:.82rem;color:{MUTED};margin-top:3px;">{sub}</div>{pill_html}</div>'
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
@@ -630,22 +659,38 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 # ------------------------- renderers -------------------------
 def render_executive():
     st.markdown('---'); st.markdown('## 🧠 Executive Tactical Allocation Centre')
+    structural_tip=tooltip_html(
+        'Structural Drawdown Method',
+        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],
+        'Formula:<br>(current close − structural peak) ÷ structural peak'
+    )
+    stance_tip=tooltip_html(
+        'Decision Rule Explanation',
+        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
+        f'Decision note:<br>{hesc(decision_line)}'
+    )
+    if deploy>0:
+        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
+        deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
+    else:
+        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'
+        deploy_sub='No deployment triggered'
     r1=st.columns(3)
     r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
-    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}',RED),unsafe_allow_html=True)
+    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}<br>Basis: {ref.replace("Structural Drawdown · ","")}',RED,tooltip=structural_tip),unsafe_allow_html=True)
     action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
-    r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour),unsafe_allow_html=True)
+    r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour,tooltip=stance_tip,pill=stance_pill),unsafe_allow_html=True)
     r2=st.columns(3)
-    r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),'Calculation output',AMBER),unsafe_allow_html=True)
+    r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),deploy_sub,AMBER),unsafe_allow_html=True)
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
     r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour),unsafe_allow_html=True)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
     r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour),unsafe_allow_html=True)
-    st.markdown(f'**Formula used:** Structural drawdown = (current close − structural peak) ÷ structural peak. **Basis:** {ref}. **Peak:** {struct_peak_date.strftime("%Y-%m-%d")} at **{peak:,.0f}**. **Current:** {struct_current_date.strftime("%Y-%m-%d")} at **{close:,.0f}**.  \n**Decision note:** {decision_line}')
 
 def render_suggested(expanded=False):
-    with st.expander('💰 Suggested Deploy Basis & Capital Source',expanded=expanded):
+    suggested_title = f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
+    with st.expander(suggested_title,expanded=expanded):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
         s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
         s2.markdown('#### 🏦 Capital Source Breakdown'); s2.markdown('<div class="light-card">'+kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)+kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)+kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)+kv('Reason',capital_reason,SLATE)+'</div>',unsafe_allow_html=True)
@@ -1080,7 +1125,12 @@ def render_audit(expanded=False):
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
 render_executive()
-if active_section != '🧠 Executive Centre': RENDERERS[active_section](expanded=True)
+if active_section != '🧠 Executive Centre':
+    RENDERERS[active_section](expanded=True)
 for section in SECTION_ORDER:
-    if section != active_section: RENDERERS[section](expanded=False)
+    if section != active_section:
+        if active_section == '🧠 Executive Centre' and section == '💰 Suggested Deploy':
+            RENDERERS[section](expanded=deploy>0)
+        else:
+            RENDERERS[section](expanded=False)
 st.markdown('---'); st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT'); st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
