@@ -661,34 +661,16 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 # ------------------------- renderers -------------------------
 def render_executive():
     st.markdown('---'); st.markdown('## 🧠 Executive Tactical Allocation Centre')
-    structural_tip=tooltip_html(
-        'Active Structural Drawdown',
-        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],
-        'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
-    )
-    stance_tip=tooltip_html(
-        'Decision Rule Explanation',
-        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
-        f'Decision note:<br>{hesc(decision_line)}'
-    )
-    risk_tip=tooltip_html(
-        'Risk Regime Methodology',
-        [('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],
-        'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.'
-    )
-    z_tip=tooltip_html(
-        'Valuation Z-Score (OOS)',
-        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],
-        'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.'
-    )
+    structural_tip=tooltip_html('Active Structural Drawdown',[('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.')
+    stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],f'Decision note:<br>{hesc(decision_line)}')
+    risk_tip=tooltip_html('Risk Regime Methodology',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.')
+    z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.')
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     if deploy>0:
-        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
-        deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
+        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'; deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
     else:
-        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'
-        deploy_sub='No deployment triggered'
+        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'; deploy_sub='No deployment triggered'
     r1=st.columns(3)
     r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
     r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}<br>Basis: {ref.replace("Structural Drawdown · ","")}',structural_colour,tooltip=structural_tip),unsafe_allow_html=True)
@@ -707,41 +689,25 @@ def render_suggested(expanded=False):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
         s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
         s2.markdown('#### 🏦 Capital Source Breakdown')
-        show_srs_row = (sel == 'STI' and available_srs > 0)
-        show_cpf_row = (sel == 'STI' and available_cpf > 0)
+        show_srs_row = (sel == 'STI' and available_srs > 0); show_cpf_row = (sel == 'STI' and available_cpf > 0)
         if show_srs_row and show_cpf_row:
-            buy_label='25% cumulative · cash then SRS'
-            strong_label='50% cumulative · cash + SRS + CPF-OA'
-            initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
         elif show_srs_row:
-            buy_label='25% cumulative · cash then SRS'
-            strong_label='50% cumulative · cash + SRS'
-            initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
         else:
-            buy_label='25% cumulative · cash first'
-            strong_label='50% cumulative · cash first'
-            initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
+            buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
         display_reason = initial_reason if zone == 'INITIAL BUY' else capital_reason
         if sel != 'STI' or (not show_srs_row and not show_cpf_row):
-            display_reason = display_reason.replace('SRS/CPF-OA are preserved for deeper drawdowns.','other funding sources are not included in the selected profile.')
-            display_reason = display_reason.replace(' then SRS if cash is insufficient. CPF-OA remains reserved.',' first under the selected cash-only profile.')
-            display_reason = display_reason.replace('cash, SRS and CPF-OA','cash')
-            display_reason = display_reason.replace('using cash, SRS and CPF-OA above preserved floor','using selected investible cash')
+            display_reason = display_reason.replace('SRS/CPF-OA are preserved for deeper drawdowns.','other funding sources are not included in the selected profile.').replace(' then SRS if cash is insufficient. CPF-OA remains reserved.',' first under the selected cash-only profile.').replace('cash, SRS and CPF-OA','cash').replace('using cash, SRS and CPF-OA above preserved floor','using selected investible cash')
         capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
-        if show_srs_row:
-            capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
-        if show_cpf_row:
-            capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
+        if show_srs_row: capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
+        if show_cpf_row: capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
         capital_rows += kv('Reason',display_reason,SLATE)
         s2.markdown('<div class="light-card">'+capital_rows+'</div>',unsafe_allow_html=True)
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
-        ladder_tip=tooltip_html(
-            'Deployment Ladder',
-            [('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],
-            'The ladder shows cumulative deployment percentages. Each deeper drawdown zone increases total deployed capital rather than adding unrelated new capital.'
-        )
+        ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'The ladder shows cumulative deployment percentages. Each deeper drawdown zone increases total deployed capital rather than adding unrelated new capital.')
         s4.markdown(f'<h4 style="margin-bottom:0.4rem;">🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4>',unsafe_allow_html=True)
         s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
@@ -1022,34 +988,13 @@ def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budg
 
 def render_compact_timeline(row, peak_date, trough_date):
     period_days=max((trough_date-peak_date).days,0)
-    peak_level=safe_float(row['Peak Index'])
-    trough_level=safe_float(row['Trough Index'])
-    trough_dd=safe_float(row['Drawdown %'])
-    event_label=str(row.get('Historical Label',''))
-    period_label=f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")}'
-    mini_cards=[
-        ('Peak',peak_date.strftime('%Y-%m-%d'),f'{peak_level:,.0f}',BLUE),
-        ('Trough',trough_date.strftime('%Y-%m-%d'),f'{trough_level:,.0f}',RED),
-        ('Drawdown','Peak to trough',f'{trough_dd:.1f}%',ORANGE if abs(trough_dd)<40 else RED),
-        ('Duration','Trading cycle',f'{period_days} days',SLATE),
-    ]
-    card_html=''.join([
-        f'<div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;min-height:82px;">'
-        f'<div style="font-size:.78rem;color:{MUTED};font-weight:700;text-transform:uppercase;letter-spacing:.03em;">{label}</div>'
-        f'<div style="font-size:.82rem;color:{MUTED};margin-top:4px;">{sub}</div>'
-        f'<div style="font-size:1.15rem;font-weight:850;color:{colour};margin-top:6px;">{value}</div>'
-        f'</div>'
-        for label,sub,value,colour in mini_cards
-    ])
+    peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
+    event_label=str(row.get('Historical Label','')); period_label=f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")}'
+    mini_cards=[('Peak',peak_date.strftime('%Y-%m-%d'),f'{peak_level:,.0f}',BLUE),('Trough',trough_date.strftime('%Y-%m-%d'),f'{trough_level:,.0f}',RED),('Drawdown','Peak to trough',f'{trough_dd:.1f}%',ORANGE if abs(trough_dd)<40 else RED),('Duration','Trading cycle',f'{period_days} days',SLATE)]
+    card_html=''.join([f'<div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;min-height:82px;"><div style="font-size:.78rem;color:{MUTED};font-weight:700;text-transform:uppercase;letter-spacing:.03em;">{label}</div><div style="font-size:.82rem;color:{MUTED};margin-top:4px;">{sub}</div><div style="font-size:1.15rem;font-weight:850;color:{colour};margin-top:6px;">{value}</div></div>' for label,sub,value,colour in mini_cards])
     st.markdown(f"""
 <div class="light-card" style="padding:14px 16px;margin:10px 0 12px 0;max-width:100%;">
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
-    <div>
-      <div style="font-weight:850;font-size:1.02rem;color:{TEXT};">🧭 Crisis Timeline</div>
-      <div style="font-size:.88rem;color:{MUTED};margin-top:2px;">{event_label}</div>
-    </div>
-    <div style="font-size:.82rem;font-weight:750;color:{TEXT};background:#F8FAFC;border:1px solid #E5E7EB;border-radius:999px;padding:5px 10px;">{period_label}</div>
-  </div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;"><div><div style="font-weight:850;font-size:1.02rem;color:{TEXT};">🧭 Crisis Timeline</div><div style="font-size:.88rem;color:{MUTED};margin-top:2px;">{event_label}</div></div><div style="font-size:.82rem;font-weight:750;color:{TEXT};background:#F8FAFC;border:1px solid #E5E7EB;border-radius:999px;padding:5px 10px;">{period_label}</div></div>
   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">{card_html}</div>
 </div>
 """, unsafe_allow_html=True)
@@ -1073,14 +1018,9 @@ def render_crash(expanded=False):
         for i,bucket in enumerate(severity_order):
             meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'; freq=frequency_label(count,observation_years)
             sev_cols[i].markdown(f'<div class="light-card" style="border-top:4px solid {meta["colour"]};"><div style="font-weight:800;color:{meta["colour"]};">{meta["icon"]} {meta["title"]}</div><div style="font-size:1.35rem;font-weight:900;margin-top:8px;">{count} {word}</div><div style="font-size:.82rem;color:{TEXT};font-weight:700;margin-top:4px;">{freq}</div><div style="font-size:.82rem;color:{MUTED};margin-top:6px;">{meta["desc"]}</div></div>',unsafe_allow_html=True)
-        st.caption('Historical frequency is calculated from the selected analysis window and is not a forecast of future crash timing.')
         rets=event_df['Recovery Return %'].astype(float)
         crash_freq_inline=frequency_label(len(event_df),observation_years).replace('Frequency: ','')
-        crash_freq_tip=tooltip_html(
-            'Crash Events Frequency',
-            [('Events',len(event_df)),('Observation Window',f'{observation_years:.1f} years'),('Frequency',crash_freq_inline)],
-            'Calculated from historical events in the selected analysis window. It is a historical observation, not a forecast of future crash timing.'
-        )
+        crash_freq_tip=tooltip_html('Crash Events Frequency',[('Events',len(event_df)),('Observation Window',f'{observation_years:.1f} years'),('Frequency',crash_freq_inline)],'Calculated from historical events in the selected analysis window. It is a historical observation, not a forecast of future crash timing.')
         k1,k2,k3,k4,k5=st.columns(5)
         k1.markdown(f'<div class="kpi"><div class="label">Crash Events {crash_freq_tip}</div><div class="value">{len(event_df)} <span style="font-size:15px;color:{GREEN};font-weight:700;">({crash_freq_inline})</span></div></div>',unsafe_allow_html=True)
         k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%')
@@ -1090,16 +1030,8 @@ def render_crash(expanded=False):
         st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
-        tech_tip=tooltip_html(
-            'Technical Correction',
-            [('Type','Price-defined correction'),('Macro Label','No mapped macro-crisis window'),('Use Case','Drawdown-rule testing')],
-            'A technical correction is retained because the price decline met the drawdown-event rule, but it should not automatically be treated as a named macro crisis.'
-        )
-        system_tip=tooltip_html(
-            'System-Detected Cyclical Drawdown',
-            [('Type','Unlabelled cyclical drawdown'),('Threshold','Event threshold exceeded'),('Review','Use Z-score path, severity and recovery profile')],
-            'This is an intentional unlabelled drawdown category. It is useful for event-universe completeness and rule testing, but should be separated from named historical crises.'
-        )
+        tech_tip=tooltip_html('Technical Correction',[('Type','Price-defined correction'),('Macro Label','No mapped macro-crisis window'),('Use Case','Drawdown-rule testing')],'A technical correction is retained because the price decline met the drawdown-event rule, but it should not automatically be treated as a named macro crisis.')
+        system_tip=tooltip_html('System-Detected Cyclical Drawdown',[('Type','Unlabelled cyclical drawdown'),('Threshold','Event threshold exceeded'),('Review','Use Z-score path, severity and recovery profile')],'This is an intentional unlabelled drawdown category. It is useful for event-universe completeness and rule testing, but should be separated from named historical crises.')
         st.markdown(f'<div class="method-help-strip"><span style="font-weight:800;">Event label help:</span><span class="method-help-chip">Technical Correction {tech_tip}</span><span class="method-help-chip">System-Detected Cyclical Drawdown {system_tip}</span></div>',unsafe_allow_html=True)
         f1,f2,f3,f4=st.columns([1,1,1,1])
         detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
@@ -1114,14 +1046,10 @@ def render_crash(expanded=False):
         label_sel=f3.selectbox('Event Label',label_opts,index=0,key='crash_label_dropdown')
         val_class_sel=f4.selectbox('Valuation Class',val_class_opts,index=0,key='crash_valuation_class_dropdown')
         filtered_df=event_df.copy()
-        if sev_sel!='All':
-            filtered_df=filtered_df[filtered_df.Severity==sev_sel]
-        if zone_sel!='All':
-            filtered_df=filtered_df[filtered_df.Zone==zone_sel]
-        if label_sel!='All':
-            filtered_df=filtered_df[filtered_df['Historical Label']==label_sel]
-        if val_class_sel!='All':
-            filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel]
+        if sev_sel!='All': filtered_df=filtered_df[filtered_df.Severity==sev_sel]
+        if zone_sel!='All': filtered_df=filtered_df[filtered_df.Zone==zone_sel]
+        if label_sel!='All': filtered_df=filtered_df[filtered_df['Historical Label']==label_sel]
+        if val_class_sel!='All': filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel]
         explorer_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Historical Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
         if filtered_df.empty: st.info('No events match the selected filters.')
         else:
