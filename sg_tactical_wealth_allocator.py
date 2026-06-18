@@ -63,21 +63,23 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .kpi-sub-muted {font-size:.78rem; color:#64748B; font-weight:650; margin-top:3px;}
 
 
-/* Executive Centre tooltip / help text */
+/* Executive Centre / methodology tooltip help text */
 .light-card {overflow:visible;}
 .exec-title-row {display:flex; align-items:center; gap:7px; color:#6B7280; font-size:.86rem; font-weight:700;}
-.exec-info-dot {position:relative; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; background:#EEF2FF; color:#2563EB; border:1px solid #BFDBFE; font-size:11px; font-weight:900; cursor:help; line-height:1;}
-.exec-tooltip {visibility:hidden; opacity:0; position:absolute; z-index:9999; top:24px; left:-10px; width:340px; background:#0F172A; color:#FFFFFF; border-radius:12px; padding:12px 13px; box-shadow:0 16px 40px rgba(15,23,42,.25); transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; text-align:left;}
+.exec-info-dot {position:relative; display:inline-flex; align-items:center; justify-content:center; width:17px; height:17px; border-radius:50%; background:#EEF2FF; color:#2563EB; border:1px solid #BFDBFE; font-size:11px; font-weight:900; cursor:help; line-height:1; margin-left:4px;}
+.exec-tooltip {visibility:hidden; opacity:0; position:absolute; z-index:9999; top:24px; left:-10px; width:350px; background:#0F172A; color:#FFFFFF; border-radius:12px; padding:12px 13px; box-shadow:0 16px 40px rgba(15,23,42,.25); transform:translateY(4px); transition:opacity .16s ease, transform .16s ease; text-align:left; white-space:normal;}
 .exec-tooltip::before {content:""; position:absolute; top:-7px; left:17px; width:14px; height:14px; background:#0F172A; transform:rotate(45deg);}
 .exec-info-dot:hover .exec-tooltip, .exec-info-dot:focus .exec-tooltip {visibility:visible; opacity:1; transform:translateY(0);}
 .exec-tooltip-title {font-size:13px; font-weight:850; margin-bottom:7px; color:#FFFFFF;}
-.exec-tooltip-row {display:grid; grid-template-columns:96px 1fr; gap:8px; font-size:12px; line-height:1.45; margin:4px 0;}
+.exec-tooltip-row {display:grid; grid-template-columns:104px 1fr; gap:8px; font-size:12px; line-height:1.45; margin:4px 0;}
 .exec-tooltip-label {color:#CBD5E1; font-weight:700;}
 .exec-tooltip-value {color:#FFFFFF; font-weight:650;}
 .exec-tooltip-footer {margin-top:8px; padding-top:8px; border-top:1px solid rgba(255,255,255,.16); font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:11.5px; line-height:1.45; color:#E2E8F0;}
 .exec-pill {display:inline-flex; align-items:center; gap:6px; margin-top:8px; border-radius:999px; padding:5px 9px; font-size:.78rem; font-weight:750;}
 .exec-pill-hold {background:#F0FDF4; border:1px solid #BBF7D0; color:#166534;}
 .exec-pill-action {background:#FFFBEB; border:1px solid #FDE68A; color:#92400E;}
+.method-help-strip {display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#F8FAFC; border:1px solid #E5E7EB; border-radius:12px; padding:9px 12px; margin:8px 0 12px 0; color:#334155; font-size:.86rem;}
+.method-help-chip {display:inline-flex; align-items:center; gap:4px; font-weight:750; color:#0F172A;}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -660,14 +662,24 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 def render_executive():
     st.markdown('---'); st.markdown('## 🧠 Executive Tactical Allocation Centre')
     structural_tip=tooltip_html(
-        'Structural Drawdown Method',
+        'Active Structural Drawdown',
         [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],
-        'Formula:<br>(current close − structural peak) ÷ structural peak'
+        'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
     )
     stance_tip=tooltip_html(
         'Decision Rule Explanation',
         [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
         f'Decision note:<br>{hesc(decision_line)}'
+    )
+    risk_tip=tooltip_html(
+        'Risk Regime Methodology',
+        [('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],
+        'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.'
+    )
+    z_tip=tooltip_html(
+        'Valuation Z-Score (OOS)',
+        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],
+        'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.'
     )
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
@@ -685,9 +697,9 @@ def render_executive():
     r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),deploy_sub,AMBER),unsafe_allow_html=True)
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
-    r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour),unsafe_allow_html=True)
+    r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour,tooltip=risk_tip),unsafe_allow_html=True)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
-    r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour),unsafe_allow_html=True)
+    r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour,tooltip=z_tip),unsafe_allow_html=True)
 
 def render_suggested(expanded=False):
     suggested_title = f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
@@ -725,7 +737,13 @@ def render_suggested(expanded=False):
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
-        s4.markdown('#### 🧭 Deployment Ladder — Cumulative Investible Capital'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
+        ladder_tip=tooltip_html(
+            'Deployment Ladder',
+            [('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],
+            'The ladder shows cumulative deployment percentages. Each deeper drawdown zone increases total deployed capital rather than adding unrelated new capital.'
+        )
+        s4.markdown(f'<h4 style="margin-bottom:0.4rem;">🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4>',unsafe_allow_html=True)
+        s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -1058,8 +1076,13 @@ def render_crash(expanded=False):
         st.caption('Historical frequency is calculated from the selected analysis window and is not a forecast of future crash timing.')
         rets=event_df['Recovery Return %'].astype(float)
         crash_freq_inline=frequency_label(len(event_df),observation_years).replace('Frequency: ','')
+        crash_freq_tip=tooltip_html(
+            'Crash Events Frequency',
+            [('Events',len(event_df)),('Observation Window',f'{observation_years:.1f} years'),('Frequency',crash_freq_inline)],
+            'Calculated from historical events in the selected analysis window. It is a historical observation, not a forecast of future crash timing.'
+        )
         k1,k2,k3,k4,k5=st.columns(5)
-        k1.markdown(f'<div class="kpi"><div class="label">Crash Events</div><div class="value">{len(event_df)} <span style="font-size:15px;color:{GREEN};font-weight:700;">({crash_freq_inline})</span></div></div>',unsafe_allow_html=True)
+        k1.markdown(f'<div class="kpi"><div class="label">Crash Events {crash_freq_tip}</div><div class="value">{len(event_df)} <span style="font-size:15px;color:{GREEN};font-weight:700;">({crash_freq_inline})</span></div></div>',unsafe_allow_html=True)
         k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%')
         k3.metric('Avg Recovery',f'{rets.mean():.1f}%')
         k4.metric('Best Recovery',f'{rets.max():.1f}%')
@@ -1067,6 +1090,17 @@ def render_crash(expanded=False):
         st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
+        tech_tip=tooltip_html(
+            'Technical Correction',
+            [('Type','Price-defined correction'),('Macro Label','No mapped macro-crisis window'),('Use Case','Drawdown-rule testing')],
+            'A technical correction is retained because the price decline met the drawdown-event rule, but it should not automatically be treated as a named macro crisis.'
+        )
+        system_tip=tooltip_html(
+            'System-Detected Cyclical Drawdown',
+            [('Type','Unlabelled cyclical drawdown'),('Threshold','Event threshold exceeded'),('Review','Use Z-score path, severity and recovery profile')],
+            'This is an intentional unlabelled drawdown category. It is useful for event-universe completeness and rule testing, but should be separated from named historical crises.'
+        )
+        st.markdown(f'<div class="method-help-strip"><span style="font-weight:800;">Event label help:</span><span class="method-help-chip">Technical Correction {tech_tip}</span><span class="method-help-chip">System-Detected Cyclical Drawdown {system_tip}</span></div>',unsafe_allow_html=True)
         f1,f2,f3,f4=st.columns([1,1,1,1])
         detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
         sev_opts=severity_order + [x for x in detected_sev_opts if x not in severity_order]
