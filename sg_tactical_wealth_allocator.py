@@ -39,11 +39,13 @@ div[data-testid="stMetric"] {background:white; border:1px solid #E5E7EB; border-
 .warn-box {background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:12px 14px; color:#92400E;}
 .info-box {background:#EFF6FF; border:1px solid #BFDBFE; border-radius:14px; padding:12px 14px; color:#1E3A8A;}
 
-/* v36n mock-up styling */
-section[data-testid="stSidebar"] {background:#0F172A;}
-section[data-testid="stSidebar"] * {color:#E5E7EB;}
-section[data-testid="stSidebar"] .stCaption, section[data-testid="stSidebar"] small {color:#CBD5E1 !important;}
-.currency-pill {display:inline-flex; align-items:center; gap:8px; background:#064E3B; color:#A7F3D0; border:1px solid #047857; border-radius:8px; padding:5px 9px; font-weight:750; font-size:.84rem;}
+/* v36o light sidebar + mock-up styling */
+section[data-testid="stSidebar"] {background:#F8FAFC; border-right:1px solid #E5E7EB;}
+section[data-testid="stSidebar"] * {color:#111827;}
+section[data-testid="stSidebar"] .stCaption, section[data-testid="stSidebar"] small {color:#64748B !important;}
+section[data-testid="stSidebar"] input, section[data-testid="stSidebar"] textarea, section[data-testid="stSidebar"] select {color:#111827 !important; background:#FFFFFF !important;}
+section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !important;}
+.currency-pill {display:inline-flex; align-items:center; gap:8px; background:#ECFDF5; color:#047857; border:1px solid #A7F3D0; border-radius:8px; padding:5px 9px; font-weight:750; font-size:.84rem; margin:4px 0 8px 0;}
 .mock-control-card {background:#fff; border:1px solid #E5E7EB; border-radius:10px; padding:10px 12px; min-height:74px; box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .mock-label {color:#6B7280; font-size:.78rem; font-weight:700; margin-bottom:5px;}
 .mock-value {color:#111827; font-size:1.05rem; font-weight:850;}
@@ -480,11 +482,11 @@ with st.sidebar:
     st.session_state.currency_text=currency_symbol
     st.session_state.currency_html=currency_html
     st.markdown('### 💰 Investible Capital & Safeguards')
-    st.caption('Investible capital excludes emergency funds. CPF-OA minimum floor is excluded only when CPF-OA is added.')
+    st.caption('Investible capital excludes emergency funds. This platform is for decision support only and should not be relied on as a sole trading or investment instruction.')
     st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
     if sel == 'STI':
         funding_profile=st.selectbox('Funding Profile',['S$ Cash Only','S$ Cash + SRS','S$ Cash + SRS + CPF-OA'],index=0)
-        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
         if 'SRS' in funding_profile:
             srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
@@ -494,9 +496,9 @@ with st.sidebar:
     else:
         funding_profile=f'{currency_symbol} Investible Cash'
         st.caption(f'Funding Profile: {funding_profile}')
-        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
-    emergency_buffer=st.number_input(f'Excluded Emergency Buffer ({currency_symbol})',0.0,value=20000.0,step=1000.0)
+    emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
     drawdown_method=st.radio('Drawdown Reference',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
@@ -513,7 +515,7 @@ if st.session_state.get('pmi_selected_market') != sel:
     act=LATEST_PMI_ACTUALS.get(pmi_proxy_default['label'], LATEST_PMI_ACTUALS['N/A']); st.session_state.latest_pmi_month=act['month']; st.session_state.latest_pmi_source=pmi_proxy_default['source']
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
-available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
+available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf); funding_source='Cash First' if cash_deploy>0 else 'No deployment'
 macro=live_macro_data(); vix=macro.get('vix'); tnx=macro.get('tnx'); irx=macro.get('irx'); curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
 trend_below=close<m[sel]['ma200']; pmi_label=pmi_proxy_default['label']; latest_pmi=float(st.session_state.get('latest_pmi_value', pmi_proxy_default['default'])); pmi_applicable=sel not in PMI_NA_MARKETS
@@ -790,36 +792,21 @@ def render_event_context_card(row):
     tags=' · '.join(ctx['driver_tags'])
     z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
     z_line='N/A' if pd.isna(z_peak) or pd.isna(z_trough) else f'{z_peak:+.2f} → {z_trough:+.2f}'
-    st.markdown(f"""<div class="light-card" style="padding:14px 16px 12px 16px;">
-<div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div>
-<div style="display:grid; grid-template-columns:105px minmax(0, 1fr); column-gap:10px; row-gap:8px; max-width:700px; align-items:start;">
-<div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div><div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div>
-<div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div><div style="font-weight:700; font-size:.90rem; text-align:left;">{tags}</div>
-<div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div><div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div>
-</div>
-<div style="margin-top:14px; color:#374151; max-width:860px;"><b>Key causes / context:</b><ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul></div>
-<div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div>
-</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="light-card" style="padding:14px 16px 12px 16px;"><div style="font-weight:800; font-size:1.05rem; margin-bottom:10px;">📌 Event Context & Market Drivers</div><div style="display:grid; grid-template-columns:105px minmax(0, 1fr); column-gap:10px; row-gap:8px; max-width:700px; align-items:start;"><div style="color:{MUTED}; font-size:.86rem;">Primary Driver</div><div style="color:{PURPLE}; font-weight:800; font-size:.92rem; text-align:left;">{ctx["primary_driver"]}</div><div style="color:{MUTED}; font-size:.86rem;">Driver Tags</div><div style="font-weight:700; font-size:.90rem; text-align:left;">{tags}</div><div style="color:{MUTED}; font-size:.86rem;">Z-Score Path</div><div style="font-weight:800; font-size:.90rem; text-align:left;">{z_line}</div></div><div style="margin-top:14px; color:#374151; max-width:860px;"><b>Key causes / context:</b><ul style="margin-top:6px; margin-bottom:8px; padding-left:20px; line-height:1.55;">{causes_html}</ul></div><div style="margin-top:8px; color:#374151; max-width:860px;"><b>Interpretation:</b> {ctx["interpretation"]}</div></div>""", unsafe_allow_html=True)
 
 def find_first_trigger(bt, peak_date, trough_date, threshold_pct):
-    threshold_pct=abs(float(threshold_pct))
-    window=bt.loc[pd.Timestamp(peak_date):pd.Timestamp(trough_date)].copy()
-    if window.empty:
-        return None
+    threshold_pct=abs(float(threshold_pct)); window=bt.loc[pd.Timestamp(peak_date):pd.Timestamp(trough_date)].copy()
+    if window.empty: return None
     hit=window[window['dd_pct'] <= -threshold_pct]
-    if hit.empty:
-        return None
-    r=hit.iloc[0]
-    return hit.index[0], safe_float(r.Close), safe_float(r.dd_pct)
+    if hit.empty: return None
+    r=hit.iloc[0]; return hit.index[0], safe_float(r.Close), safe_float(r.dd_pct)
 
 def price_on_or_before(price_df, target_date):
     try:
         s=price_df.loc[:pd.Timestamp(target_date)]
-        if s.empty:
-            return pd.NaT, np.nan
+        if s.empty: return pd.NaT, np.nan
         return s.index[-1], safe_float(s.Close.iloc[-1])
-    except Exception:
-        return pd.NaT, np.nan
+    except Exception: return pd.NaT, np.nan
 
 def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budget, ending_basis, custom_end_date=None):
     ladder=[('Deployment 1','INITIAL BUY',8,.10),('Deployment 2','BUY',15,.25),('Deployment 3','STRONG BUY',25,.50),('Deployment 4','CRISIS BUY',35,.75),('Deployment 5','MAX CRISIS BUY',50,1.00)]
@@ -829,15 +816,9 @@ def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budg
         if trig is None:
             rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Not triggered','Trigger Date':'—','Index Level':'—','Drawdown':'—','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':0.0,'Ending Date':'—','Ending Level':'—','Ending Value':0.0,'Return %':np.nan}); continue
         entry_date,entry_level,entry_dd=trig; deploy_amount=event_budget*inc_pct; prev_cum=cum_pct
-        if ending_basis.startswith('Never'): end_target=latest_date
-        elif ending_basis.startswith('1Y'): end_target=entry_date+pd.DateOffset(years=1)
-        elif ending_basis.startswith('2Y'): end_target=entry_date+pd.DateOffset(years=2)
-        elif ending_basis.startswith('5Y'): end_target=entry_date+pd.DateOffset(years=5)
-        else: end_target=pd.Timestamp(custom_end_date) if custom_end_date is not None else latest_date
+        end_target=latest_date if ending_basis.startswith('Never') else entry_date+pd.DateOffset(years=1) if ending_basis.startswith('1Y') else entry_date+pd.DateOffset(years=2) if ending_basis.startswith('2Y') else entry_date+pd.DateOffset(years=5) if ending_basis.startswith('5Y') else pd.Timestamp(custom_end_date) if custom_end_date is not None else latest_date
         if end_target>latest_date: end_target=latest_date
-        end_date,end_level=price_on_or_before(price_df,end_target)
-        ending_value=deploy_amount*(end_level/entry_level) if deploy_amount and entry_level and end_level else 0.0
-        ret_pct=((end_level/entry_level)-1)*100 if entry_level and end_level else np.nan
+        end_date,end_level=price_on_or_before(price_df,end_target); ending_value=deploy_amount*(end_level/entry_level) if deploy_amount and entry_level and end_level else 0.0; ret_pct=((end_level/entry_level)-1)*100 if entry_level and end_level else np.nan
         rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Triggered','Trigger Date':entry_date.strftime('%Y-%m-%d'),'Index Level':f'{entry_level:,.0f}','Drawdown':f'{entry_dd:.1f}%','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':deploy_amount,'Ending Date':'—' if pd.isna(end_date) else pd.Timestamp(end_date).strftime('%Y-%m-%d'),'Ending Level':'—' if pd.isna(end_level) else f'{end_level:,.0f}','Ending Value':ending_value,'Return %':ret_pct})
     return pd.DataFrame(rows)
 
@@ -896,14 +877,12 @@ def render_crash(expanded=False):
                 row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
                 render_event_context_card(row); render_compact_timeline(row,peak_date,trough_date)
                 st.markdown('#### 🧪 Event-Level Staged Deployment Simulation')
-                c_amt,c_end,c_custom=st.columns([1,1,1])
-                event_budget=c_amt.number_input(f'Event Investible Budget ({current_currency_text()})',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
+                c_amt,c_end,c_custom=st.columns([1,1,1]); event_budget=c_amt.number_input(f'Event Investible Budget ({current_currency_text()})',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
                 ending_basis=c_end.selectbox('Ending Date Basis',['Never sell / Latest available','1Y after each deployment','2Y after each deployment','5Y after each deployment','Custom end date'],index=0,key='selected_event_ending_basis')
                 custom_end=None
                 if ending_basis=='Custom end date': custom_end=c_custom.date_input('Custom ending date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key='selected_event_custom_end')
                 else: c_custom.caption('Default: never sell uses latest available price.')
-                plan_df=build_event_deployment_plan(bt,ud,peak_date,trough_date,event_budget,ending_basis,custom_end)
-                triggered=plan_df[plan_df['Status']=='Triggered'].copy(); total_deployed=float(triggered['Deploy Amount'].sum()) if not triggered.empty else 0.0; ending_value=float(triggered['Ending Value'].sum()) if not triggered.empty else 0.0
+                plan_df=build_event_deployment_plan(bt,ud,peak_date,trough_date,event_budget,ending_basis,custom_end); triggered=plan_df[plan_df['Status']=='Triggered'].copy(); total_deployed=float(triggered['Deploy Amount'].sum()) if not triggered.empty else 0.0; ending_value=float(triggered['Ending Value'].sum()) if not triggered.empty else 0.0
                 gain_loss=ending_value-total_deployed; total_return=(ending_value/total_deployed-1)*100 if total_deployed else 0.0; first_entry=triggered['Trigger Date'].iloc[0] if not triggered.empty else '—'
                 m1,m2,m3,m4,m5,m6=st.columns(6); m1.metric('Number of Deployments',len(triggered)); m2.metric('Total Deployed',fmt_sgd(total_deployed)); m3.metric('Ending Value',fmt_sgd(ending_value)); m4.metric('Gain / Loss',fmt_sgd(gain_loss)); m5.metric('Total Return',f'{total_return:.1f}%'); m6.metric('First Entry Date',first_entry)
                 display_plan=plan_df.copy()
