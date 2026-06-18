@@ -669,6 +669,8 @@ def render_executive():
         [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
         f'Decision note:<br>{hesc(decision_line)}'
     )
+    structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
+    action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     if deploy>0:
         stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
         deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
@@ -677,8 +679,7 @@ def render_executive():
         deploy_sub='No deployment triggered'
     r1=st.columns(3)
     r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
-    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}<br>Basis: {ref.replace("Structural Drawdown · ","")}',RED,tooltip=structural_tip),unsafe_allow_html=True)
-    action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
+    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}<br>Basis: {ref.replace("Structural Drawdown · ","")}',structural_colour,tooltip=structural_tip),unsafe_allow_html=True)
     r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour,tooltip=stance_tip,pill=stance_pill),unsafe_allow_html=True)
     r2=st.columns(3)
     r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),deploy_sub,AMBER),unsafe_allow_html=True)
@@ -693,7 +694,14 @@ def render_suggested(expanded=False):
     with st.expander(suggested_title,expanded=expanded):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
         s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
-        s2.markdown('#### 🏦 Capital Source Breakdown'); s2.markdown('<div class="light-card">'+kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)+kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)+kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)+kv('Reason',capital_reason,SLATE)+'</div>',unsafe_allow_html=True)
+        s2.markdown('#### 🏦 Capital Source Breakdown')
+        capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
+        if sel == 'STI' and available_srs > 0:
+            capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
+        if sel == 'STI' and available_cpf > 0:
+            capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
+        capital_rows += kv('Reason',capital_reason,SLATE)
+        s2.markdown('<div class="light-card">'+capital_rows+'</div>',unsafe_allow_html=True)
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
