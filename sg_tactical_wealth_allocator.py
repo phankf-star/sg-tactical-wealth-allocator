@@ -955,7 +955,14 @@ def render_crash(expanded=False):
             meta=severity_meta[bucket]; count=int(sev_counts.get(bucket,0)); word='Event' if count==1 else 'Events'; freq=frequency_label(count,observation_years)
             sev_cols[i].markdown(f'<div class="light-card" style="border-top:4px solid {meta["colour"]};"><div style="font-weight:800;color:{meta["colour"]};">{meta["icon"]} {meta["title"]}</div><div style="font-size:1.35rem;font-weight:900;margin-top:8px;">{count} {word}</div><div style="font-size:.82rem;color:{TEXT};font-weight:700;margin-top:4px;">{freq}</div><div style="font-size:.82rem;color:{MUTED};margin-top:6px;">{meta["desc"]}</div></div>',unsafe_allow_html=True)
         st.caption('Historical frequency is calculated from the selected analysis window and is not a forecast of future crash timing.')
-        rets=event_df['Recovery Return %'].astype(float); k1,k2,k3,k4,k5=st.columns(5); k1.metric('Crash Events',len(event_df),frequency_label(len(event_df),observation_years).replace('Frequency: ','')); k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%'); k3.metric('Avg Recovery',f'{rets.mean():.1f}%'); k4.metric('Best Recovery',f'{rets.max():.1f}%'); k5.metric('Current Drawdown',f'{bt.dd_pct.iloc[-1]:.1f}%')
+        rets=event_df['Recovery Return %'].astype(float)
+        crash_freq_inline=frequency_label(len(event_df),observation_years).replace('Frequency: ','')
+        k1,k2,k3,k4,k5=st.columns(5)
+        k1.markdown(f'<div class="kpi"><div class="label">Crash Events</div><div class="value">{len(event_df)} <span style="font-size:15px;color:{GREEN};font-weight:700;">({crash_freq_inline})</span></div></div>',unsafe_allow_html=True)
+        k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%')
+        k3.metric('Avg Recovery',f'{rets.mean():.1f}%')
+        k4.metric('Best Recovery',f'{rets.max():.1f}%')
+        k5.metric('Active Structural Drawdown',f'{dd:.1f}%')
         st.markdown('---'); st.markdown('### 2. 🔍 Crash Event Explorer & Valuation Context'); st.caption('Filter historical crash events and review drawdown severity, valuation Z-score at peak/trough, and event classification.')
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
