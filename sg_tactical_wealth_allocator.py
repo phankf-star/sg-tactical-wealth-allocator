@@ -17,10 +17,14 @@ BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN 
 # Use HTML entity for dollar sign inside Markdown/HTML-rendered blocks to avoid Streamlit LaTeX parsing.
 SGD_TEXT = 'S$'
 SGD_HTML = 'S&#36;'
+def current_currency_text():
+    return st.session_state.get('currency_text', SGD_TEXT)
+def current_currency_html():
+    return st.session_state.get('currency_html', SGD_HTML)
 def fmt_sgd(value):
-    return f'{SGD_TEXT}{value:,.0f}'
+    return f'{current_currency_text()}{value:,.0f}'
 def fmt_sgd_html(value):
-    return f'{SGD_HTML}{value:,.0f}'
+    return f'{current_currency_html()}{value:,.0f}'
 
 
 st.markdown('''
@@ -34,6 +38,28 @@ div[data-testid="stMetric"] {background:white; border:1px solid #E5E7EB; border-
 .kv-value {font-weight:650; color:#111827; text-align:right;}
 .warn-box {background:#FFFBEB; border:1px solid #FDE68A; border-radius:14px; padding:12px 14px; color:#92400E;}
 .info-box {background:#EFF6FF; border:1px solid #BFDBFE; border-radius:14px; padding:12px 14px; color:#1E3A8A;}
+
+/* v36n mock-up styling */
+section[data-testid="stSidebar"] {background:#0F172A;}
+section[data-testid="stSidebar"] * {color:#E5E7EB;}
+section[data-testid="stSidebar"] .stCaption, section[data-testid="stSidebar"] small {color:#CBD5E1 !important;}
+.currency-pill {display:inline-flex; align-items:center; gap:8px; background:#064E3B; color:#A7F3D0; border:1px solid #047857; border-radius:8px; padding:5px 9px; font-weight:750; font-size:.84rem;}
+.mock-control-card {background:#fff; border:1px solid #E5E7EB; border-radius:10px; padding:10px 12px; min-height:74px; box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.mock-label {color:#6B7280; font-size:.78rem; font-weight:700; margin-bottom:5px;}
+.mock-value {color:#111827; font-size:1.05rem; font-weight:850;}
+.mock-sub {color:#6B7280; font-size:.75rem; margin-top:3px;}
+.risk-alert {border-radius:10px; padding:12px 14px; font-weight:750; margin:10px 0 14px 0;}
+.risk-alert-normal {background:#ECFDF5; border:1px solid #BBF7D0; color:#166534;}
+.risk-alert-watch {background:#FFFBEB; border:1px solid #FDE68A; color:#92400E;}
+.risk-alert-warning {background:#FFF7ED; border:1px solid #FED7AA; color:#9A3412;}
+.risk-alert-crash {background:#FEF2F2; border:1px solid #FECACA; color:#991B1B;}
+.kpi-card {background:#fff; border:1px solid #E5E7EB; border-radius:14px; padding:13px 14px; box-shadow:0 1px 2px rgba(15,23,42,.04); min-height:96px;}
+.kpi-title {color:#6B7280; font-size:.78rem; font-weight:700;}
+.kpi-value {font-size:1.35rem; font-weight:850; color:#111827; margin-top:4px;}
+.kpi-sub-green {font-size:.78rem; color:#16A34A; font-weight:750; margin-top:3px;}
+.kpi-sub-orange {font-size:.78rem; color:#F97316; font-weight:750; margin-top:3px;}
+.kpi-sub-muted {font-size:.78rem; color:#64748B; font-weight:650; margin-top:3px;}
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -41,6 +67,18 @@ INDEX_TICKERS = {
     'S&P 500':'^GSPC','Nasdaq':'^IXIC','DJIA':'^DJI','HSI':'^HSI','STI':'^STI','KLSE':'^KLSE',
     'A-Share':'000001.SS','Nikkei 225':'^N225','Gold':'GC=F','Bitcoin':'BTC-USD'
 }
+
+MARKET_CURRENCY_MAP = {
+    'S&P 500':'USD','Nasdaq':'USD','DJIA':'USD','HSI':'HKD','STI':'SGD','KLSE':'MYR',
+    'A-Share':'CNY','Nikkei 225':'JPY','Gold':'USD','Bitcoin':'USD'
+}
+CURRENCY_SYMBOL_MAP = {'USD':'US$','SGD':'S$','HKD':'HK$','MYR':'RM','CNY':'RMB','JPY':'¥'}
+CURRENCY_HTML_MAP = {'USD':'US&#36;','SGD':'S&#36;','HKD':'HK&#36;','MYR':'RM','CNY':'RMB','JPY':'¥'}
+CURRENCY_NAME_MAP = {'USD':'United States Dollar','SGD':'Singapore Dollar','HKD':'Hong Kong Dollar','MYR':'Malaysian Ringgit','CNY':'Chinese Yuan / RMB','JPY':'Japanese Yen'}
+
+def market_currency_info(market_name):
+    code = MARKET_CURRENCY_MAP.get(market_name, 'SGD')
+    return code, CURRENCY_SYMBOL_MAP.get(code, '$'), CURRENCY_HTML_MAP.get(code, '$'), CURRENCY_NAME_MAP.get(code, code)
 ASSET_GROUPS = {
     'Market / Equity Index':['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'],
     'Alternative Assets':['Gold','Bitcoin']
@@ -221,7 +259,6 @@ def current_dd(df, method):
 
 def deploy_rule(dd):
     # Cumulative deployment of available investible capital / dry powder.
-    # Example: at -50% drawdown, 100% of investible capital is deployed.
     if dd <= -50: return 1.00
     if dd <= -35: return .75
     if dd <= -25: return .50
@@ -439,13 +476,28 @@ with st.sidebar:
     group_items=ASSET_GROUPS[asset_group]; default_item='STI' if asset_group=='Market / Equity Index' and 'STI' in group_items else group_items[0]
     sel=st.selectbox('Selected Market' if asset_group=='Market / Equity Index' else 'Selected Alternative Asset', group_items, index=group_items.index(default_item))
     st.session_state.selected_market_name=sel
+    currency_code,currency_symbol,currency_html,currency_name=market_currency_info(sel)
+    st.session_state.currency_text=currency_symbol
+    st.session_state.currency_html=currency_html
     st.markdown('### 💰 Investible Capital & Safeguards')
-    st.caption('Enter only capital intended for market deployment. Emergency funds and CPF-OA minimum floor are excluded from deployable dry powder.')
-    cash_balance=st.number_input('Investible Cash Before Buffer (S$)',0.0,value=100000.0,step=5000.0)
-    srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
-    cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
-    emergency_buffer=st.number_input('Excluded Emergency Buffer (S$)',0.0,value=20000.0,step=1000.0)
-    preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
+    st.caption('Investible capital excludes emergency funds. CPF-OA minimum floor is excluded only when CPF-OA is added.')
+    st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
+    if sel == 'STI':
+        funding_profile=st.selectbox('Funding Profile',['S$ Cash Only','S$ Cash + SRS','S$ Cash + SRS + CPF-OA'],index=0)
+        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
+        if 'SRS' in funding_profile:
+            srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
+        if 'CPF-OA' in funding_profile:
+            cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
+            preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
+    else:
+        funding_profile=f'{currency_symbol} Investible Cash'
+        st.caption(f'Funding Profile: {funding_profile}')
+        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
+    emergency_buffer=st.number_input(f'Excluded Emergency Buffer ({currency_symbol})',0.0,value=20000.0,step=1000.0)
+    st.session_state.funding_profile=funding_profile
     drawdown_method=st.radio('Drawdown Reference',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
@@ -618,8 +670,14 @@ def render_market(expanded=False):
         st.markdown('## 🌦️ Market Conditions & Live Risk Monitor')
         current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
         actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
-        st.markdown(f'### LIVE MARKET RISK ALERT: {alert}')
-        st.caption(f'Rules-based stress indicator, not a crash prediction. PMI proxy used as cycle signal: {current_proxy}.')
+        st.markdown('### Market / Currency Setup')
+        tc1,tc2,tc3,tc4=st.columns([1.5,.9,1.1,1.1])
+        tc1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
+        tc2.markdown(f'<div class="mock-control-card"><div class="mock-label">Market Currency</div><div class="mock-value">{currency_symbol}</div><div class="mock-sub">{currency_name}</div></div>',unsafe_allow_html=True)
+        tc3.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value" style="font-size:.96rem;">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
+        tc4.markdown(f'<div class="mock-control-card"><div class="mock-label">Drawdown Reference</div><div class="mock-value" style="font-size:.96rem;">{ref}</div><div class="mock-sub">Peak {peak:,.0f}</div></div>',unsafe_allow_html=True)
+        alert_class='risk-alert-crash' if alert=='CRASH RISK' else 'risk-alert-warning' if alert=='WARNING' else 'risk-alert-watch' if alert=='WATCH' else 'risk-alert-normal'
+        st.markdown(f'<div class="risk-alert {alert_class}">🛡️ LIVE MARKET RISK ALERT: {alert} <span style="font-weight:500; margin-left:18px;">Rules-based stress indicator, not a crash prediction. PMI proxy used: {current_proxy}.</span></div>',unsafe_allow_html=True)
         st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
 
 
@@ -631,11 +689,13 @@ def render_market(expanded=False):
         latest_display=0.0 if not pmi_app else latest_in
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
         cols=st.columns(5)
-        cols[0].metric('VIX Live','N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}')
-        cols[1].metric('Yield Curve','N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else f'10Y-13W {curve_spread:.2f}%')
-        cols[2].metric(chosen,'N/A' if not pmi_app else f'{latest_in:.1f}')
-        cols[3].metric(f'{index_label} Drawdown',f'{dd:.1f}%')
-        cols[4].metric('Live Risk Score',f'{local_score:.0f}/100')
+        cols[0].markdown(f'<div class="kpi-card"><div class="kpi-title">VIX Live</div><div class="kpi-value">{"N/A" if (vix is None or sel in PMI_NA_MARKETS) else f"{vix:.1f}"}</div><div class="kpi-sub-muted">Volatility regime</div></div>',unsafe_allow_html=True)
+        cols[1].markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
+        cols[2].markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
+        dd_sub='At Peak' if dd>=-1 else ('Correction' if dd>-15 else 'Drawdown')
+        cols[3].markdown(f'<div class="kpi-card"><div class="kpi-title">{index_label} Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange">{dd_sub} · {ref}</div></div>',unsafe_allow_html=True)
+        score_colour='kpi-sub-green' if local_score<30 else 'kpi-sub-orange'
+        cols[4].markdown(f'<div class="kpi-card"><div class="kpi-title">Live Risk Score</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="{score_colour}">{local_alert}</div></div>',unsafe_allow_html=True)
 
         with st.expander('📈 Quantitative Valuation Channels',expanded=True):
             st.markdown('### Quantitative Valuation Channels')
@@ -762,33 +822,18 @@ def price_on_or_before(price_df, target_date):
         return pd.NaT, np.nan
 
 def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budget, ending_basis, custom_end_date=None):
-    ladder=[
-        ('Deployment 1','INITIAL BUY',8,.10),
-        ('Deployment 2','BUY',15,.25),
-        ('Deployment 3','STRONG BUY',25,.50),
-        ('Deployment 4','CRISIS BUY',35,.75),
-        ('Deployment 5','MAX CRISIS BUY',50,1.00),
-    ]
+    ladder=[('Deployment 1','INITIAL BUY',8,.10),('Deployment 2','BUY',15,.25),('Deployment 3','STRONG BUY',25,.50),('Deployment 4','CRISIS BUY',35,.75),('Deployment 5','MAX CRISIS BUY',50,1.00)]
     rows=[]; prev_cum=0.0; latest_date=price_df.index.max()
     for dep_name,zone_name,threshold,cum_pct in ladder:
-        inc_pct=max(cum_pct-prev_cum,0)
-        trig=find_first_trigger(bt,peak_date,trough_date,threshold)
+        inc_pct=max(cum_pct-prev_cum,0); trig=find_first_trigger(bt,peak_date,trough_date,threshold)
         if trig is None:
-            rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Not triggered','Trigger Date':'—','Index Level':'—','Drawdown':'—','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':0.0,'Ending Date':'—','Ending Level':'—','Ending Value':0.0,'Return %':np.nan})
-            continue
-        entry_date,entry_level,entry_dd=trig
-        deploy_amount=event_budget*inc_pct
-        prev_cum=cum_pct
-        if ending_basis.startswith('Never'):
-            end_target=latest_date
-        elif ending_basis.startswith('1Y'):
-            end_target=entry_date+pd.DateOffset(years=1)
-        elif ending_basis.startswith('2Y'):
-            end_target=entry_date+pd.DateOffset(years=2)
-        elif ending_basis.startswith('5Y'):
-            end_target=entry_date+pd.DateOffset(years=5)
-        else:
-            end_target=pd.Timestamp(custom_end_date) if custom_end_date is not None else latest_date
+            rows.append({'Deployment':dep_name,'Trigger':zone_name,'Trigger Threshold':f'-{threshold:.0f}%', 'Status':'Not triggered','Trigger Date':'—','Index Level':'—','Drawdown':'—','Cumulative Deploy %':f'{cum_pct:.0%}','Incremental Deploy %':f'{inc_pct:.0%}','Deploy Amount':0.0,'Ending Date':'—','Ending Level':'—','Ending Value':0.0,'Return %':np.nan}); continue
+        entry_date,entry_level,entry_dd=trig; deploy_amount=event_budget*inc_pct; prev_cum=cum_pct
+        if ending_basis.startswith('Never'): end_target=latest_date
+        elif ending_basis.startswith('1Y'): end_target=entry_date+pd.DateOffset(years=1)
+        elif ending_basis.startswith('2Y'): end_target=entry_date+pd.DateOffset(years=2)
+        elif ending_basis.startswith('5Y'): end_target=entry_date+pd.DateOffset(years=5)
+        else: end_target=pd.Timestamp(custom_end_date) if custom_end_date is not None else latest_date
         if end_target>latest_date: end_target=latest_date
         end_date,end_level=price_on_or_before(price_df,end_target)
         ending_value=deploy_amount*(end_level/entry_level) if deploy_amount and entry_level and end_level else 0.0
@@ -797,19 +842,10 @@ def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budg
     return pd.DataFrame(rows)
 
 def render_compact_timeline(row, peak_date, trough_date):
-    period_days=max((trough_date-peak_date).days,0)
-    peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
-    items=[
-        ('Historical Label',str(row['Historical Label'])),
-        ('Crisis Period',f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'),
-        ('Peak',f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'),
-        ('Trough',f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)'),
-    ]
+    period_days=max((trough_date-peak_date).days,0); peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
+    items=[('Historical Label',str(row['Historical Label'])),('Crisis Period',f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'),('Peak',f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'),('Trough',f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)')]
     html=''.join([f'<div style="color:{MUTED};font-size:.86rem;">{a}</div><div style="font-weight:700;">{b}</div>' for a,b in items])
-    st.markdown(f"""<div class="light-card" style="padding:12px 14px;margin-top:10px;max-width:760px;">
-<div style="font-weight:800;margin-bottom:8px;">🧭 Crisis Timeline</div>
-<div style="display:grid;grid-template-columns:105px minmax(0,1fr);column-gap:10px;row-gap:7px;align-items:start;">{html}</div>
-</div>""", unsafe_allow_html=True)
+    st.markdown(f"""<div class="light-card" style="padding:12px 14px;margin-top:10px;max-width:760px;"><div style="font-weight:800;margin-bottom:8px;">🧭 Crisis Timeline</div><div style="display:grid;grid-template-columns:105px minmax(0,1fr);column-gap:10px;row-gap:7px;align-items:start;">{html}</div></div>""", unsafe_allow_html=True)
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
@@ -836,7 +872,6 @@ def render_crash(expanded=False):
         if 'crash_detail_open' not in st.session_state: st.session_state.crash_detail_open=False
         if 'selected_crash_event_id' not in st.session_state: st.session_state.selected_crash_event_id=None
         f1,f2,f3,f4=st.columns([1,1,1,1])
-        # Keep all severity buckets visible in the filter, including zero-event buckets such as 40-50%.
         detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
         sev_opts=severity_order + [x for x in detected_sev_opts if x not in severity_order]
         zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
@@ -859,34 +894,20 @@ def render_crash(expanded=False):
             if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
                 row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
-                render_event_context_card(row)
-                render_compact_timeline(row,peak_date,trough_date)
+                render_event_context_card(row); render_compact_timeline(row,peak_date,trough_date)
                 st.markdown('#### 🧪 Event-Level Staged Deployment Simulation')
                 c_amt,c_end,c_custom=st.columns([1,1,1])
-                event_budget=c_amt.number_input('Event Investible Budget (S$)',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
+                event_budget=c_amt.number_input(f'Event Investible Budget ({current_currency_text()})',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
                 ending_basis=c_end.selectbox('Ending Date Basis',['Never sell / Latest available','1Y after each deployment','2Y after each deployment','5Y after each deployment','Custom end date'],index=0,key='selected_event_ending_basis')
                 custom_end=None
-                if ending_basis=='Custom end date':
-                    custom_end=c_custom.date_input('Custom ending date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key='selected_event_custom_end')
-                else:
-                    c_custom.caption('Default: never sell uses latest available price.')
+                if ending_basis=='Custom end date': custom_end=c_custom.date_input('Custom ending date',value=ud.index.max().date(),min_value=ud.index.min().date(),max_value=ud.index.max().date(),key='selected_event_custom_end')
+                else: c_custom.caption('Default: never sell uses latest available price.')
                 plan_df=build_event_deployment_plan(bt,ud,peak_date,trough_date,event_budget,ending_basis,custom_end)
-                triggered=plan_df[plan_df['Status']=='Triggered'].copy()
-                total_deployed=float(triggered['Deploy Amount'].sum()) if not triggered.empty else 0.0
-                ending_value=float(triggered['Ending Value'].sum()) if not triggered.empty else 0.0
-                gain_loss=ending_value-total_deployed
-                total_return=(ending_value/total_deployed-1)*100 if total_deployed else 0.0
-                first_entry=triggered['Trigger Date'].iloc[0] if not triggered.empty else '—'
-                m1,m2,m3,m4,m5,m6=st.columns(6)
-                m1.metric('Number of Deployments',len(triggered))
-                m2.metric('Total Deployed',fmt_sgd(total_deployed))
-                m3.metric('Ending Value',fmt_sgd(ending_value))
-                m4.metric('Gain / Loss',fmt_sgd(gain_loss))
-                m5.metric('Total Return',f'{total_return:.1f}%')
-                m6.metric('First Entry Date',first_entry)
+                triggered=plan_df[plan_df['Status']=='Triggered'].copy(); total_deployed=float(triggered['Deploy Amount'].sum()) if not triggered.empty else 0.0; ending_value=float(triggered['Ending Value'].sum()) if not triggered.empty else 0.0
+                gain_loss=ending_value-total_deployed; total_return=(ending_value/total_deployed-1)*100 if total_deployed else 0.0; first_entry=triggered['Trigger Date'].iloc[0] if not triggered.empty else '—'
+                m1,m2,m3,m4,m5,m6=st.columns(6); m1.metric('Number of Deployments',len(triggered)); m2.metric('Total Deployed',fmt_sgd(total_deployed)); m3.metric('Ending Value',fmt_sgd(ending_value)); m4.metric('Gain / Loss',fmt_sgd(gain_loss)); m5.metric('Total Return',f'{total_return:.1f}%'); m6.metric('First Entry Date',first_entry)
                 display_plan=plan_df.copy()
-                for c in ['Deploy Amount','Ending Value']:
-                    display_plan[c]=display_plan[c].apply(lambda x: fmt_sgd(x) if float(x)>0 else 'S$0')
+                for c in ['Deploy Amount','Ending Value']: display_plan[c]=display_plan[c].apply(lambda x: fmt_sgd(x) if float(x)>0 else fmt_sgd(0))
                 display_plan['Return %']=display_plan['Return %'].apply(lambda x: '—' if pd.isna(x) else f'{x:.1f}%')
                 st.dataframe(display_plan,use_container_width=True,hide_index=True)
                 st.info(f"This event was classified as: {row['Valuation Classification']}. Historical label: {row['Historical Label']}. Deployments are staged by cumulative investible-capital ladder triggers, not by the final trough.")
