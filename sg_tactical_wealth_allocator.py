@@ -774,15 +774,10 @@ def render_market(expanded=False):
         current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
         actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
         st.markdown('### Market / Currency Setup')
-        tc1,tc2,tc3,tc4=st.columns([1.5,.9,1.1,1.1])
-        tc1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
-        tc2.markdown(f'<div class="mock-control-card"><div class="mock-label">Market Currency</div><div class="mock-value">{currency_symbol}</div><div class="mock-sub">{currency_name}</div></div>',unsafe_allow_html=True)
-        tc3.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value" style="font-size:.96rem;">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
-        tc4.markdown(f'<div class="mock-control-card"><div class="mock-label">Primary Drawdown Basis</div><div class="mock-value" style="font-size:.96rem;">Structural</div><div class="mock-sub">Shown below in comparison panel</div></div>',unsafe_allow_html=True)
-        alert_class='risk-alert-crash' if alert=='CRASH RISK' else 'risk-alert-warning' if alert=='WARNING' else 'risk-alert-watch' if alert=='WATCH' else 'risk-alert-normal'
-        st.markdown(f'<div class="risk-alert {alert_class}">🛡️ LIVE MARKET RISK ALERT: {alert} <span style="font-weight:500; margin-left:18px;">Rules-based stress indicator, not a crash prediction. PMI proxy used: {current_proxy}.</span></div>',unsafe_allow_html=True)
-        st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
-
+        top1,top2,top3=st.columns([1.2,.9,1.0])
+        top1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
+        top2.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
+        top3.markdown(f'<div class="mock-control-card"><div class="mock-label">Primary: Structural Drawdown</div><div class="mock-value">{dd:.1f}%</div><div class="mock-sub" style="color:#EA580C;font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
 
         chosen=st.session_state.get('pmi_proxy_label',current_proxy)
         actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
@@ -791,25 +786,25 @@ def render_market(expanded=False):
         pmi_app=sel not in PMI_NA_MARKETS
         latest_display=0.0 if not pmi_app else latest_in
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
-        st.markdown('### Drawdown Basis Comparison')
-        with st.container():
-            cset,cstruct,cdiag=st.columns([0.9,1.25,1.25])
-            with cset:
-                st.markdown('<div class="mock-control-card"><div class="mock-label">Secondary Setting</div><div class="mock-sub">Choose comparison lens</div>',unsafe_allow_html=True)
-                diag_method=st.radio('Compare Structural Against',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,key='secondary_drawdown_diagnostic_market',label_visibility='collapsed')
-                st.markdown('</div>',unsafe_allow_html=True)
-            diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
-            with cstruct:
-                st.markdown(f'<div class="kpi-card"><div class="kpi-title">Primary: Structural Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div><div class="kpi-sub-muted">Used for Suggested Deploy</div></div>',unsafe_allow_html=True)
-            with cdiag:
-                st.markdown(f'<div class="kpi-card"><div class="kpi-title">Secondary: {diag_ref}</div><div class="kpi-value">{diag_dd:.1f}%</div><div class="kpi-sub-green">Peak {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br>Current {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div><div class="kpi-sub-muted">Diagnostic only</div></div>',unsafe_allow_html=True)
+        risk_colour=GREEN if local_score<30 else AMBER if local_score<50 else ORANGE if local_score<70 else RED
+        live_model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model (VIX + PMI + Yield Curve)'
+        k1,k2,k3,k4=st.columns([1,1,1,1])
+        k1.markdown(f'<div class="kpi-card"><div class="kpi-title">VIX Live</div><div class="kpi-value">{"N/A" if (vix is None or sel in PMI_NA_MARKETS) else f"{vix:.1f}"}</div><div class="kpi-sub-muted">Volatility regime</div></div>',unsafe_allow_html=True)
+        k2.markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
+        k3.markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
+        k4.markdown(f'<div class="kpi-card"><div class="kpi-title" style="color:{risk_colour};">LIVE MARKET RISK ALERT:</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="kpi-sub-green" style="font-weight:900;">{local_alert}</div><div class="kpi-sub-muted">{live_model_note}</div></div>',unsafe_allow_html=True)
+
+        st.markdown('---')
+        st.markdown('## Drawdown Basis Comparison')
+        cset,cstruct,cdiag=st.columns([0.95,1.35,1.35])
+        with cset:
+            st.markdown('<div class="mock-control-card"><div class="mock-label">Secondary Setting</div>',unsafe_allow_html=True)
+            diag_method=st.radio('Choose comparison lens',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,key='secondary_drawdown_diagnostic_market',horizontal=True,label_visibility='collapsed')
+            st.markdown('<div class="mock-sub">Choose comparison lens</div></div>',unsafe_allow_html=True)
+        diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
+        cstruct.markdown(f'<div class="kpi-card"><div class="kpi-title">Primary: Structural Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange" style="font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div><div class="kpi-sub-muted">Used for Suggested Deploy</div></div>',unsafe_allow_html=True)
+        cdiag.markdown(f'<div class="kpi-card"><div class="kpi-title">Secondary: {diag_ref}</div><div class="kpi-value">{diag_dd:.1f}%</div><div class="kpi-sub-green" style="font-weight:800;">Peak {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br>Current {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div><div class="kpi-sub-muted">Diagnostic only</div></div>',unsafe_allow_html=True)
         st.caption('Structural Drawdown drives deployment and risk scoring. The secondary drawdown basis is a comparison indicator only.')
-        cols=st.columns(4)
-        cols[0].markdown(f'<div class="kpi-card"><div class="kpi-title">VIX Live</div><div class="kpi-value">{"N/A" if (vix is None or sel in PMI_NA_MARKETS) else f"{vix:.1f}"}</div><div class="kpi-sub-muted">Volatility regime</div></div>',unsafe_allow_html=True)
-        cols[1].markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
-        cols[2].markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
-        score_colour='kpi-sub-green' if local_score<30 else 'kpi-sub-orange'
-        cols[3].markdown(f'<div class="kpi-card"><div class="kpi-title">Live Risk Score</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="{score_colour}">{local_alert}</div></div>',unsafe_allow_html=True)
 
         with st.expander('📈 Quantitative Valuation Channels',expanded=True):
             st.markdown('### Quantitative Valuation Channels')
