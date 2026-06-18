@@ -695,17 +695,37 @@ def render_suggested(expanded=False):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
         s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
         s2.markdown('#### 🏦 Capital Source Breakdown')
+        show_srs_row = (sel == 'STI' and available_srs > 0)
+        show_cpf_row = (sel == 'STI' and available_cpf > 0)
+        if show_srs_row and show_cpf_row:
+            buy_label='25% cumulative · cash then SRS'
+            strong_label='50% cumulative · cash + SRS + CPF-OA'
+            initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
+        elif show_srs_row:
+            buy_label='25% cumulative · cash then SRS'
+            strong_label='50% cumulative · cash + SRS'
+            initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
+        else:
+            buy_label='25% cumulative · cash first'
+            strong_label='50% cumulative · cash first'
+            initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
+        display_reason = initial_reason if zone == 'INITIAL BUY' else capital_reason
+        if sel != 'STI' or (not show_srs_row and not show_cpf_row):
+            display_reason = display_reason.replace('SRS/CPF-OA are preserved for deeper drawdowns.','other funding sources are not included in the selected profile.')
+            display_reason = display_reason.replace(' then SRS if cash is insufficient. CPF-OA remains reserved.',' first under the selected cash-only profile.')
+            display_reason = display_reason.replace('cash, SRS and CPF-OA','cash')
+            display_reason = display_reason.replace('using cash, SRS and CPF-OA above preserved floor','using selected investible cash')
         capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
-        if sel == 'STI' and available_srs > 0:
+        if show_srs_row:
             capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
-        if sel == 'STI' and available_cpf > 0:
+        if show_cpf_row:
             capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
-        capital_rows += kv('Reason',capital_reason,SLATE)
+        capital_rows += kv('Reason',display_reason,SLATE)
         s2.markdown('<div class="light-card">'+capital_rows+'</div>',unsafe_allow_html=True)
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
         else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
-        s4.markdown('#### 🧭 Deployment Ladder — Cumulative Investible Capital'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%','25% cumulative · cash then SRS',AMBER)+kv('STRONG BUY · -25%','50% cumulative · cash + SRS + CPF-OA',ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
+        s4.markdown('#### 🧭 Deployment Ladder — Cumulative Investible Capital'); s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
