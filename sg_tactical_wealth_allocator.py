@@ -969,9 +969,24 @@ def render_crash(expanded=False):
         f1,f2,f3,f4=st.columns([1,1,1,1])
         detected_sev_opts=sorted(event_df.Severity.dropna().unique().tolist())
         sev_opts=severity_order + [x for x in detected_sev_opts if x not in severity_order]
-        zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
-        sev_sel=f1.multiselect('Severity filter',sev_opts,default=sev_opts); zone_sel=f2.multiselect('Buy zone filter',zone_opts,default=zone_opts); label_sel=f3.selectbox('Historical label group',label_opts,index=0); val_class_sel=f4.selectbox('Valuation classification filter',val_class_opts,index=0)
-        filtered_df=event_df.copy(); filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)] if sev_sel else filtered_df; filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)] if zone_sel else filtered_df; filtered_df=filtered_df[filtered_df['Historical Label']==label_sel] if label_sel!='All' else filtered_df; filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel] if val_class_sel!='All' else filtered_df
+        preferred_zone_order=['INITIAL BUY','BUY','STRONG BUY','CRISIS BUY','MAX CRISIS BUY']
+        detected_zone_opts=event_df.Zone.dropna().unique().tolist()
+        zone_opts=[z for z in preferred_zone_order if z in detected_zone_opts] + sorted([z for z in detected_zone_opts if z not in preferred_zone_order])
+        label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist())
+        val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
+        sev_sel=f1.selectbox('Severity',['All']+sev_opts,index=0,key='crash_severity_dropdown')
+        zone_sel=f2.selectbox('Buy Zone',['All']+zone_opts,index=0,key='crash_zone_dropdown')
+        label_sel=f3.selectbox('Event Label',label_opts,index=0,key='crash_label_dropdown')
+        val_class_sel=f4.selectbox('Valuation Class',val_class_opts,index=0,key='crash_valuation_class_dropdown')
+        filtered_df=event_df.copy()
+        if sev_sel!='All':
+            filtered_df=filtered_df[filtered_df.Severity==sev_sel]
+        if zone_sel!='All':
+            filtered_df=filtered_df[filtered_df.Zone==zone_sel]
+        if label_sel!='All':
+            filtered_df=filtered_df[filtered_df['Historical Label']==label_sel]
+        if val_class_sel!='All':
+            filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel]
         explorer_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Historical Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
         if filtered_df.empty: st.info('No events match the selected filters.')
         else:
