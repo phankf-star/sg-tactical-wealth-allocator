@@ -435,46 +435,75 @@ def label_event_window(peak_date, trough_date, drawdown_pct, recovery_return_pct
     if abs(float(drawdown_pct)) >= 20: return 'System-Detected Cyclical Drawdown'
     return 'Technical Correction'
 
-def find_structural_peak(bt, trough_date, max_lookback_days=756, rebound_break_pct=0.15):
-    """Find the structural peak before a trough using a causal, bounded search.
+STRUCTURAL_EVENT_WINDOWS = [
+    # Label, structural search start, structural search end.
+    # These are used only when a detected trough falls inside the mapped event window.
+    # Peak is still selected causally from the mapped start date up to the trough date.
+    ('1987 Black Monday','1987-08-01','1987-12-31'),
+    ('Gulf War / 1990 Oil Shock','1990-07-01','1991-03-31'),
+    ('Asian Financial Crisis','1997-02-01','1998-12-31'),
+    ('Dot-com Bust / Corporate Scandals','2000-03-01','2003-03-31'),
+    ('Global Financial Crisis','2007-10-01','2009-03-31'),
+    ('Eurozone / US Debt Scare','2011-07-01','2011-12-31'),
+    ('China Devaluation / Oil Shock','2015-06-01','2016-03-31'),
+    ('US-China Trade War','2018-01-01','2018-12-31'),
+    ('COVID Shock','2020-02-01','2020-04-30'),
+    ('Inflation & Rate-Hike Cycle','2021-11-01','2022-12-31'),
+]
 
-    Rules:
-    - Peak must occur before trough; never use a future peak.
-    - Backward search is capped, default ~3 trading years, to avoid 10-20Y anchoring.
-    - A rebound break can stop the search if the algorithm appears to cross into a separate cycle.
+
+def structural_event_window_for_trough(trough_date):
+    t=pd.Timestamp(trough_date)
+    for label,start,end in STRUCTURAL_EVENT_WINDOWS:
+        if pd.Timestamp(start) <= t <= pd.Timestamp(end):
+            return label,pd.Timestamp(start),pd.Timestamp(end)
+    return None,None,None
+
+
+def find_structural_peak(bt, trough_date, max_lookback_days=756, rebound_break_pct=0.15):
+    """Find structural peak before trough using causal and bounded search.
+
+    The peak is never allowed to occur after the trough. For unmapped cycles, the search is
+    capped to avoid unrealistic 10-20 year lookbacks.
     """
     if bt is None or bt.empty or trough_date not in bt.index:
         return pd.Timestamp(trough_date), np.nan, 'invalid_input'
     loc=bt.index.get_loc(trough_date)
     start_loc=max(0,loc-int(max_lookback_days))
-    trough_price=safe_float(bt.loc[trough_date,'Close'])
-    candidate_idx=trough_date; candidate_price=trough_price; boundary='max_lookback_limit'
-    running_low=trough_price
-    for idx in range(loc,start_loc-1,-1):
-        px=safe_float(bt.Close.iloc[idx])
-        running_low=min(running_low,px)
-        if px>candidate_price:
-            candidate_price=px; candidate_idx=bt.index[idx]
-        rebound=(px/running_low-1) if running_low else 0
-        if idx<loc and rebound>=rebound_break_pct and candidate_idx!=trough_date:
-            boundary=f'rebound_break_{int(rebound_break_pct*100)}pct'
-            break
-    if pd.Timestamp(candidate_idx)>=pd.Timestamp(trough_date):
-        prior=bt.iloc[start_loc:loc]
+    prior=bt.iloc[start_loc:loc+1]
+    if prior.empty:
+        return pd.Timestamp(trough_date), safe_float(bt.loc[trough_date,'Close']), 'fallback_same_day_trough'
+    pkdt=prior.Close.idxmax(); peak=safe_float(prior.loc[pkdt,'Close'])
+    if pd.Timestamp(pkdt)>=pd.Timestamp(trough_date):
+        prior_only=bt.iloc[start_loc:loc]
+        if prior_only.empty:
+            return pd.Timestamp(trough_date), safe_float(bt.loc[trough_date,'Close']), 'fallback_same_day_trough'
+        pkdt=prior_only.Close.idxmax(); peak=safe_float(prior_only.loc[pkdt,'Close'])
+        return pd.Timestamp(pkdt), peak, 'causal_fallback_prior_peak'
+    return pd.Timestamp(pkdt), peak, 'bounded_lookback_limit'
+
+
+def find_mapped_structural_peak(bt, trough_date, mapped_start):
+    """Mapped-cycle peak search. Example: Asian Financial Crisis uses Feb 1997 -> Sep 1998."""
+    t=pd.Timestamp(trough_date); start=pd.Timestamp(mapped_start)
+    window=bt.loc[start:t].copy()
+    if window.empty:
+        return find_structural_peak(bt,t)
+    pkdt=window.Close.idxmax(); peak=safe_float(window.loc[pkdt,'Close'])
+    if pd.Timestamp(pkdt)>=t:
+        prior=window.loc[:t].iloc[:-1]
         if prior.empty:
-            return pd.Timestamp(trough_date), trough_price, 'fallback_same_day_trough'
-        candidate_idx=prior.Close.idxmax(); candidate_price=safe_float(prior.loc[candidate_idx,'Close']); boundary='causal_fallback_prior_peak'
-    return pd.Timestamp(candidate_idx), safe_float(candidate_price), boundary
+            return find_structural_peak(bt,t)
+        pkdt=prior.Close.idxmax(); peak=safe_float(prior.loc[pkdt,'Close'])
+    return pd.Timestamp(pkdt), peak, 'mapped_structural_event_window'
 
 
 def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, rebound_break_pct=0.15, recovery_exit_pct=5, min_event_gap_days=60):
-    """Detect drawdown events, then expand each into a structural peak-to-trough cycle.
+    """Detect events, then define each as a structural peak-to-trough cycle.
 
-    Detection still uses the existing rolling-252D drawdown signal, but event definition is now
-    based on a bounded, causal structural peak before the trough. This prevents:
-    - 52-week truncation of long crises such as the Asian Financial Crisis.
-    - Look-ahead bias from using future peaks.
-    - Over-long 10-20Y backward anchoring.
+    For mapped crises, the structural search window is event-aware; this prevents cases such
+    as Asian Financial Crisis being displayed as only the final 52-week or 9-day stress window.
+    For unmapped cycles, the search remains bounded and causal.
     """
     ev=[]; in_dd=False; start=None
     if bt is None or bt.empty:
@@ -487,22 +516,38 @@ def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, reb
             in_dd=False; e=bt.iloc[start:i+1]
             if e.empty: continue
             ti=e.dd_pct.idxmin(); row=bt.loc[ti]
-            if len(ev)>0 and (pd.Timestamp(ti)-pd.Timestamp(ev[-1]['Trough Date'])).days<min_event_gap_days:
-                continue
-            pkdt, structural_peak, boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days,rebound_break_pct=rebound_break_pct)
+            mapped_label,mapped_start,mapped_end=structural_event_window_for_trough(ti)
+            if mapped_label:
+                pkdt,structural_peak,boundary_reason=find_mapped_structural_peak(bt,ti,mapped_start)
+            else:
+                pkdt,structural_peak,boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days,rebound_break_pct=rebound_break_pct)
+            if len(ev)>0:
+                # Avoid duplicate rows for the same mapped crisis; keep the deeper trough if duplicated.
+                if mapped_label and any(x.get('Historical Label')==mapped_label for x in ev):
+                    existing_idx=[j for j,x in enumerate(ev) if x.get('Historical Label')==mapped_label][0]
+                    existing_dd=safe_float(ev[existing_idx].get('Drawdown %',0))
+                    price_tmp=safe_float(row.Close)
+                    dd_tmp=((price_tmp/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
+                    if dd_tmp < existing_dd:
+                        ev.pop(existing_idx)
+                    else:
+                        continue
+                elif (pd.Timestamp(ti)-pd.Timestamp(ev[-1]['Trough Date'])).days<min_event_gap_days:
+                    continue
             price=safe_float(row.Close)
             ddv=((price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
             zone,_=classify(ddv); recovery=((current/price)-1)*100 if price else 0
             zp=get_z_at(valuation_tc, pkdt) if valuation_tc is not None else np.nan; zt=get_z_at(valuation_tc, ti) if valuation_tc is not None else np.nan
             detected_start=e.index.min(); detected_end=e.index.max(); duration=max((pd.Timestamp(ti)-pd.Timestamp(pkdt)).days,0)
-            label=label_event_window(pkdt,ti,ddv,recovery)
-            mapped_label=label not in ['Technical Correction','High-Recovery Technical Correction','System-Detected Cyclical Drawdown']
+            label=mapped_label if mapped_label else label_event_window(pkdt,ti,ddv,recovery)
+            mapped_flag=label not in ['Technical Correction','High-Recovery Technical Correction','System-Detected Cyclical Drawdown']
             ev.append({
                 'Peak Date':pkdt,'Peak Index':structural_peak,'Trough Date':ti,'Trough Index':price,
                 'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label,
-                'Mapped Label':mapped_label,'Severity':severity_bucket(ddv),'Duration Days':duration,
+                'Severity':severity_bucket(ddv),'Duration Days':duration,
                 'Detected Window Start':detected_start,'Detected Window End':detected_end,
-                'Peak Selection Rule':'bounded backward causal search','Boundary Reason':boundary_reason,'Lookback Cap Days':int(max_lookback_days),
+                'Peak Selection Rule':'mapped structural window' if mapped_label else 'bounded backward causal search',
+                'Boundary Reason':boundary_reason,'Lookback Cap Days':int(max_lookback_days),
                 'Z @ Peak':zp,'Z @ Trough':zt,'Valuation Classification':crash_valuation_classification(zp,zt)
             })
     return pd.DataFrame(ev)
@@ -542,7 +587,6 @@ with st.sidebar:
     st.caption('Investible capital excludes emergency funds. This platform is for decision support only and should not be relied on as a sole trading or investment instruction.')
     st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
     if sel == 'STI':
-        st.caption('STI defaults to S$ cash. Switch on SRS / CPF-OA only if these balances should be included in investible capital.')
         include_srs=st.toggle('Include SRS in investible capital',value=False,key='include_srs_sti')
         include_cpf_oa=st.toggle('Include CPF-OA in investible capital',value=False,key='include_cpf_oa_sti')
         funding_parts=['S$ Cash']
@@ -550,20 +594,19 @@ with st.sidebar:
         if include_cpf_oa: funding_parts.append('CPF-OA')
         funding_profile=' + '.join(funding_parts)
         st.caption(f'Funding Profile: {funding_profile}')
-        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
         if include_srs:
             srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
         if include_cpf_oa:
             cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
-            preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True,help='Preserves the first S$20,000 CPF-OA floor before calculating CPF-OA deployable capital.')
+            preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
     else:
         funding_profile=f'{currency_symbol} Investible Cash'
         st.caption(f'Funding Profile: {funding_profile}')
-        cash_balance=st.number_input(f'Investible Cash Before Buffer ({currency_symbol})',0.0,value=100000.0,step=5000.0)
+        cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
-    emergency_buffer=st.number_input(f'Excluded Emergency Buffer ({currency_symbol})',0.0,value=20000.0 if sel == 'STI' else 0.0,step=1000.0,help='Emergency funds are excluded from deployable dry powder.')
-    st.caption('Safeguard: deployable capital is calculated after excluding the emergency buffer. Emergency funds should not be used for market deployment.')
+    emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
     drawdown_method=st.radio('Drawdown Reference',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
@@ -580,7 +623,7 @@ if st.session_state.get('pmi_selected_market') != sel:
     act=LATEST_PMI_ACTUALS.get(pmi_proxy_default['label'], LATEST_PMI_ACTUALS['N/A']); st.session_state.latest_pmi_month=act['month']; st.session_state.latest_pmi_source=pmi_proxy_default['source']
 
 close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
-available_cash=max(cash_balance-emergency_buffer,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
+available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf); funding_source='Cash First' if cash_deploy>0 else 'No deployment'
 macro=live_macro_data(); vix=macro.get('vix'); tnx=macro.get('tnx'); irx=macro.get('irx'); curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
 trend_below=close<m[sel]['ma200']; pmi_label=pmi_proxy_default['label']; latest_pmi=float(st.session_state.get('latest_pmi_value', pmi_proxy_default['default'])); pmi_applicable=sel not in PMI_NA_MARKETS
@@ -843,7 +886,7 @@ EVENT_CONTEXT_MAP = {
     'Rate-Hike Cycle': {'primary_driver':'Inflation and monetary tightening','driver_tags':['Inflation','Interest rates','QT','Bond yields'],'key_causes':['High inflation','Rapid central-bank rate hikes','Higher bond yields','Valuation compression in long-duration / growth assets'],'interpretation':'A policy-tightening and valuation-compression cycle.'},
     'High-Recovery Technical Correction': {'primary_driver':'High-recovery technical correction','driver_tags':['Technical correction','High recovery','Mechanical drawdown signal'],'key_causes':['No mapped macro-crisis window was matched.','Recovery return exceeded 200%.','Use as a mechanical drawdown-rule case study rather than a labelled crisis event.'],'interpretation':'This was an economically significant technical correction. It is useful for rule testing, but should be separated from labelled macro-crisis validation.'},
     'Technical Correction': {'primary_driver':'Price-based technical correction','driver_tags':['Technical correction','No mapped macro crisis','Data-defined drawdown'],'key_causes':['No mapped macro-crisis window was matched.','The event appears to be a price-defined correction rather than a labelled historical crisis.','Interpret using drawdown severity, Z-score path and recovery profile.'],'interpretation':'This is a model-detected correction cycle. Useful for drawdown-rule testing, but should not be treated as a known historical crisis.'},
-    'System-Detected Cyclical Drawdown': {'primary_driver':'System-detected cyclical drawdown','driver_tags':['Unlabelled drawdown','Bear-market cycle','Data-defined event'],'key_causes':['No mapped macro-crisis window was matched.','The peak-to-trough decline exceeded the event threshold and is retained for statistical recovery and deployment analysis.','Review valuation Z-score path and recovery profile before treating it as a crisis analogue.'],'interpretation':'This is an intentional unlabelled >20% drawdown category, not missing data. It should be included in the event universe but separated from named macro crises.'},
+    'System-Detected Cyclical Drawdown': {'primary_driver':'System-detected cyclical drawdown','driver_tags':['Unlabelled drawdown','Bear-market cycle','Data-defined event'],'key_causes':['No mapped macro-crisis window was matched.','The peak-to-trough decline exceeded the event threshold and is retained for statistical recovery and deployment analysis.','Review valuation Z-score path and recovery profile before treating it as a crisis analogue.'],'interpretation':'This is an intentional unlabelled >20% drawdown category, not missing data. Include it in the event universe but separate it from named macro crises.'},
 }
 
 def get_event_context(label):
@@ -897,7 +940,7 @@ def render_compact_timeline(row, peak_date, trough_date):
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
         st.markdown('## 📊 Crash & Recovery Analytics')
-        st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table. Event definition now uses bounded, causal structural peak-to-trough logic.')
+        st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table. Crisis periods use mapped structural windows where available and bounded causal peak search otherwise.')
         st.markdown('### 1. Executive Crash & Cycle Summary')
         st.markdown('---')
         p,q,r=st.columns([1,1,1])
@@ -924,7 +967,7 @@ def render_crash(expanded=False):
         zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
         sev_sel=f1.multiselect('Severity filter',sev_opts,default=sev_opts); zone_sel=f2.multiselect('Buy zone filter',zone_opts,default=zone_opts); label_sel=f3.selectbox('Historical label group',label_opts,index=0); val_class_sel=f4.selectbox('Valuation classification filter',val_class_opts,index=0)
         filtered_df=event_df.copy(); filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)] if sev_sel else filtered_df; filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)] if zone_sel else filtered_df; filtered_df=filtered_df[filtered_df['Historical Label']==label_sel] if label_sel!='All' else filtered_df; filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel] if val_class_sel!='All' else filtered_df
-        explorer_cols=['Peak Date','Trough Date','Historical Label','Mapped Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification','Peak Selection Rule','Boundary Reason']
+        explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification','Peak Selection Rule','Boundary Reason']
         if filtered_df.empty: st.info('No events match the selected filters.')
         else:
             working_df=filtered_df.copy(); working_df['_EventID']=working_df.index.astype(int); display_df=working_df[['_EventID']+explorer_cols].copy()
@@ -973,7 +1016,7 @@ def render_crash(expanded=False):
             sim_display=sim[['Trough Date','Historical Label','Severity','Zone','Valuation Classification','Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %','Holding Days']].copy(); sim_display['Trough Date']=pd.to_datetime(sim_display['Trough Date']).dt.strftime('%Y-%m-%d')
             for c in ['Z @ Trough','Trough Index','End Index','Investment Amount','Ending Value','Gain / Loss','Return %']: sim_display[c]=sim_display[c].astype(float).round(2)
             st.dataframe(sim_display,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Master Simulator CSV',sim_display.to_csv(index=False),file_name='master_crash_simulator_phase2.csv',mime='text/csv')
-        st.markdown('---'); st.markdown('### 4. Full Crash Event Universe / Audit Table'); audit_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Drawdown %','Duration Days','Recovery Return %','Zone','Historical Label','Mapped Label','Severity','Detected Window Start','Detected Window End','Peak Selection Rule','Boundary Reason','Lookback Cap Days','Z @ Peak','Z @ Trough','Valuation Classification']; full_display=event_df[audit_cols].copy()
+        st.markdown('---'); st.markdown('### 4. Full Crash Event Universe / Audit Table'); audit_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Drawdown %','Duration Days','Recovery Return %','Zone','Historical Label','Severity','Detected Window Start','Detected Window End','Peak Selection Rule','Boundary Reason','Lookback Cap Days','Z @ Peak','Z @ Trough','Valuation Classification']; full_display=event_df[audit_cols].copy()
         for c in ['Peak Date','Trough Date']: full_display[c]=pd.to_datetime(full_display[c]).dt.strftime('%Y-%m-%d')
         for c in ['Peak Index','Trough Index','Drawdown %','Recovery Return %','Z @ Peak','Z @ Trough']: full_display[c]=full_display[c].astype(float).round(2)
         with st.expander('📚 Full Crash Event Universe / Audit Table',expanded=False): st.caption('Complete unfiltered event universe used by the explorer, valuation context layer and simulator. Kept collapsed as the audit trail.'); st.dataframe(full_display,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Full Crash Events CSV',full_display.to_csv(index=False),file_name='crash_events_full_phase2.csv',mime='text/csv')
