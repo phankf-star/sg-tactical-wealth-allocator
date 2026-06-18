@@ -84,6 +84,36 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .metric-card-like .metric-label {color:#111827; font-size:.88rem; font-weight:500; display:flex; align-items:center; gap:4px;}
 .metric-card-like .metric-value {font-size:2rem; font-weight:400; color:#111827; line-height:1.2; margin-top:8px;}
 .metric-card-like .metric-sub {font-size:.86rem; color:#16A34A; font-weight:800; margin-top:2px;}
+.timeline-grid {display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px;}
+
+/* Priority 3 — responsive / narrow-screen behaviour */
+[data-testid="stDataFrame"], [data-testid="stTable"] {overflow-x:auto;}
+@media (max-width: 1100px) {
+  .block-container {padding-left:1rem !important; padding-right:1rem !important;}
+  div[data-testid="stHorizontalBlock"] {flex-wrap:wrap !important; gap:0.75rem !important;}
+  div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {min-width:300px !important; flex:1 1 calc(50% - 0.75rem) !important;}
+  .timeline-grid {grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+  .exec-tooltip {width:min(340px, 78vw); left:-70px;}
+}
+@media (max-width: 760px) {
+  .block-container {padding-left:0.7rem !important; padding-right:0.7rem !important; padding-top:0.8rem !important;}
+  h1 {font-size:1.45rem !important;}
+  h2 {font-size:1.2rem !important;}
+  h3, h4 {font-size:1.02rem !important;}
+  div[data-testid="stHorizontalBlock"] {display:block !important;}
+  div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {width:100% !important; min-width:100% !important; flex:1 1 100% !important; margin-bottom:0.65rem !important;}
+  .light-card, .metric-card-like, div[data-testid="stMetric"] {border-radius:14px !important; padding:12px 13px !important; min-height:auto !important;}
+  .exec-title-row {font-size:.82rem; align-items:flex-start;}
+  .exec-tooltip {width:min(300px, 86vw); left:-92px; top:24px;}
+  .exec-tooltip-row {grid-template-columns:86px 1fr; font-size:11.5px;}
+  .metric-card-like .metric-value {font-size:1.65rem;}
+  .metric-card-like .metric-sub {font-size:.78rem;}
+  .timeline-grid {grid-template-columns:1fr !important;}
+  .method-help-strip {display:block; padding:9px 10px;}
+  .method-help-chip {display:flex; margin-top:6px;}
+  .kv {display:block;}
+  .kv-value {text-align:left !important; margin-top:2px;}
+}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -999,7 +1029,7 @@ def render_compact_timeline(row, peak_date, trough_date):
     st.markdown(f"""
 <div class="light-card" style="padding:14px 16px;margin:10px 0 12px 0;max-width:100%;">
   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;"><div><div style="font-weight:850;font-size:1.02rem;color:{TEXT};">🧭 Crisis Timeline</div><div style="font-size:.88rem;color:{MUTED};margin-top:2px;">{event_label}</div></div><div style="font-size:.82rem;font-weight:750;color:{TEXT};background:#F8FAFC;border:1px solid #E5E7EB;border-radius:999px;padding:5px 10px;">{period_label}</div></div>
-  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">{card_html}</div>
+  <div class="timeline-grid">{card_html}</div>
 </div>
 """, unsafe_allow_html=True)
 
