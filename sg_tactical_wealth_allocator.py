@@ -80,6 +80,10 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-pill-action {background:#FFFBEB; border:1px solid #FDE68A; color:#92400E;}
 .method-help-strip {display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#F8FAFC; border:1px solid #E5E7EB; border-radius:12px; padding:9px 12px; margin:8px 0 12px 0; color:#334155; font-size:.86rem;}
 .method-help-chip {display:inline-flex; align-items:center; gap:4px; font-weight:750; color:#0F172A;}
+.metric-card-like {background:white; border:1px solid #E5E7EB; border-radius:16px; padding:14px 16px; box-shadow:0 1px 2px rgba(15,23,42,.05); min-height:95px;}
+.metric-card-like .metric-label {color:#111827; font-size:.88rem; font-weight:500; display:flex; align-items:center; gap:4px;}
+.metric-card-like .metric-value {font-size:2rem; font-weight:400; color:#111827; line-height:1.2; margin-top:8px;}
+.metric-card-like .metric-sub {font-size:.86rem; color:#16A34A; font-weight:800; margin-top:2px;}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -1022,7 +1026,7 @@ def render_crash(expanded=False):
         crash_freq_inline=frequency_label(len(event_df),observation_years).replace('Frequency: ','')
         crash_freq_tip=tooltip_html('Crash Events Frequency',[('Events',len(event_df)),('Observation Window',f'{observation_years:.1f} years'),('Frequency',crash_freq_inline)],'Calculated from historical events in the selected analysis window. It is a historical observation, not a forecast of future crash timing.')
         k1,k2,k3,k4,k5=st.columns(5)
-        k1.markdown(f'<div class="kpi"><div class="label">Crash Events {crash_freq_tip}</div><div class="value">{len(event_df)} <span style="font-size:15px;color:{GREEN};font-weight:700;">({crash_freq_inline})</span></div></div>',unsafe_allow_html=True)
+        k1.markdown(f'<div class="metric-card-like"><div class="metric-label">Crash Events {crash_freq_tip}</div><div class="metric-value">{len(event_df)}</div><div class="metric-sub">({crash_freq_inline})</div></div>',unsafe_allow_html=True)
         k2.metric('Success Rate',f'{rets.gt(0).mean()*100:.0f}%')
         k3.metric('Avg Recovery',f'{rets.mean():.1f}%')
         k4.metric('Best Recovery',f'{rets.max():.1f}%')
