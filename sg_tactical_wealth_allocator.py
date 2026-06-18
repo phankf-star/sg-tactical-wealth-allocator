@@ -930,10 +930,38 @@ def build_event_deployment_plan(bt, price_df, peak_date, trough_date, event_budg
     return pd.DataFrame(rows)
 
 def render_compact_timeline(row, peak_date, trough_date):
-    period_days=max((trough_date-peak_date).days,0); peak_level=safe_float(row['Peak Index']); trough_level=safe_float(row['Trough Index']); trough_dd=safe_float(row['Drawdown %'])
-    items=[('Historical Label',str(row['Historical Label'])),('Crisis Period',f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")} ({period_days} days)'),('Peak',f'{peak_date.strftime("%Y-%m-%d")} · {peak_level:,.0f}'),('Trough',f'{trough_date.strftime("%Y-%m-%d")} · {trough_level:,.0f} ({trough_dd:.1f}% drawdown)')]
-    html=''.join([f'<div style="color:{MUTED};font-size:.86rem;">{a}</div><div style="font-weight:700;">{b}</div>' for a,b in items])
-    st.markdown(f"""<div class="light-card" style="padding:12px 14px;margin-top:10px;max-width:760px;"><div style="font-weight:800;margin-bottom:8px;">🧭 Crisis Timeline</div><div style="display:grid;grid-template-columns:105px minmax(0,1fr);column-gap:10px;row-gap:7px;align-items:start;">{html}</div></div>""", unsafe_allow_html=True)
+    period_days=max((trough_date-peak_date).days,0)
+    peak_level=safe_float(row['Peak Index'])
+    trough_level=safe_float(row['Trough Index'])
+    trough_dd=safe_float(row['Drawdown %'])
+    event_label=str(row.get('Historical Label',''))
+    period_label=f'{peak_date.strftime("%Y-%m-%d")} → {trough_date.strftime("%Y-%m-%d")}'
+    mini_cards=[
+        ('Peak',peak_date.strftime('%Y-%m-%d'),f'{peak_level:,.0f}',BLUE),
+        ('Trough',trough_date.strftime('%Y-%m-%d'),f'{trough_level:,.0f}',RED),
+        ('Drawdown','Peak to trough',f'{trough_dd:.1f}%',ORANGE if abs(trough_dd)<40 else RED),
+        ('Duration','Trading cycle',f'{period_days} days',SLATE),
+    ]
+    card_html=''.join([
+        f'<div style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:12px;padding:10px 12px;min-height:82px;">'
+        f'<div style="font-size:.78rem;color:{MUTED};font-weight:700;text-transform:uppercase;letter-spacing:.03em;">{label}</div>'
+        f'<div style="font-size:.82rem;color:{MUTED};margin-top:4px;">{sub}</div>'
+        f'<div style="font-size:1.15rem;font-weight:850;color:{colour};margin-top:6px;">{value}</div>'
+        f'</div>'
+        for label,sub,value,colour in mini_cards
+    ])
+    st.markdown(f"""
+<div class="light-card" style="padding:14px 16px;margin:10px 0 12px 0;max-width:100%;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:10px;">
+    <div>
+      <div style="font-weight:850;font-size:1.02rem;color:{TEXT};">🧭 Crisis Timeline</div>
+      <div style="font-size:.88rem;color:{MUTED};margin-top:2px;">{event_label}</div>
+    </div>
+    <div style="font-size:.82rem;font-weight:750;color:{TEXT};background:#F8FAFC;border:1px solid #E5E7EB;border-radius:999px;padding:5px 10px;">{period_label}</div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;">{card_html}</div>
+</div>
+""", unsafe_allow_html=True)
 
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
