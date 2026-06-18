@@ -436,9 +436,6 @@ def label_event_window(peak_date, trough_date, drawdown_pct, recovery_return_pct
     return 'Technical Correction'
 
 STRUCTURAL_EVENT_WINDOWS = [
-    # Label, structural search start, structural search end.
-    # These are used only when a detected trough falls inside the mapped event window.
-    # Peak is still selected causally from the mapped start date up to the trough date.
     ('1987 Black Monday','1987-08-01','1987-12-31'),
     ('Gulf War / 1990 Oil Shock','1990-07-01','1991-03-31'),
     ('Asian Financial Crisis','1997-02-01','1998-12-31'),
@@ -452,20 +449,16 @@ STRUCTURAL_EVENT_WINDOWS = [
 ]
 
 
-def structural_event_window_for_trough(trough_date):
-    t=pd.Timestamp(trough_date)
+def structural_event_window_for_date(target_date):
+    t=pd.Timestamp(target_date)
     for label,start,end in STRUCTURAL_EVENT_WINDOWS:
         if pd.Timestamp(start) <= t <= pd.Timestamp(end):
             return label,pd.Timestamp(start),pd.Timestamp(end)
     return None,None,None
 
 
-def find_structural_peak(bt, trough_date, max_lookback_days=756, rebound_break_pct=0.15):
-    """Find structural peak before trough using causal and bounded search.
-
-    The peak is never allowed to occur after the trough. For unmapped cycles, the search is
-    capped to avoid unrealistic 10-20 year lookbacks.
-    """
+def find_structural_peak(bt, trough_date, max_lookback_days=756):
+    """Causal bounded structural peak: peak must precede trough/current date."""
     if bt is None or bt.empty or trough_date not in bt.index:
         return pd.Timestamp(trough_date), np.nan, 'invalid_input'
     loc=bt.index.get_loc(trough_date)
@@ -484,7 +477,7 @@ def find_structural_peak(bt, trough_date, max_lookback_days=756, rebound_break_p
 
 
 def find_mapped_structural_peak(bt, trough_date, mapped_start):
-    """Mapped-cycle peak search. Example: Asian Financial Crisis uses Feb 1997 -> Sep 1998."""
+    """Mapped-cycle peak search. Example: Asian Financial Crisis searches from Feb 1997 to trough."""
     t=pd.Timestamp(trough_date); start=pd.Timestamp(mapped_start)
     window=bt.loc[start:t].copy()
     if window.empty:
@@ -498,12 +491,32 @@ def find_mapped_structural_peak(bt, trough_date, mapped_start):
     return pd.Timestamp(pkdt), peak, 'mapped_structural_event_window'
 
 
-def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, rebound_break_pct=0.15, recovery_exit_pct=5, min_event_gap_days=60):
-    """Detect events, then define each as a structural peak-to-trough cycle.
+def current_structural_dd(df, max_lookback_days=756):
+    """Current drawdown used by Executive Centre and Market Conditions.
 
-    For mapped crises, the structural search window is event-aware; this prevents cases such
-    as Asian Financial Crisis being displayed as only the final 52-week or 9-day stress window.
-    For unmapped cycles, the search remains bounded and causal.
+    This uses the same structural principle as Crash Event Explorer: mapped crisis window where
+    applicable, otherwise bounded causal peak search. Rolling 252D remains a diagnostic only.
+    """
+    if df is None or df.empty:
+        return np.nan,np.nan,0.0,'Structural Drawdown',pd.NaT,pd.NaT,'no_data'
+    bt=df[['Close']].copy().dropna(); bt.index=pd.to_datetime(bt.index)
+    cur_date=bt.index[-1]; cur=safe_float(bt.Close.iloc[-1])
+    mapped_label,mapped_start,mapped_end=structural_event_window_for_date(cur_date)
+    if mapped_label:
+        pkdt,peak,boundary=find_mapped_structural_peak(bt,cur_date,mapped_start)
+        basis=f'Structural Drawdown · {mapped_label}'
+    else:
+        pkdt,peak,boundary=find_structural_peak(bt,cur_date,max_lookback_days=max_lookback_days)
+        basis='Structural Drawdown · bounded causal peak'
+    ddv=((cur-peak)/peak)*100 if peak else 0.0
+    return cur,peak,ddv,basis,pkdt,cur_date,boundary
+
+
+def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, recovery_exit_pct=5, min_event_gap_days=60):
+    """Detect events, then define each as structural peak-to-trough cycle.
+
+    Detection uses rolling-252D stress windows, but event definition uses mapped structural
+    windows where available and bounded causal peak search otherwise.
     """
     ev=[]; in_dd=False; start=None
     if bt is None or bt.empty:
@@ -516,22 +529,18 @@ def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, reb
             in_dd=False; e=bt.iloc[start:i+1]
             if e.empty: continue
             ti=e.dd_pct.idxmin(); row=bt.loc[ti]
-            mapped_label,mapped_start,mapped_end=structural_event_window_for_trough(ti)
+            mapped_label,mapped_start,mapped_end=structural_event_window_for_date(ti)
             if mapped_label:
                 pkdt,structural_peak,boundary_reason=find_mapped_structural_peak(bt,ti,mapped_start)
             else:
-                pkdt,structural_peak,boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days,rebound_break_pct=rebound_break_pct)
+                pkdt,structural_peak,boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days)
             if len(ev)>0:
-                # Avoid duplicate rows for the same mapped crisis; keep the deeper trough if duplicated.
                 if mapped_label and any(x.get('Historical Label')==mapped_label for x in ev):
                     existing_idx=[j for j,x in enumerate(ev) if x.get('Historical Label')==mapped_label][0]
                     existing_dd=safe_float(ev[existing_idx].get('Drawdown %',0))
-                    price_tmp=safe_float(row.Close)
-                    dd_tmp=((price_tmp/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
-                    if dd_tmp < existing_dd:
-                        ev.pop(existing_idx)
-                    else:
-                        continue
+                    tmp_price=safe_float(row.Close); tmp_dd=((tmp_price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
+                    if tmp_dd < existing_dd: ev.pop(existing_idx)
+                    else: continue
                 elif (pd.Timestamp(ti)-pd.Timestamp(ev[-1]['Trough Date'])).days<min_event_gap_days:
                     continue
             price=safe_float(row.Close)
@@ -540,7 +549,6 @@ def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, reb
             zp=get_z_at(valuation_tc, pkdt) if valuation_tc is not None else np.nan; zt=get_z_at(valuation_tc, ti) if valuation_tc is not None else np.nan
             detected_start=e.index.min(); detected_end=e.index.max(); duration=max((pd.Timestamp(ti)-pd.Timestamp(pkdt)).days,0)
             label=mapped_label if mapped_label else label_event_window(pkdt,ti,ddv,recovery)
-            mapped_flag=label not in ['Technical Correction','High-Recovery Technical Correction','System-Detected Cyclical Drawdown']
             ev.append({
                 'Peak Date':pkdt,'Peak Index':structural_peak,'Trough Date':ti,'Trough Index':price,
                 'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label,
@@ -608,7 +616,7 @@ with st.sidebar:
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
     emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
-    drawdown_method=st.radio('Drawdown Reference',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
+    drawdown_method=st.radio('Secondary Drawdown Diagnostic',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
@@ -622,7 +630,9 @@ if st.session_state.get('pmi_selected_market') != sel:
     st.session_state.pmi_selected_market=sel; st.session_state.pmi_proxy_label=pmi_proxy_default['label']; st.session_state.latest_pmi_value=float(pmi_proxy_default['default'])
     act=LATEST_PMI_ACTUALS.get(pmi_proxy_default['label'], LATEST_PMI_ACTUALS['N/A']); st.session_state.latest_pmi_month=act['month']; st.session_state.latest_pmi_source=pmi_proxy_default['source']
 
-close,peak,dd,ref=current_dd(ud,drawdown_method); zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
+diag_close,diag_peak,diag_dd,diag_ref=current_dd(ud,drawdown_method)
+close,peak,dd,ref,struct_peak_date,struct_current_date,struct_boundary=current_structural_dd(ud)
+zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf); funding_source='Cash First' if cash_deploy>0 else 'No deployment'
 macro=live_macro_data(); vix=macro.get('vix'); tnx=macro.get('tnx'); irx=macro.get('irx'); curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
@@ -639,7 +649,7 @@ def render_executive():
     st.markdown('---'); st.markdown('## 🧠 Executive Tactical Allocation Centre')
     r1=st.columns(3)
     r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
-    r1[1].markdown(card('Current Drawdown',f'{dd:.1f}%',ref,RED),unsafe_allow_html=True)
+    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}',RED),unsafe_allow_html=True)
     action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour),unsafe_allow_html=True)
     r2=st.columns(3)
@@ -649,12 +659,12 @@ def render_executive():
     r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour),unsafe_allow_html=True)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
     r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour),unsafe_allow_html=True)
-    st.markdown(f'**Formula used:** Current drawdown = (current close − selected peak reference) ÷ selected peak reference. **Selected reference:** {ref} at approximately **{peak:,.0f}**.  \n**Decision note:** {decision_line}')
+    st.markdown(f'**Formula used:** Structural drawdown = (current close − structural peak) ÷ structural peak. **Basis:** {ref}. **Peak:** {struct_peak_date.strftime("%Y-%m-%d")} at **{peak:,.0f}**. **Current:** {struct_current_date.strftime("%Y-%m-%d")} at **{close:,.0f}**.  \n**Secondary diagnostic:** {diag_ref} drawdown {diag_dd:.1f}% from peak {diag_peak:,.0f}.  \n**Decision note:** {decision_line}')
 
 def render_suggested(expanded=False):
     with st.expander('💰 Suggested Deploy Basis & Capital Source',expanded=expanded):
         s1,s2,s3,s4=st.columns([1,1.15,1,1.1])
-        s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, {ref} drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
+        s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
         s2.markdown('#### 🏦 Capital Source Breakdown'); s2.markdown('<div class="light-card">'+kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)+kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)+kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)+kv('Reason',capital_reason,SLATE)+'</div>',unsafe_allow_html=True)
         s3.markdown('#### 🧱 Tranche Deployment Plan')
         if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
@@ -785,7 +795,7 @@ def render_market(expanded=False):
         tc1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
         tc2.markdown(f'<div class="mock-control-card"><div class="mock-label">Market Currency</div><div class="mock-value">{currency_symbol}</div><div class="mock-sub">{currency_name}</div></div>',unsafe_allow_html=True)
         tc3.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value" style="font-size:.96rem;">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
-        tc4.markdown(f'<div class="mock-control-card"><div class="mock-label">Drawdown Reference</div><div class="mock-value" style="font-size:.96rem;">{ref}</div><div class="mock-sub">Peak {peak:,.0f}</div></div>',unsafe_allow_html=True)
+        tc4.markdown(f'<div class="mock-control-card"><div class="mock-label">Structural Drawdown Basis</div><div class="mock-value" style="font-size:.96rem;">{ref}</div><div class="mock-sub">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}</div></div>',unsafe_allow_html=True)
         alert_class='risk-alert-crash' if alert=='CRASH RISK' else 'risk-alert-warning' if alert=='WARNING' else 'risk-alert-watch' if alert=='WATCH' else 'risk-alert-normal'
         st.markdown(f'<div class="risk-alert {alert_class}">🛡️ LIVE MARKET RISK ALERT: {alert} <span style="font-weight:500; margin-left:18px;">Rules-based stress indicator, not a crash prediction. PMI proxy used: {current_proxy}.</span></div>',unsafe_allow_html=True)
         st.caption(f'Risk model used: {"Equity macro model (VIX + PMI + Yield Curve)" if sel not in PMI_NA_MARKETS else "Alternative asset model (Price-driven, no macro inputs)"}')
@@ -803,7 +813,7 @@ def render_market(expanded=False):
         cols[1].markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
         cols[2].markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
         dd_sub='At Peak' if dd>=-1 else ('Correction' if dd>-15 else 'Drawdown')
-        cols[3].markdown(f'<div class="kpi-card"><div class="kpi-title">{index_label} Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange">{dd_sub} · {ref}</div></div>',unsafe_allow_html=True)
+        cols[3].markdown(f'<div class="kpi-card"><div class="kpi-title">{index_label} Structural Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange">Peak {struct_peak_date.strftime("%Y-%m-%d")} → Current {struct_current_date.strftime("%Y-%m-%d")}</div></div>',unsafe_allow_html=True)
         score_colour='kpi-sub-green' if local_score<30 else 'kpi-sub-orange'
         cols[4].markdown(f'<div class="kpi-card"><div class="kpi-title">Live Risk Score</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="{score_colour}">{local_alert}</div></div>',unsafe_allow_html=True)
 
@@ -840,7 +850,7 @@ def render_market(expanded=False):
             sig.markdown('#### 📊 Signal Confidence Details')
             sig.markdown('<div class="light-card">'+kv('Drawdown Signal','Active' if dd<=-8 else 'Inactive',ORANGE if dd<=-8 else SLATE)+kv('Risk Regime',local_alert,RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else AMBER if local_alert=='WATCH' else GREEN)+kv('Technical Trend','Weak' if trend_below else 'Stable',BLUE)+'</div>',unsafe_allow_html=True)
             is_alt=sel in PMI_NA_MARKETS
-            trig=pd.DataFrame([{'Trigger':'VIX > 25','Status':'N/A' if is_alt else ('Yes' if vix is not None and vix>25 else 'No')},{'Trigger':'Yield curve inverted','Status':'N/A' if is_alt else ('Yes' if curve_spread is not None and curve_spread<0 else 'No')},{'Trigger':f'{chosen} < 50','Status':'N/A' if (is_alt or not pmi_app) else ('Yes' if latest_in<50 else 'No')},{'Trigger':'Drawdown < -10%','Status':'Yes' if dd<-10 else 'No'},{'Trigger':'Below 200D MA','Status':'Yes' if trend_below else 'No'}])
+            trig=pd.DataFrame([{'Trigger':'VIX > 25','Status':'N/A' if is_alt else ('Yes' if vix is not None and vix>25 else 'No')},{'Trigger':'Yield curve inverted','Status':'N/A' if is_alt else ('Yes' if curve_spread is not None and curve_spread<0 else 'No')},{'Trigger':f'{chosen} < 50','Status':'N/A' if (is_alt or not pmi_app) else ('Yes' if latest_in<50 else 'No')},{'Trigger':'Structural drawdown < -10%','Status':'Yes' if dd<-10 else 'No'},{'Trigger':'Below 200D MA','Status':'Yes' if trend_below else 'No'}])
             trigger.markdown('#### 📡 Live Trigger Monitor'); trigger.dataframe(trig,use_container_width=True,hide_index=True)
             engine.markdown('#### 🧮 Live Risk Score Engine')
             if is_alt:
@@ -940,7 +950,7 @@ def render_compact_timeline(row, peak_date, trough_date):
 def render_crash(expanded=False):
     with st.expander('🏆 Crash & Recovery Analytics', expanded=expanded):
         st.markdown('## 📊 Crash & Recovery Analytics')
-        st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table. Crisis periods use mapped structural windows where available and bounded causal peak search otherwise.')
+        st.caption('Four-part structure: summary, event explorer with valuation context, deployment simulator, and full audit table. Event definition uses mapped structural windows where available and bounded causal peak search otherwise.')
         st.markdown('### 1. Executive Crash & Cycle Summary')
         st.markdown('---')
         p,q,r=st.columns([1,1,1])
@@ -967,7 +977,7 @@ def render_crash(expanded=False):
         zone_opts=sorted(event_df.Zone.dropna().unique().tolist()); label_opts=['All']+sorted(event_df['Historical Label'].dropna().unique().tolist()); val_class_opts=['All']+sorted(event_df['Valuation Classification'].dropna().unique().tolist())
         sev_sel=f1.multiselect('Severity filter',sev_opts,default=sev_opts); zone_sel=f2.multiselect('Buy zone filter',zone_opts,default=zone_opts); label_sel=f3.selectbox('Historical label group',label_opts,index=0); val_class_sel=f4.selectbox('Valuation classification filter',val_class_opts,index=0)
         filtered_df=event_df.copy(); filtered_df=filtered_df[filtered_df.Severity.isin(sev_sel)] if sev_sel else filtered_df; filtered_df=filtered_df[filtered_df.Zone.isin(zone_sel)] if zone_sel else filtered_df; filtered_df=filtered_df[filtered_df['Historical Label']==label_sel] if label_sel!='All' else filtered_df; filtered_df=filtered_df[filtered_df['Valuation Classification']==val_class_sel] if val_class_sel!='All' else filtered_df
-        explorer_cols=['Peak Date','Trough Date','Historical Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification','Peak Selection Rule','Boundary Reason']
+        explorer_cols=['Peak Date','Peak Index','Trough Date','Trough Index','Historical Label','Severity','Zone','Drawdown %','Duration Days','Recovery Return %','Z @ Peak','Z @ Trough','Valuation Classification']
         if filtered_df.empty: st.info('No events match the selected filters.')
         else:
             working_df=filtered_df.copy(); working_df['_EventID']=working_df.index.astype(int); display_df=working_df[['_EventID']+explorer_cols].copy()
@@ -1026,7 +1036,7 @@ def render_audit(expanded=False):
         left,right=st.columns([1,1])
         left.markdown('#### 📡 Data Source & Freshness'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Proxy',st.session_state.get('pmi_proxy_label',pmi_label),GREEN)+kv('PMI Value',f'{st.session_state.get("latest_pmi_value",latest_pmi):.1f} · {st.session_state.get("latest_pmi_month","")}',GREEN)+kv('PMI Source',st.session_state.get('latest_pmi_source',pmi_proxy_default['source']),GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
         right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score is rules-based and not a crash prediction.\n- PMI is monthly, not intraday live data.\n- US PMI is fetched from FRED only when Update PMI is clicked.\n- Non-US PMI uses manual input with pre-filled 12M defaults.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
