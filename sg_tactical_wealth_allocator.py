@@ -259,6 +259,21 @@ def current_dd(df, method):
     peak=safe_float(df.Close.rolling(days,min_periods=1).max().iloc[-1], c)
     return c, peak, ((c-peak)/peak)*100 if peak else 0, label
 
+
+def current_dd_detail(df, method):
+    """Secondary diagnostic drawdown with peak/current date details. Diagnostic only."""
+    c=safe_float(df.Close.iloc[-1]); current_date=df.index[-1]
+    if method.startswith('Rolling'): days,label=252,'Rolling 252D Peak'
+    elif method.startswith('2Y'): days,label=504,'2Y Peak'
+    elif method.startswith('3Y'): days,label=756,'3Y Peak'
+    elif method.startswith('5Y'): days,label=1260,'5Y Peak'
+    else:
+        peak_date=df.Close.idxmax(); peak=safe_float(df.loc[peak_date,'Close'],c)
+        return c,peak,((c-peak)/peak)*100 if peak else 0,'All-Time High Peak',pd.Timestamp(peak_date),pd.Timestamp(current_date)
+    window=df.tail(days)
+    peak_date=window.Close.idxmax(); peak=safe_float(window.loc[peak_date,'Close'],c)
+    return c,peak,((c-peak)/peak)*100 if peak else 0,label,pd.Timestamp(peak_date),pd.Timestamp(current_date)
+
 def deploy_rule(dd):
     # Cumulative deployment of available investible capital / dry powder.
     if dd <= -50: return 1.00
@@ -458,69 +473,51 @@ def structural_event_window_for_date(target_date):
 
 
 def find_structural_peak(bt, trough_date, max_lookback_days=756):
-    """Causal bounded structural peak: peak must precede trough/current date."""
     if bt is None or bt.empty or trough_date not in bt.index:
-        return pd.Timestamp(trough_date), np.nan, 'invalid_input'
-    loc=bt.index.get_loc(trough_date)
-    start_loc=max(0,loc-int(max_lookback_days))
+        return pd.Timestamp(trough_date),np.nan,'invalid_input'
+    loc=bt.index.get_loc(trough_date); start_loc=max(0,loc-int(max_lookback_days))
     prior=bt.iloc[start_loc:loc+1]
     if prior.empty:
-        return pd.Timestamp(trough_date), safe_float(bt.loc[trough_date,'Close']), 'fallback_same_day_trough'
+        return pd.Timestamp(trough_date),safe_float(bt.loc[trough_date,'Close']),'fallback_same_day_trough'
     pkdt=prior.Close.idxmax(); peak=safe_float(prior.loc[pkdt,'Close'])
     if pd.Timestamp(pkdt)>=pd.Timestamp(trough_date):
         prior_only=bt.iloc[start_loc:loc]
-        if prior_only.empty:
-            return pd.Timestamp(trough_date), safe_float(bt.loc[trough_date,'Close']), 'fallback_same_day_trough'
+        if prior_only.empty: return pd.Timestamp(trough_date),safe_float(bt.loc[trough_date,'Close']),'fallback_same_day_trough'
         pkdt=prior_only.Close.idxmax(); peak=safe_float(prior_only.loc[pkdt,'Close'])
-        return pd.Timestamp(pkdt), peak, 'causal_fallback_prior_peak'
-    return pd.Timestamp(pkdt), peak, 'bounded_lookback_limit'
+        return pd.Timestamp(pkdt),peak,'causal_fallback_prior_peak'
+    return pd.Timestamp(pkdt),peak,'bounded_lookback_limit'
 
 
 def find_mapped_structural_peak(bt, trough_date, mapped_start):
-    """Mapped-cycle peak search. Example: Asian Financial Crisis searches from Feb 1997 to trough."""
     t=pd.Timestamp(trough_date); start=pd.Timestamp(mapped_start)
     window=bt.loc[start:t].copy()
-    if window.empty:
-        return find_structural_peak(bt,t)
+    if window.empty: return find_structural_peak(bt,t)
     pkdt=window.Close.idxmax(); peak=safe_float(window.loc[pkdt,'Close'])
     if pd.Timestamp(pkdt)>=t:
         prior=window.loc[:t].iloc[:-1]
-        if prior.empty:
-            return find_structural_peak(bt,t)
+        if prior.empty: return find_structural_peak(bt,t)
         pkdt=prior.Close.idxmax(); peak=safe_float(prior.loc[pkdt,'Close'])
-    return pd.Timestamp(pkdt), peak, 'mapped_structural_event_window'
+    return pd.Timestamp(pkdt),peak,'mapped_structural_event_window'
 
 
 def current_structural_dd(df, max_lookback_days=756):
-    """Current drawdown used by Executive Centre and Market Conditions.
-
-    This uses the same structural principle as Crash Event Explorer: mapped crisis window where
-    applicable, otherwise bounded causal peak search. Rolling 252D remains a diagnostic only.
-    """
+    """Primary current drawdown for Executive Centre and Market Conditions."""
     if df is None or df.empty:
         return np.nan,np.nan,0.0,'Structural Drawdown',pd.NaT,pd.NaT,'no_data'
     bt=df[['Close']].copy().dropna(); bt.index=pd.to_datetime(bt.index)
     cur_date=bt.index[-1]; cur=safe_float(bt.Close.iloc[-1])
     mapped_label,mapped_start,mapped_end=structural_event_window_for_date(cur_date)
     if mapped_label:
-        pkdt,peak,boundary=find_mapped_structural_peak(bt,cur_date,mapped_start)
-        basis=f'Structural Drawdown · {mapped_label}'
+        pkdt,peak,boundary=find_mapped_structural_peak(bt,cur_date,mapped_start); basis=f'Structural Drawdown · {mapped_label}'
     else:
-        pkdt,peak,boundary=find_structural_peak(bt,cur_date,max_lookback_days=max_lookback_days)
-        basis='Structural Drawdown · bounded causal peak'
+        pkdt,peak,boundary=find_structural_peak(bt,cur_date,max_lookback_days=max_lookback_days); basis='Structural Drawdown · bounded causal peak'
     ddv=((cur-peak)/peak)*100 if peak else 0.0
     return cur,peak,ddv,basis,pkdt,cur_date,boundary
 
 
 def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, recovery_exit_pct=5, min_event_gap_days=60):
-    """Detect events, then define each as structural peak-to-trough cycle.
-
-    Detection uses rolling-252D stress windows, but event definition uses mapped structural
-    windows where available and bounded causal peak search otherwise.
-    """
     ev=[]; in_dd=False; start=None
-    if bt is None or bt.empty:
-        return pd.DataFrame(ev)
+    if bt is None or bt.empty: return pd.DataFrame(ev)
     for i in range(len(bt)):
         dv=safe_float(bt.dd_pct.iloc[i])
         if dv <= -thr and not in_dd:
@@ -530,34 +527,22 @@ def crash_events(bt, thr, current, valuation_tc=None, max_lookback_days=756, rec
             if e.empty: continue
             ti=e.dd_pct.idxmin(); row=bt.loc[ti]
             mapped_label,mapped_start,mapped_end=structural_event_window_for_date(ti)
-            if mapped_label:
-                pkdt,structural_peak,boundary_reason=find_mapped_structural_peak(bt,ti,mapped_start)
-            else:
-                pkdt,structural_peak,boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days)
+            if mapped_label: pkdt,structural_peak,boundary_reason=find_mapped_structural_peak(bt,ti,mapped_start)
+            else: pkdt,structural_peak,boundary_reason=find_structural_peak(bt,ti,max_lookback_days=max_lookback_days)
             if len(ev)>0:
                 if mapped_label and any(x.get('Historical Label')==mapped_label for x in ev):
                     existing_idx=[j for j,x in enumerate(ev) if x.get('Historical Label')==mapped_label][0]
-                    existing_dd=safe_float(ev[existing_idx].get('Drawdown %',0))
-                    tmp_price=safe_float(row.Close); tmp_dd=((tmp_price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
+                    existing_dd=safe_float(ev[existing_idx].get('Drawdown %',0)); tmp_price=safe_float(row.Close); tmp_dd=((tmp_price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
                     if tmp_dd < existing_dd: ev.pop(existing_idx)
                     else: continue
                 elif (pd.Timestamp(ti)-pd.Timestamp(ev[-1]['Trough Date'])).days<min_event_gap_days:
                     continue
-            price=safe_float(row.Close)
-            ddv=((price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
+            price=safe_float(row.Close); ddv=((price/structural_peak)-1)*100 if structural_peak else safe_float(row.dd_pct)
             zone,_=classify(ddv); recovery=((current/price)-1)*100 if price else 0
             zp=get_z_at(valuation_tc, pkdt) if valuation_tc is not None else np.nan; zt=get_z_at(valuation_tc, ti) if valuation_tc is not None else np.nan
             detected_start=e.index.min(); detected_end=e.index.max(); duration=max((pd.Timestamp(ti)-pd.Timestamp(pkdt)).days,0)
             label=mapped_label if mapped_label else label_event_window(pkdt,ti,ddv,recovery)
-            ev.append({
-                'Peak Date':pkdt,'Peak Index':structural_peak,'Trough Date':ti,'Trough Index':price,
-                'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label,
-                'Severity':severity_bucket(ddv),'Duration Days':duration,
-                'Detected Window Start':detected_start,'Detected Window End':detected_end,
-                'Peak Selection Rule':'mapped structural window' if mapped_label else 'bounded backward causal search',
-                'Boundary Reason':boundary_reason,'Lookback Cap Days':int(max_lookback_days),
-                'Z @ Peak':zp,'Z @ Trough':zt,'Valuation Classification':crash_valuation_classification(zp,zt)
-            })
+            ev.append({'Peak Date':pkdt,'Peak Index':structural_peak,'Trough Date':ti,'Trough Index':price,'Drawdown %':ddv,'Recovery Return %':recovery,'Zone':zone,'Historical Label':label,'Severity':severity_bucket(ddv),'Duration Days':duration,'Detected Window Start':detected_start,'Detected Window End':detected_end,'Peak Selection Rule':'mapped structural window' if mapped_label else 'bounded backward causal search','Boundary Reason':boundary_reason,'Lookback Cap Days':int(max_lookback_days),'Z @ Peak':zp,'Z @ Trough':zt,'Valuation Classification':crash_valuation_classification(zp,zt)})
     return pd.DataFrame(ev)
 
 # ------------------------- charts -------------------------
@@ -616,7 +601,6 @@ with st.sidebar:
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
     emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
-    drawdown_method=st.radio('Secondary Drawdown Diagnostic',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0)
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
@@ -630,7 +614,6 @@ if st.session_state.get('pmi_selected_market') != sel:
     st.session_state.pmi_selected_market=sel; st.session_state.pmi_proxy_label=pmi_proxy_default['label']; st.session_state.latest_pmi_value=float(pmi_proxy_default['default'])
     act=LATEST_PMI_ACTUALS.get(pmi_proxy_default['label'], LATEST_PMI_ACTUALS['N/A']); st.session_state.latest_pmi_month=act['month']; st.session_state.latest_pmi_source=pmi_proxy_default['source']
 
-diag_close,diag_peak,diag_dd,diag_ref=current_dd(ud,drawdown_method)
 close,peak,dd,ref,struct_peak_date,struct_current_date,struct_boundary=current_structural_dd(ud)
 zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
@@ -659,7 +642,7 @@ def render_executive():
     r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour),unsafe_allow_html=True)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
     r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour),unsafe_allow_html=True)
-    st.markdown(f'**Formula used:** Structural drawdown = (current close − structural peak) ÷ structural peak. **Basis:** {ref}. **Peak:** {struct_peak_date.strftime("%Y-%m-%d")} at **{peak:,.0f}**. **Current:** {struct_current_date.strftime("%Y-%m-%d")} at **{close:,.0f}**.  \n**Secondary diagnostic:** {diag_ref} drawdown {diag_dd:.1f}% from peak {diag_peak:,.0f}.  \n**Decision note:** {decision_line}')
+    st.markdown(f'**Formula used:** Structural drawdown = (current close − structural peak) ÷ structural peak. **Basis:** {ref}. **Peak:** {struct_peak_date.strftime("%Y-%m-%d")} at **{peak:,.0f}**. **Current:** {struct_current_date.strftime("%Y-%m-%d")} at **{close:,.0f}**.  \n**Decision note:** {decision_line}')
 
 def render_suggested(expanded=False):
     with st.expander('💰 Suggested Deploy Basis & Capital Source',expanded=expanded):
@@ -816,6 +799,15 @@ def render_market(expanded=False):
         cols[3].markdown(f'<div class="kpi-card"><div class="kpi-title">{index_label} Structural Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange">Peak {struct_peak_date.strftime("%Y-%m-%d")} → Current {struct_current_date.strftime("%Y-%m-%d")}</div></div>',unsafe_allow_html=True)
         score_colour='kpi-sub-green' if local_score<30 else 'kpi-sub-orange'
         cols[4].markdown(f'<div class="kpi-card"><div class="kpi-title">Live Risk Score</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="{score_colour}">{local_alert}</div></div>',unsafe_allow_html=True)
+        with st.expander('📐 Secondary Drawdown Diagnostic', expanded=True):
+            diag_method=st.radio('Secondary Drawdown Diagnostic',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,horizontal=True,key='secondary_drawdown_diagnostic_market')
+            diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
+            d1,d2,d3,d4=st.columns(4)
+            d1.metric('Diagnostic Drawdown',f'{diag_dd:.1f}%')
+            d2.metric('Diagnostic Peak',f'{diag_peak:,.0f}',diag_peak_date.strftime('%Y-%m-%d'))
+            d3.metric('Current Level',f'{diag_close:,.0f}',diag_current_date.strftime('%Y-%m-%d'))
+            d4.metric('Diagnostic Basis',diag_ref)
+            st.caption('Diagnostic only: this does not drive Suggested Deploy. Deployment uses Current Structural Drawdown above.')
 
         with st.expander('📈 Quantitative Valuation Channels',expanded=True):
             st.markdown('### Quantitative Valuation Channels')
