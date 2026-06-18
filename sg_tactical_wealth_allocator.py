@@ -773,8 +773,7 @@ def render_market(expanded=False):
         st.markdown('## 🌦️ Market Conditions & Live Risk Monitor')
         current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
         actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
-        st.markdown('### Market / Currency Setup')
-        top1,top2,top3=st.columns([1.2,.9,1.0])
+        top1,top2,top3=st.columns([1.15,.85,1.05])
         top1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
         top2.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
         top3.markdown(f'<div class="mock-control-card"><div class="mock-label">Primary: Structural Drawdown</div><div class="mock-value">{dd:.1f}%</div><div class="mock-sub" style="color:#EA580C;font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
@@ -792,18 +791,18 @@ def render_market(expanded=False):
         k1.markdown(f'<div class="kpi-card"><div class="kpi-title">VIX Live</div><div class="kpi-value">{"N/A" if (vix is None or sel in PMI_NA_MARKETS) else f"{vix:.1f}"}</div><div class="kpi-sub-muted">Volatility regime</div></div>',unsafe_allow_html=True)
         k2.markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
         k3.markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
-        k4.markdown(f'<div class="kpi-card"><div class="kpi-title" style="color:{risk_colour};">LIVE MARKET RISK ALERT:</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="kpi-sub-green" style="font-weight:900;">{local_alert}</div><div class="kpi-sub-muted">{live_model_note}</div></div>',unsafe_allow_html=True)
+        k4.markdown(f'<div class="kpi-card"><div class="kpi-title" style="color:{risk_colour};font-weight:900;">LIVE MARKET RISK ALERT:</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="kpi-sub-green" style="font-weight:900;">{local_alert}</div><div class="kpi-sub-muted">{live_model_note}</div></div>',unsafe_allow_html=True)
 
         st.markdown('---')
         st.markdown('## Drawdown Basis Comparison')
-        cset,cstruct,cdiag=st.columns([0.95,1.35,1.35])
-        with cset:
-            st.markdown('<div class="mock-control-card"><div class="mock-label">Secondary Setting</div>',unsafe_allow_html=True)
+        set_label,set_radio=st.columns([0.14,0.86])
+        set_label.markdown('<div style="font-weight:800;color:#475569;font-size:.86rem;padding-top:.35rem;">Secondary Setting</div>',unsafe_allow_html=True)
+        with set_radio:
             diag_method=st.radio('Choose comparison lens',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,key='secondary_drawdown_diagnostic_market',horizontal=True,label_visibility='collapsed')
-            st.markdown('<div class="mock-sub">Choose comparison lens</div></div>',unsafe_allow_html=True)
         diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
-        cstruct.markdown(f'<div class="kpi-card"><div class="kpi-title">Primary: Structural Drawdown</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange" style="font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div><div class="kpi-sub-muted">Used for Suggested Deploy</div></div>',unsafe_allow_html=True)
-        cdiag.markdown(f'<div class="kpi-card"><div class="kpi-title">Secondary: {diag_ref}</div><div class="kpi-value">{diag_dd:.1f}%</div><div class="kpi-sub-green" style="font-weight:800;">Peak {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br>Current {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div><div class="kpi-sub-muted">Diagnostic only</div></div>',unsafe_allow_html=True)
+        comp1,comp2=st.columns([1,1])
+        comp1.markdown(f'<div class="kpi-card"><div class="kpi-title">Primary: Structural Drawdown — Used for Suggested Deploy</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange" style="font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
+        comp2.markdown(f'<div class="kpi-card"><div class="kpi-title">Secondary: {diag_ref} — Diagnostic only</div><div class="kpi-value">{diag_dd:.1f}%</div><div class="kpi-sub-green" style="font-weight:800;">Peak {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br>Current {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div></div>',unsafe_allow_html=True)
         st.caption('Structural Drawdown drives deployment and risk scoring. The secondary drawdown basis is a comparison indicator only.')
 
         with st.expander('📈 Quantitative Valuation Channels',expanded=True):
