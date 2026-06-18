@@ -1004,7 +1004,8 @@ def render_crash(expanded=False):
             if selected_id is None or selected_id not in event_df.index: st.info('Select an event by ticking **Inspect Event Detail** beside the event row above.')
             else:
                 row=event_df.loc[selected_id]; peak_date=pd.to_datetime(row['Peak Date']); trough_date=pd.to_datetime(row['Trough Date']); z_peak=row.get('Z @ Peak',np.nan); z_trough=row.get('Z @ Trough',np.nan)
-                render_event_context_card(row); render_compact_timeline(row,peak_date,trough_date)
+                render_compact_timeline(row,peak_date,trough_date)
+                render_event_context_card(row)
                 st.markdown('#### 🧪 Event-Level Staged Deployment Simulation')
                 c_amt,c_end,c_custom=st.columns([1,1,1]); event_budget=c_amt.number_input(f'Event Investible Budget ({current_currency_text()})',min_value=1000.0,value=15000.0,step=1000.0,key='selected_event_investment_amount')
                 ending_basis=c_end.selectbox('Ending Date Basis',['Never sell / Latest available','1Y after each deployment','2Y after each deployment','5Y after each deployment','Custom end date'],index=0,key='selected_event_ending_basis')
