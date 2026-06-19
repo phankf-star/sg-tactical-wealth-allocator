@@ -127,6 +127,32 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .assumption-text {font-size:.86rem;}
 }
 
+
+/* v36z+ Executive Centre visual mockup refresh */
+.exec-hero {background:#ECFDF5;border:3px solid #16A34A;border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
+.exec-hero-eyebrow {color:#16A34A;font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
+.exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
+.exec-hero-subline {color:#64748B;font-size:.92rem;line-height:1.45;margin-top:9px;}
+.exec-deploy-box {background:#FFFFFF;border:1px solid #BBF7D0;border-radius:22px;padding:20px 22px;min-height:152px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
+.exec-deploy-amount {color:#16A34A;font-size:2.25rem;line-height:1.05;font-weight:950;letter-spacing:-.035em;margin-top:8px;}
+.exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:9px;}
+.exec-deploy-fine {color:#64748B;font-size:.76rem;line-height:1.38;margin-top:8px;}
+.exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
+.exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
+.exec-kpi-card::before {content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--accent-colour,#2563EB);border-radius:22px 22px 0 0;}
+.exec-kpi-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
+.exec-kpi-value {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:950;letter-spacing:-.035em;margin-top:16px;}
+.exec-kpi-sub {color:#111827;font-size:.91rem;font-weight:650;line-height:1.42;margin-top:11px;}
+.exec-kpi-note {color:#64748B;font-size:.76rem;line-height:1.38;font-weight:750;margin-top:8px;}
+.exec-kpi-mini {height:44px;border:1px solid #EDF2F7;border-radius:13px;margin-top:14px;background:linear-gradient(180deg,#F8FBFF,#FFFFFF);display:flex;align-items:flex-end;gap:7px;padding:8px 10px;}
+.exec-kpi-bar {width:11%;border-radius:6px 6px 0 0;background:var(--accent-colour,#2563EB);opacity:.72;}
+.exec-kpi-value.amber-value {color:#B45309;}
+.exec-kpi-value.green-value {color:#16A34A;}
+.exec-kpi-value.red-value {color:#DC2626;}
+.exec-main-note {color:#64748B;font-size:.78rem;line-height:1.45;margin-top:4px;}
+@media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}}
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -304,6 +330,30 @@ def card(title,value,sub,accent,tooltip=None,pill=None):
     info = tooltip or ''
     pill_html = pill or ''
     return f'<div class="light-card" style="border-top:4px solid {accent};"><div class="exec-title-row">{title}{info}</div><div style="font-size:1.55rem;font-weight:800;color:{TEXT};margin-top:4px;">{value}</div><div style="font-size:.82rem;color:{MUTED};margin-top:3px;">{sub}</div>{pill_html}</div>'
+
+
+
+def exec_kpi_card(title, value, sub, accent, tooltip=None, note='', mini='default', value_class=''):
+    info = tooltip or ''
+    note_html = f'<div class="exec-kpi-note">{note}</div>' if note else ''
+    # Small decorative micro-chart only; intentionally non-analytical.
+    bar_sets = {
+        'down': [42, 36, 32, 29, 27, 24, 22, 20],
+        'valuation': [18, 26, 39, 44, 34, 24, 18],
+        'risk': [22, 34, 40, 28, 20],
+        'default': [24, 32, 28, 39, 25, 34, 29, 41],
+    }
+    bars = ''.join([f'<span class="exec-kpi-bar" style="height:{h}px;"></span>' for h in bar_sets.get(mini, bar_sets['default'])])
+    cls = f'exec-kpi-value {value_class}'.strip()
+    return f"""
+    <div class="exec-kpi-card" style="--accent-colour:{accent};">
+      <div class="exec-kpi-label">{title}{info}</div>
+      <div class="{cls}">{value}</div>
+      <div class="exec-kpi-sub">{sub}</div>
+      {note_html}
+      <div class="exec-kpi-mini" style="--accent-colour:{accent};">{bars}</div>
+    </div>
+    """
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
@@ -932,28 +982,77 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 
 # ------------------------- renderers -------------------------
 def render_executive():
-    st.markdown('---'); st.markdown('## 🧠 Executive Tactical Allocation Centre')
-    structural_tip=tooltip_html('Active Structural Drawdown',[('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.')
-    stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],f'Decision note:<br>{hesc(decision_line)}')
-    risk_tip=tooltip_html('Risk Regime Methodology',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.')
-    z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.')
+    st.markdown('---')
+    st.markdown('## 🧠 Executive Tactical Allocation Centre')
+
+    structural_tip=tooltip_html(
+        'Active Structural Drawdown',
+        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],
+        'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
+    )
+    stance_tip=tooltip_html(
+        'Decision Rule Explanation',
+        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
+        f'Decision note:<br>{hesc(decision_line)}'
+    )
+    deploy_tip=tooltip_html(
+        'Suggested Deploy',
+        [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source)],
+        'This is a rules-based decision-support output. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.'
+    )
+    risk_tip=tooltip_html(
+        'Risk Regime Methodology',
+        [('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],
+        'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.'
+    )
+    z_tip=tooltip_html(
+        'Valuation Z-Score (OOS)',
+        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],
+        'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.'
+    )
+
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
-    action_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
-    if deploy>0:
-        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'; deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
-    else:
-        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'; deploy_sub='No deployment triggered'
-    r1=st.columns(3)
-    r1[0].markdown(card(index_label,f'{close:,.0f}',f'{ticker} · Index Level',BLUE),unsafe_allow_html=True)
-    r1[1].markdown(card('Current Structural Drawdown',f'{dd:.1f}%',f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}<br>Basis: {ref.replace("Structural Drawdown · ","")}',structural_colour,tooltip=structural_tip),unsafe_allow_html=True)
-    r1[2].markdown(card('Current Allocation Stance',zone,'Drawdown-based deployment rule',action_colour,tooltip=stance_tip,pill=stance_pill),unsafe_allow_html=True)
-    r2=st.columns(3)
-    r2[0].markdown(card('Suggested Deploy',fmt_sgd(deploy),deploy_sub,AMBER),unsafe_allow_html=True)
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
-    r2[1].markdown(card('Risk Regime',alert,f'{model_note} · Score {live_score:.0f}/100',risk_colour,tooltip=risk_tip),unsafe_allow_html=True)
+
+    if deploy>0:
+        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
+        deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
+    else:
+        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'
+        deploy_sub='No deployment triggered'
+
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
-    r2[2].markdown(card('Valuation Z-Score (OOS)',z_display,f'{exec_valuation_zone} · Expanding Window',exec_valuation_colour,tooltip=z_tip),unsafe_allow_html=True)
+    risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
+    z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
+
+    st.markdown(f'''
+    <section class="exec-hero">
+      <div>
+        <div class="exec-hero-eyebrow">Allocation Stance {stance_tip}</div>
+        <div class="exec-hero-title">Crash-Buy Decision:<br>{hesc(zone)}</div>
+        {stance_pill}
+        <div class="exec-hero-subline">Selected market: <b>{hesc(index_label)}</b> · Current index level: <b>{close:,.0f}</b></div>
+      </div>
+      <aside class="exec-deploy-box">
+        <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
+        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)}</div>
+        <div class="exec-deploy-sub">{hesc(deploy_sub)}</div>
+        <div class="exec-deploy-fine">Based on selected investible capital only; not a buy call or financial advice.</div>
+      </aside>
+    </section>
+    ''', unsafe_allow_html=True)
+
+    kpi_html = f'''
+    <section class="exec-main-grid">
+      {exec_kpi_card(hesc(index_label) + ' Index Level', f'{close:,.0f}', f'{hesc(ticker)} · Current market level', BLUE, note='Market anchor', mini='default')}
+      {exec_kpi_card('Current Structural Drawdown', f'{dd:.1f}%', f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}', structural_colour, tooltip=structural_tip, note='Primary deployment basis', mini='down')}
+      {exec_kpi_card('Valuation Z-Score (OOS)', z_display, hesc(exec_valuation_zone), exec_valuation_colour, tooltip=z_tip, note='Valuation support / caution signal', mini='valuation', value_class=z_value_class)}
+      {exec_kpi_card('Risk Regime', hesc(alert), f'{hesc(model_note)} · Score {live_score:.0f}/100', risk_colour, tooltip=risk_tip, note='Risk-condition monitor', mini='risk', value_class=risk_value_class)}
+    </section>
+    <div class="exec-main-note">Methodology details are intentionally kept inside the info tooltips so the main page remains clean and executive-friendly.</div>
+    '''
+    st.markdown(kpi_html, unsafe_allow_html=True)
 
 def render_suggested(expanded=False):
     suggested_title = f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
