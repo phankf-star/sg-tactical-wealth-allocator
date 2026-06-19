@@ -1095,7 +1095,7 @@ def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
         init_user_etf_preferences()
         st.markdown('## 📊 Market Performance & ETF Tracker')
-        st.caption('Global performance overview, selected-market ETF vehicles, visible user-selected ETF input, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
+        st.caption('Global performance overview, selected-market ETF implementation vehicles, user-selected ETF watchlist, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
 
         ctrl1, ctrl2, ctrl3 = st.columns([1.05, .85, .85])
         market_options = list(ETF_UNIVERSE.keys())
@@ -1126,14 +1126,24 @@ def render_performance(expanded=False):
         else:
             st.info('Global performance data is unavailable.')
 
-        st.markdown('### 2. Add / Compare My Own ETF')
-        st.caption('This input is intentionally visible. Add your own ETF ticker here for watchlist tracking and comparison. It does not affect deployment signals.')
-        st.markdown(f"""
-<div class="soft-card">
-  <div style="font-size:13px;color:{TEXT};font-weight:800;">User-selected ETF / Watchlist Input</div>
-  <div style="font-size:12px;color:{MUTED};margin-top:3px;">Enter a ticker such as VOO, ES3.SI, 2800.HK, GLD or IBIT. This is an implementation reference only, not a recommendation.</div>
-</div>
-""", unsafe_allow_html=True)
+        st.markdown('### 2. Selected-Market ETF Implementation Vehicles')
+        rows = build_etf_reference_rows(perf_market)
+        etf_df = add_performance_and_gap(rows, perf_market)
+        if not etf_df.empty:
+            if role_filter == 'User-selected only':
+                etf_df = etf_df[etf_df['Source'].eq('User-selected')]
+            elif role_filter != 'All':
+                etf_df = etf_df[etf_df['Role'].eq(role_filter)]
+        if etf_df.empty:
+            st.info('No ETF rows available for the selected filter. Add a user-selected ETF below if you want to compare your own vehicle.')
+        else:
+            display_cols=['Source','Role','Instrument','Ticker','Currency','Use case','Price','1Y %','1Y Gap vs Index %','3Y %','3Y Gap vs Index %','5Y %','5Y Gap vs Index %']
+            st.dataframe(etf_df[display_cols], use_container_width=True, hide_index=True)
+            st.caption('Implementation reference only. ETF vehicles and user-selected tickers are for tracking and comparison, not recommendations. Deployment signals remain based on the selected market index.')
+            st.caption('Gap columns = ETF return minus selected market index return. For satellite or cross-market ETFs, this is a comparison gap, not tracking error or underperformance judgement.')
+
+        st.markdown('### 3. Add / Compare My Own ETF')
+        st.caption('Add your own ETF ticker here for watchlist tracking and comparison. It does not affect deployment signals.')
         a,b,c,d = st.columns([.8,1.15,.8,.85])
         new_ticker = a.text_input('New ETF ticker', value='', placeholder='e.g. VOO / ES3.SI', key='custom_etf_ticker')
         new_name = b.text_input('Display name (optional)', value='', placeholder='Optional ETF name', key='custom_etf_name')
@@ -1158,36 +1168,26 @@ def render_performance(expanded=False):
         else:
             st.info('No user-selected ETF saved for this market yet.')
 
-        st.markdown('### 3. Selected-Market ETF Implementation Vehicles')
-        rows = build_etf_reference_rows(perf_market)
-        etf_df = add_performance_and_gap(rows, perf_market)
-        if not etf_df.empty:
-            if role_filter == 'User-selected only':
-                etf_df = etf_df[etf_df['Source'].eq('User-selected')]
-            elif role_filter != 'All':
-                etf_df = etf_df[etf_df['Role'].eq(role_filter)]
-        if etf_df.empty:
-            st.info('No ETF rows available for the selected filter. Add a user-selected ETF above if you want to compare your own vehicle.')
-        else:
-            display_cols=['Source','Role','Instrument','Ticker','Currency','Use case','Price','1Y %','1Y Gap vs Index %','3Y %','3Y Gap vs Index %','5Y %','5Y Gap vs Index %']
-            st.dataframe(etf_df[display_cols], use_container_width=True, hide_index=True)
-            st.caption('Gap columns = ETF return minus selected market index return. For satellite or cross-market ETFs, this is a comparison gap, not tracking error or underperformance judgement.')
+        with st.expander('4. ETF Role Classification Guide', expanded=False):
+            guide=pd.DataFrame([
+                {'Role':'Core','Meaning':'Closest broad-market implementation proxy for the selected market/index.'},
+                {'Role':'Satellite','Meaning':'Optional tilt such as growth, dividend, REIT, sector, gold, bitcoin or thematic exposure.'},
+                {'Role':'Defensive','Meaning':'Optional lower-volatility or capital-preservation reference layer, if the user chooses to track one.'},
+                {'Role':'User-selected','Meaning':'ETF entered by the user for watchlist tracking and comparison only.'},
+            ])
+            st.dataframe(guide, use_container_width=True, hide_index=True)
 
-        st.markdown('### 4. Core / Satellite Role Guide')
-        guide=pd.DataFrame([
-            {'Role':'Core','Meaning':'Closest broad-market implementation proxy for the selected market/index.'},
-            {'Role':'Satellite','Meaning':'Optional tilt such as growth, dividend, REIT, sector, gold, bitcoin or thematic exposure.'},
-            {'Role':'Defensive','Meaning':'Optional lower-volatility or capital-preservation reference layer, if the user chooses to track one.'},
-            {'Role':'User-selected','Meaning':'ETF entered by the user for watchlist tracking and comparison only.'},
-        ])
-        st.dataframe(guide, use_container_width=True, hide_index=True)
-
-        st.markdown('### 5. Methodology & Guardrail Note')
-        st.markdown(f"""
-<div class="soft-card">
-  <b>Implementation reference only:</b> ETF vehicles are shown for market-access tracking and comparison. User-selected ETFs are watchlist inputs, not recommendations, financial advice, suitability assessments, or buy calls. Suggested deployment remains based on selected investible capital, structural drawdown, valuation context, risk regime and the rules-based deployment ladder.
-</div>
-""", unsafe_allow_html=True)
+        with st.expander('5. Methodology & Guardrails', expanded=False):
+            guardrails = [
+                'ETF vehicles are implementation references only.',
+                'User-selected ETFs are watchlist inputs and are not recommendations, buy calls, financial advice, or suitability assessments.',
+                'Performance gap is ETF return minus selected market index return.',
+                'For satellite or cross-market ETFs, the gap is comparison only and should not be treated as tracking error.',
+                'Deployment remains based on structural drawdown, valuation context, risk regime, selected investible capital, and the rules-based deployment ladder.',
+                'User-selected ETFs do not affect Suggested Deploy, allocation stance, risk regime, valuation Z-score, or crash analytics.',
+            ]
+            rows=''.join([f'<div class="assumption-row"><b>{i}</b><span>{hesc(txt)}</span></div>' for i,txt in enumerate(guardrails,1)])
+            st.markdown(f'<div class="soft-card">{rows}</div>', unsafe_allow_html=True)
 
 
 
