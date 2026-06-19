@@ -15,8 +15,13 @@ st.set_page_config(page_title='Global Drawdown Allocation Engine v36 Phase 2', l
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
-# Currency display helpers.
-# Use HTML entity for dollar sign inside Markdown/HTML-rendered blocks to avoid Streamlit LaTeX parsing.
+# ----------------------------------------------------------------
+# 🛠️ UTILITY & DISPLAY HELPERS (Defined First to Prevent NameErrors)
+# ----------------------------------------------------------------
+def clip_val(v, mi, ma):
+    return max(mi, min(v, ma))
+
+# Currency display helpers
 SGD_TEXT = 'S$'
 SGD_HTML = 'S&#36;'
 def current_currency_text():
@@ -27,7 +32,6 @@ def fmt_sgd(value):
     return f'{current_currency_text()}{value:,.0f}'
 def fmt_sgd_html(value):
     return f'{current_currency_html()}{value:,.0f}'
-
 
 st.markdown('''
 <style>
@@ -105,7 +109,6 @@ def build_trend_channel(df, len_window=2040, model='Expanding Window'):
                     pred = m * i + c
                     mu[i] = np.exp(pred)
                     
-                    # Calculated expanding residual standard deviation
                     idx = np.arange(k)
                     fit = m * idx + c
                     sig[i] = np.std(np.log(close[:k]) - fit)
@@ -182,7 +185,7 @@ def build_etf_reference_rows(sel):
         {'Source':'System Primary Spec','Role':'Target Asset Tracking','Instrument':'iShares Core MSCI World ETF','Ticker':'EWRD.L','Coverage':'Primary Ticker Framework','Base CCY':'USD','FX to SGD':1.3520},
         {'Source':'System Primary Spec','Role':'System Alternative Reference','Instrument':'Tracker Fund of Hong Kong','Ticker':'2800.HK','Coverage':'Alternative System Tracker','Base CCY':'HKD','FX to SGD':0.1730},
         {'Source':'System Primary Spec','Role':'System Alternative Reference','Instrument':'iShares Core Hang Seng Index ETF','Ticker':'3115.HK','Coverage':'Alternative System Tracker','Base CCY':'HKD','FX to SGD':0.1730},
-        {'Source':'System Primary Spec','Role':'System Alternative Reference','Instrument':'Hang Seng Index ETF','膨胀':'2833.HK','Coverage':'Alternative System Tracker','Base CCY':'HKD','FX to SGD':0.1730}
+        {'Source':'System Primary Spec','Role':'System Alternative Reference','Instrument':'Hang Seng Index ETF','Ticker':'2833.HK','Coverage':'Alternative System Tracker','Base CCY':'HKD','FX to SGD':0.1730}
     ]
     return [r for r in rows if r['Instrument'] == sel or r['Role'] == 'System Alternative Reference']
 
@@ -225,7 +228,6 @@ with st.sidebar:
     st.markdown('<div style="font-size:1.15rem; font-weight:800; color:#1E293B; margin-bottom:2px;">🎯 Allocation Hub</div>', unsafe_allow_html=True)
     st.markdown('<div style="font-size:0.7rem; font-weight:600; color:#64748B; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:16px;">Drawdown Allocation Engine v36</div>', unsafe_allow_html=True)
     
-    # 💼 Owner / Business Mode Status System
     is_owner_mode = st.session_state.get('owner_mode', False)
     access_label = "💼 Owner Account" if is_owner_mode else "🔬 Analyst View"
     status_indicator = "● Verified (Family Trust Setup)" if is_owner_mode else "○ Standard Sandbox Mode"
@@ -239,7 +241,6 @@ with st.sidebar:
     </div>
     ''', unsafe_allow_html=True)
     
-    # Structural Profile Toggle Switch Matrix
     st.markdown("**System Profile Matrix**")
     t1, t2 = st.columns(2)
     with t1:
@@ -282,7 +283,6 @@ if ud.empty:
     st.error(f"Platform Alert: High latency or failure pipeline scraping historical structures for {ticker}.")
     st.stop()
 
-# Execution calculations
 close = ud['Close'].iloc[-1]
 ud['Peak'] = ud['Close'].cummax()
 peak = ud['Peak'].iloc[-1]
@@ -291,7 +291,6 @@ dd = ((close - peak) / peak) * 100.0
 ud['MA200'] = ud['Close'].rolling(window=200).mean()
 ma200 = ud['MA200'].iloc[-1] if not pd.isna(ud['MA200'].iloc[-1]) else close
 
-# Call analytical out-of-sample trend channel module
 z_scores, mu_series, sig_series = build_trend_channel(ud, len_window=2040, model=model_type)
 exec_z_score = z_scores.iloc[-1]
 val_mu = mu_series.iloc[-1]
@@ -301,7 +300,6 @@ val_label = "Deep Undervaluation (Extreme Buy)" if exec_z_score < -2.0 else \
             ("Undervalued (Accumulate)" if exec_z_score < -1.0 else \
              ("Overvalued (Trim/Hold)" if exec_z_score > 1.0 else "Fair Value Alignment"))
 
-# PMI Risk Regime mapping modules
 chosen = cfg['pmi_label']
 latest_in = 49.2 if sel in PMI_NA_MARKETS else 50.8
 month_in = 'May 2026'
@@ -321,7 +319,6 @@ live_score = clip_val(base_score + (pmi_gap * 4.0) if pmi_val < 50.0 else base_s
 alert_level = "CRITICAL (High Macro Risk)" if live_score >= 70 else \
               ("WATCH (Elevated Stance)" if live_score >= 40 else "NORMAL (Stable Economic Expansion)")
 
-# Core Deployment Matrix Rules
 thr_trigger = cfg['thr']
 step_trigger = cfg['step']
 max_t = cfg['max_tranches']
@@ -350,14 +347,13 @@ deploy = total_dry_powder * deploy_pct
 conf_label = "HIGH CONFIDENCE" if len(ud) > 1000 and abs(exec_z_score) > 0.5 else "STANDBY RE-CALIBRATION"
 
 # ----------------------------------------------------------------
-# 📋 RESTRUCTURED EXECUTIVE CENTRE LANDING PAGE
+# 📋 RESTYLED EXECUTIVE CENTRE LANDING PAGE RENDERER
 # ----------------------------------------------------------------
 def render_executive():
     st.markdown(f"### 🧠 Executive Centre: {sel} ({ticker})")
     st.caption("Live asset class tactical deployment summary and underlying structural core metrics.")
     st.markdown("---")
     
-    # 1. NEW FULL-WIDTH HERO ACTION BANNER (ALLOCATION STANCE & AMOUNT DOMINANT)
     is_buy_zone = "DEPLOY" in zone or "ACTION" in zone or "CORRIDOR" in zone
     accent_color = RED if is_buy_zone else SLATE
     bg_light = "#FEF2F2" if is_buy_zone else "#F8FAFC"
@@ -380,7 +376,6 @@ def render_executive():
         </div>
     """, unsafe_allow_html=True)
     
-    # 2. SUBORDINATE DISCIPLINED DIAGNOSTICS ROW FLOWING UNDERNEATH
     st.markdown("#### 🔍 Underlying Market Drivers & Diagnostics")
     c1, c2, c3, c4 = st.columns(4)
     
@@ -400,207 +395,4 @@ def render_executive():
                 <div style="font-size: 1.45rem; font-weight: 850; color: {RED if dd <= -thr_trigger else TEXT}; margin: 4px 0;">{dd:.2f}%</div>
                 <span style="font-size: 0.75rem; color: {MUTED}; font-weight: 600;">Cycle Peak: {peak:,.2f}</span>
             </div>
-        """, unsafe_allow_html=True)
-        
-    with c3:
-        st.markdown(f"""
-            <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; padding: 16px; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); height: 100%;">
-                <span style="font-size: 0.78rem; color: {MUTED}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;">Valuation Z-Score (OOS)</span>
-                <div style="font-size: 1.45rem; font-weight: 850; color: {GREEN if exec_z_score < -1.0 else TEXT}; margin: 4px 0;">{exec_z_score:.2f}</div>
-                <span style="font-size: 0.72rem; color: {MUTED}; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{val_label}</span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    with c4:
-        st.markdown(f"""
-            <div style="background-color: #FFFFFF; border: 1px solid #E2E8F0; padding: 16px; border-radius: 10px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); height: 100%;">
-                <span style="font-size: 0.78rem; color: {MUTED}; font-weight: 700; text-transform: uppercase; letter-spacing: 0.02em;">Market Risk Alert</span>
-                <div style="font-size: 1.45rem; font-weight: 850; color: {GREEN if live_score < 40 else (AMBER if live_score < 70 else RED)}; margin: 4px 0;">{live_score:.0f}/100</div>
-                <span style="font-size: 0.72rem; color: {MUTED}; font-weight: 600; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Regime: {alert_level}</span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-    st.markdown("<div style='margin-top: 14px;'></div>", unsafe_allow_html=True)
-    
-    # Bottom alignment sub-grid panel for pipeline audit traces
-    ca, cb = st.columns(2)
-    with ca:
-        st.markdown(f"""
-            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.82rem; color: {MUTED}; font-weight: 600;">📡 Signal Confidence Matrix:</span>
-                <span style="font-size: 0.85rem; color: {PURPLE}; font-weight: 700;">{conf_label}</span>
-            </div>
-        """, unsafe_allow_html=True)
-    with cb:
-        st.markdown(f"""
-            <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px 16px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 0.82rem; color: {MUTED}; font-weight: 600;">💱 System Base Asset Currency:</span>
-                <span style="font-size: 0.85rem; color: {TEXT}; font-weight: 700;">{base_ccy} <span style="font-size: 0.75rem; font-weight: 500; color: {MUTED};">(FX to SGD: {fx_rate:.4f})</span></span>
-            </div>
-        """, unsafe_allow_html=True)
-
-# ----------------------------------------------------------------
-# 📂 COMPONENT RENDERERS FOR SUB-QUADRANTS (REMAIN INTACT)
-# ----------------------------------------------------------------
-def clip_val(v, mi, ma):
-    return max(mi, min(v, ma))
-
-def render_suggested(expanded=False):
-    with st.expander('💰 Capital Deployment Tranche Allocation Details', expanded=expanded):
-        st.markdown("#### Capital Allocation Multi-Tier Distribution Matrix")
-        st.caption("Calculation architecture partitioning dry powder across progressive structural drawdown bands.")
-        
-        step_table = []
-        cum_allocated_pct = 0.0
-        
-        for idx in range(1, max_t + 1):
-            trigger_dd = -(thr_trigger + (idx - 1) * step_trigger)
-            
-            if rule_mode == 'Dynamic Valuation Scaling' and exec_z_score < 0:
-                mult = 1.0 + min(abs(exec_z_score), 1.5)
-            else:
-                mult = 1.0
-                
-            b_frac = 1.0 / max_t
-            t_pct = min(b_frac * mult, 1.0 - cum_allocated_pct) if idx == max_t else min(b_frac * mult, 1.0)
-            
-            # Bound cumulative calculations
-            if cum_allocated_pct + t_pct > 1.0:
-                t_pct = 1.0 - cum_allocated_pct
-            
-            t_amt_sgd = total_dry_powder * t_pct
-            t_amt_base = t_amt_sgd / fx_rate
-            
-            status = "🔴 ACTIVE TRIGGERED" if dd <= trigger_dd else "⚪ AWAITING CYCLE"
-            cum_allocated_pct += t_pct
-            
-            step_table.append({
-                "Tranche Element": f"Tranche Level {idx}",
-                "Drawdown Trigger Point": f"{trigger_dd:.1f}%",
-                "Allocation Factor": f"{t_pct:.1%}",
-                "Tranche Deployment Amount": fmt_sgd(t_amt_sgd),
-                "Asset Base Amount": f"{base_ccy} {t_amt_base:,.0f}",
-                "Live Pipeline Status": status
-            })
-            
-        st.dataframe(pd.DataFrame(step_table), use_container_width=True, hide_index=True)
-        
-        st.markdown("##### ⚙️ Live Macro Economic Risk Interface")
-        m_col1, m_col2 = st.columns(2)
-        with m_col1:
-            st.session_state.latest_pmi_value = st.number_input(f"Modify Active Input: {chosen}", min_value=30.0, max_value=70.0, value=pmi_val, step=0.1)
-        with m_col2:
-            st.session_state.latest_pmi_month = st.text_input("Modify Context Reporting Period", value=pmi_m)
-        st.caption(f"Adjustments recalculate real-time platform metrics. System Core Level Indicator: {live_score:.1f}/100 → Stance: {alert_level}")
-
-def render_assumptions():
-    with st.expander('📋 Platform Strategy Core Assumptions', expanded=False):
-        st.markdown(f"""
-        * **Target Core Instrument Tracking Ticker**: {ticker} | **Denomination**: {base_ccy}
-        * **Drawdown Trigger Minimum Limit**: -{thr_trigger:.1f}% | **Progression Sizing Steps**: -{step_trigger:.1f}% per level
-        * **Maximum Tranche Slices Allowed**: {max_t} Deep Structural Segments
-        * **Live Composite FX Calibration Matrix Value**: {fx_rate:.4f} Base Asset Currency to {SGD_TEXT} Conversion
-        """)
-
-def render_market(expanded=False):
-    with st.expander('🌦️ Live Market Channel Validation Profiles', expanded=expanded):
-        st.markdown("#### Out-of-Sample Expanded Window Valuation Channels")
-        st.caption("Statistical parameters calculated on dynamic mathematical window boundaries against structural history.")
-        
-        # Plotly chart processing pipelines
-        fig = go.Figure()
-        sub_df = ud.suffix('').tail(750) # View window limitation
-        t_idx = sub_df.index
-        
-        fig.add_trace(go.Scatter(x=sub_df['Date'], y=sub_df['Close'], name='Live Index Level', line=dict(color=TEXT, width=2.5)))
-        
-        # Reconstruct structural band bounds
-        m_vals = mu_series.loc[t_idx].values
-        s_vals = sig_series.loc[t_idx].values
-        
-        fig.add_trace(go.Scatter(x=sub_df['Date'], y=m_vals, name='Model Regression Mean', line=dict(color=BLUE, dash='dash')))
-        fig.add_trace(go.Scatter(x=sub_df['Date'], y=m_vals * np.exp(s_vals), name='+1 Standard Dev (Overvalued)', line=dict(color=RED, width=1)))
-        fig.add_trace(go.Scatter(x=sub_df['Date'], y=m_vals * np.exp(-s_vals), name='-1 Standard Dev (Undervalued)', line=dict(color=GREEN, width=1)))
-        fig.add_trace(go.Scatter(x=sub_df['Date'], y=m_vals * np.exp(-2*s_vals), name='-2 Standard Dev (Extreme Entry)', line=dict(color=PURPLE, width=1.5)))
-        
-        fig.update_layout(template='plotly_white', height=450, margin=dict(l=20, r=20, t=20, b=20), legend=dict(orientation='h', yanchor='bottom', y=1.02, xanchor='right', x=1))
-        st.plotly_chart(fig, use_container_width=True)
-
-def render_performance(expanded=False):
-    with st.expander('📊 System Performance Alternative Universes', expanded=expanded):
-        st.markdown("### 📡 Alternate Trackers & Deployment Discrepancies")
-        ref_rows = build_etf_reference_rows(sel)
-        df_ref = add_performance_and_gap(ref_rows, sel)
-        if not df_ref.empty:
-            st.dataframe(df_ref[['Source', 'Role', 'Instrument', 'Ticker', 'Price', '1Y %', '1Y Gap', 'Coverage']], use_container_width=True, hide_index=True)
-        else:
-            st.info("No baseline tracker validation matrix rows compiled for this segment.")
-
-def render_crash(expanded=False):
-    with st.expander('🏆 Historical Secular Crash Event Diagnostics', expanded=expanded):
-        st.markdown("#### Historical Crisis Performance Matrix")
-        st.caption("Deep analytics identifying structural drawdown cycles exceeding the selected threshold.")
-        valuation_tc, _, _ = build_trend_channel(ud, 2040, model=model_type)
-        df_crash = crash_events(ud, thr=thr_trigger, current=close, valuation_tc=valuation_tc)
-        if not df_crash.empty:
-            st.dataframe(df_crash[['Historical Label', 'Peak Date', 'Drawdown %', 'Trough Date', 'Severity', 'Duration Days', 'Valuation Classification']], use_container_width=True, hide_index=True)
-        else:
-            st.info("No historical cycles matched the specified minimum drawdown trigger limit.")
-
-def render_audit(expanded=False):
-    with st.expander('📡 Platform Verification Audit Trail Logs', expanded=expanded):
-        snap = pd.DataFrame([{
-            'Timestamp SGT': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'Portfolio Segment': asset_group,
-            'Asset Key': sel,
-            'Ticker Symbol': ticker,
-            'Spot Close': close,
-            'Structural Peak': peak,
-            'Current Drawdown': f"{dd:.2f}%",
-            'Target Action Zone': zone,
-            'Capital Factor Allocation': f"{deploy_pct:.0%}",
-            'Calculated Amount': f"${deploy:,.2f}",
-            'Macro Variable Input': pmi_val,
-            'Risk Indicator Alert': f"{live_score:.1f}/100",
-            'Economic Categorization': alert_level,
-            'Analysis Infrastructure': 'Macro Multi-Factor Overlay Model' if sel in PMI_NA_MARKETS else 'Equity macro',
-            'Valuation Model': 'OOS Expanding Valuation Channel (Live Quant Model)',
-            'Valuation Z-Score': exec_z_score,
-            'Bias Status': 'No look-ahead bias for OOS valuation model',
-            'Signal Confidence': conf_label
-        }])
-        st.markdown('#### 📤 Tactical Snapshot Export')
-        st.dataframe(snap, use_container_width=True, hide_index=True)
-        st.download_button('⬇️ Export Tactical Snapshot CSV', snap.to_csv(index=False), file_name='tactical_snapshot_phase2.csv', mime='text/csv')
-
-RENDERERS = {
-    '💰 Suggested Deploy': render_suggested,
-    '🌦️ Market Conditions': render_market,
-    '📊 Market Performance': render_performance,
-    '🏆 Crash Analytics': render_crash,
-    '📡 Audit Trail & Export': render_audit
-}
-
-SECTION_ORDER = ['💰 Suggested Deploy', '🌦️ Market Conditions', '📊 Market Performance', '🏆 Crash Analytics', '📡 Audit Trail & Export']
-
-def run_render_loop():
-    render_executive()
-    for section in SECTION_ORDER:
-        if section == '💰 Suggested Deploy':
-            if active_section == section:
-                RENDERERS[section](expanded=True)
-            else:
-                RENDERERS[section](expanded=deploy > 0 if active_section == '🧠 Executive Centre' else False)
-            render_assumptions()
-        elif active_section == section:
-            RENDERERS[section](expanded=True)
-        else:
-            RENDERERS[section](expanded=False)
-    st.markdown('---')
-    st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
-    st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
-
-# ----------------------------------------------------------------
-# 🏁 APPLICATION PIPELINE START POINT
-# ----------------------------------------------------------------
-run_render_loop()
+        """, unsafe_allow_
