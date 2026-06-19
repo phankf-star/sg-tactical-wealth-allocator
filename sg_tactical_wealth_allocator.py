@@ -1214,9 +1214,8 @@ def render_performance(expanded=False):
         market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
 
         # Keep the ETF tracker tied to the sidebar-selected market by default.
-        # Without this sync, Streamlit preserves the previous selectbox key value
-        # when the user switches the main market from the sidebar, so the ETF
-        # table can remain on the prior market (e.g. STI) while the sidebar shows HSI.
+        # Streamlit otherwise preserves the previous selectbox key value after
+        # the sidebar market changes, which can leave ETF rows on the prior market.
         sync_key='performance_market_view_sidebar_sync'
         if sel in market_options and st.session_state.get(sync_key)!=sel:
             st.session_state.performance_market_view=sel
@@ -1248,6 +1247,15 @@ def render_performance(expanded=False):
         if etf_df.empty:
             st.info('No ETF rows with usable price data are available for the selected filter. Add a valid ETF below, using the correct Yahoo Finance ticker format where needed.')
         else:
+            # Display hierarchy: platform-default ETFs first, system references next,
+            # user-added ETFs at the bottom.
+            source_order={'Platform default':0,'System reference':1,'User-selected':2}
+            role_order={'Core':0,'Satellite':1,'Defensive':2,'Thematic':3}
+            etf_df=etf_df.copy()
+            etf_df['_SourceOrder']=etf_df['Source'].map(source_order).fillna(9)
+            etf_df['_RoleOrder']=etf_df['Role'].map(role_order).fillna(9)
+            etf_df=etf_df.sort_values(['_SourceOrder','_RoleOrder','Instrument','Ticker'],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
+
             display_cols=['Instrument','Ticker','Promote','Role','Currency','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','Coverage']
             display_df=etf_df[[c for c in display_cols if c in etf_df.columns]].copy()
             eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
@@ -1263,7 +1271,7 @@ def render_performance(expanded=False):
                     selected_promotion_row=matches[-1] if matches else None
             else:
                 st.dataframe(display_df,use_container_width=True,hide_index=True)
-                st.caption('No user-selected ETF is currently eligible for promotion. Platform-default and system-reference rows are locked.')
+                st.caption('Table order: Platform default ETFs first, system-reference ETFs next, user-added ETFs at the bottom. Platform-default and system-reference rows are locked.')
             st.caption('Since Listing % is calculated from the first available Yahoo Finance historical price record to the latest available price. 1Y Gap compares ETF 1Y return with the selected market index where both are available.')
 
         if selected_promotion_row:
@@ -1280,7 +1288,9 @@ def render_performance(expanded=False):
 
         st.markdown(f'### 3. Add / Compare My Own ETF — {perf_market}')
         st.caption('Quick add only. Advanced inputs and maintenance are collapsed to keep this section clean.')
-        q1,q2=st.columns([1.05,.32])
+        # Quick-add layout: keep the Add ETF button directly beside the ticker input
+        # instead of floating at the far right of the page.
+        q1,q2,q3=st.columns([0.76,0.18,0.06])
         market_placeholder_examples={
             'S&P 500':'e.g. SPY / VOO / IVV',
             'Nasdaq':'e.g. QQQ / QQQM',
@@ -1294,6 +1304,7 @@ def render_performance(expanded=False):
             'Bitcoin':'e.g. IBIT / GBTC',
         }
         new_ticker=q1.text_input('New ETF ticker',value='',placeholder=market_placeholder_examples.get(perf_market,'e.g. VOO / ES3.SI / 2800.HK'),key='custom_etf_ticker')
+        q2.markdown('<div style="height:1.72rem"></div>',unsafe_allow_html=True)
         add_clicked=q2.button('➕ Add ETF',use_container_width=True,key='add_custom_etf_button')
         with st.expander('Advanced ETF input options',expanded=False):
             a,b,c,d=st.columns([1.1,.8,.85,1.35])
