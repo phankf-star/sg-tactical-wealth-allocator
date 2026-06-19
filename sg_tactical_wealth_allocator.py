@@ -1212,7 +1212,17 @@ def render_performance(expanded=False):
         st.caption('Consolidated ETF implementation vehicles with user-selected promotion action in the main table. Implementation reference only — not a recommendation.')
         ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1.0,.78,.82,.65])
         market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
-        perf_market=ctrl1.selectbox('Market view',market_options,index=default_idx,key='performance_market_view')
+
+        # Keep the ETF tracker tied to the sidebar-selected market by default.
+        # Without this sync, Streamlit preserves the previous selectbox key value
+        # when the user switches the main market from the sidebar, so the ETF
+        # table can remain on the prior market (e.g. STI) while the sidebar shows HSI.
+        sync_key='performance_market_view_sidebar_sync'
+        if sel in market_options and st.session_state.get(sync_key)!=sel:
+            st.session_state.performance_market_view=sel
+            st.session_state[sync_key]=sel
+
+        perf_market=ctrl1.selectbox('Market view',market_options,index=default_idx,key='performance_market_view',help='Defaults to the sidebar Selected Market and resets automatically when the sidebar market changes.')
         market_ccy,market_symbol,_,market_ccy_name=market_currency_info(perf_market)
         role_filter=ctrl2.selectbox('ETF View',['All','Core','Satellite','Defensive','User-selected only','Platform default only'],index=0,key='etf_role_filter')
         st.session_state.user_etf_remember=ctrl3.checkbox('Remember ETF list for next visit',value=st.session_state.get('user_etf_remember',False),key='remember_user_etf_checkbox')
@@ -1227,7 +1237,7 @@ def render_performance(expanded=False):
             if not gdf.empty: gdf.insert(0,'Group',group); global_frames.append(gdf)
         st.dataframe(pd.concat(global_frames,ignore_index=True),use_container_width=True,hide_index=True) if global_frames else st.info('Global performance data is unavailable.')
 
-        st.markdown('### 2. ETF Implementation Vehicles')
+        st.markdown(f'### 2. Selected-Market ETF Implementation Vehicles — {perf_market}')
         etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
             etf_df=etf_df[etf_df['Data Status'].eq('OK')]
@@ -1268,10 +1278,22 @@ def render_performance(expanded=False):
                 st.rerun()
             p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Limited return history is allowed but labelled clearly.')
 
-        st.markdown('### 3. Add ETF')
+        st.markdown(f'### 3. Add / Compare My Own ETF — {perf_market}')
         st.caption('Quick add only. Advanced inputs and maintenance are collapsed to keep this section clean.')
         q1,q2=st.columns([1.05,.32])
-        new_ticker=q1.text_input('New ETF ticker',value='',placeholder='e.g. VOO / ES3.SI / 2800.HK',key='custom_etf_ticker')
+        market_placeholder_examples={
+            'S&P 500':'e.g. SPY / VOO / IVV',
+            'Nasdaq':'e.g. QQQ / QQQM',
+            'DJIA':'e.g. DIA',
+            'HSI':'e.g. 2800.HK / 3115.HK / 3067.HK',
+            'STI':'e.g. ES3.SI / G3B.SI',
+            'KLSE':'e.g. 0820EA.KL',
+            'A-Share':'e.g. ASHR / KBA',
+            'Nikkei 225':'e.g. 1321.T / EWJ',
+            'Gold':'e.g. GLD / IAU',
+            'Bitcoin':'e.g. IBIT / GBTC',
+        }
+        new_ticker=q1.text_input('New ETF ticker',value='',placeholder=market_placeholder_examples.get(perf_market,'e.g. VOO / ES3.SI / 2800.HK'),key='custom_etf_ticker')
         add_clicked=q2.button('➕ Add ETF',use_container_width=True,key='add_custom_etf_button')
         with st.expander('Advanced ETF input options',expanded=False):
             a,b,c,d=st.columns([1.1,.8,.85,1.35])
