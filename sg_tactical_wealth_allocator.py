@@ -1213,9 +1213,7 @@ def render_performance(expanded=False):
         ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1.0,.78,.82,.65])
         market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
 
-        # Keep the ETF tracker tied to the sidebar-selected market by default.
-        # Streamlit otherwise preserves the previous selectbox key value after
-        # the sidebar market changes, which can leave ETF rows on the prior market.
+        # Keep ETF tracker tied to sidebar-selected market by default.
         sync_key='performance_market_view_sidebar_sync'
         if sel in market_options and st.session_state.get(sync_key)!=sel:
             st.session_state.performance_market_view=sel
@@ -1237,11 +1235,14 @@ def render_performance(expanded=False):
         st.dataframe(pd.concat(global_frames,ignore_index=True),use_container_width=True,hide_index=True) if global_frames else st.info('Global performance data is unavailable.')
 
         etf_hierarchy_tip=tooltip_html(
-            'ETF Implementation Hierarchy',
+            'ETF Implementation Vehicles',
             [
+                ('Table order','Platform default → System reference → User-added'),
                 ('Platform default','Owner-approved ETFs shown first'),
                 ('System reference','Built-in reference ETFs shown next'),
                 ('User-added','Comparison items shown at the bottom'),
+                ('Since Listing %','Calculated from the first available Yahoo Finance historical price record to the latest available price'),
+                ('1Y Gap','Compares ETF 1Y return with the selected market index where both are available'),
             ],
             'Platform default ETFs are owner-approved and shown first. User-added ETFs are comparison items and do not affect Suggested Deploy.'
         )
@@ -1279,11 +1280,17 @@ def render_performance(expanded=False):
                     selected_promotion_row=matches[-1] if matches else None
             else:
                 st.dataframe(display_df,use_container_width=True,hide_index=True)
-                st.caption('Table order: Platform default → System reference → User-added.')
-            st.caption('Since Listing % is calculated from the first available Yahoo Finance historical price record to the latest available price. 1Y Gap compares ETF 1Y return with the selected market index where both are available.')
 
-        st.markdown(f'### 3. Add / Compare My Own ETF — {perf_market}')
-        st.caption('Quick add only. Advanced inputs and maintenance are collapsed to keep this section clean.')
+        add_etf_tip=tooltip_html(
+            'Add / Compare My Own ETF',
+            [
+                ('Quick add','Enter a valid Yahoo Finance ticker and click Add ETF'),
+                ('Advanced inputs','Collapsed by default to keep this section clean'),
+                ('ETF maintenance','Collapsed by default to keep the workflow clean'),
+            ],
+            'Quick add only. Advanced inputs and maintenance are collapsed to keep this section clean.'
+        )
+        st.markdown(f'### 3. Add / Compare My Own ETF — {perf_market} {add_etf_tip}',unsafe_allow_html=True)
         # Quick-add layout: compact left-aligned input/action group.
         # The right spacer is intentionally large so the Add ETF button sits
         # immediately beside the ticker input instead of at the far-right edge.
