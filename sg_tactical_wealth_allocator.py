@@ -2,6 +2,7 @@
 import math
 import time
 import json
+import os
 from pathlib import Path
 from datetime import datetime
 
@@ -653,23 +654,38 @@ def is_platform_owner():
     ensure_access_role()
     return st.session_state.get('access_role') == 'owner'
 
+def get_configured_owner_passcode():
+    """Return configured owner passcode from Streamlit secrets or environment variable.
+
+    There is intentionally no default passcode. Owner Mode should remain locked
+    until the platform owner explicitly configures OWNER_PASSCODE.
+    """
+    try:
+        secret_code = st.secrets.get('OWNER_PASSCODE', '')
+    except Exception:
+        secret_code = ''
+    env_code = os.environ.get('OWNER_PASSCODE', '')
+    return str(secret_code or env_code or '')
+
 def render_owner_mode_sidebar():
     ensure_access_role()
     with st.expander('🔐 Owner Mode', expanded=False):
         st.caption('Visitor mode can add personal ETF watchlist items. Owner mode can promote validated ETFs into the platform default ETF universe.')
+        configured_code = get_configured_owner_passcode()
+        if not configured_code:
+            st.warning('Owner passcode is not configured. There is no default owner passcode for safety.')
+            st.code('[Create this file]\n.streamlit/secrets.toml\n\nOWNER_PASSCODE = "choose-your-private-passcode"', language='toml')
+            st.caption('Alternative for deployment: set environment variable OWNER_PASSCODE. After configuration, restart/rerun the app.')
         owner_code = st.text_input('Owner passcode', type='password', key='owner_passcode_input')
         c1, c2 = st.columns([1, 1])
         if c1.button('Unlock Owner Controls', use_container_width=True, key='unlock_owner_mode_button'):
-            try:
-                configured_code = st.secrets.get('OWNER_PASSCODE', '')
-            except Exception:
-                configured_code = ''
+            configured_code = get_configured_owner_passcode()
             if configured_code and owner_code == configured_code:
                 st.session_state.access_role = 'owner'
                 st.success('Owner Mode unlocked.')
             elif not configured_code:
                 st.session_state.access_role = 'visitor'
-                st.warning('OWNER_PASSCODE is not configured in .streamlit/secrets.toml. Owner controls remain locked.')
+                st.warning('OWNER_PASSCODE is not configured. Owner controls remain locked.')
             else:
                 st.session_state.access_role = 'visitor'
                 st.error('Invalid owner passcode.')
@@ -749,6 +765,11 @@ def get_user_etfs_for_market(market_name):
     raw = st.session_state.user_etf_watchlist.get(market_name, [])
     return raw if isinstance(raw, list) else []
 
+def save_user_etfs_for_market(market_name, rows):
+    init_user_etf_preferences()
+    st.session_state.user_etf_watchlist[market_name] = rows
+    persist_user_etf_preferences_if_enabled()
+
 def get_platform_default_etfs_for_market(market_name):
     overrides = _load_platform_etf_overrides()
     platform_map = overrides.get('platform_default_etfs', {}) if isinstance(overrides, dict) else {}
@@ -761,11 +782,69 @@ def system_etf_tickers_for_market(market_name):
 def platform_etf_tickers_for_market(market_name):
     return {_normalise_ticker(x.get('Ticker')) for x in get_platform_default_etfs_for_market(market_name) if isinstance(x, dict)}
 
+def enrich_user_etf_rows_for_market(market_name):
+    rows = []
+    code, _, _, _ = market_currency_info(market_name)
+    system_tickers = system_etf_tickers_for_market(market_name)
+    platform_tickers = platform_etf_tickers_for_market(market_name)
+    seen = set()
+    for item in get_user_etfs_for_market(market_name):
+        if not isinstance(item, dict):
+            continue
+        original = _normalise_ticker(item.get('Ticker'))
+        ok, resolved, price, msg = validate_user_etf_ticker(original, market_name)
+        key = resolved if ok else original
+        if key in seen:
+            continue
+        seen.add(key)
+        duplicate_note = ''
+        if ok and resolved in system_tickers:
+            duplicate_note = 'Already in system reference table'
+        elif ok and resolved in platform_tickers:
+            duplicate_note = 'Already promoted as platform default'
+        rows.append({
+            'Source': item.get('Source', 'User-selected'),
+            'Role': item.get('Role', 'Satellite'),
+            'Instrument': item.get('Instrument') or key,
+            'Original Ticker': original,
+            'Ticker': resolved if ok else original,
+            'Currency': item.get('Currency') or code,
+            'Use case': item.get('Use case', 'User-selected ETF / watchlist'),
+            'Data Status': 'OK' if ok else 'No price data',
+            'Price': price,
+            'Table Status': duplicate_note or ('Shown in ETF table' if ok else 'Excluded from ETF table'),
+            'Validation Note': msg,
+        })
+    return rows
+
+def clean_user_etfs_for_market(market_name, keep_system_duplicates=False):
+    enriched = enrich_user_etf_rows_for_market(market_name)
+    cleaned = []
+    for r in enriched:
+        if r.get('Data Status') != 'OK':
+            continue
+        if not keep_system_duplicates and r.get('Table Status') in ['Already in system reference table', 'Already promoted as platform default']:
+            continue
+        cleaned.append({
+            'Source': 'User-selected',
+            'Role': r.get('Role', 'Satellite'),
+            'Instrument': r.get('Instrument') or r.get('Ticker'),
+            'Ticker': r.get('Ticker'),
+            'Currency': r.get('Currency'),
+            'Use case': r.get('Use case', 'User-selected ETF / watchlist'),
+        })
+    save_user_etfs_for_market(market_name, cleaned)
+    return len(cleaned)
+
 def add_user_etf_for_market(market_name, ticker, display_name='', role='Satellite', currency='Auto', use_case='User-selected ETF / watchlist'):
     init_user_etf_preferences()
     ok, resolved_ticker, latest_price, validation_msg = validate_user_etf_ticker(ticker, market_name)
     if not ok:
         return False, validation_msg
+    if resolved_ticker in system_etf_tickers_for_market(market_name):
+        return False, f'{resolved_ticker} is already included in the system reference ETF table for {market_name}. It is not added as a separate user row to avoid duplication.'
+    if resolved_ticker in platform_etf_tickers_for_market(market_name):
+        return False, f'{resolved_ticker} is already promoted as a platform default ETF for {market_name}. It is not added as a separate user row to avoid duplication.'
     market_list = get_user_etfs_for_market(market_name)
     if any(_normalise_ticker(x.get('Ticker')) == resolved_ticker for x in market_list if isinstance(x, dict)):
         return False, f'{resolved_ticker} already exists in the user-selected ETF list for {market_name}.'
@@ -835,21 +914,9 @@ def build_etf_reference_rows(market_name):
             rows.append({'Source':'Platform default','Role':item.get('Role','Core'),'Instrument':item.get('Instrument') or item.get('Ticker'),'Ticker':_normalise_ticker(item.get('Ticker')),'Currency':item.get('Currency') or code,'Use case':item.get('Use case',f'Platform-promoted core ETF for {market_name}')})
     for role, name, ticker_, use_case in ETF_UNIVERSE.get(market_name, []):
         rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':ticker_,'Currency':code,'Use case':use_case})
-    valid_user_rows=[]; invalid_user_rows=[]
-    platform_tickers=platform_etf_tickers_for_market(market_name); system_tickers=system_etf_tickers_for_market(market_name)
-    for item in get_user_etfs_for_market(market_name):
-        if isinstance(item, dict) and _normalise_ticker(item.get('Ticker')):
-            ok,resolved_ticker,latest_price,validation_msg=validate_user_etf_ticker(item.get('Ticker'),market_name)
-            row={'Source':item.get('Source','User-selected'),'Role':item.get('Role','Satellite'),'Instrument':item.get('Instrument') or item.get('Ticker'),'Ticker':resolved_ticker,'Currency':item.get('Currency') or code,'Use case':item.get('Use case','User-selected ETF / watchlist'),'Data Status':'OK' if ok else 'No price data','Validation Note':validation_msg}
-            if ok:
-                if resolved_ticker not in platform_tickers and resolved_ticker not in system_tickers:
-                    valid_user_rows.append(row)
-            else:
-                invalid_user_rows.append(row)
-    if invalid_user_rows:
-        st.warning('Some saved user-selected ETF tickers have no usable price data and are excluded from the comparison table. Check ticker suffixes such as .SI, .HK, .KL or .T where applicable.')
-        st.dataframe(pd.DataFrame(invalid_user_rows), use_container_width=True, hide_index=True)
-    rows.extend(valid_user_rows)
+    for r in enrich_user_etf_rows_for_market(market_name):
+        if r.get('Data Status') == 'OK' and r.get('Table Status') == 'Shown in ETF table':
+            rows.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Use case':r.get('Use case','User-selected ETF / watchlist')})
     return rows
 
 def add_performance_and_gap(rows, market_name):
@@ -1267,7 +1334,7 @@ def render_performance(expanded=False):
             display_cols=['Source','Role','Instrument','Ticker','Currency','Use case','Data Status','Price','1Y %','1Y Gap vs Index %','3Y %','3Y Gap vs Index %','5Y %','5Y Gap vs Index %']
             st.dataframe(etf_df[display_cols], use_container_width=True, hide_index=True)
             st.caption('Implementation reference only. ETF vehicles and user-selected tickers are for tracking and comparison, not recommendations. Deployment signals remain based on the selected market index.')
-            st.caption('Only tickers with usable price data are shown. Gap columns = ETF return minus selected market index return. For satellite or cross-market ETFs, this is a comparison gap, not tracking error or underperformance judgement.')
+            st.caption('System ETF rows and Platform default ETF rows appear in this table. User-selected rows only appear when they are valid and not duplicates of system/platform ETF rows.')
 
         st.markdown('### 3. Add / Compare My Own ETF')
         st.caption('Add your own ETF ticker here for watchlist tracking and comparison. The ticker must have usable price data; otherwise it will not be added because comparison would not be meaningful.')
@@ -1294,10 +1361,16 @@ def render_performance(expanded=False):
             st.rerun()
         btn3.caption('Tick “Remember ETF list for next visit” at the top-right of this section to save locally in user_etf_preferences.json.')
 
-        current_user_rows = get_user_etfs_for_market(perf_market)
-        if current_user_rows:
+        enriched_user_rows = enrich_user_etf_rows_for_market(perf_market)
+        if enriched_user_rows:
             st.markdown('#### Current user-selected ETF list')
-            st.dataframe(pd.DataFrame(current_user_rows), use_container_width=True, hide_index=True)
+            st.dataframe(pd.DataFrame(enriched_user_rows), use_container_width=True, hide_index=True)
+            cclean1, cclean2 = st.columns([.9, 1.6])
+            if cclean1.button('Clean invalid / duplicate user ETF rows', use_container_width=True, key='clean_user_etf_rows_button'):
+                n = clean_user_etfs_for_market(perf_market, keep_system_duplicates=False)
+                st.toast(f'✅ User ETF list cleaned. {n} non-duplicate valid user ETF row(s) retained.')
+                st.rerun()
+            cclean2.caption('This removes invalid tickers such as raw G3B with no price data, and removes duplicated tickers already covered by the system/platform ETF table.')
         else:
             st.info('No user-selected ETF saved for this market yet.')
 
@@ -1307,14 +1380,11 @@ def render_performance(expanded=False):
             else:
                 st.caption('Owner control: promote a validated, price-data-backed user ETF into platform_etf_overrides.json. The promoted ETF appears as Source = Platform default and is shown before system reference ETFs.')
                 valid_candidates=[]
-                for item in current_user_rows:
-                    if isinstance(item, dict):
-                        ok, resolved_ticker, latest_price, validation_msg = validate_user_etf_ticker(item.get('Ticker'), perf_market)
-                        if ok:
-                            candidate=dict(item); candidate['Ticker']=resolved_ticker; candidate['Validation Note']=validation_msg
-                            valid_candidates.append(candidate)
+                for item in enriched_user_rows:
+                    if item.get('Data Status') == 'OK' and item.get('Table Status') == 'Shown in ETF table':
+                        valid_candidates.append(item)
                 if not valid_candidates:
-                    st.info('No valid user-selected ETF candidates available for promotion.')
+                    st.info('No valid non-duplicate user-selected ETF candidates available for promotion. If the ticker already appears as System reference, no promotion is needed.')
                 else:
                     candidate_labels=[f"{x.get('Ticker')} — {x.get('Instrument', x.get('Ticker'))}" for x in valid_candidates]
                     chosen_label=st.selectbox('Validated ETF candidate', candidate_labels, key='platform_promotion_candidate_select')
@@ -1326,7 +1396,7 @@ def render_performance(expanded=False):
                         if not ok:
                             st.warning(msg)
                         st.rerun()
-                    p2.caption('Minimum promotion gate: valid price data and at least 1Y return history. Existing system ETF tickers are not duplicated as platform overrides.')
+                    p2.caption('Minimum promotion gate: valid price data, non-duplicate ticker, and at least 1Y return history.')
                 platform_rows=get_platform_default_etfs_for_market(perf_market)
                 if platform_rows:
                     st.markdown('#### Current platform default ETF overrides')
@@ -1354,14 +1424,12 @@ def render_performance(expanded=False):
 
         with st.expander('5. Methodology & Guardrails', expanded=False):
             guardrails = [
-                'ETF vehicles are implementation references only.',
-                'Visitor mode can add validated user-selected ETFs for watchlist tracking and comparison only.',
-                'Owner Mode is required to promote a validated user ETF into the platform default ETF universe.',
+                'There is no default owner passcode. Configure OWNER_PASSCODE in .streamlit/secrets.toml or as an environment variable.',
+                'Visitor mode can add validated non-duplicate user-selected ETFs for watchlist tracking and comparison only.',
+                'If a visitor inputs an ETF that is already in the system reference table, it is not added as a separate user row because the ETF is already visible in the default section.',
+                'Owner Mode is required to promote a validated non-duplicate user ETF into the platform default ETF universe.',
                 'Platform default ETF overrides are saved in platform_etf_overrides.json and displayed ahead of system reference ETFs.',
                 'User-selected ETFs are validated before being added. Tickers without usable price data are excluded because performance comparison would not be meaningful.',
-                'Performance gap is ETF return minus selected market index return.',
-                'For satellite or cross-market ETFs, the gap is comparison only and should not be treated as tracking error.',
-                'Deployment remains based on structural drawdown, valuation context, risk regime, selected investible capital, and the rules-based deployment ladder.',
                 'ETF watchlist or platform-default status does not affect Suggested Deploy, allocation stance, risk regime, valuation Z-score, or crash analytics.',
             ]
             rows=''.join([f'<div class="assumption-row"><b>{i}</b><span>{hesc(txt)}</span></div>' for i,txt in enumerate(guardrails,1)])
