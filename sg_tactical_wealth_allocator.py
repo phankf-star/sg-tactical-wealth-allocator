@@ -1274,10 +1274,10 @@ def render_performance(expanded=False):
             eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
             if eligible_mask.any():
                 display_df['Request Promotion']=False
-                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','Coverage','Promote']
+                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','Coverage']
                 editor_df=display_df[[c for c in action_cols if c in display_df.columns]].copy()
                 disabled_cols=[c for c in editor_df.columns if c!='Request Promotion']
-                edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.'),'Promote':st.column_config.TextColumn('Status')},key=f'etf_implementation_unified_editor_{perf_market}')
+                edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.')},key=f'etf_implementation_unified_editor_{perf_market}')
                 requested=edited_df[edited_df.get('Request Promotion',False)==True]
                 if not requested.empty:
                     selected_ticker=requested.iloc[-1]['Ticker']; matches=etf_df[etf_df['Ticker'].eq(selected_ticker)].to_dict('records')
