@@ -1236,7 +1236,16 @@ def render_performance(expanded=False):
             if not gdf.empty: gdf.insert(0,'Group',group); global_frames.append(gdf)
         st.dataframe(pd.concat(global_frames,ignore_index=True),use_container_width=True,hide_index=True) if global_frames else st.info('Global performance data is unavailable.')
 
-        st.markdown(f'### 2. Selected-Market ETF Implementation Vehicles — {perf_market}')
+        etf_hierarchy_tip=tooltip_html(
+            'ETF Implementation Hierarchy',
+            [
+                ('Platform default','Owner-approved ETFs shown first'),
+                ('System reference','Built-in reference ETFs shown next'),
+                ('User-added','Comparison items shown at the bottom'),
+            ],
+            'Platform default ETFs are owner-approved and shown first. User-added ETFs are comparison items and do not affect Suggested Deploy.'
+        )
+        st.markdown(f'### 2. Selected-Market ETF Implementation Vehicles — {perf_market} {etf_hierarchy_tip}',unsafe_allow_html=True)
         etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
             etf_df=etf_df[etf_df['Data Status'].eq('OK')]
@@ -1247,8 +1256,7 @@ def render_performance(expanded=False):
         if etf_df.empty:
             st.info('No ETF rows with usable price data are available for the selected filter. Add a valid ETF below, using the correct Yahoo Finance ticker format where needed.')
         else:
-            # Display hierarchy: platform-default ETFs first, system references next,
-            # user-added ETFs at the bottom.
+            # Table order: Platform default -> System reference -> User-selected.
             source_order={'Platform default':0,'System reference':1,'User-selected':2}
             role_order={'Core':0,'Satellite':1,'Defensive':2,'Thematic':3}
             etf_df=etf_df.copy()
@@ -1271,26 +1279,15 @@ def render_performance(expanded=False):
                     selected_promotion_row=matches[-1] if matches else None
             else:
                 st.dataframe(display_df,use_container_width=True,hide_index=True)
-                st.caption('Table order: Platform default ETFs first, system-reference ETFs next, user-added ETFs at the bottom. Platform-default and system-reference rows are locked.')
+                st.caption('Table order: Platform default → System reference → User-added.')
             st.caption('Since Listing % is calculated from the first available Yahoo Finance historical price record to the latest available price. 1Y Gap compares ETF 1Y return with the selected market index where both are available.')
-
-        if selected_promotion_row:
-            st.markdown('#### 🔐 Platform Default Promotion')
-            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>""",unsafe_allow_html=True)
-            p1,p2=st.columns([.95,1.05])
-            inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
-            if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
-                ok,msg=promote_with_inline_passcode(perf_market,selected_promotion_row,inline_passcode)
-                st.toast(('✅ ' if ok else '⚠️ ')+msg)
-                if not ok: st.warning(msg)
-                st.rerun()
-            p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Limited return history is allowed but labelled clearly.')
 
         st.markdown(f'### 3. Add / Compare My Own ETF — {perf_market}')
         st.caption('Quick add only. Advanced inputs and maintenance are collapsed to keep this section clean.')
-        # Quick-add layout: keep the Add ETF button directly beside the ticker input
-        # instead of floating at the far right of the page.
-        q1,q2,q3=st.columns([0.76,0.18,0.06])
+        # Quick-add layout: compact left-aligned input/action group.
+        # The right spacer is intentionally large so the Add ETF button sits
+        # immediately beside the ticker input instead of at the far-right edge.
+        q1,q2,q3=st.columns([0.36,0.13,0.51])
         market_placeholder_examples={
             'S&P 500':'e.g. SPY / VOO / IVV',
             'Nasdaq':'e.g. QQQ / QQQM',
@@ -1319,6 +1316,18 @@ def render_performance(expanded=False):
             st.toast(('✅ ' if ok else '⚠️ ')+msg)
             if not ok: st.warning(msg)
             st.rerun()
+        if selected_promotion_row:
+            st.markdown('#### 🔐 Platform Default Promotion')
+            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>""",unsafe_allow_html=True)
+            p1,p2=st.columns([.95,1.05])
+            inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
+            if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
+                ok,msg=promote_with_inline_passcode(perf_market,selected_promotion_row,inline_passcode)
+                st.toast(('✅ ' if ok else '⚠️ ')+msg)
+                if not ok: st.warning(msg)
+                st.rerun()
+            p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Limited return history is allowed but labelled clearly.')
+
         with st.expander('ETF list maintenance',expanded=False):
             m1,m2=st.columns([.8,1.2])
             if m1.button('Clean list',use_container_width=True,key='clean_user_etf_rows_button'):
