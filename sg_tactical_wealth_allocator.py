@@ -1,6 +1,8 @@
 
 import math
 import time
+import json
+from pathlib import Path
 from datetime import datetime
 
 import numpy as np
@@ -634,6 +636,128 @@ def mini_pmi_bar_chart(df,title,subtitle):
     fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f'{title}<br><sup>{subtitle}</sup>',plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title='PMI')
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
 
+
+# ------------------------- User ETF preference persistence -------------------------
+ETF_PREFS_FILE = Path('user_etf_preferences.json')
+
+def _normalise_ticker(ticker):
+    return str(ticker or '').strip().upper()
+
+def _load_user_etf_preferences():
+    """Load locally saved ETF watchlist preferences.
+
+    Lightweight local-file persistence for current single-user / development-stage use.
+    For future multi-user deployment, replace with a per-user database/profile store.
+    """
+    try:
+        if ETF_PREFS_FILE.exists():
+            data = json.loads(ETF_PREFS_FILE.read_text(encoding='utf-8'))
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        pass
+    return {'preferred_etfs': {}}
+
+def _save_user_etf_preferences(data):
+    try:
+        ETF_PREFS_FILE.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
+        return True
+    except Exception:
+        return False
+
+def init_user_etf_preferences():
+    """Initialise user ETF watchlist from local preferences once per session."""
+    if 'user_etf_watchlist' not in st.session_state:
+        prefs = _load_user_etf_preferences()
+        watchlist = prefs.get('preferred_etfs', {}) if isinstance(prefs, dict) else {}
+        st.session_state.user_etf_watchlist = watchlist if isinstance(watchlist, dict) else {}
+        st.session_state.user_etf_remember = bool(st.session_state.user_etf_watchlist)
+    if 'user_etf_remember' not in st.session_state:
+        st.session_state.user_etf_remember = False
+
+def persist_user_etf_preferences_if_enabled():
+    if st.session_state.get('user_etf_remember', False):
+        return _save_user_etf_preferences({'preferred_etfs': st.session_state.get('user_etf_watchlist', {})})
+    return False
+
+def get_user_etfs_for_market(market_name):
+    init_user_etf_preferences()
+    raw = st.session_state.user_etf_watchlist.get(market_name, [])
+    return raw if isinstance(raw, list) else []
+
+def add_user_etf_for_market(market_name, ticker, display_name='', role='Satellite', currency='Auto', use_case='User-selected ETF / watchlist'):
+    init_user_etf_preferences()
+    ticker = _normalise_ticker(ticker)
+    if not ticker:
+        return False, 'Please enter a valid ticker.'
+    market_list = get_user_etfs_for_market(market_name)
+    if any(_normalise_ticker(x.get('Ticker')) == ticker for x in market_list if isinstance(x, dict)):
+        return False, f'{ticker} already exists in the user-selected ETF list for {market_name}.'
+    if currency == 'Auto':
+        currency = market_currency_info(market_name)[0]
+    market_list.append({
+        'Source': 'User-selected',
+        'Role': role,
+        'Instrument': display_name.strip() or ticker,
+        'Ticker': ticker,
+        'Currency': currency,
+        'Use case': use_case.strip() or 'User-selected ETF / watchlist',
+    })
+    st.session_state.user_etf_watchlist[market_name] = market_list
+    persist_user_etf_preferences_if_enabled()
+    return True, f'{ticker} added to {market_name} user-selected ETF watchlist.'
+
+def clear_user_etfs_for_market(market_name):
+    init_user_etf_preferences()
+    st.session_state.user_etf_watchlist[market_name] = []
+    persist_user_etf_preferences_if_enabled()
+
+def classify_etf_role(role_text):
+    txt = str(role_text or '').lower()
+    if 'defensive' in txt or 'cash' in txt:
+        return 'Defensive'
+    if 'core' in txt or 'lower-cost' in txt or 'broad' in txt:
+        return 'Core'
+    return 'Satellite'
+
+def build_etf_reference_rows(market_name):
+    code, _, _, _ = market_currency_info(market_name)
+    rows = []
+    for role, name, ticker_, use_case in ETF_UNIVERSE.get(market_name, []):
+        rows.append({'Source': 'System reference', 'Role': classify_etf_role(role), 'Instrument': name, 'Ticker': ticker_, 'Currency': code, 'Use case': use_case})
+    for item in get_user_etfs_for_market(market_name):
+        if isinstance(item, dict) and _normalise_ticker(item.get('Ticker')):
+            rows.append({
+                'Source': item.get('Source', 'User-selected'),
+                'Role': item.get('Role', 'Satellite'),
+                'Instrument': item.get('Instrument') or item.get('Ticker'),
+                'Ticker': _normalise_ticker(item.get('Ticker')),
+                'Currency': item.get('Currency') or code,
+                'Use case': item.get('Use case', 'User-selected ETF / watchlist'),
+            })
+    return rows
+
+def add_performance_and_gap(rows, market_name):
+    if not rows:
+        return pd.DataFrame()
+    perf_items = [(r['Role'], r['Instrument'], r['Ticker'], r['Use case']) for r in rows]
+    perf_rows = perf(perf_items)
+    perf_map = {(_normalise_ticker(x.get('Ticker')), str(x.get('Name'))): x for x in perf_rows}
+    index_perf = perf([('Benchmark', market_name, INDEX_TICKERS.get(market_name, ''), 'Selected market index')])[0] if market_name in INDEX_TICKERS else {}
+    out = []
+    for r in rows:
+        p = perf_map.get((_normalise_ticker(r['Ticker']), str(r['Instrument'])), {})
+        row = dict(r)
+        row['Price'] = p.get('Price')
+        for horizon in ['1Y %', '3Y %', '5Y %']:
+            etf_ret = p.get(horizon)
+            idx_ret = index_perf.get(horizon)
+            row[horizon] = etf_ret
+            gap_col = horizon.replace('%', 'Gap vs Index %')
+            row[gap_col] = round(etf_ret - idx_ret, 1) if etf_ret is not None and idx_ret is not None else None
+        out.append(row)
+    return pd.DataFrame(out)
+
 # ------------------------- app state/load -------------------------
 with st.spinner('Loading market data...'):
     m=market_data()
@@ -976,11 +1100,99 @@ def render_market(expanded=False):
             with bottom_right: mini_trend_chart(idx12,f'{index_label} 12M',f'{ticker} · 12M price path',RED,'rgba(239,68,68,.16)','Index Level')
 
 def render_performance(expanded=False):
-    with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER',expanded=expanded):
-        for g,recs in bench().items(): st.markdown(f'### {g}'); st.dataframe(pd.DataFrame(recs),use_container_width=True,hide_index=True)
-        ed=etfs(); order=[sel] if sel in ETF_UNIVERSE else []; order += [x for x in ETF_UNIVERSE if x not in order]
-        for k in order:
-            if k in ed: st.markdown(f'### {k}{" ✅ SELECTED" if k==sel else ""}'); st.dataframe(pd.DataFrame(ed[k]),use_container_width=True,hide_index=True)
+    with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
+        init_user_etf_preferences()
+        st.markdown('## 📊 Market Performance & ETF Tracker')
+        st.caption('Global performance overview, selected-market ETF implementation vehicles, user-selected ETF watchlist, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
+
+        ctrl1, ctrl2, ctrl3 = st.columns([1.05, .85, .85])
+        market_options = list(ETF_UNIVERSE.keys())
+        default_idx = market_options.index(sel) if sel in market_options else 0
+        perf_market = ctrl1.selectbox('Market view', market_options, index=default_idx, key='performance_market_view')
+        market_ccy, market_symbol, _, market_ccy_name = market_currency_info(perf_market)
+        role_filter = ctrl2.selectbox('ETF View', ['All', 'Core', 'Satellite', 'Defensive', 'User-selected only'], index=0, key='etf_role_filter')
+        st.session_state.user_etf_remember = ctrl3.checkbox('Remember ETF list for next visit', value=st.session_state.get('user_etf_remember', False), key='remember_user_etf_checkbox')
+        if st.session_state.get('user_etf_remember', False):
+            persist_user_etf_preferences_if_enabled()
+
+        st.markdown(f"""
+<div class="soft-card">
+  <div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Selected Market Implementation Context</div>
+  <div style="font-size:22px;font-weight:900;color:{TEXT};margin-top:4px;">{perf_market}</div>
+  <div style="font-size:13px;color:{MUTED};margin-top:4px;">Default currency: <b>{market_symbol} / {market_ccy_name}</b> · Deployment signal remains based on the selected market index, not on any ETF vehicle.</div>
+</div>
+""", unsafe_allow_html=True)
+
+        st.markdown('### 1. Global Performance Overview')
+        global_frames = []
+        for group, recs in bench().items():
+            gdf = pd.DataFrame(recs)
+            if not gdf.empty:
+                gdf.insert(0, 'Group', group)
+                global_frames.append(gdf)
+        if global_frames:
+            st.dataframe(pd.concat(global_frames, ignore_index=True), use_container_width=True, hide_index=True)
+        else:
+            st.info('Global performance data is unavailable.')
+
+        st.markdown('### 2. Selected-Market ETF Implementation Vehicles')
+        rows = build_etf_reference_rows(perf_market)
+        etf_df = add_performance_and_gap(rows, perf_market)
+        if not etf_df.empty:
+            if role_filter == 'User-selected only':
+                etf_df = etf_df[etf_df['Source'].eq('User-selected')]
+            elif role_filter != 'All':
+                etf_df = etf_df[etf_df['Role'].eq(role_filter)]
+        if etf_df.empty:
+            st.info('No ETF rows available for the selected filter. Add a user-selected ETF below if you want to compare your own vehicle.')
+        else:
+            display_cols = ['Source', 'Role', 'Instrument', 'Ticker', 'Currency', 'Use case', 'Price', '1Y %', '1Y Gap vs Index %', '3Y %', '3Y Gap vs Index %', '5Y %', '5Y Gap vs Index %']
+            st.dataframe(etf_df[display_cols], use_container_width=True, hide_index=True)
+            st.caption('Gap columns = ETF return minus selected market index return. For satellite or cross-market ETFs, this is a comparison gap, not tracking error or underperformance judgement.')
+
+        st.markdown('### 3. Core / Satellite Role Guide')
+        guide = pd.DataFrame([
+            {'Role': 'Core', 'Meaning': 'Closest broad-market implementation proxy for the selected market/index.'},
+            {'Role': 'Satellite', 'Meaning': 'Optional tilt such as growth, dividend, REIT, sector, gold, bitcoin or thematic exposure.'},
+            {'Role': 'Defensive', 'Meaning': 'Optional lower-volatility or capital-preservation reference layer, if the user chooses to track one.'},
+            {'Role': 'User-selected', 'Meaning': 'ETF entered by the user for watchlist tracking and comparison only.'},
+        ])
+        st.dataframe(guide, use_container_width=True, hide_index=True)
+
+        with st.expander('➕ Add / Compare My Own ETF', expanded=False):
+            st.caption('User-selected ETFs are saved as watchlist preferences only. They do not affect the deployment signal, allocation stance, risk regime, or valuation model.')
+            a, b, c, d = st.columns([.8, 1.15, .8, .85])
+            new_ticker = a.text_input('Ticker', value='', placeholder='e.g. VOO, ES3.SI, 2800.HK', key='custom_etf_ticker')
+            new_name = b.text_input('Display name (optional)', value='', placeholder='Optional ETF name', key='custom_etf_name')
+            new_role = c.selectbox('Role', ['Core', 'Satellite', 'Defensive', 'Thematic'], index=1, key='custom_etf_role')
+            currency_options = ['Auto'] + list(CURRENCY_SYMBOL_MAP.keys())
+            new_currency = d.selectbox('Currency', currency_options, index=0, key='custom_etf_currency')
+            new_use_case = st.text_input('Use case / note', value='User-selected ETF / watchlist', key='custom_etf_use_case')
+            btn1, btn2, btn3 = st.columns([.8, .9, 1.4])
+            if btn1.button('Add ETF', use_container_width=True, key='add_custom_etf_button'):
+                ok, msg = add_user_etf_for_market(perf_market, new_ticker, new_name, new_role, new_currency, new_use_case)
+                st.toast(('✅ ' if ok else '⚠️ ') + msg)
+                st.rerun()
+            if btn2.button('Clear user ETFs for this market', use_container_width=True, key='clear_custom_etf_button'):
+                clear_user_etfs_for_market(perf_market)
+                st.toast(f'🧹 User-selected ETF list cleared for {perf_market}.')
+                st.rerun()
+            btn3.caption('If “Remember ETF list for next visit” is ticked, the watchlist is saved locally in user_etf_preferences.json and reloaded on the next app visit.')
+
+            current_user_rows = get_user_etfs_for_market(perf_market)
+            if current_user_rows:
+                st.markdown('#### Current user-selected ETF list')
+                st.dataframe(pd.DataFrame(current_user_rows), use_container_width=True, hide_index=True)
+            else:
+                st.info('No user-selected ETF saved for this market yet.')
+
+        st.markdown('### 4. Methodology & Guardrail Note')
+        st.markdown(f"""
+<div class="soft-card">
+  <b>Implementation reference only:</b> ETF vehicles are shown for market-access tracking and comparison. User-selected ETFs are watchlist inputs, not recommendations, financial advice, suitability assessments, or buy calls. Suggested deployment remains based on selected investible capital, structural drawdown, valuation context, risk regime and the rules-based deployment ladder.
+</div>
+""", unsafe_allow_html=True)
+
 
 
 EVENT_CONTEXT_MAP = {
