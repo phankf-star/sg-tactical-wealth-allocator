@@ -214,11 +214,11 @@ def tz_naive(df):
 
 @st.cache_data(ttl=14400)
 def hist(ticker, start='1950-01-01'):
-    """Fetch Yahoo Finance daily history with a robust period='max' fallback.
+    """Fetch Yahoo Finance daily history with period='max' fallback.
 
-    Some newly listed / local-market tickers show chart history on Yahoo Finance,
-    but a start-date request may return incomplete or empty data. The fallback
-    keeps those ETFs usable for available-history return analysis.
+    Some newly listed / local-market tickers show history on Yahoo Finance,
+    but start-date calls can return incomplete data. The fallback keeps these
+    ETFs usable for available-history return analysis.
     """
     try:
         tk = yf.Ticker(ticker)
@@ -253,12 +253,11 @@ def live_macro_data():
 
 @st.cache_data(ttl=14400)
 def perf(items):
-    """Return ETF/index performance with limited-history transparency.
+    """Performance table with limited-history transparency.
 
-    1Y/3Y/5Y columns are only populated when the full horizon is available.
-    Newly listed ETFs still receive History Start, History Days and Available
-    Return %, so users can see that historical prices exist even if full-year
-    horizons are not yet available.
+    Full-horizon 1Y/3Y/5Y returns are shown only when the full horizon exists.
+    Limited-history ETFs still show History Start, History Days and Available
+    Return %, so the table does not look blank when price history exists.
     """
     rec=[]
     for item in items:
@@ -784,7 +783,8 @@ def yahoo_ticker_name(ticker, fallback=''):
     try:
         info = yf.Ticker(ticker).get_info()
         if isinstance(info, dict):
-            for key in ['shortName', 'longName', 'displayName']:
+            # Prefer longName first because Yahoo shortName may be truncated.
+            for key in ['longName', 'shortName', 'displayName']:
                 value = info.get(key)
                 if value and isinstance(value, str) and value.strip() and value.strip().upper() != ticker:
                     return value.strip()
@@ -796,7 +796,7 @@ def yahoo_ticker_name(ticker, fallback=''):
 def preferred_instrument_name(ticker, current_name=''):
     ticker_norm = _normalise_ticker(ticker)
     current = str(current_name or '').strip()
-    if not current or _normalise_ticker(current) == ticker_norm:
+    if not current or _normalise_ticker(current) == ticker_norm or len(current) <= len(ticker_norm) + 4:
         return yahoo_ticker_name(ticker_norm, ticker_norm)
     return current
 
@@ -1398,7 +1398,7 @@ def render_performance(expanded=False):
         init_user_etf_preferences()
         role_label = 'Platform Owner' if is_platform_owner() else 'Visitor'
         st.markdown('## 📊 Market Performance & ETF Tracker')
-        st.caption('Global performance overview, selected-market ETF implementation vehicles, validated user-selected ETF watchlist, inline owner-gated promotion, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
+        st.caption('Global performance overview, selected-market ETF implementation vehicles, validated user-selected ETF watchlist, row-level promotion request, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
 
         ctrl1, ctrl2, ctrl3, ctrl4 = st.columns([1.0, .78, .82, .65])
         market_options = list(ETF_UNIVERSE.keys())
@@ -1466,9 +1466,29 @@ def render_performance(expanded=False):
         btn3.caption('Tick “Remember ETF list for next visit” at the top-right of this section to save locally in user_etf_preferences.json.')
 
         enriched_user_rows=enrich_user_etf_rows_for_market(perf_market)
+        selected_promotion_row = None
         if enriched_user_rows:
             st.markdown('#### Current user-selected ETF list')
-            st.dataframe(pd.DataFrame(enriched_user_rows),use_container_width=True,hide_index=True)
+            user_df = pd.DataFrame(enriched_user_rows)
+            user_df['Request Promotion'] = False
+            preferred_cols = ['Source','Role','Instrument','Ticker','Data Status','Data Coverage','Table Status','Request Promotion','Currency','Use case','Original Ticker','Price','Validation Note']
+            user_df = user_df[[c for c in preferred_cols if c in user_df.columns]]
+            disabled_cols = [c for c in user_df.columns if c != 'Request Promotion']
+            edited_user_df = st.data_editor(
+                user_df,
+                use_container_width=True,
+                hide_index=True,
+                disabled=disabled_cols,
+                column_config={
+                    'Request Promotion': st.column_config.CheckboxColumn('Request Promotion', help='Tick to request owner-gated promotion to Platform Default ETF.')
+                },
+                key=f'user_etf_promotion_editor_{perf_market}'
+            )
+            requested = edited_user_df[edited_user_df.get('Request Promotion', False) == True]
+            if not requested.empty:
+                selected_ticker = requested.iloc[-1]['Ticker']
+                matches = [r for r in enriched_user_rows if r.get('Ticker') == selected_ticker]
+                selected_promotion_row = matches[-1] if matches else None
             cclean1,cclean2=st.columns([.9,1.6])
             if cclean1.button('Clean invalid / duplicate user ETF rows',use_container_width=True,key='clean_user_etf_rows_button'):
                 n=clean_user_etfs_for_market(perf_market,keep_system_duplicates=False)
@@ -1478,23 +1498,20 @@ def render_performance(expanded=False):
         else:
             st.info('No user-selected ETF saved for this market yet.')
 
-        st.markdown('#### 🔐 Platform Default Promotion')
-        request_promotion = st.checkbox('Request promotion to Platform Default ETF', value=False, key=f'request_platform_promotion_{perf_market}')
-        if request_promotion:
-            valid_candidates=[x for x in enriched_user_rows if x.get('Data Status')=='OK' and x.get('Table Status')=='Shown in ETF table']
-            if not valid_candidates:
-                st.info('No valid non-duplicate user-selected ETF candidates available for promotion. If the ticker already appears as System reference or Platform default, no promotion is needed.')
-            else:
-                labels=[f"{x.get('Ticker')} — {x.get('Instrument',x.get('Ticker'))} — {x.get('Data Coverage')}" for x in valid_candidates]
-                chosen=st.selectbox('Validated ETF candidate for promotion',labels,key='platform_promotion_candidate_select')
-                item=valid_candidates[labels.index(chosen)]
-                st.markdown(f"""
-<div class="soft-card"><b>Selected ETF:</b> {hesc(item.get('Instrument'))} · <b>{hesc(item.get('Ticker'))}</b><br><b>Data Status:</b> {hesc(item.get('Data Status'))} · <b>Coverage:</b> {hesc(item.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>
+        if selected_promotion_row:
+            st.markdown('#### 🔐 Platform Default Promotion')
+            st.markdown(f"""
+<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Data Status:</b> {hesc(selected_promotion_row.get('Data Status'))} · <b>Coverage:</b> {hesc(selected_promotion_row.get('Data Coverage'))} · <b>Table Status:</b> {hesc(selected_promotion_row.get('Table Status'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>
 """, unsafe_allow_html=True)
+            if selected_promotion_row.get('Data Status') != 'OK':
+                st.warning('This ETF cannot be promoted because price data validation failed.')
+            elif selected_promotion_row.get('Table Status') != 'Shown in ETF table':
+                st.info('This ETF does not need promotion because it is already covered by the system reference table or already promoted as platform default.')
+            else:
                 p1,p2=st.columns([.95,1.05])
-                inline_passcode=p1.text_input('Owner passcode for promotion',type='password',key='inline_owner_passcode_for_promotion')
-                if p2.button('Validate Passcode & Promote ETF',use_container_width=True,key='inline_promote_platform_default_button'):
-                    ok,msg=promote_with_inline_passcode(perf_market,item,inline_passcode)
+                inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
+                if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
+                    ok,msg=promote_with_inline_passcode(perf_market,selected_promotion_row,inline_passcode)
                     st.toast(('✅ ' if ok else '⚠️ ')+msg)
                     if not ok:
                         st.warning(msg)
@@ -1526,8 +1543,8 @@ def render_performance(expanded=False):
         with st.expander('5. Methodology & Guardrails',expanded=False):
             guardrails=[
                 'Temporary testing owner passcode is Kf272287 unless OWNER_PASSCODE is configured via Streamlit secrets or environment variable.',
-                'Platform default promotion is now initiated by ticking “Request promotion to Platform Default ETF” below the user ETF list.',
-                'Owner passcode is requested inline only when promotion is requested.',
+                'Promotion is requested directly from the Current user-selected ETF list using the Request Promotion checkbox column.',
+                'Owner passcode is requested inline only after a row is selected for promotion.',
                 'Owner promotion requires valid latest price data only; 1Y return history is not required.',
                 'Limited-history ETFs show History Start, History Days and Available Return % separately; 1Y/3Y/5Y remain blank until full history exists.',
                 'ETF names are resolved from Yahoo Finance metadata where possible; fallback is ticker.',
