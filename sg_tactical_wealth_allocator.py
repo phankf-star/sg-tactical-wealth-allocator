@@ -214,19 +214,12 @@ def tz_naive(df):
 
 @st.cache_data(ttl=14400)
 def hist(ticker, start='1950-01-01'):
-    """Fetch Yahoo Finance daily history with period='max' fallback.
-
-    Some newly listed / local-market tickers show history on Yahoo Finance,
-    but start-date calls can return incomplete data. The fallback keeps these
-    ETFs usable for available-history return analysis.
-    """
+    """Fetch Yahoo Finance daily history with period='max' fallback."""
     try:
         tk = yf.Ticker(ticker)
-        df = tk.history(start=start)
-        time.sleep(0.03)
+        df = tk.history(start=start); time.sleep(0.03)
         if df is None or df.empty:
-            df = tk.history(period='max')
-            time.sleep(0.03)
+            df = tk.history(period='max'); time.sleep(0.03)
         if df is None or df.empty:
             return pd.DataFrame()
         return tz_naive(df.dropna(subset=['Close']).copy())
@@ -253,20 +246,14 @@ def live_macro_data():
 
 @st.cache_data(ttl=14400)
 def perf(items):
-    """Performance table with limited-history transparency.
-
-    Full-horizon 1Y/3Y/5Y returns are shown only when the full horizon exists.
-    Limited-history ETFs still show History Start, History Days and Available
-    Return %, so the table does not look blank when price history exists.
-    """
+    """Performance table with limited-history transparency."""
     rec=[]
     for item in items:
         name, ticker = (item[1], item[2]) if len(item)==4 else item[:2]
         df = hist(ticker, '2018-01-01')
         if df.empty:
             try:
-                df = yf.Ticker(ticker).history(period='max')
-                time.sleep(0.03)
+                df = yf.Ticker(ticker).history(period='max'); time.sleep(0.03)
                 if df is not None and not df.empty:
                     df = tz_naive(df.dropna(subset=['Close']).copy())
             except Exception:
@@ -274,16 +261,12 @@ def perf(items):
         if df.empty:
             rec.append({'Name':name,'Ticker':ticker,'Price':None,'History Start':None,'History Days':0,'Available Return %':None,'1Y %':None,'3Y %':None,'5Y %':None})
             continue
-        last = safe_float(df.Close.iloc[-1])
-        first = safe_float(df.Close.iloc[0])
-        history_start = pd.Timestamp(df.index[0]).strftime('%Y-%m-%d')
-        history_days = int(len(df))
-        available_return = round(((last/first)-1)*100,1) if first else None
+        last=safe_float(df.Close.iloc[-1]); first=safe_float(df.Close.iloc[0])
+        history_start=pd.Timestamp(df.index[0]).strftime('%Y-%m-%d'); history_days=int(len(df))
+        available_return=round(((last/first)-1)*100,1) if first else None
         def r(days):
-            if len(df) <= days:
-                return None
-            s = safe_float(df.Close.iloc[-days])
-            return round(((last/s)-1)*100,1) if s else None
+            if len(df) <= days: return None
+            s=safe_float(df.Close.iloc[-days]); return round(((last/s)-1)*100,1) if s else None
         rec.append({'Name':name,'Ticker':ticker,'Price':round(last,2),'History Start':history_start,'History Days':history_days,'Available Return %':available_return,'1Y %':r(252),'3Y %':r(756),'5Y %':r(1260)})
     return rec
 
@@ -677,20 +660,16 @@ PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287'  # Testing default only. Override with st.secrets/env in production.
 
-
 def _normalise_ticker(ticker):
     return str(ticker or '').strip().upper()
-
 
 def ensure_access_role():
     if 'access_role' not in st.session_state:
         st.session_state.access_role = 'visitor'
 
-
 def is_platform_owner():
     ensure_access_role()
     return st.session_state.get('access_role') == 'owner'
-
 
 def get_configured_owner_passcode():
     try:
@@ -699,7 +678,6 @@ def get_configured_owner_passcode():
         secret_code = ''
     env_code = os.environ.get('OWNER_PASSCODE', '')
     return str(secret_code or env_code or DEFAULT_OWNER_PASSCODE or '')
-
 
 def owner_passcode_source():
     try:
@@ -711,10 +689,8 @@ def owner_passcode_source():
         return 'Environment variable'
     return 'Temporary testing default'
 
-
 def validate_owner_passcode(passcode):
     return bool(passcode) and str(passcode) == get_configured_owner_passcode()
-
 
 def render_owner_mode_sidebar():
     ensure_access_role()
@@ -727,337 +703,209 @@ def render_owner_mode_sidebar():
         c1, c2 = st.columns([1, 1])
         if c1.button('Unlock Owner Controls', use_container_width=True, key='unlock_owner_mode_button'):
             if validate_owner_passcode(owner_code):
-                st.session_state.access_role = 'owner'
-                st.success('Owner Mode unlocked.')
+                st.session_state.access_role = 'owner'; st.success('Owner Mode unlocked.')
             else:
-                st.session_state.access_role = 'visitor'
-                st.error('Invalid owner passcode.')
+                st.session_state.access_role = 'visitor'; st.error('Invalid owner passcode.')
         if c2.button('Lock', use_container_width=True, key='lock_owner_mode_button'):
-            st.session_state.access_role = 'visitor'
-            st.info('Owner controls locked.')
+            st.session_state.access_role = 'visitor'; st.info('Owner controls locked.')
         role = 'Platform Owner' if is_platform_owner() else 'Visitor'
         col = GREEN if is_platform_owner() else SLATE
         st.markdown(f'<div class="metric-card"><div class="metric-label">Current Access</div><div class="metric-value" style="color:{col};font-size:20px;">{role}</div><div class="metric-sub">Owner-only controls remain gated by passcode.</div></div>', unsafe_allow_html=True)
 
-
 def _load_json_file(path, fallback):
     try:
         if path.exists():
-            data = json.loads(path.read_text(encoding='utf-8'))
-            if isinstance(data, dict):
-                return data
-    except Exception:
-        pass
+            data=json.loads(path.read_text(encoding='utf-8'))
+            if isinstance(data,dict): return data
+    except Exception: pass
     return fallback
 
-
-def _save_json_file(path, data):
+def _save_json_file(path,data):
     try:
-        path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8')
-        return True
-    except Exception:
-        return False
+        path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding='utf-8'); return True
+    except Exception: return False
 
-
-def _load_user_etf_preferences():
-    return _load_json_file(ETF_PREFS_FILE, {'preferred_etfs': {}})
-
-
-def _save_user_etf_preferences(data):
-    return _save_json_file(ETF_PREFS_FILE, data)
-
-
-def _load_platform_etf_overrides():
-    return _load_json_file(PLATFORM_ETF_OVERRIDES_FILE, {'platform_default_etfs': {}})
-
-
-def _save_platform_etf_overrides(data):
-    return _save_json_file(PLATFORM_ETF_OVERRIDES_FILE, data)
-
+def _load_user_etf_preferences(): return _load_json_file(ETF_PREFS_FILE, {'preferred_etfs': {}})
+def _save_user_etf_preferences(data): return _save_json_file(ETF_PREFS_FILE, data)
+def _load_platform_etf_overrides(): return _load_json_file(PLATFORM_ETF_OVERRIDES_FILE, {'platform_default_etfs': {}})
+def _save_platform_etf_overrides(data): return _save_json_file(PLATFORM_ETF_OVERRIDES_FILE, data)
 
 @st.cache_data(ttl=86400)
 def yahoo_ticker_name(ticker, fallback=''):
-    """Best-effort ETF/security name resolver from Yahoo Finance metadata."""
-    ticker = _normalise_ticker(ticker)
-    fallback = str(fallback or ticker or '').strip()
+    ticker=_normalise_ticker(ticker); fallback=str(fallback or ticker or '').strip()
     try:
-        info = yf.Ticker(ticker).get_info()
-        if isinstance(info, dict):
-            for key in ['longName', 'shortName', 'displayName']:
-                value = info.get(key)
-                if value and isinstance(value, str) and value.strip() and value.strip().upper() != ticker:
+        info=yf.Ticker(ticker).get_info()
+        if isinstance(info,dict):
+            for key in ['longName','shortName','displayName']:
+                value=info.get(key)
+                if value and isinstance(value,str) and value.strip() and value.strip().upper()!=ticker:
                     return value.strip()
-    except Exception:
-        pass
+    except Exception: pass
     return fallback or ticker
 
-
 def preferred_instrument_name(ticker, current_name=''):
-    ticker_norm = _normalise_ticker(ticker)
-    current = str(current_name or '').strip()
-    if not current or _normalise_ticker(current) == ticker_norm or len(current) <= len(ticker_norm) + 4:
-        return yahoo_ticker_name(ticker_norm, ticker_norm)
+    ticker_norm=_normalise_ticker(ticker); current=str(current_name or '').strip()
+    if not current or _normalise_ticker(current)==ticker_norm or len(current)<=len(ticker_norm)+4:
+        return yahoo_ticker_name(ticker_norm,ticker_norm)
     return current
 
-
 def validate_user_etf_ticker(ticker, market_name):
-    raw = _normalise_ticker(ticker)
-    if not raw:
-        return False, raw, None, 'Please enter a valid ticker.'
-    candidates = [raw]
-    suffix = ETF_MARKET_SUFFIX_HINTS.get(market_name)
-    if suffix and '.' not in raw:
-        candidates.append(raw + suffix)
+    raw=_normalise_ticker(ticker)
+    if not raw: return False, raw, None, 'Please enter a valid ticker.'
+    candidates=[raw]; suffix=ETF_MARKET_SUFFIX_HINTS.get(market_name)
+    if suffix and '.' not in raw: candidates.append(raw+suffix)
     for cand in candidates:
-        df = hist(cand, '2018-01-01')
+        df=hist(cand,'2018-01-01')
         if df is not None and not df.empty and 'Close' in df.columns:
-            s = df['Close'].dropna()
-            if not s.empty and safe_float(s.iloc[-1], None) is not None:
-                px = safe_float(s.iloc[-1])
-                msg = f'{cand} validated with latest available price {px:,.2f}.'
-                if cand != raw:
-                    msg = f'{raw} had no usable price data, so {cand} was used instead. Latest available price {px:,.2f}.'
-                return True, cand, px, msg
-    suffix_note = f' Try the Yahoo Finance suffix, e.g. {raw}{suffix}.' if suffix and '.' not in raw else ''
-    return False, raw, None, f'No usable price data found for {raw}.{suffix_note} ETF not added because comparison would not be meaningful.'
-
+            s=df['Close'].dropna()
+            if not s.empty and safe_float(s.iloc[-1],None) is not None:
+                px=safe_float(s.iloc[-1]); msg=f'{cand} validated with latest available price {px:,.2f}.'
+                if cand!=raw: msg=f'{raw} had no usable price data, so {cand} was used instead. Latest available price {px:,.2f}.'
+                return True,cand,px,msg
+    suffix_note=f' Try the Yahoo Finance suffix, e.g. {raw}{suffix}.' if suffix and '.' not in raw else ''
+    return False,raw,None,f'No usable price data found for {raw}.{suffix_note} ETF not added because comparison would not be meaningful.'
 
 def init_user_etf_preferences():
     if 'user_etf_watchlist' not in st.session_state:
-        prefs = _load_user_etf_preferences()
-        wl = prefs.get('preferred_etfs', {}) if isinstance(prefs, dict) else {}
-        st.session_state.user_etf_watchlist = wl if isinstance(wl, dict) else {}
-        st.session_state.user_etf_remember = bool(st.session_state.user_etf_watchlist)
-    if 'user_etf_remember' not in st.session_state:
-        st.session_state.user_etf_remember = False
-
+        prefs=_load_user_etf_preferences(); wl=prefs.get('preferred_etfs',{}) if isinstance(prefs,dict) else {}
+        st.session_state.user_etf_watchlist=wl if isinstance(wl,dict) else {}; st.session_state.user_etf_remember=bool(st.session_state.user_etf_watchlist)
+    if 'user_etf_remember' not in st.session_state: st.session_state.user_etf_remember=False
 
 def persist_user_etf_preferences_if_enabled():
-    if st.session_state.get('user_etf_remember', False):
-        return _save_user_etf_preferences({'preferred_etfs': st.session_state.get('user_etf_watchlist', {})})
+    if st.session_state.get('user_etf_remember',False): return _save_user_etf_preferences({'preferred_etfs':st.session_state.get('user_etf_watchlist',{})})
     return False
 
-
 def get_user_etfs_for_market(market_name):
-    init_user_etf_preferences()
-    raw = st.session_state.user_etf_watchlist.get(market_name, [])
-    return raw if isinstance(raw, list) else []
+    init_user_etf_preferences(); raw=st.session_state.user_etf_watchlist.get(market_name,[]); return raw if isinstance(raw,list) else []
 
-
-def save_user_etfs_for_market(market_name, rows):
-    init_user_etf_preferences()
-    st.session_state.user_etf_watchlist[market_name] = rows
-    persist_user_etf_preferences_if_enabled()
-
+def save_user_etfs_for_market(market_name,rows):
+    init_user_etf_preferences(); st.session_state.user_etf_watchlist[market_name]=rows; persist_user_etf_preferences_if_enabled()
 
 def get_platform_default_etfs_for_market(market_name):
-    ov = _load_platform_etf_overrides()
-    mp = ov.get('platform_default_etfs', {}) if isinstance(ov, dict) else {}
-    rows = mp.get(market_name, [])
-    return rows if isinstance(rows, list) else []
-
+    ov=_load_platform_etf_overrides(); mp=ov.get('platform_default_etfs',{}) if isinstance(ov,dict) else {}; rows=mp.get(market_name,[]); return rows if isinstance(rows,list) else []
 
 def enrich_platform_default_rows_for_market(market_name):
-    rows = []
+    rows=[]
     for item in get_platform_default_etfs_for_market(market_name):
-        if isinstance(item, dict):
-            ticker = _normalise_ticker(item.get('Ticker'))
-            row = dict(item)
-            row['Instrument'] = preferred_instrument_name(ticker, row.get('Instrument'))
-            rows.append(row)
+        if isinstance(item,dict):
+            ticker=_normalise_ticker(item.get('Ticker')); row=dict(item); row['Instrument']=preferred_instrument_name(ticker,row.get('Instrument')); rows.append(row)
     return rows
 
-
-def system_etf_tickers_for_market(market_name):
-    return {_normalise_ticker(x[2]) for x in ETF_UNIVERSE.get(market_name, [])}
-
-
-def platform_etf_tickers_for_market(market_name):
-    return {_normalise_ticker(x.get('Ticker')) for x in get_platform_default_etfs_for_market(market_name) if isinstance(x, dict)}
-
+def system_etf_tickers_for_market(market_name): return {_normalise_ticker(x[2]) for x in ETF_UNIVERSE.get(market_name,[])}
+def platform_etf_tickers_for_market(market_name): return {_normalise_ticker(x.get('Ticker')) for x in get_platform_default_etfs_for_market(market_name) if isinstance(x,dict)}
 
 def etf_data_coverage_label(ticker):
-    p = perf([('Core', ticker, ticker, 'ETF coverage check')])[0]
-    if p.get('5Y %') is not None:
-        return '5Y history available'
-    if p.get('3Y %') is not None:
-        return '3Y history available'
-    if p.get('1Y %') is not None:
-        return '1Y history available'
-    if p.get('Available Return %') is not None:
-        return 'Limited history / available-return only'
+    p=perf([('Core',ticker,ticker,'ETF coverage check')])[0]
+    if p.get('5Y %') is not None: return '5Y history available'
+    if p.get('3Y %') is not None: return '3Y history available'
+    if p.get('1Y %') is not None: return '1Y history available'
+    if p.get('Available Return %') is not None: return 'Limited history / available-return only'
     return 'Price-only / limited history'
 
-
-def add_user_etf_for_market(market_name, ticker, display_name='', role='Satellite', currency='Auto', use_case='User-selected ETF / watchlist'):
-    init_user_etf_preferences()
-    ok, res, px, msg = validate_user_etf_ticker(ticker, market_name)
-    if not ok:
-        return False, msg
-    ml = get_user_etfs_for_market(market_name)
-    if any(_normalise_ticker(x.get('Ticker')) == res for x in ml if isinstance(x, dict)):
-        return False, f'{res} already exists in the user-selected ETF list for {market_name}.'
-    if currency == 'Auto':
-        currency = market_currency_info(market_name)[0]
-    instrument = display_name.strip() or yahoo_ticker_name(res, res)
+def add_user_etf_for_market(market_name,ticker,display_name='',role='Satellite',currency='Auto',use_case='User-selected ETF / watchlist'):
+    init_user_etf_preferences(); ok,res,px,msg=validate_user_etf_ticker(ticker,market_name)
+    if not ok: return False,msg
+    ml=get_user_etfs_for_market(market_name)
+    if any(_normalise_ticker(x.get('Ticker'))==res for x in ml if isinstance(x,dict)): return False,f'{res} already exists in the user-selected ETF list for {market_name}.'
+    if currency=='Auto': currency=market_currency_info(market_name)[0]
+    instrument=display_name.strip() or yahoo_ticker_name(res,res)
     ml.append({'Source':'User-selected','Role':role,'Instrument':instrument,'Ticker':res,'Currency':currency,'Use case':use_case.strip() or 'User-selected ETF / watchlist'})
-    st.session_state.user_etf_watchlist[market_name] = ml
-    persist_user_etf_preferences_if_enabled()
-    dup = ''
-    if res in system_etf_tickers_for_market(market_name):
-        dup = ' This ticker is already covered in the system reference ETF table, so it will be shown as system reference rather than duplicated.'
-    elif res in platform_etf_tickers_for_market(market_name):
-        dup = ' This ticker is already promoted as platform default, so it will be shown as platform default rather than duplicated.'
-    return True, f'{res} added to {market_name} user-selected ETF watchlist. {msg}{dup}'
-
+    st.session_state.user_etf_watchlist[market_name]=ml; persist_user_etf_preferences_if_enabled()
+    return True,f'{res} added to {market_name} user-selected ETF watchlist. {msg}'
 
 def clear_user_etfs_for_market(market_name):
-    init_user_etf_preferences()
-    st.session_state.user_etf_watchlist[market_name] = []
-    persist_user_etf_preferences_if_enabled()
+    init_user_etf_preferences(); st.session_state.user_etf_watchlist[market_name]=[]; persist_user_etf_preferences_if_enabled()
 
-
-def promote_user_etf_to_platform_default(market_name, item):
-    if not is_platform_owner():
-        return False, 'Owner Mode is required to promote ETFs into the platform default universe.'
-    if not isinstance(item, dict):
-        return False, 'Invalid ETF item.'
-    ok, res, px, msg = validate_user_etf_ticker(item.get('Ticker'), market_name)
-    if not ok:
-        return False, msg
-    if res in system_etf_tickers_for_market(market_name):
-        return False, f'{res} is already part of the system ETF universe for {market_name}; no platform override is required.'
-    if res in platform_etf_tickers_for_market(market_name):
-        return False, f'{res} is already promoted as a platform default ETF for {market_name}.'
-    coverage = etf_data_coverage_label(res)
-    instrument = preferred_instrument_name(res, item.get('Instrument'))
-    ov = _load_platform_etf_overrides()
-    mp = ov.get('platform_default_etfs', {}) if isinstance(ov, dict) else {}
-    rows = mp.get(market_name, []) if isinstance(mp.get(market_name, []), list) else []
+def promote_user_etf_to_platform_default(market_name,item):
+    if not is_platform_owner(): return False,'Owner Mode is required to promote ETFs into the platform default universe.'
+    if not isinstance(item,dict): return False,'Invalid ETF item.'
+    ok,res,px,msg=validate_user_etf_ticker(item.get('Ticker'),market_name)
+    if not ok: return False,msg
+    if res in system_etf_tickers_for_market(market_name): return False,f'{res} is already part of the system ETF universe for {market_name}; no platform override is required.'
+    if res in platform_etf_tickers_for_market(market_name): return False,f'{res} is already promoted as a platform default ETF for {market_name}.'
+    coverage=etf_data_coverage_label(res); instrument=preferred_instrument_name(res,item.get('Instrument'))
+    ov=_load_platform_etf_overrides(); mp=ov.get('platform_default_etfs',{}) if isinstance(ov,dict) else {}; rows=mp.get(market_name,[]) if isinstance(mp.get(market_name,[]),list) else []
     rows.append({'Source':'Platform default','Role':'Core','Instrument':instrument,'Ticker':res,'Currency':item.get('Currency') or market_currency_info(market_name)[0],'Use case':f'Platform-promoted core ETF for {market_name}','Data Coverage':coverage,'Promoted At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')})
-    mp[market_name] = rows
-    ov['platform_default_etfs'] = mp
-    if _save_platform_etf_overrides(ov):
-        return True, f'{res} promoted to Platform Default ETF for {market_name}. {coverage}. {msg}'
-    return False, 'Failed to save platform ETF override file.'
+    mp[market_name]=rows; ov['platform_default_etfs']=mp
+    if _save_platform_etf_overrides(ov): return True,f'{res} promoted to Platform Default ETF for {market_name}. {coverage}. {msg}'
+    return False,'Failed to save platform ETF override file.'
 
+def promote_with_inline_passcode(market_name,item,passcode):
+    if not validate_owner_passcode(passcode): st.session_state.access_role='visitor'; return False,'Invalid owner passcode. ETF remains user-selected only.'
+    st.session_state.access_role='owner'; return promote_user_etf_to_platform_default(market_name,item)
 
-def promote_with_inline_passcode(market_name, item, passcode):
-    if not validate_owner_passcode(passcode):
-        st.session_state.access_role = 'visitor'
-        return False, 'Invalid owner passcode. ETF remains user-selected only.'
-    st.session_state.access_role = 'owner'
-    return promote_user_etf_to_platform_default(market_name, item)
-
-
-def remove_platform_default_etf(market_name, ticker):
-    if not is_platform_owner():
-        return False, 'Owner Mode is required to remove platform default ETF overrides.'
-    ticker = _normalise_ticker(ticker)
-    ov = _load_platform_etf_overrides()
-    mp = ov.get('platform_default_etfs', {}) if isinstance(ov, dict) else {}
-    rows = mp.get(market_name, []) if isinstance(mp.get(market_name, []), list) else []
-    mp[market_name] = [r for r in rows if _normalise_ticker(r.get('Ticker')) != ticker]
-    ov['platform_default_etfs'] = mp
-    if _save_platform_etf_overrides(ov):
-        return True, f'{ticker} removed from platform default ETF overrides for {market_name}.'
-    return False, 'Failed to save platform ETF override file.'
-
+def remove_platform_default_etf(market_name,ticker):
+    if not is_platform_owner(): return False,'Owner Mode is required to remove platform default ETF overrides.'
+    ticker=_normalise_ticker(ticker); ov=_load_platform_etf_overrides(); mp=ov.get('platform_default_etfs',{}) if isinstance(ov,dict) else {}; rows=mp.get(market_name,[]) if isinstance(mp.get(market_name,[]),list) else []
+    mp[market_name]=[r for r in rows if _normalise_ticker(r.get('Ticker'))!=ticker]; ov['platform_default_etfs']=mp
+    if _save_platform_etf_overrides(ov): return True,f'{ticker} removed from platform default ETF overrides for {market_name}.'
+    return False,'Failed to save platform ETF override file.'
 
 def enrich_user_etf_rows_for_market(market_name):
-    rows=[]
-    code,_,_,_=market_currency_info(market_name)
-    sys=system_etf_tickers_for_market(market_name)
-    plat=platform_etf_tickers_for_market(market_name)
-    seen=set()
+    rows=[]; code,_,_,_=market_currency_info(market_name); sys=system_etf_tickers_for_market(market_name); plat=platform_etf_tickers_for_market(market_name); seen=set()
     for item in get_user_etfs_for_market(market_name):
-        if not isinstance(item,dict):
-            continue
-        original=_normalise_ticker(item.get('Ticker'))
-        ok,res,px,msg=validate_user_etf_ticker(original,market_name)
-        key=res if ok else original
-        if key in seen:
-            continue
-        seen.add(key)
-        status='Shown in ETF table'
-        if ok and res in sys:
-            status='Already in system reference table'
-        elif ok and res in plat:
-            status='Already promoted as platform default'
-        elif not ok:
-            status='Excluded from ETF table'
+        if not isinstance(item,dict): continue
+        original=_normalise_ticker(item.get('Ticker')); ok,res,px,msg=validate_user_etf_ticker(original,market_name); key=res if ok else original
+        if key in seen: continue
+        seen.add(key); status='Shown in ETF table'
+        if ok and res in sys: status='Already in system reference table'
+        elif ok and res in plat: status='Already promoted as platform default'
+        elif not ok: status='Excluded from ETF table'
         rows.append({'Source':item.get('Source','User-selected'),'Role':item.get('Role','Satellite'),'Instrument':preferred_instrument_name(key,item.get('Instrument')),'Original Ticker':original,'Ticker':res if ok else original,'Currency':item.get('Currency') or code,'Use case':item.get('Use case','User-selected ETF / watchlist'),'Data Status':'OK' if ok else 'No price data','Price':px,'Data Coverage':etf_data_coverage_label(res) if ok else 'N/A','Table Status':status,'Validation Note':msg})
     return rows
-
 
 def clean_user_etfs_for_market(market_name,keep_system_duplicates=False):
     cleaned=[]
     for r in enrich_user_etf_rows_for_market(market_name):
-        if r.get('Data Status')!='OK':
-            continue
-        if not keep_system_duplicates and r.get('Table Status') in ['Already in system reference table','Already promoted as platform default']:
-            continue
+        if r.get('Data Status')!='OK': continue
+        if not keep_system_duplicates and r.get('Table Status') in ['Already in system reference table','Already promoted as platform default']: continue
         cleaned.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency'),'Use case':r.get('Use case','User-selected ETF / watchlist')})
-    save_user_etfs_for_market(market_name,cleaned)
-    return len(cleaned)
-
+    save_user_etfs_for_market(market_name,cleaned); return len(cleaned)
 
 def classify_etf_role(role_text):
     txt=str(role_text or '').lower()
-    if 'defensive' in txt or 'cash' in txt:
-        return 'Defensive'
-    if 'core' in txt or 'lower-cost' in txt or 'broad' in txt:
-        return 'Core'
+    if 'defensive' in txt or 'cash' in txt: return 'Defensive'
+    if 'core' in txt or 'lower-cost' in txt or 'broad' in txt: return 'Core'
     return 'Satellite'
 
-
 def build_etf_reference_rows(market_name):
-    code,_,_,_=market_currency_info(market_name)
-    rows=[]
+    code,_,_,_=market_currency_info(market_name); rows=[]
     for item in enrich_platform_default_rows_for_market(market_name):
         if isinstance(item,dict) and _normalise_ticker(item.get('Ticker')):
             rows.append({'Source':'Platform default','Role':item.get('Role','Core'),'Instrument':preferred_instrument_name(item.get('Ticker'),item.get('Instrument')),'Ticker':_normalise_ticker(item.get('Ticker')),'Currency':item.get('Currency') or code,'Use case':item.get('Use case',f'Platform-promoted core ETF for {market_name}'),'Data Coverage':item.get('Data Coverage','')})
-    for role,name,tick,use in ETF_UNIVERSE.get(market_name,[]):
-        rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
+    for role,name,tick,use in ETF_UNIVERSE.get(market_name,[]): rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
     for r in enrich_user_etf_rows_for_market(market_name):
         if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table':
             rows.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Use case':r.get('Use case','User-selected ETF / watchlist'),'Data Coverage':r.get('Data Coverage','')})
     return rows
 
+def promote_label_for_row(row):
+    src=row.get('Source')
+    if src=='Platform default': return 'Default'
+    if src=='System reference': return '—'
+    if row.get('Data Status')!='OK': return 'Locked'
+    return 'Request'
 
-def promotion_action_for_row(row):
-    src = row.get('Source')
-    if src == 'Platform default':
-        return 'Already default'
-    if src == 'System reference':
-        return 'Not applicable'
-    if row.get('Data Status') != 'OK':
-        return 'Not eligible'
-    return 'Request promotion'
-
+def gap_summary(row):
+    vals=[]
+    for h in ['1Y','3Y','5Y']:
+        v=row.get(f'{h} Gap vs Index %')
+        vals.append(f'{h}: {v:+.1f}' if v is not None and not pd.isna(v) else f'{h}: —')
+    return ' | '.join(vals)
 
 def add_performance_and_gap(rows,market_name):
-    if not rows:
-        return pd.DataFrame()
+    if not rows: return pd.DataFrame()
     perf_items=[(r['Role'],r['Instrument'],r['Ticker'],r['Use case']) for r in rows]
-    perf_rows=perf(perf_items)
-    perf_map={(_normalise_ticker(x.get('Ticker')),str(x.get('Name'))):x for x in perf_rows}
-    idx_perf=perf([('Benchmark',market_name,INDEX_TICKERS.get(market_name,''),'Selected market index')])[0] if market_name in INDEX_TICKERS else {}
-    out=[]
+    perf_rows=perf(perf_items); perf_map={(_normalise_ticker(x.get('Ticker')),str(x.get('Name'))):x for x in perf_rows}
+    idx_perf=perf([('Benchmark',market_name,INDEX_TICKERS.get(market_name,''),'Selected market index')])[0] if market_name in INDEX_TICKERS else {}; out=[]
     for r in rows:
         p=perf_map.get((_normalise_ticker(r['Ticker']),str(r['Instrument'])),{})
-        row=dict(r)
-        row['Price']=p.get('Price')
-        row['History Start']=p.get('History Start')
-        row['History Days']=p.get('History Days')
-        row['Available Return %']=p.get('Available Return %')
+        row=dict(r); row['Price']=p.get('Price'); row['History Start']=p.get('History Start'); row['History Days']=p.get('History Days'); row['Available Return %']=p.get('Available Return %')
         row['Data Status']='OK' if p.get('Price') is not None else 'No price data'
         row['Data Coverage']=row.get('Data Coverage') or (etf_data_coverage_label(r['Ticker']) if row['Data Status']=='OK' else 'N/A')
-        row['Promotion Action']=promotion_action_for_row(row)
         for h in ['1Y %','3Y %','5Y %']:
-            er=p.get(h); ir=idx_perf.get(h)
-            row[h]=er
-            row[h.replace('%','Gap vs Index %')]=round(er-ir,1) if er is not None and ir is not None else None
+            er=p.get(h); ir=idx_perf.get(h); row[h]=er; row[h.replace('%','Gap vs Index %')]=round(er-ir,1) if er is not None and ir is not None else None
+        row['Promote']=promote_label_for_row(row); row['Gap vs Index']=gap_summary(row)
         out.append(row)
     return pd.DataFrame(out)
 
@@ -1407,96 +1255,67 @@ def render_market(expanded=False):
 def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
         init_user_etf_preferences()
-        role_label = 'Platform Owner' if is_platform_owner() else 'Visitor'
+        role_label='Platform Owner' if is_platform_owner() else 'Visitor'
         st.markdown('## 📊 Market Performance & ETF Tracker')
-        st.caption('Global performance overview, consolidated ETF implementation vehicles, inline owner-gated promotion, and performance gap versus the selected index. Implementation reference only — not a recommendation.')
-
-        ctrl1, ctrl2, ctrl3, ctrl4 = st.columns([1.0, .78, .82, .65])
-        market_options = list(ETF_UNIVERSE.keys())
-        default_idx = market_options.index(sel) if sel in market_options else 0
-        perf_market = ctrl1.selectbox('Market view', market_options, index=default_idx, key='performance_market_view')
-        market_ccy, market_symbol, _, market_ccy_name = market_currency_info(perf_market)
-        role_filter = ctrl2.selectbox('ETF View', ['All','Core','Satellite','Defensive','User-selected only','Platform default only'], index=0, key='etf_role_filter')
-        st.session_state.user_etf_remember = ctrl3.checkbox('Remember ETF list for next visit', value=st.session_state.get('user_etf_remember', False), key='remember_user_etf_checkbox')
-        ctrl4.metric('Access', role_label)
-        if st.session_state.get('user_etf_remember', False):
-            persist_user_etf_preferences_if_enabled()
-
-        st.markdown(f"""
-<div class="soft-card"><div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Selected Market Implementation Context</div><div style="font-size:22px;font-weight:900;color:{TEXT};margin-top:4px;">{perf_market}</div><div style="font-size:13px;color:{MUTED};margin-top:4px;">Default currency: <b>{market_symbol} / {market_ccy_name}</b> · Deployment signal remains based on the selected market index, not on any ETF vehicle.</div></div>
-""", unsafe_allow_html=True)
+        st.caption('Consolidated ETF implementation vehicles with user-selected promotion action in the main table. Implementation reference only — not a recommendation.')
+        ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1.0,.78,.82,.65])
+        market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
+        perf_market=ctrl1.selectbox('Market view',market_options,index=default_idx,key='performance_market_view')
+        market_ccy,market_symbol,_,market_ccy_name=market_currency_info(perf_market)
+        role_filter=ctrl2.selectbox('ETF View',['All','Core','Satellite','Defensive','User-selected only','Platform default only'],index=0,key='etf_role_filter')
+        st.session_state.user_etf_remember=ctrl3.checkbox('Remember ETF list for next visit',value=st.session_state.get('user_etf_remember',False),key='remember_user_etf_checkbox')
+        ctrl4.metric('Access',role_label)
+        if st.session_state.get('user_etf_remember',False): persist_user_etf_preferences_if_enabled()
+        st.markdown(f"""<div class="soft-card"><div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Selected Market Implementation Context</div><div style="font-size:22px;font-weight:900;color:{TEXT};margin-top:4px;">{perf_market}</div><div style="font-size:13px;color:{MUTED};margin-top:4px;">Default currency: <b>{market_symbol} / {market_ccy_name}</b> · Deployment signal remains based on the selected market index, not on any ETF vehicle.</div></div>""",unsafe_allow_html=True)
 
         st.markdown('### 1. Global Performance Overview')
         global_frames=[]
         for group,recs in bench().items():
             gdf=pd.DataFrame(recs)
-            if not gdf.empty:
-                gdf.insert(0,'Group',group)
-                global_frames.append(gdf)
+            if not gdf.empty: gdf.insert(0,'Group',group); global_frames.append(gdf)
         st.dataframe(pd.concat(global_frames,ignore_index=True),use_container_width=True,hide_index=True) if global_frames else st.info('Global performance data is unavailable.')
 
         st.markdown('### 2. ETF Implementation Vehicles')
-        etf_df = add_performance_and_gap(build_etf_reference_rows(perf_market), perf_market)
+        etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
-            etf_df = etf_df[etf_df['Data Status'].eq('OK')]
-            if role_filter == 'User-selected only':
-                etf_df = etf_df[etf_df['Source'].eq('User-selected')]
-            elif role_filter == 'Platform default only':
-                etf_df = etf_df[etf_df['Source'].eq('Platform default')]
-            elif role_filter != 'All':
-                etf_df = etf_df[etf_df['Role'].eq(role_filter)]
-
-        selected_promotion_row = None
+            etf_df=etf_df[etf_df['Data Status'].eq('OK')]
+            if role_filter=='User-selected only': etf_df=etf_df[etf_df['Source'].eq('User-selected')]
+            elif role_filter=='Platform default only': etf_df=etf_df[etf_df['Source'].eq('Platform default')]
+            elif role_filter!='All': etf_df=etf_df[etf_df['Role'].eq(role_filter)]
+        selected_promotion_row=None
         if etf_df.empty:
             st.info('No ETF rows with usable price data are available for the selected filter. Add a valid ETF below, using the correct Yahoo Finance ticker format where needed.')
         else:
-            base_cols=['Source','Role','Instrument','Ticker','Currency','Use case','Data Status','Data Coverage','Promotion Action','Price','History Start','History Days','Available Return %','1Y %','1Y Gap vs Index %','3Y %','3Y Gap vs Index %','5Y %','5Y Gap vs Index %']
-            display_df = etf_df[[c for c in base_cols if c in etf_df.columns]].copy()
-            eligible_mask = display_df['Promotion Action'].eq('Request promotion') if 'Promotion Action' in display_df.columns else pd.Series(False, index=display_df.index)
-            eligible_df = display_df.loc[eligible_mask].copy()
-            locked_df = display_df.loc[~eligible_mask].copy()
-
-            if not locked_df.empty:
-                st.dataframe(locked_df, use_container_width=True, hide_index=True)
-
-            if not eligible_df.empty:
-                st.markdown('##### User-selected ETFs eligible for platform promotion')
-                eligible_df['Request Promotion'] = False
-                action_cols=['Source','Role','Instrument','Ticker','Data Status','Data Coverage','Promotion Action','Request Promotion','Price','History Start','History Days','Available Return %','Currency','Use case']
-                eligible_df = eligible_df[[c for c in action_cols if c in eligible_df.columns]]
-                disabled_cols=[c for c in eligible_df.columns if c != 'Request Promotion']
-                edited_action_df = st.data_editor(
-                    eligible_df,
-                    use_container_width=True,
-                    hide_index=True,
-                    disabled=disabled_cols,
-                    column_config={
-                        'Request Promotion': st.column_config.CheckboxColumn('Request Promotion', help='Tick to request owner-gated promotion to Platform Default ETF.')
-                    },
-                    key=f'etf_implementation_promotion_editor_{perf_market}'
-                )
-                requested = edited_action_df[edited_action_df.get('Request Promotion', False) == True]
+            display_cols=['Instrument','Ticker','Promote','Role','Currency','Price','Available Return %','1Y %','3Y %','5Y %','Gap vs Index','Source','Data Coverage']
+            display_df=etf_df[[c for c in display_cols if c in etf_df.columns]].copy()
+            eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
+            if eligible_mask.any():
+                display_df['Request Promotion']=False
+                # Keep the action next to ticker. The internal label remains hidden.
+                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','Price','Available Return %','1Y %','3Y %','5Y %','Gap vs Index','Source','Data Coverage','Promote']
+                editor_df=display_df[[c for c in action_cols if c in display_df.columns]].copy()
+                disabled_cols=[c for c in editor_df.columns if c!='Request Promotion']
+                edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.'),'Promote':st.column_config.TextColumn('Status')},key=f'etf_implementation_unified_editor_{perf_market}')
+                requested=edited_df[edited_df.get('Request Promotion',False)==True]
                 if not requested.empty:
-                    selected_ticker = requested.iloc[-1]['Ticker']
-                    candidate_matches = etf_df[etf_df['Ticker'].eq(selected_ticker)].to_dict('records')
-                    selected_promotion_row = candidate_matches[-1] if candidate_matches else None
+                    selected_ticker=requested.iloc[-1]['Ticker']
+                    matches=etf_df[etf_df['Ticker'].eq(selected_ticker)].to_dict('records')
+                    selected_promotion_row=matches[-1] if matches else None
             else:
+                # No eligible rows: show a clean read-only table with the short Promote status column.
+                st.dataframe(display_df,use_container_width=True,hide_index=True)
                 st.caption('No user-selected ETF is currently eligible for promotion. Platform-default and system-reference rows are locked.')
-
             st.caption('Implementation reference only. Limited-history ETFs show available-period return separately; 1Y/3Y/5Y columns remain blank until the full horizon is available.')
 
         if selected_promotion_row:
             st.markdown('#### 🔐 Platform Default Promotion')
-            st.markdown(f"""
-<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Data Status:</b> {hesc(selected_promotion_row.get('Data Status'))} · <b>Coverage:</b> {hesc(selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>
-""", unsafe_allow_html=True)
+            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>""",unsafe_allow_html=True)
             p1,p2=st.columns([.95,1.05])
             inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
             if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
                 ok,msg=promote_with_inline_passcode(perf_market,selected_promotion_row,inline_passcode)
                 st.toast(('✅ ' if ok else '⚠️ ')+msg)
-                if not ok:
-                    st.warning(msg)
+                if not ok: st.warning(msg)
                 st.rerun()
             p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Limited return history is allowed but labelled clearly.')
 
@@ -1506,64 +1325,38 @@ def render_performance(expanded=False):
         new_ticker=q1.text_input('New ETF ticker',value='',placeholder='e.g. VOO / ES3.SI / 2800.HK',key='custom_etf_ticker')
         new_name=q2.text_input('Display name (optional)',value='',placeholder='Optional ETF name',key='custom_etf_name')
         add_clicked=q3.button('➕ Add ETF',use_container_width=True,key='add_custom_etf_button')
-
-        with st.expander('Advanced ETF input options', expanded=False):
+        with st.expander('Advanced ETF input options',expanded=False):
             a,b,c=st.columns([.8,.85,1.35])
             new_role=a.selectbox('Role',['Core','Satellite','Defensive','Thematic'],index=1,key='custom_etf_role')
             new_currency=b.selectbox('Currency',['Auto']+list(CURRENCY_SYMBOL_MAP.keys()),index=0,key='custom_etf_currency')
             new_use_case=c.text_input('Use case / note',value='User-selected ETF / watchlist',key='custom_etf_use_case')
             suffix_hint=ETF_MARKET_SUFFIX_HINTS.get(perf_market)
-            if suffix_hint:
-                st.caption(f'Ticker format hint for {perf_market}: Yahoo Finance often requires suffix {suffix_hint}. Example: G3B{suffix_hint} / ES3{suffix_hint} where applicable.')
-
+            if suffix_hint: st.caption(f'Ticker format hint for {perf_market}: Yahoo Finance often requires suffix {suffix_hint}. Example: G3B{suffix_hint} / ES3{suffix_hint} where applicable.')
         if add_clicked:
             ok,msg=add_user_etf_for_market(perf_market,new_ticker,new_name,new_role,new_currency,new_use_case)
             st.toast(('✅ ' if ok else '⚠️ ')+msg)
-            if not ok:
-                st.warning(msg)
+            if not ok: st.warning(msg)
             st.rerun()
-
-        with st.expander('ETF list maintenance', expanded=False):
+        with st.expander('ETF list maintenance',expanded=False):
             m1,m2=st.columns([.8,1.2])
             if m1.button('Clean list',use_container_width=True,key='clean_user_etf_rows_button'):
-                n=clean_user_etfs_for_market(perf_market,keep_system_duplicates=False)
-                st.toast(f'✅ ETF watchlist cleaned. {n} non-duplicate valid user ETF row(s) retained.')
-                st.rerun()
+                n=clean_user_etfs_for_market(perf_market,keep_system_duplicates=False); st.toast(f'✅ ETF watchlist cleaned. {n} non-duplicate valid user ETF row(s) retained.'); st.rerun()
             m2.caption('Removes invalid tickers and duplicated tickers already covered by system/platform ETF rows.')
             if st.button('Clear user ETFs for this market',use_container_width=True,key='clear_custom_etf_button'):
-                clear_user_etfs_for_market(perf_market)
-                st.toast(f'🧹 User-selected ETF list cleared for {perf_market}.')
-                st.rerun()
+                clear_user_etfs_for_market(perf_market); st.toast(f'🧹 User-selected ETF list cleared for {perf_market}.'); st.rerun()
             platform_rows=enrich_platform_default_rows_for_market(perf_market)
             if platform_rows:
-                st.markdown('##### Current platform default ETF overrides')
-                st.dataframe(pd.DataFrame(platform_rows),use_container_width=True,hide_index=True)
+                st.markdown('##### Current platform default ETF overrides'); st.dataframe(pd.DataFrame(platform_rows),use_container_width=True,hide_index=True)
                 if is_platform_owner():
                     remove_options=[_normalise_ticker(x.get('Ticker')) for x in platform_rows if isinstance(x,dict)]
                     if remove_options:
-                        r1,r2=st.columns([1,.8])
-                        remove_ticker=r1.selectbox('Remove platform default override',remove_options,key='remove_platform_override_select')
+                        r1,r2=st.columns([1,.8]); remove_ticker=r1.selectbox('Remove platform default override',remove_options,key='remove_platform_override_select')
                         if r2.button('Remove Override',use_container_width=True,key='remove_platform_override_button'):
-                            ok,msg=remove_platform_default_etf(perf_market,remove_ticker)
-                            st.toast(('✅ ' if ok else '⚠️ ')+msg)
-                            st.rerun()
-
+                            ok,msg=remove_platform_default_etf(perf_market,remove_ticker); st.toast(('✅ ' if ok else '⚠️ ')+msg); st.rerun()
         with st.expander('4. ETF Role Classification Guide',expanded=False):
-            st.dataframe(pd.DataFrame([
-                {'Role':'Core','Meaning':'Closest broad-market implementation proxy for the selected market/index.'},
-                {'Role':'Satellite','Meaning':'Optional tilt such as growth, dividend, REIT, sector, gold, bitcoin or thematic exposure.'},
-                {'Role':'Platform default','Meaning':'Owner-promoted ETF saved in the platform override file and displayed ahead of system reference ETFs.'}
-            ]),use_container_width=True,hide_index=True)
+            st.dataframe(pd.DataFrame([{'Role':'Core','Meaning':'Closest broad-market implementation proxy for the selected market/index.'},{'Role':'Satellite','Meaning':'Optional tilt such as growth, dividend, REIT, sector, gold, bitcoin or thematic exposure.'},{'Role':'Platform default','Meaning':'Owner-promoted ETF saved in the platform override file and displayed ahead of system reference ETFs.'}]),use_container_width=True,hide_index=True)
         with st.expander('5. Methodology & Guardrails',expanded=False):
-            guardrails=[
-                'Temporary testing owner passcode is Kf272287 unless OWNER_PASSCODE is configured via Streamlit secrets or environment variable.',
-                'Promotion is requested from the consolidated ETF Implementation Vehicles section, not from a separate user ETF list.',
-                'Owner passcode is requested inline only after an eligible user-selected ETF is selected for promotion.',
-                'Owner promotion requires valid latest price data only; 1Y return history is not required.',
-                'Limited-history ETFs show History Start, History Days and Available Return % separately; 1Y/3Y/5Y remain blank until full history exists.',
-                'ETF names are resolved from Yahoo Finance metadata where possible; fallback is ticker.',
-                'ETF watchlist or platform-default status does not affect Suggested Deploy, allocation stance, risk regime, valuation Z-score, or crash analytics.'
-            ]
+            guardrails=['Temporary testing owner passcode is Kf272287 unless OWNER_PASSCODE is configured via Streamlit secrets or environment variable.','Promotion is requested from the consolidated ETF Implementation Vehicles section, with the Promote action placed next to Ticker.','Owner passcode is requested inline only after an eligible user-selected ETF is selected for promotion.','Owner promotion requires valid latest price data only; 1Y return history is not required.','Limited-history ETFs show available-period return separately; 1Y/3Y/5Y remain blank until full history exists.','ETF names are resolved from Yahoo Finance metadata where possible; fallback is ticker.','ETF watchlist or platform-default status does not affect Suggested Deploy, allocation stance, risk regime, valuation Z-score, or crash analytics.']
             rows=''.join([f'<div class="assumption-row"><b>{i}</b><span>{hesc(txt)}</span></div>' for i,txt in enumerate(guardrails,1)])
             st.markdown(f'<div class="soft-card">{rows}</div>',unsafe_allow_html=True)
 
@@ -1756,8 +1549,6 @@ def render_audit(expanded=False):
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
 
-# Render orchestration is wrapped in a function to avoid Streamlit magic from
-# printing returned DeltaGenerator objects in the main script body.
 def run_render_loop():
     render_executive()
     for section in SECTION_ORDER:
@@ -1771,7 +1562,6 @@ def run_render_loop():
             RENDERERS[section](expanded=True)
         else:
             RENDERERS[section](expanded=False)
-
     st.markdown('---')
     st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
     st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
