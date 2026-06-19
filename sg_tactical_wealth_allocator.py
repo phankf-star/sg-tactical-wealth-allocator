@@ -642,6 +642,7 @@ def mini_pmi_bar_chart(df,title,subtitle):
 ETF_PREFS_FILE = Path('user_etf_preferences.json')
 PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
+DEFAULT_OWNER_PASSCODE = 'Kf272287'  # Testing default only. Replace with st.secrets/env in production.
 
 def _normalise_ticker(ticker):
     return str(ticker or '').strip().upper()
@@ -655,27 +656,37 @@ def is_platform_owner():
     return st.session_state.get('access_role') == 'owner'
 
 def get_configured_owner_passcode():
-    """Return configured owner passcode from Streamlit secrets or environment variable.
+    """Return owner passcode from Streamlit secrets, environment, or temporary testing default.
 
-    There is intentionally no default passcode. Owner Mode should remain locked
-    until the platform owner explicitly configures OWNER_PASSCODE.
+    Priority:
+    1. st.secrets['OWNER_PASSCODE']
+    2. environment variable OWNER_PASSCODE
+    3. DEFAULT_OWNER_PASSCODE for development/testing
     """
     try:
         secret_code = st.secrets.get('OWNER_PASSCODE', '')
     except Exception:
         secret_code = ''
     env_code = os.environ.get('OWNER_PASSCODE', '')
-    return str(secret_code or env_code or '')
+    return str(secret_code or env_code or DEFAULT_OWNER_PASSCODE or '')
+
+def owner_passcode_source():
+    try:
+        if st.secrets.get('OWNER_PASSCODE', ''):
+            return 'Streamlit secrets'
+    except Exception:
+        pass
+    if os.environ.get('OWNER_PASSCODE', ''):
+        return 'Environment variable'
+    return 'Temporary testing default'
 
 def render_owner_mode_sidebar():
     ensure_access_role()
     with st.expander('🔐 Owner Mode', expanded=False):
         st.caption('Visitor mode can add personal ETF watchlist items. Owner mode can promote validated ETFs into the platform default ETF universe.')
-        configured_code = get_configured_owner_passcode()
-        if not configured_code:
-            st.warning('Owner passcode is not configured. There is no default owner passcode for safety.')
-            st.code('[Create this file]\n.streamlit/secrets.toml\n\nOWNER_PASSCODE = "choose-your-private-passcode"', language='toml')
-            st.caption('Alternative for deployment: set environment variable OWNER_PASSCODE. After configuration, restart/rerun the app.')
+        st.info(f'Owner passcode source: {owner_passcode_source()}. Passcode change UI is deferred to a later stage.')
+        if owner_passcode_source() == 'Temporary testing default':
+            st.caption('Testing passcode currently active: Kf272287')
         owner_code = st.text_input('Owner passcode', type='password', key='owner_passcode_input')
         c1, c2 = st.columns([1, 1])
         if c1.button('Unlock Owner Controls', use_container_width=True, key='unlock_owner_mode_button'):
@@ -683,9 +694,6 @@ def render_owner_mode_sidebar():
             if configured_code and owner_code == configured_code:
                 st.session_state.access_role = 'owner'
                 st.success('Owner Mode unlocked.')
-            elif not configured_code:
-                st.session_state.access_role = 'visitor'
-                st.warning('OWNER_PASSCODE is not configured. Owner controls remain locked.')
             else:
                 st.session_state.access_role = 'visitor'
                 st.error('Invalid owner passcode.')
@@ -841,10 +849,6 @@ def add_user_etf_for_market(market_name, ticker, display_name='', role='Satellit
     ok, resolved_ticker, latest_price, validation_msg = validate_user_etf_ticker(ticker, market_name)
     if not ok:
         return False, validation_msg
-    if resolved_ticker in system_etf_tickers_for_market(market_name):
-        return False, f'{resolved_ticker} is already included in the system reference ETF table for {market_name}. It is not added as a separate user row to avoid duplication.'
-    if resolved_ticker in platform_etf_tickers_for_market(market_name):
-        return False, f'{resolved_ticker} is already promoted as a platform default ETF for {market_name}. It is not added as a separate user row to avoid duplication.'
     market_list = get_user_etfs_for_market(market_name)
     if any(_normalise_ticker(x.get('Ticker')) == resolved_ticker for x in market_list if isinstance(x, dict)):
         return False, f'{resolved_ticker} already exists in the user-selected ETF list for {market_name}.'
@@ -853,7 +857,12 @@ def add_user_etf_for_market(market_name, ticker, display_name='', role='Satellit
     market_list.append({'Source': 'User-selected','Role': role,'Instrument': display_name.strip() or resolved_ticker,'Ticker': resolved_ticker,'Currency': currency,'Use case': use_case.strip() or 'User-selected ETF / watchlist'})
     st.session_state.user_etf_watchlist[market_name] = market_list
     persist_user_etf_preferences_if_enabled()
-    return True, f'{resolved_ticker} added to {market_name} user-selected ETF watchlist. {validation_msg}'
+    duplicate_note = ''
+    if resolved_ticker in system_etf_tickers_for_market(market_name):
+        duplicate_note = ' This ticker is already covered in the system reference ETF table, so it will be shown in the user list but not duplicated in the implementation table.'
+    elif resolved_ticker in platform_etf_tickers_for_market(market_name):
+        duplicate_note = ' This ticker is already promoted as platform default, so it will be shown in the user list but not duplicated in the implementation table.'
+    return True, f'{resolved_ticker} added to {market_name} user-selected ETF watchlist. {validation_msg}{duplicate_note}'
 
 def clear_user_etfs_for_market(market_name):
     init_user_etf_preferences()
@@ -1424,9 +1433,9 @@ def render_performance(expanded=False):
 
         with st.expander('5. Methodology & Guardrails', expanded=False):
             guardrails = [
-                'There is no default owner passcode. Configure OWNER_PASSCODE in .streamlit/secrets.toml or as an environment variable.',
-                'Visitor mode can add validated non-duplicate user-selected ETFs for watchlist tracking and comparison only.',
-                'If a visitor inputs an ETF that is already in the system reference table, it is not added as a separate user row because the ETF is already visible in the default section.',
+                'Temporary testing owner passcode is Kf272287 unless OWNER_PASSCODE is configured via Streamlit secrets or environment variable.',
+                'Owner passcode change UI is intentionally deferred to a later stage.',
+                'Visitor mode can add validated ETFs for watchlist tracking. Duplicate tickers already in the system/platform table are shown in the user list but not duplicated in the implementation table.',
                 'Owner Mode is required to promote a validated non-duplicate user ETF into the platform default ETF universe.',
                 'Platform default ETF overrides are saved in platform_etf_overrides.json and displayed ahead of system reference ETFs.',
                 'User-selected ETFs are validated before being added. Tickers without usable price data are excluded because performance comparison would not be meaningful.',
