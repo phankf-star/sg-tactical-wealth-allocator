@@ -128,19 +128,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final main-page refresh */
-.exec-hero {
-  background:var(--hero-bg,#F8FAFC);
-  border:3px solid var(--hero-border,#64748B);
-  border-radius:28px;
-  padding:26px 28px;
-  margin:12px 0 22px 0;
-  box-shadow:0 10px 26px rgba(15,23,42,.08);
-  display:grid;
-  grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
-  gap:24px;
-  align-items:stretch;
-}
+/* v36z+ Executive Centre final mockup-positioned mini charts */
+.exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
 .exec-deploy-box {background:#FFFFFF;border:1px solid var(--hero-soft-border,#CBD5E1);border-radius:22px;padding:20px 22px;min-height:152px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
@@ -150,20 +139,21 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-deploy-fine {color:#64748B;font-size:.76rem;line-height:1.38;margin-top:8px;}
 .exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
 .exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
-.exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 18px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
+.exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
 .exec-kpi-card::before {content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--accent-colour,#2563EB);border-radius:22px 22px 0 0;}
 .exec-kpi-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
-.exec-kpi-value {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:950;letter-spacing:-.035em;margin-top:16px;}
-.exec-kpi-sub {color:#111827;font-size:.91rem;font-weight:650;line-height:1.42;margin-top:11px;}
-.exec-kpi-mini {height:50px;border:1px solid #EDF2F7;border-radius:13px;margin-top:14px;background:linear-gradient(180deg,#F8FBFF,#FFFFFF);padding:6px 8px;}
-.exec-kpi-mini svg {width:100%;height:38px;display:block;overflow:visible;}
+.exec-kpi-body {display:grid;grid-template-columns:minmax(0,1fr) 235px;gap:18px;align-items:center;margin-top:14px;}
+.exec-kpi-body.no-mini {display:block;}
+.exec-kpi-value {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:950;letter-spacing:-.035em;margin-top:0;}
+.exec-kpi-sub {color:#111827;font-size:.91rem;font-weight:650;line-height:1.42;margin-top:10px;}
+.exec-kpi-sub:empty {display:none;}
 .exec-kpi-value.amber-value {color:#B45309;}
 .exec-kpi-value.green-value {color:#16A34A;}
 .exec-kpi-value.red-value {color:#DC2626;}
-.exec-risk-bars {display:flex;align-items:flex-end;gap:7px;height:38px;width:100%;}
-.exec-risk-bar-wrap {flex:1;display:flex;align-items:flex-end;height:38px;border-radius:6px;background:#F1F5F9;overflow:hidden;}
-.exec-risk-bar {width:100%;border-radius:6px 6px 0 0;background:var(--accent-colour,#16A34A);min-height:2px;opacity:.78;}
-@media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}}
+.exec-mini-panel {height:82px;min-width:210px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.exec-mini-panel svg {width:100%;height:82px;display:block;overflow:visible;}
+.exec-mini-caption {font-size:10px;fill:#64748B;font-weight:700;}
+@media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}.exec-kpi-body {grid-template-columns:1fr;}.exec-mini-panel {width:100%;min-width:0;justify-content:flex-start;}}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -354,50 +344,102 @@ def _normalise_series_values(values, limit=252):
     except Exception:
         return []
 
-def svg_sparkline(values, colour=BLUE, fill=False, limit=252):
+def svg_mockup_sparkline(values, colour=BLUE, limit=126, label_left='', label_right=''):
     vals = _normalise_series_values(values, limit=limit)
     if len(vals) < 2:
-        return '<div class="exec-kpi-mini"><svg viewBox="0 0 220 38"><text x="6" y="24" fill="#64748B" font-size="10">Insufficient data</text></svg></div>'
+        return '<div class="exec-mini-panel"><svg viewBox="0 0 235 82"><text x="8" y="45" fill="#64748B" font-size="10">Insufficient data</text></svg></div>'
     vmin, vmax = min(vals), max(vals)
     if vmax == vmin:
         vmax = vmin + 1e-9
-    w, h, pad = 220, 38, 3
+    w, h, pad = 235, 82, 8
+    chart_top, chart_bottom = 8, 68
     step = (w - 2*pad) / max(len(vals)-1, 1)
-    pts = []
-    for i, v in enumerate(vals):
-        x = pad + i * step
-        y = h - pad - ((v - vmin) / (vmax - vmin)) * (h - 2*pad)
-        pts.append((x, y))
-    line = ' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
-    area = ''
-    if fill:
-        area_pts = f'{pad},{h-pad} ' + line + f' {w-pad},{h-pad}'
-        area = f'<polygon points="{area_pts}" fill="{colour}" opacity="0.10"></polygon>'
-    return f'<div class="exec-kpi-mini"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="none">{area}<polyline points="{line}" fill="none" stroke="{colour}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div>'
+    pts=[]
+    for i,v in enumerate(vals):
+        x = pad + i*step
+        y = chart_bottom - ((v-vmin)/(vmax-vmin))*(chart_bottom-chart_top)
+        pts.append((x,y))
+    line=' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
+    area=f'{pad},{chart_bottom} ' + line + f' {w-pad},{chart_bottom}'
+    left_txt = f'<text x="8" y="14" class="exec-mini-caption">{label_left}</text>' if label_left else ''
+    right_txt = f'<text x="{w-8}" y="76" text-anchor="end" class="exec-mini-caption">{label_right}</text>' if label_right else ''
+    return f'<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet"><polygon points="{area}" fill="{colour}" opacity="0.13"></polygon><polyline points="{line}" fill="none" stroke="{colour}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline>{left_txt}{right_txt}</svg></div>'
 
-def risk_component_bars(components, colour=GREEN):
-    vals = []
-    for _label, value, max_value in components:
-        try:
-            v = float(value or 0)
-            m = float(max_value or 1)
-            vals.append(max(0, min(100, (v / m) * 100)))
-        except Exception:
-            vals.append(0)
-    bars = ''.join([f'<div class="exec-risk-bar-wrap"><div class="exec-risk-bar" style="height:{max(v,3):.1f}%;"></div></div>' for v in vals])
-    return f'<div class="exec-kpi-mini" style="--accent-colour:{colour};"><div class="exec-risk-bars">{bars}</div></div>'
+def svg_valuation_bell(z_score, colour=GREEN):
+    try:
+        z = float(z_score)
+    except Exception:
+        z = 0.0
+    z_clamped = max(-3.0, min(3.0, z))
+    w, h = 235, 82
+    base_y = 68
+    pts=[]
+    for i in range(121):
+        xval = -3 + 6*i/120
+        yval = math.exp(-0.5*xval*xval)
+        x = 8 + (w-16)*i/120
+        y = base_y - yval*54
+        pts.append((x,y))
+    curve = ' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
+    area = f'8,{base_y} ' + curve + f' {w-8},{base_y}'
+    marker_x = 8 + (z_clamped+3)/6*(w-16)
+    marker_label = f'{z:+.2f}'
+    label_x = max(26, min(w-32, marker_x))
+    return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
+      <polygon points="{area}" fill="{colour}" opacity="0.14"></polygon>
+      <polyline points="{curve}" fill="none" stroke="{colour}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <line x1="{marker_x:.1f}" y1="12" x2="{marker_x:.1f}" y2="69" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="3,3"></line>
+      <rect x="{label_x-24:.1f}" y="48" width="48" height="20" rx="5" fill="{colour}" opacity="0.72"></rect>
+      <text x="{label_x:.1f}" y="62" text-anchor="middle" font-size="11" font-weight="800" fill="#FFFFFF">{marker_label}</text>
+    </svg></div>'''
+
+def _polar_to_xy(cx, cy, r, angle_deg):
+    ang = math.radians(angle_deg)
+    return cx + r*math.cos(ang), cy + r*math.sin(ang)
+
+def _arc_path(cx, cy, r, start_deg, end_deg):
+    sx, sy = _polar_to_xy(cx, cy, r, start_deg)
+    ex, ey = _polar_to_xy(cx, cy, r, end_deg)
+    large = 1 if abs(end_deg-start_deg) > 180 else 0
+    sweep = 1
+    return f'M {sx:.1f} {sy:.1f} A {r:.1f} {r:.1f} 0 {large} {sweep} {ex:.1f} {ey:.1f}'
+
+def svg_risk_gauge(score, label='Scorecard'):
+    try:
+        s = max(0, min(100, float(score)))
+    except Exception:
+        s = 0
+    w, h = 235, 82
+    cx, cy, r = 118, 66, 55
+    p_red = _arc_path(cx, cy, r, 180, 225)
+    p_amber = _arc_path(cx, cy, r, 225, 300)
+    p_green = _arc_path(cx, cy, r, 300, 360)
+    angle = 180 + (s/100)*180
+    nx, ny = _polar_to_xy(cx, cy, 47, angle)
+    return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
+      <path d="{p_red}" fill="none" stroke="#DC2626" stroke-width="15"></path>
+      <path d="{p_amber}" fill="none" stroke="#B45309" stroke-width="15"></path>
+      <path d="{p_green}" fill="none" stroke="#16A34A" stroke-width="15"></path>
+      <path d="{_arc_path(cx, cy, r, 250, 285)}" fill="none" stroke="#E5E7EB" stroke-width="15" opacity="0.75"></path>
+      <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="#111827" stroke-width="4" stroke-linecap="round"></line>
+      <circle cx="{cx}" cy="{cy}" r="5" fill="#111827"></circle>
+      <text x="{cx}" y="80" text-anchor="middle" class="exec-mini-caption">{label}</text>
+    </svg></div>'''
 
 def exec_kpi_card(title, value, sub, accent, tooltip=None, mini_html='', value_class=''):
     info = tooltip or ''
     cls = f'exec-kpi-value {value_class}'.strip()
-    return f"""
+    if mini_html:
+        body = f'<div class="exec-kpi-body"><div><div class="{cls}">{value}</div><div class="exec-kpi-sub">{sub}</div></div>{mini_html}</div>'
+    else:
+        sub_html = f'<div class="exec-kpi-sub">{sub}</div>' if sub else ''
+        body = f'<div class="exec-kpi-body no-mini"><div class="{cls}">{value}</div>{sub_html}</div>'
+    return f'''
     <div class="exec-kpi-card" style="--accent-colour:{accent};">
       <div class="exec-kpi-label">{title}{info}</div>
-      <div class="{cls}">{value}</div>
-      <div class="exec-kpi-sub">{sub}</div>
-      {mini_html}
+      {body}
     </div>
-    """
+    '''
 
 def hero_colours_for_zone(zone_name):
     if zone_name == 'HOLD / NO DEPLOYMENT':
@@ -1090,21 +1132,11 @@ def render_executive():
     risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
     z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
 
-    # Meaningful micro charts: actual 12M price path, 12M drawdown path, recent OOS Z-score path, and live risk-score components.
-    price_mini = svg_sparkline(ud['Close'].tail(252), BLUE, fill=True, limit=252)
-    recent_close = ud['Close'].tail(252).copy()
+    recent_close = ud['Close'].tail(126).copy()
     recent_dd = ((recent_close / recent_close.rolling(63, min_periods=1).max()) - 1.0) * 100.0
-    drawdown_mini = svg_sparkline(recent_dd, structural_colour, fill=True, limit=252)
-    try:
-        z_hist_vals = _exec_tc['data']['ZHist'].dropna().tail(36) if _exec_tc is not None and 'data' in _exec_tc else []
-    except Exception:
-        z_hist_vals = []
-    z_mini = svg_sparkline(z_hist_vals, exec_valuation_colour, fill=True, limit=36)
-    if sel in PMI_NA_MARKETS:
-        risk_components=[('Drawdown', dd_s, 40), ('Trend', trend_s, 20)]
-    else:
-        risk_components=[('VIX', vix_s, 30), ('Curve', curve_s, 20), ('PMI', pmi_s, 20), ('Drawdown', dd_s, 25), ('Trend', trend_s, 15)]
-    risk_mini = risk_component_bars(risk_components, risk_colour)
+    drawdown_mini = svg_mockup_sparkline(recent_dd, structural_colour, limit=126, label_left='', label_right=f'{close:,.0f}')
+    z_mini = svg_valuation_bell(exec_z_score if exec_z_score is not None else 0, exec_valuation_colour)
+    risk_mini = svg_risk_gauge(live_score, 'Scorecard')
 
     st.markdown(f'''
     <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};">
@@ -1124,7 +1156,7 @@ def render_executive():
 
     kpi_html = f'''
     <section class="exec-main-grid">
-      {exec_kpi_card(hesc(ticker) + ' · CURRENT MARKET LEVEL', f'{close:,.0f}', 'Market anchor', BLUE, tooltip=index_tip, mini_html=price_mini)}
+      {exec_kpi_card(hesc(ticker) + ' · CURRENT MARKET LEVEL', f'{close:,.0f}', '', BLUE, tooltip=index_tip, mini_html='')}
       {exec_kpi_card('CURRENT STRUCTURAL DRAWDOWN', f'{display_dd:.1f}%', f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}', structural_colour, tooltip=structural_tip, mini_html=drawdown_mini)}
       {exec_kpi_card('VALUATION Z-SCORE (OOS)', z_display, hesc(exec_valuation_zone), exec_valuation_colour, tooltip=z_tip, mini_html=z_mini, value_class=z_value_class)}
       {exec_kpi_card('RISK REGIME', hesc(alert), f'{hesc(model_note)} · Score {live_score:.0f}/100', risk_colour, tooltip=risk_tip, mini_html=risk_mini, value_class=risk_value_class)}
