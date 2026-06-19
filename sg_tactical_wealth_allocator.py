@@ -1446,16 +1446,31 @@ def render_audit(expanded=False):
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
-render_executive()
+
+# Important: assign renderer outputs to a variable.
+# Streamlit's magic can render bare expression results. Some renderer calls return
+# a DeltaGenerator/expander object, which can accidentally display the long
+# DeltaGenerator API help block in the app. Assignment suppresses that output.
+_render_output = render_executive()
+
 for section in SECTION_ORDER:
     if section == '💰 Suggested Deploy':
         if active_section == section:
-            RENDERERS[section](expanded=True)
+            _render_output = RENDERERS[section](expanded=True)
         else:
-            RENDERERS[section](expanded=deploy>0 if active_section == '🧠 Executive Centre' else False)
-        render_assumptions()
+            _render_output = RENDERERS[section](expanded=deploy>0 if active_section == '🧠 Executive Centre' else False)
+        _render_output = render_assumptions()
     elif active_section == section:
-        RENDERERS[section](expanded=True)
+        _render_output = RENDERERS[section](expanded=True)
     else:
-        RENDERERS[section](expanded=False)
-st.markdown('---'); st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT'); st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
+        _render_output = RENDERERS[section](expanded=False)
+
+# Clear the temporary variable so nothing can be implicitly rendered.
+try:
+    del _render_output
+except Exception:
+    pass
+
+st.markdown('---')
+st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
+st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
