@@ -128,29 +128,41 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre visual mockup refresh */
-.exec-hero {background:#ECFDF5;border:3px solid #16A34A;border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
-.exec-hero-eyebrow {color:#16A34A;font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
+/* v36z+ Executive Centre final main-page refresh */
+.exec-hero {
+  background:var(--hero-bg,#F8FAFC);
+  border:3px solid var(--hero-border,#64748B);
+  border-radius:28px;
+  padding:26px 28px;
+  margin:12px 0 22px 0;
+  box-shadow:0 10px 26px rgba(15,23,42,.08);
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);
+  gap:24px;
+  align-items:stretch;
+}
+.exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
-.exec-hero-subline {color:#64748B;font-size:.92rem;line-height:1.45;margin-top:9px;}
-.exec-deploy-box {background:#FFFFFF;border:1px solid #BBF7D0;border-radius:22px;padding:20px 22px;min-height:152px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-box {background:#FFFFFF;border:1px solid var(--hero-soft-border,#CBD5E1);border-radius:22px;padding:20px 22px;min-height:152px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
-.exec-deploy-amount {color:#16A34A;font-size:2.25rem;line-height:1.05;font-weight:950;letter-spacing:-.035em;margin-top:8px;}
+.exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.25rem;line-height:1.05;font-weight:950;letter-spacing:-.035em;margin-top:8px;}
 .exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:9px;}
 .exec-deploy-fine {color:#64748B;font-size:.76rem;line-height:1.38;margin-top:8px;}
+.exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
 .exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
-.exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
+.exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 18px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
 .exec-kpi-card::before {content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--accent-colour,#2563EB);border-radius:22px 22px 0 0;}
 .exec-kpi-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
 .exec-kpi-value {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:950;letter-spacing:-.035em;margin-top:16px;}
 .exec-kpi-sub {color:#111827;font-size:.91rem;font-weight:650;line-height:1.42;margin-top:11px;}
-.exec-kpi-note {color:#64748B;font-size:.76rem;line-height:1.38;font-weight:750;margin-top:8px;}
-.exec-kpi-mini {height:44px;border:1px solid #EDF2F7;border-radius:13px;margin-top:14px;background:linear-gradient(180deg,#F8FBFF,#FFFFFF);display:flex;align-items:flex-end;gap:7px;padding:8px 10px;}
-.exec-kpi-bar {width:11%;border-radius:6px 6px 0 0;background:var(--accent-colour,#2563EB);opacity:.72;}
+.exec-kpi-mini {height:50px;border:1px solid #EDF2F7;border-radius:13px;margin-top:14px;background:linear-gradient(180deg,#F8FBFF,#FFFFFF);padding:6px 8px;}
+.exec-kpi-mini svg {width:100%;height:38px;display:block;overflow:visible;}
 .exec-kpi-value.amber-value {color:#B45309;}
 .exec-kpi-value.green-value {color:#16A34A;}
 .exec-kpi-value.red-value {color:#DC2626;}
-.exec-main-note {color:#64748B;font-size:.78rem;line-height:1.45;margin-top:4px;}
+.exec-risk-bars {display:flex;align-items:flex-end;gap:7px;height:38px;width:100%;}
+.exec-risk-bar-wrap {flex:1;display:flex;align-items:flex-end;height:38px;border-radius:6px;background:#F1F5F9;overflow:hidden;}
+.exec-risk-bar {width:100%;border-radius:6px 6px 0 0;background:var(--accent-colour,#16A34A);min-height:2px;opacity:.78;}
 @media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}}
 
 </style>
@@ -333,27 +345,72 @@ def card(title,value,sub,accent,tooltip=None,pill=None):
 
 
 
-def exec_kpi_card(title, value, sub, accent, tooltip=None, note='', mini='default', value_class=''):
+def _normalise_series_values(values, limit=252):
+    try:
+        arr = pd.Series(values).astype(float).replace([np.inf, -np.inf], np.nan).dropna()
+        if limit:
+            arr = arr.tail(limit)
+        return arr.tolist()
+    except Exception:
+        return []
+
+def svg_sparkline(values, colour=BLUE, fill=False, limit=252):
+    vals = _normalise_series_values(values, limit=limit)
+    if len(vals) < 2:
+        return '<div class="exec-kpi-mini"><svg viewBox="0 0 220 38"><text x="6" y="24" fill="#64748B" font-size="10">Insufficient data</text></svg></div>'
+    vmin, vmax = min(vals), max(vals)
+    if vmax == vmin:
+        vmax = vmin + 1e-9
+    w, h, pad = 220, 38, 3
+    step = (w - 2*pad) / max(len(vals)-1, 1)
+    pts = []
+    for i, v in enumerate(vals):
+        x = pad + i * step
+        y = h - pad - ((v - vmin) / (vmax - vmin)) * (h - 2*pad)
+        pts.append((x, y))
+    line = ' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
+    area = ''
+    if fill:
+        area_pts = f'{pad},{h-pad} ' + line + f' {w-pad},{h-pad}'
+        area = f'<polygon points="{area_pts}" fill="{colour}" opacity="0.10"></polygon>'
+    return f'<div class="exec-kpi-mini"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="none">{area}<polyline points="{line}" fill="none" stroke="{colour}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline></svg></div>'
+
+def risk_component_bars(components, colour=GREEN):
+    vals = []
+    for _label, value, max_value in components:
+        try:
+            v = float(value or 0)
+            m = float(max_value or 1)
+            vals.append(max(0, min(100, (v / m) * 100)))
+        except Exception:
+            vals.append(0)
+    bars = ''.join([f'<div class="exec-risk-bar-wrap"><div class="exec-risk-bar" style="height:{max(v,3):.1f}%;"></div></div>' for v in vals])
+    return f'<div class="exec-kpi-mini" style="--accent-colour:{colour};"><div class="exec-risk-bars">{bars}</div></div>'
+
+def exec_kpi_card(title, value, sub, accent, tooltip=None, mini_html='', value_class=''):
     info = tooltip or ''
-    note_html = f'<div class="exec-kpi-note">{note}</div>' if note else ''
-    # Small decorative micro-chart only; intentionally non-analytical.
-    bar_sets = {
-        'down': [42, 36, 32, 29, 27, 24, 22, 20],
-        'valuation': [18, 26, 39, 44, 34, 24, 18],
-        'risk': [22, 34, 40, 28, 20],
-        'default': [24, 32, 28, 39, 25, 34, 29, 41],
-    }
-    bars = ''.join([f'<span class="exec-kpi-bar" style="height:{h}px;"></span>' for h in bar_sets.get(mini, bar_sets['default'])])
     cls = f'exec-kpi-value {value_class}'.strip()
     return f"""
     <div class="exec-kpi-card" style="--accent-colour:{accent};">
       <div class="exec-kpi-label">{title}{info}</div>
       <div class="{cls}">{value}</div>
       <div class="exec-kpi-sub">{sub}</div>
-      {note_html}
-      <div class="exec-kpi-mini" style="--accent-colour:{accent};">{bars}</div>
+      {mini_html}
     </div>
     """
+
+def hero_colours_for_zone(zone_name):
+    if zone_name == 'HOLD / NO DEPLOYMENT':
+        return '#64748B', '#F8FAFC', '#CBD5E1'
+    if zone_name == 'INITIAL BUY':
+        return BLUE, '#EFF6FF', '#BFDBFE'
+    if zone_name == 'BUY':
+        return GREEN, '#ECFDF5', '#BBF7D0'
+    if zone_name == 'STRONG BUY':
+        return AMBER, '#FFFBEB', '#FDE68A'
+    if zone_name in ['CRISIS BUY', 'MAX CRISIS BUY']:
+        return RED, '#FEF2F2', '#FECACA'
+    return SLATE, '#F8FAFC', '#CBD5E1'
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
@@ -985,9 +1042,10 @@ def render_executive():
     st.markdown('---')
     st.markdown('## 🧠 Executive Tactical Allocation Centre')
 
+    display_dd = min(dd, 0.0)
     structural_tip=tooltip_html(
         'Active Structural Drawdown',
-        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],
+        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}'),('Display Rule','Positive drawdown is floored at 0.0% on the Executive Centre')],
         'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
     )
     stance_tip=tooltip_html(
@@ -999,6 +1057,11 @@ def render_executive():
         'Suggested Deploy',
         [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source)],
         'This is a rules-based decision-support output. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.'
+    )
+    index_tip=tooltip_html(
+        'Current Market Level',
+        [('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],
+        'The displayed level is the latest available close used by the platform for drawdown and allocation calculations.'
     )
     risk_tip=tooltip_html(
         'Risk Regime Methodology',
@@ -1014,6 +1077,7 @@ def render_executive():
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
+    hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
 
     if deploy>0:
         stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
@@ -1026,13 +1090,28 @@ def render_executive():
     risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
     z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
 
+    # Meaningful micro charts: actual 12M price path, 12M drawdown path, recent OOS Z-score path, and live risk-score components.
+    price_mini = svg_sparkline(ud['Close'].tail(252), BLUE, fill=True, limit=252)
+    recent_close = ud['Close'].tail(252).copy()
+    recent_dd = ((recent_close / recent_close.rolling(63, min_periods=1).max()) - 1.0) * 100.0
+    drawdown_mini = svg_sparkline(recent_dd, structural_colour, fill=True, limit=252)
+    try:
+        z_hist_vals = _exec_tc['data']['ZHist'].dropna().tail(36) if _exec_tc is not None and 'data' in _exec_tc else []
+    except Exception:
+        z_hist_vals = []
+    z_mini = svg_sparkline(z_hist_vals, exec_valuation_colour, fill=True, limit=36)
+    if sel in PMI_NA_MARKETS:
+        risk_components=[('Drawdown', dd_s, 40), ('Trend', trend_s, 20)]
+    else:
+        risk_components=[('VIX', vix_s, 30), ('Curve', curve_s, 20), ('PMI', pmi_s, 20), ('Drawdown', dd_s, 25), ('Trend', trend_s, 15)]
+    risk_mini = risk_component_bars(risk_components, risk_colour)
+
     st.markdown(f'''
-    <section class="exec-hero">
+    <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};">
       <div>
         <div class="exec-hero-eyebrow">Allocation Stance {stance_tip}</div>
-        <div class="exec-hero-title">Crash-Buy Decision:<br>{hesc(zone)}</div>
+        <div class="exec-hero-title">Crash-Buy Decision ({hesc(index_label)}):<br>{hesc(zone)}</div>
         {stance_pill}
-        <div class="exec-hero-subline">Selected market: <b>{hesc(index_label)}</b> · Current index level: <b>{close:,.0f}</b></div>
       </div>
       <aside class="exec-deploy-box">
         <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
@@ -1045,12 +1124,11 @@ def render_executive():
 
     kpi_html = f'''
     <section class="exec-main-grid">
-      {exec_kpi_card(hesc(index_label) + ' Index Level', f'{close:,.0f}', f'{hesc(ticker)} · Current market level', BLUE, note='Market anchor', mini='default')}
-      {exec_kpi_card('Current Structural Drawdown', f'{dd:.1f}%', f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}', structural_colour, tooltip=structural_tip, note='Primary deployment basis', mini='down')}
-      {exec_kpi_card('Valuation Z-Score (OOS)', z_display, hesc(exec_valuation_zone), exec_valuation_colour, tooltip=z_tip, note='Valuation support / caution signal', mini='valuation', value_class=z_value_class)}
-      {exec_kpi_card('Risk Regime', hesc(alert), f'{hesc(model_note)} · Score {live_score:.0f}/100', risk_colour, tooltip=risk_tip, note='Risk-condition monitor', mini='risk', value_class=risk_value_class)}
+      {exec_kpi_card(hesc(ticker) + ' · CURRENT MARKET LEVEL', f'{close:,.0f}', 'Market anchor', BLUE, tooltip=index_tip, mini_html=price_mini)}
+      {exec_kpi_card('CURRENT STRUCTURAL DRAWDOWN', f'{display_dd:.1f}%', f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}', structural_colour, tooltip=structural_tip, mini_html=drawdown_mini)}
+      {exec_kpi_card('VALUATION Z-SCORE (OOS)', z_display, hesc(exec_valuation_zone), exec_valuation_colour, tooltip=z_tip, mini_html=z_mini, value_class=z_value_class)}
+      {exec_kpi_card('RISK REGIME', hesc(alert), f'{hesc(model_note)} · Score {live_score:.0f}/100', risk_colour, tooltip=risk_tip, mini_html=risk_mini, value_class=risk_value_class)}
     </section>
-    <div class="exec-main-note">Methodology details are intentionally kept inside the info tooltips so the main page remains clean and executive-friendly.</div>
     '''
     st.markdown(kpi_html, unsafe_allow_html=True)
 
