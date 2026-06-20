@@ -128,7 +128,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final mockup-positioned mini charts - minor refinements */
+/* v36z+ Executive Centre final mockup-positioned mini charts - z-score zones + high/current labels */
 .exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
@@ -142,7 +142,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
 .exec-kpi-card::before {content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--accent-colour,#2563EB);border-radius:22px 22px 0 0;}
 .exec-kpi-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
-.exec-kpi-body {display:grid;grid-template-columns:minmax(0,1fr) 245px;gap:18px;align-items:center;margin-top:14px;}
+.exec-kpi-body {display:grid;grid-template-columns:minmax(0,1fr) 252px;gap:18px;align-items:center;margin-top:14px;}
 .exec-kpi-body.no-mini {display:block;}
 .exec-kpi-value {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:950;letter-spacing:-.035em;margin-top:0;}
 .exec-kpi-sub {color:#111827;font-size:.91rem;font-weight:650;line-height:1.42;margin-top:10px;}
@@ -150,9 +150,10 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-kpi-value.amber-value {color:#B45309;}
 .exec-kpi-value.green-value {color:#16A34A;}
 .exec-kpi-value.red-value {color:#DC2626;}
-.exec-mini-panel {height:88px;min-width:220px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.exec-mini-panel svg {width:100%;height:88px;display:block;overflow:visible;}
-.exec-mini-caption {font-size:10px;fill:#64748B;font-weight:700;}
+.exec-mini-panel {height:94px;min-width:225px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.exec-mini-panel svg {width:100%;height:94px;display:block;overflow:visible;}
+.exec-mini-caption {font-size:9.5px;fill:#64748B;font-weight:750;}
+.exec-mini-zone-label {font-size:9px;fill:#64748B;font-weight:800;letter-spacing:.02em;}
 @media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}.exec-kpi-body {grid-template-columns:1fr;}.exec-mini-panel {width:100%;min-width:0;justify-content:flex-start;}}
 
 </style>
@@ -344,15 +345,15 @@ def _normalise_series_values(values, limit=252):
     except Exception:
         return []
 
-def svg_mockup_sparkline(values, colour=BLUE, limit=126, label_left='', label_right=''):
+def svg_price_high_current(values, colour=BLUE, limit=126, high_label='', current_label=''):
     vals = _normalise_series_values(values, limit=limit)
     if len(vals) < 2:
-        return '<div class="exec-mini-panel"><svg viewBox="0 0 245 88"><text x="8" y="48" fill="#64748B" font-size="10">Insufficient data</text></svg></div>'
+        return '<div class="exec-mini-panel"><svg viewBox="0 0 252 94"><text x="8" y="50" fill="#64748B" font-size="10">Insufficient data</text></svg></div>'
     vmin, vmax = min(vals), max(vals)
     if vmax == vmin:
         vmax = vmin + 1e-9
-    w, h, pad = 245, 88, 8
-    chart_top, chart_bottom = 8, 72
+    w, h, pad = 252, 94, 9
+    chart_top, chart_bottom = 15, 76
     step = (w - 2*pad) / max(len(vals)-1, 1)
     pts=[]
     for i,v in enumerate(vals):
@@ -361,9 +362,24 @@ def svg_mockup_sparkline(values, colour=BLUE, limit=126, label_left='', label_ri
         pts.append((x,y))
     line=' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
     area=f'{pad},{chart_bottom} ' + line + f' {w-pad},{chart_bottom}'
-    left_txt = f'<text x="8" y="14" class="exec-mini-caption">{label_left}</text>' if label_left else ''
-    right_txt = f'<text x="{w-8}" y="82" text-anchor="end" class="exec-mini-caption">{label_right}</text>' if label_right else ''
-    return f'<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet"><polygon points="{area}" fill="{colour}" opacity="0.13"></polygon><polyline points="{line}" fill="none" stroke="{colour}" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"></polyline>{left_txt}{right_txt}</svg></div>'
+    hi_idx = max(range(len(vals)), key=lambda i: vals[i])
+    hx, hy = pts[hi_idx]
+    cx, cy = pts[-1]
+    # Keep high label inside chart and slightly above the high point, with horizontal clamping.
+    high_text = high_label or f'{vals[hi_idx]:,.0f}'
+    cur_text = current_label or f'{vals[-1]:,.0f}'
+    ht_x = max(26, min(w-34, hx))
+    ht_y = max(10, hy-10)
+    ct_x = max(28, min(w-12, cx))
+    ct_y = min(h-8, cy+17)
+    return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
+      <polygon points="{area}" fill="{colour}" opacity="0.12"></polygon>
+      <polyline points="{line}" fill="none" stroke="{colour}" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <circle cx="{hx:.1f}" cy="{hy:.1f}" r="3.4" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.2"></circle>
+      <circle cx="{cx:.1f}" cy="{cy:.1f}" r="3.4" fill="{colour}" stroke="#FFFFFF" stroke-width="1.2"></circle>
+      <text x="{ht_x:.1f}" y="{ht_y:.1f}" text-anchor="middle" class="exec-mini-caption">{high_text}</text>
+      <text x="{ct_x:.1f}" y="{ct_y:.1f}" text-anchor="end" class="exec-mini-caption">{cur_text}</text>
+    </svg></div>'''
 
 def svg_valuation_bell(z_score, colour=GREEN):
     try:
@@ -371,26 +387,40 @@ def svg_valuation_bell(z_score, colour=GREEN):
     except Exception:
         z = 0.0
     z_clamped = max(-3.0, min(3.0, z))
-    w, h = 245, 88
-    base_y = 72
+    w, h = 252, 94
+    base_y = 78
+    left = 9
+    right = w - 9
+    def x_from_z(zv):
+        return left + (max(-3, min(3, zv))+3)/6*(right-left)
+    x_neg1 = x_from_z(-1)
+    x_pos1 = x_from_z(1)
     pts=[]
     for i in range(121):
         xval = -3 + 6*i/120
         yval = math.exp(-0.5*xval*xval)
-        x = 8 + (w-16)*i/120
-        y = base_y - yval*58
+        x = left + (right-left)*i/120
+        y = base_y - yval*60
         pts.append((x,y))
     curve = ' '.join([f'{x:.1f},{y:.1f}' for x,y in pts])
-    area = f'8,{base_y} ' + curve + f' {w-8},{base_y}'
-    marker_x = 8 + (z_clamped+3)/6*(w-16)
+    area = f'{left},{base_y} ' + curve + f' {right},{base_y}'
+    marker_x = x_from_z(z_clamped)
     marker_label = f'{z:+.2f}'
-    label_x = max(28, min(w-34, marker_x))
+    label_x = max(30, min(w-36, marker_x))
     return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
-      <polygon points="{area}" fill="{colour}" opacity="0.14"></polygon>
-      <polyline points="{curve}" fill="none" stroke="{colour}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></polyline>
-      <line x1="{marker_x:.1f}" y1="12" x2="{marker_x:.1f}" y2="73" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="3,3"></line>
-      <rect x="{label_x-24:.1f}" y="52" width="48" height="20" rx="5" fill="{colour}" opacity="0.72"></rect>
-      <text x="{label_x:.1f}" y="66" text-anchor="middle" font-size="11" font-weight="800" fill="#FFFFFF">{marker_label}</text>
+      <rect x="{left}" y="12" width="{x_neg1-left:.1f}" height="66" fill="#16A34A" opacity="0.08"></rect>
+      <rect x="{x_neg1:.1f}" y="12" width="{x_pos1-x_neg1:.1f}" height="66" fill="#64748B" opacity="0.08"></rect>
+      <rect x="{x_pos1:.1f}" y="12" width="{right-x_pos1:.1f}" height="66" fill="#F97316" opacity="0.08"></rect>
+      <polygon points="{area}" fill="{colour}" opacity="0.13"></polygon>
+      <polyline points="{curve}" fill="none" stroke="{colour}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+      <line x1="{x_neg1:.1f}" y1="14" x2="{x_neg1:.1f}" y2="79" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"></line>
+      <line x1="{x_pos1:.1f}" y1="14" x2="{x_pos1:.1f}" y2="79" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3,3"></line>
+      <line x1="{marker_x:.1f}" y1="13" x2="{marker_x:.1f}" y2="79" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="3,3"></line>
+      <rect x="{label_x-24:.1f}" y="57" width="48" height="20" rx="5" fill="{colour}" opacity="0.74"></rect>
+      <text x="{label_x:.1f}" y="71" text-anchor="middle" font-size="11" font-weight="800" fill="#FFFFFF">{marker_label}</text>
+      <text x="{(left+x_neg1)/2:.1f}" y="91" text-anchor="middle" class="exec-mini-zone-label">Attractive</text>
+      <text x="{(x_neg1+x_pos1)/2:.1f}" y="91" text-anchor="middle" class="exec-mini-zone-label">Normal</text>
+      <text x="{(x_pos1+right)/2:.1f}" y="91" text-anchor="middle" class="exec-mini-zone-label">Expensive</text>
     </svg></div>'''
 
 def _polar_to_xy(cx, cy, r, angle_deg):
@@ -409,14 +439,13 @@ def svg_risk_gauge(score, label='Scorecard'):
         s = max(0, min(100, float(score)))
     except Exception:
         s = 0
-    w, h = 245, 88
-    cx, cy, r = 123, 72, 58
+    w, h = 252, 94
+    cx, cy, r = 126, 76, 60
     p_red = _arc_path(cx, cy, r, 180, 225)
     p_amber = _arc_path(cx, cy, r, 225, 300)
     p_green = _arc_path(cx, cy, r, 300, 360)
-    # Reverse-mapped pointer: low risk score points to green, high risk score points to red.
     angle = 360 - (s/100)*180
-    nx, ny = _polar_to_xy(cx, cy, 50, angle)
+    nx, ny = _polar_to_xy(cx, cy, 52, angle)
     return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
       <path d="{p_red}" fill="none" stroke="#DC2626" stroke-width="15"></path>
       <path d="{p_amber}" fill="none" stroke="#B45309" stroke-width="15"></path>
@@ -424,7 +453,7 @@ def svg_risk_gauge(score, label='Scorecard'):
       <path d="{_arc_path(cx, cy, r, 250, 285)}" fill="none" stroke="#E5E7EB" stroke-width="15" opacity="0.75"></path>
       <line x1="{cx}" y1="{cy}" x2="{nx:.1f}" y2="{ny:.1f}" stroke="#111827" stroke-width="4" stroke-linecap="round"></line>
       <circle cx="{cx}" cy="{cy}" r="5" fill="#111827"></circle>
-      <text x="{cx}" y="84" text-anchor="middle" class="exec-mini-caption">{label}</text>
+      <text x="{cx}" y="90" text-anchor="middle" class="exec-mini-caption">{label}</text>
     </svg></div>'''
 
 def exec_kpi_card(title, value, sub, accent, tooltip=None, mini_html='', value_class=''):
@@ -1088,7 +1117,7 @@ def render_executive():
     display_dd = min(dd, 0.0)
     structural_tip=tooltip_html(
         'Active Structural Drawdown',
-        [('Basis',ref.replace('Structural Drawdown · ','')),('Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}'),('Display Rule','Positive drawdown is floored at 0.0% on the Executive Centre')],
+        [('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}'),('Display Rule','Positive drawdown is floored at 0.0% on the Executive Centre')],
         'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
     )
     stance_tip=tooltip_html(
@@ -1113,8 +1142,8 @@ def render_executive():
     )
     z_tip=tooltip_html(
         'Valuation Z-Score (OOS)',
-        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Valuation Zone',exec_valuation_zone),('Model','Expanding Window')],
-        'OOS means out-of-sample expanding-window valuation channel. Positive Z-score suggests price is above trend; negative Z-score suggests price is below trend. It supports context, not automatic deployment.'
+        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Z-score below -1'),('Normal','Z-score between -1 and +1'),('Expensive','Z-score above +1'),('Model','Expanding Window')],
+        'The mini chart splits the valuation curve into Attractive, Normal and Expensive zones. It supports context, not automatic deployment.'
     )
 
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
@@ -1133,9 +1162,8 @@ def render_executive():
     risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
     z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
 
-    recent_close = ud['Close'].tail(126).copy()
-    recent_dd = ((recent_close / recent_close.rolling(63, min_periods=1).max()) - 1.0) * 100.0
-    drawdown_mini = svg_mockup_sparkline(recent_dd, structural_colour, limit=126, label_left='', label_right=f'{close:,.0f}')
+    recent_price = ud['Close'].tail(126).copy()
+    drawdown_mini = svg_price_high_current(recent_price, structural_colour, limit=126, high_label=f'{peak:,.0f}', current_label=f'{close:,.0f}')
     z_mini = svg_valuation_bell(exec_z_score if exec_z_score is not None else 0, exec_valuation_colour)
     risk_mini = svg_risk_gauge(live_score, 'Scorecard')
 
