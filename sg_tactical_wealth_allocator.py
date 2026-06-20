@@ -128,15 +128,16 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final polish - deploy box next trigger + amount tooltip */
+/* v36z+ Executive Centre final polish - deploy tint + next trigger tooltip */
 .exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.82fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
-.exec-deploy-box {background:#FFFFFF;border:1px solid var(--hero-soft-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-box {background:linear-gradient(180deg,#FFFFFF 0%,var(--deploy-bg,#F8FAFC) 100%);border:1px solid var(--deploy-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
 .exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.45rem;line-height:1.02;font-weight:950;letter-spacing:-.035em;margin-top:10px;display:flex;align-items:center;gap:8px;}
 .exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:10px;}
-.exec-next-trigger {color:#475569;font-size:.82rem;font-weight:800;margin-top:8px;line-height:1.35;}
+.exec-next-trigger {color:#475569;font-size:.82rem;font-weight:800;margin-top:8px;line-height:1.35;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.exec-next-trigger-value {color:var(--hero-border,#64748B);font-weight:900;}
 .exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
 .exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
 .exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
@@ -1154,6 +1155,11 @@ def render_executive():
         [('Amount',fmt_sgd(deploy)),('Basis','Selected investible capital × cumulative deployment rule'),('Current Rule',f'{deploy_pct:.0%} cumulative')],
         'Calculated from selected investible capital and the platform cumulative deployment rule.<br><br>Not a buy call, trading instruction, portfolio recommendation, or financial advice.'
     )
+    next_trigger_tip=tooltip_html(
+        'Next Trigger',
+        [('Current Zone',zone),('Next Trigger',compact_next_trigger_label(zone)),('Basis','Structural drawdown threshold')],
+        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.'
+    )
     index_tip=tooltip_html(
         'Current Market Level',
         [('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],
@@ -1174,6 +1180,8 @@ def render_executive():
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
     hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
+    deploy_bg = hero_bg
+    deploy_border = hero_soft
 
     if deploy>0:
         stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
@@ -1193,7 +1201,7 @@ def render_executive():
     next_trigger_compact = compact_next_trigger_label(zone)
 
     st.markdown(f'''
-    <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};">
+    <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};--deploy-bg:{deploy_bg};--deploy-border:{deploy_border};">
       <div>
         <div class="exec-hero-eyebrow">Allocation Stance {stance_tip}</div>
         <div class="exec-hero-title">Crash-Buy Decision ({hesc(index_label)}):<br>{hesc(zone)}</div>
@@ -1203,7 +1211,7 @@ def render_executive():
         <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
         <div class="exec-deploy-amount">{fmt_sgd_html(deploy)} {amount_tip}</div>
         <div class="exec-deploy-sub">{hesc(deploy_sub)}</div>
-        <div class="exec-next-trigger">↳ Next Trigger: {hesc(next_trigger_compact)}</div>
+        <div class="exec-next-trigger">→ Next Trigger: <span class="exec-next-trigger-value">{hesc(next_trigger_compact)}</span>{next_trigger_tip}</div>
       </aside>
     </section>
     ''', unsafe_allow_html=True)
