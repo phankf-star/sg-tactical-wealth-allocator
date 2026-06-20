@@ -128,11 +128,11 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final polish - raised tooltips + stronger deploy tint */
-.exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.82fr);gap:24px;align-items:stretch;}
+/* v36z+ Executive Centre final polish - tooltip layering fix */
+.exec-hero {position:relative; z-index:50; overflow:visible; background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.82fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
-.exec-deploy-box {background:linear-gradient(180deg,#FFFFFF 0%,var(--deploy-bg,#F1F5F9) 100%);border:1px solid var(--deploy-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-box {position:relative; z-index:80; overflow:visible; background:linear-gradient(180deg,#FFFFFF 0%,var(--deploy-bg,#F1F5F9) 100%);border:1px solid var(--deploy-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
 .exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.45rem;line-height:1.02;font-weight:950;letter-spacing:-.035em;margin-top:10px;display:flex;align-items:flex-start;gap:5px;}
 .exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:10px;}
@@ -140,9 +140,11 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-next-trigger-value {color:var(--hero-border,#64748B);font-weight:900;}
 .exec-info-dot-amount {position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:999px;background:#EEF2FF;color:#2563EB;border:1px solid #BFDBFE;font-size:9px;font-weight:900;cursor:help;line-height:1;margin-left:2px;transform:translateY(-9px);flex:0 0 auto;}
 .exec-info-dot-trigger {position:relative;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:999px;background:#EEF2FF;color:#2563EB;border:1px solid #BFDBFE;font-size:8px;font-weight:900;cursor:help;line-height:1;margin-left:2px;transform:translateY(-5px);flex:0 0 auto;}
-.exec-info-dot-amount:hover .exec-tooltip, .exec-info-dot-amount:focus .exec-tooltip, .exec-info-dot-trigger:hover .exec-tooltip, .exec-info-dot-trigger:focus .exec-tooltip {visibility:visible;opacity:1;transform:translateY(0);}
+.exec-info-dot-amount .exec-tooltip, .exec-info-dot-trigger .exec-tooltip {top:auto !important; bottom:calc(100% + 10px) !important; left:50% !important; width:320px; max-width:min(320px,calc(100vw - 48px)); z-index:100000 !important; transform:translate(-50%,6px);}
+.exec-info-dot-amount .exec-tooltip::before, .exec-info-dot-trigger .exec-tooltip::before {top:auto !important; bottom:-7px !important; left:50% !important; margin-left:-7px;}
+.exec-info-dot-amount:hover .exec-tooltip, .exec-info-dot-amount:focus .exec-tooltip, .exec-info-dot-trigger:hover .exec-tooltip, .exec-info-dot-trigger:focus .exec-tooltip {visibility:visible;opacity:1;transform:translate(-50%,0);}
 .exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
-.exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
+.exec-main-grid {position:relative; z-index:1; display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
 .exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
 .exec-kpi-card::before {content:"";position:absolute;top:0;left:0;right:0;height:7px;background:var(--accent-colour,#2563EB);border-radius:22px 22px 0 0;}
 .exec-kpi-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:7px;}
@@ -355,7 +357,7 @@ def tooltip_html_variant(title, rows=None, footer=None, icon_class='exec-info-do
     rows = rows or []
     row_html = ''.join([f'<div class="exec-tooltip-row"><div class="exec-tooltip-label">{hesc(k)}</div><div class="exec-tooltip-value">{hesc(v)}</div></div>' for k,v in rows])
     footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
-    return f'<span class="{icon_class}">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
+    return f'<span class="{icon_class}" tabindex="0">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
 
 def _normalise_series_values(values, limit=252):
     try:
