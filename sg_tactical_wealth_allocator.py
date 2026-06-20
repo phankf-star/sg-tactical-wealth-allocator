@@ -128,15 +128,15 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final polish - web + mobile */
-.exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
+/* v36z+ Executive Centre final polish - deploy box next trigger + amount tooltip */
+.exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.82fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
-.exec-deploy-box {background:#FFFFFF;border:1px solid var(--hero-soft-border,#CBD5E1);border-radius:22px;padding:20px 22px;min-height:152px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-box {background:#FFFFFF;border:1px solid var(--hero-soft-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
-.exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.25rem;line-height:1.05;font-weight:950;letter-spacing:-.035em;margin-top:8px;}
-.exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:9px;}
-.exec-deploy-fine {color:#64748B;font-size:.76rem;line-height:1.38;margin-top:8px;}
+.exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.45rem;line-height:1.02;font-weight:950;letter-spacing:-.035em;margin-top:10px;display:flex;align-items:center;gap:8px;}
+.exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:10px;}
+.exec-next-trigger {color:#475569;font-size:.82rem;font-weight:800;margin-top:8px;line-height:1.35;}
 .exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
 .exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
 .exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
@@ -491,6 +491,17 @@ def hero_colours_for_zone(zone_name):
     if zone_name in ['CRISIS BUY', 'MAX CRISIS BUY']:
         return RED, '#FEF2F2', '#FECACA'
     return SLATE, '#F8FAFC', '#CBD5E1'
+
+def compact_next_trigger_label(zone_name):
+    mapping = {
+        'HOLD / NO DEPLOYMENT': 'INITIAL BUY -8%',
+        'INITIAL BUY': 'BUY -15%',
+        'BUY': 'STRONG BUY -25%',
+        'STRONG BUY': 'CRISIS BUY -35%',
+        'CRISIS BUY': 'MAX CRISIS BUY -50%',
+        'MAX CRISIS BUY': 'Fully deployed',
+    }
+    return mapping.get(zone_name, 'Review next trigger')
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
@@ -1130,13 +1141,18 @@ def render_executive():
     )
     stance_tip=tooltip_html(
         'Decision Rule Explanation',
-        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger)],
+        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],
         f'Decision note:<br>{hesc(decision_line)}'
     )
     deploy_tip=tooltip_html(
         'Suggested Deploy',
-        [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source)],
-        'This is a rules-based decision-support output. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.'
+        [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],
+        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.'
+    )
+    amount_tip=tooltip_html(
+        'Suggested Deploy Amount',
+        [('Amount',fmt_sgd(deploy)),('Basis','Selected investible capital × cumulative deployment rule'),('Current Rule',f'{deploy_pct:.0%} cumulative')],
+        'Calculated from selected investible capital and the platform cumulative deployment rule.<br><br>Not a buy call, trading instruction, portfolio recommendation, or financial advice.'
     )
     index_tip=tooltip_html(
         'Current Market Level',
@@ -1174,6 +1190,7 @@ def render_executive():
     drawdown_mini = svg_price_high_current(recent_price, structural_colour, limit=126, high_label=f'{peak:,.0f}', current_label=f'{close:,.0f}')
     z_mini = svg_valuation_bell(exec_z_score if exec_z_score is not None else 0, exec_valuation_colour)
     risk_mini = svg_risk_gauge(live_score, 'Scorecard')
+    next_trigger_compact = compact_next_trigger_label(zone)
 
     st.markdown(f'''
     <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};">
@@ -1184,9 +1201,9 @@ def render_executive():
       </div>
       <aside class="exec-deploy-box">
         <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
-        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)}</div>
+        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)} {amount_tip}</div>
         <div class="exec-deploy-sub">{hesc(deploy_sub)}</div>
-        <div class="exec-deploy-fine">Based on selected investible capital only; not a buy call or financial advice.</div>
+        <div class="exec-next-trigger">↳ Next Trigger: {hesc(next_trigger_compact)}</div>
       </aside>
     </section>
     ''', unsafe_allow_html=True)
