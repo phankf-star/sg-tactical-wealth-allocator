@@ -12,7 +12,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v37 Tooltip Engine', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v36 Phase 2', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -174,17 +174,61 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
+/* v36z-exec-centre-revision — single-source executive hierarchy */
+.xec-title {font-size:1.55rem;font-weight:950;letter-spacing:-.035em;color:#0F172A;margin:4px 0 14px 0;}
+.xec-grid {display:grid;gap:14px;margin-bottom:14px;}
+.xec-top-grid {grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr);}
+.xec-kpi-grid {grid-template-columns:repeat(4,minmax(0,1fr));}
+.xec-macro-grid {grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;}
+.xec-card {position:relative;background:#FFFFFF;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible;}
+.xec-hero-card {padding:22px 24px;border-left:5px solid var(--accent,#2563EB);min-height:158px;}
+.xec-eyebrow {font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.07em;color:#0F172A;margin-bottom:9px;display:flex;align-items:center;gap:7px;}
+.xec-decision {font-size:1.65rem;line-height:1.08;font-weight:950;letter-spacing:-.04em;color:var(--accent,#2563EB);margin-bottom:8px;}
+.xec-decision small {font-size:.92rem;color:#16A34A;letter-spacing:-.01em;}
+.xec-sub {font-size:.86rem;line-height:1.45;color:#475569;font-weight:600;}
+.xec-pill-row {display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;}
+.xec-pill {display:inline-flex;align-items:center;border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900;white-space:nowrap;}
+.xec-pill.green {background:#ECFDF5;color:#047857;border:1px solid #BBF7D0;}
+.xec-pill.blue {background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;}
+.xec-pill.amber {background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;}
+.xec-deploy-card {padding:22px 24px;min-height:158px;}
+.xec-deploy-head {display:flex;justify-content:space-between;gap:12px;align-items:flex-start;}
+.xec-deploy-title {font-size:.82rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em;color:#0F172A;display:flex;align-items:center;gap:7px;}
+.xec-active-badge {font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px;}
+.xec-progress {position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px 0;overflow:visible;}
+.xec-progress-fill {height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%);}
+.xec-progress-marker {position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#FFFFFF;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap;box-shadow:0 6px 14px rgba(14,165,233,.25);}
+.xec-deploy-meta {display:flex;justify-content:space-between;gap:12px;color:#64748B;font-size:.78rem;font-weight:700;}
+.xec-kpi-card {padding:18px 18px 13px 18px;min-height:188px;overflow:hidden;}
+.xec-kpi-label {font-size:.75rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em;color:#0F172A;display:flex;align-items:center;gap:6px;}
+.xec-kpi-value {font-size:1.86rem;line-height:1.02;font-weight:950;letter-spacing:-.04em;color:#0F172A;margin-top:12px;}
+.xec-kpi-value.green {color:#16A34A;}.xec-kpi-value.amber {color:#B45309;}.xec-kpi-value.red {color:#DC2626;}
+.xec-kpi-sub {font-size:.78rem;color:#64748B;font-weight:700;margin-top:5px;line-height:1.35;}
+.xec-mini {height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.xec-mini svg {width:100%;height:72px;display:block;overflow:visible;}
+.xec-z-mini {height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center;}
+.xec-risk-mini {height:76px;margin-top:8px;display:flex;align-items:center;justify-content:center;}
+.xec-macro-wrap {padding:18px;margin-bottom:16px;}
+.xec-section-label {font-size:.92rem;font-weight:950;color:#0F172A;margin-bottom:13px;}
+.xec-micro-card {padding:16px 14px;min-height:104px;}
+.xec-micro-name {font-size:.78rem;font-weight:950;color:#0F172A;display:flex;align-items:center;gap:6px;}
+.xec-micro-value {font-size:1.35rem;font-weight:950;letter-spacing:-.035em;color:#0F172A;margin-top:12px;}
+.xec-micro-sub {font-size:.75rem;color:#64748B;font-weight:700;margin-top:4px;}
+.xec-summary {background:#0F1B2D;color:#FFFFFF;border-radius:16px;padding:18px 20px;margin:18px 0 16px 0;box-shadow:0 10px 26px rgba(15,23,42,.13);}
+.xec-summary-title {font-size:.84rem;font-weight:950;text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;}
+.xec-summary-grid {display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;}
+.xec-summary-chip {background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px;min-height:58px;}
+.xec-summary-chip span {display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950;letter-spacing:.04em;}
+.xec-summary-chip b {display:block;color:#FFFFFF;font-size:.84rem;line-height:1.25;margin-top:5px;}
+.xec-visible-section-title {font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px 0;}
+.xec-action-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px 0;}
+.xec-action-card {padding:18px 20px;min-height:172px;}
+.xec-action-card h4 {font-size:1.02rem;line-height:1.2;margin:0 0 12px 0;color:#0F172A;font-weight:950;}
+.xec-formula {font-size:1.55rem;line-height:1.22;font-weight:950;letter-spacing:-.04em;color:#0F172A;margin:14px 0 6px 0;}
+.xec-note {font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px;}
+@media (max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:760px){.xec-title{font-size:1.22rem;margin-top:2px;}.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr;}.xec-grid{gap:10px}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{border-radius:15px;padding:15px 16px;min-height:auto}.xec-decision{font-size:1.38rem}.xec-kpi-value{font-size:1.58rem}.xec-deploy-meta{display:block}.xec-summary{border-radius:14px;padding:15px}.xec-progress-marker{font-size:.62rem}.xec-micro-card{min-height:auto}.xec-mini,.xec-mini svg{height:58px}.xec-z-mini,.xec-risk-mini{height:58px}}
 
-/* v37 Tooltip Engine + Executive Centre hierarchy */
-.exec-info-dot{touch-action:manipulation;}
-.exec-info-dot:focus-within .exec-tooltip,.exec-info-dot:active .exec-tooltip{visibility:visible;opacity:1;transform:translateY(0);}
-.exec-tooltip{max-width:min(370px,calc(100vw - 28px));}
-.exec-tooltip-title-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;}
-.exec-tooltip-role{display:inline-flex;border-radius:999px;padding:2px 7px;font-size:9.5px;font-weight:950;letter-spacing:.04em;text-transform:uppercase;border:1px solid rgba(255,255,255,.18);white-space:nowrap;}
-.exec-tooltip-role.primary{background:rgba(34,197,94,.16);color:#BBF7D0}.exec-tooltip-role.secondary{background:rgba(96,165,250,.16);color:#BFDBFE}.exec-tooltip-role.context{background:rgba(251,191,36,.16);color:#FDE68A}
-.exec-tooltip-definition{font-size:12px;line-height:1.45;color:#E2E8F0;margin:4px 0 8px 0}.exec-tooltip-section-title{font-size:10px;font-weight:900;color:#9CA3AF;text-transform:uppercase;letter-spacing:.05em;margin:8px 0 4px}.exec-tooltip-bullets{margin:4px 0 0 0;padding-left:14px;color:#E5E7EB;font-size:11.5px;line-height:1.45}.exec-tooltip-role-footer{margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,.16);display:flex;justify-content:space-between;gap:8px;color:#CBD5E1;font-size:10.5px}
-.v37-grid{display:grid;gap:8px}.v37-top{grid-template-columns:1fr 1fr}.v37-main{grid-template-columns:1.05fr .95fr}.v37-kpis{grid-template-columns:repeat(4,1fr)}.v37-primary{grid-template-columns:repeat(3,1fr)}.v37-secondary{grid-template-columns:repeat(4,1fr)}.v37-right{grid-template-columns:1.08fr 1fr 1fr}.v37-card{background:rgba(255,255,255,.96);border:1px solid #CFD8E3;border-radius:10px;box-shadow:0 10px 26px rgba(15,23,42,.08);overflow:visible}.v37-pad{padding:14px}.v37-title{font-size:1.4rem;font-weight:950;margin:0 0 10px}.v37-label{font-size:.72rem;font-weight:950;color:#334E68;text-transform:uppercase}.v37-big{font-size:1.75rem;font-weight:950;letter-spacing:-.05em;line-height:1.05;margin-top:6px}.v37-sub{font-size:.70rem;color:#52657C;line-height:1.25;margin-top:4px}.v37-kpi{height:136px;padding:14px;border-top:3px solid #2563EB}.v37-mini{height:42px;margin-top:8px}.v37-mini svg{width:100%;height:100%}.v37-macro{padding:10px;min-height:78px}.v37-macro.primary{min-height:86px}.v37-mhead{display:flex;justify-content:space-between;gap:8px;align-items:center}.v37-mname{font-size:.84rem;font-weight:850}.v37-mbig{font-size:1.35rem;font-weight:950;margin-top:7px;letter-spacing:-.045em}.v37-status{font-size:.60rem;font-weight:950;border-radius:999px;padding:4px 8px;white-space:nowrap}.v37-status.green{background:#E7FBF3;color:#047857}.v37-status.red{background:#FFE5E8;color:#991B1B}.v37-status.amber{background:#FFF2D8;color:#92400E}.v37-status.blue{background:#E8F2FB;color:#1D4E89}.v37-badge{display:inline-flex;border-radius:999px;padding:5px 9px;font-weight:850;font-size:.70rem;border:1px solid #D8E1EA;background:#fff;color:#445672}.v37-badge.green{background:#E7FBF3;color:#047857;border-color:#B7F0D8}.v37-badge.amber{background:#FFF2D8;color:#92400E;border-color:#FDE4AD}.v37-badge.blue{background:#E8F2FB;color:#1D4E89;border-color:#C7DDF4}.v37-bar{height:8px;border-radius:999px;background:#DCE3EB;margin:8px 18px 8px 0;overflow:hidden}.v37-bar span{display:block;height:100%;border-radius:999px;background:#0F9F6E}.v37-trigger{background:#11A37F;color:white;border-radius:999px;padding:4px 8px;font-weight:900;font-size:.68rem}.v37-section{font-size:.95rem;font-weight:950;margin:10px 0 7px}.v37-summary{background:#101B2F;color:white;border-radius:8px;padding:11px 13px;margin-top:8px}.v37-summary-row{display:flex;gap:9px;margin-top:8px;flex-wrap:wrap}.v37-chip{background:#263348;border:1px solid #3D4B63;border-radius:6px;padding:7px 10px;font-size:.74rem;color:#DBE6F3}.v37-chip b{color:#12B981}.v37-info{padding:11px;min-height:166px}.v37-info-title{font-size:.68rem;font-weight:950;border-bottom:1px solid #DDE5EE;padding-bottom:8px;margin:-2px -2px 9px;text-transform:uppercase}.v37-tier{background:#E8EDF2;border-radius:5px;padding:7px 8px;font-size:.68rem;font-weight:850;display:flex;justify-content:space-between;margin-bottom:7px}.v37-tier.active{background:#DFF7EF;border-left:5px solid #0F9F6E}.v37-table{width:100%;border-collapse:collapse;font-size:.68rem}.v37-table th{background:#F8FAFC;text-align:left;padding:7px;border-bottom:1px solid #E2E8F0}.v37-table td{padding:7px;border-bottom:1px solid #EDF2F7}.v37-money{text-align:right}
-@media(max-width:1100px){.v37-top,.v37-main,.v37-right{grid-template-columns:1fr}.v37-kpis,.v37-secondary{grid-template-columns:repeat(2,1fr)}}@media(max-width:680px){.v37-top,.v37-main,.v37-kpis,.v37-primary,.v37-secondary,.v37-right{grid-template-columns:1fr}.v37-kpi{height:auto}.exec-tooltip{position:fixed!important;left:12px!important;right:12px!important;top:auto!important;bottom:18px!important;width:auto!important;max-width:calc(100vw - 24px)!important;border-radius:14px;padding:13px 14px}.exec-tooltip::before{display:none}.exec-tooltip-row{grid-template-columns:1fr!important;gap:2px}.exec-tooltip-role-footer{flex-direction:column;align-items:flex-start}.exec-info-dot{width:20px;height:20px;font-size:12px}}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -352,42 +396,24 @@ def hesc(v):
 def kv(label, value, colour=TEXT):
     return f'<div class="kv"><div class="kv-label">{label}</div><div class="kv-value" style="color:{colour};">{value}</div></div>'
 
-def decision_role_for_tooltip(title, explicit_role='AUTO'):
-    role = str(explicit_role or 'AUTO').upper().strip()
-    if role in ['PRIMARY','SECONDARY','CONTEXT']:
-        return role
-    t = str(title or '').lower()
-    if any(k in t for k in ['decision','deploy','suggested deploy','structural drawdown','market level','macro risk score','risk score','allocation stance','trigger']):
-        return 'PRIMARY'
-    if any(k in t for k in ['inflation','jobs','employment','rates','claims','pmi','yield curve','vix','macro alignment','cycle signal','volatility']):
-        return 'SECONDARY'
-    return 'CONTEXT'
-
-def standard_tooltip_html(title, rows=None, footer=None, role='AUTO', definition=None, bullets=None, interpretation=None, usage=None, icon_class='exec-info-dot'):
-    rows = rows or []
-    bullets = bullets or []
-    resolved_role = decision_role_for_tooltip(title, role)
-    role_class = resolved_role.lower()
-    title_html = f'<div class="exec-tooltip-title-row"><div class="exec-tooltip-title">{hesc(title)}</div><span class="exec-tooltip-role {role_class}">{resolved_role}</span></div>'
-    definition_html = f'<div class="exec-tooltip-definition">{definition}</div>' if definition else ''
-    row_html = ''.join([f'<div class="exec-tooltip-row"><span class="exec-tooltip-label">{hesc(k)}</span><span class="exec-tooltip-value">{hesc(v)}</span></div>' for k,v in rows])
-    bullets_html = '<div class="exec-tooltip-section-title">Used for</div><ul class="exec-tooltip-bullets">' + ''.join([f'<li>{hesc(b)}</li>' for b in bullets]) + '</ul>' if bullets else ''
-    interpretation_html = f'<div class="exec-tooltip-section-title">Interpretation</div><div class="exec-tooltip-definition">{interpretation}</div>' if interpretation else ''
-    usage_html = f'<div class="exec-tooltip-section-title">Usage</div><div class="exec-tooltip-definition">{usage}</div>' if usage else ''
-    footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
-    role_footer = f'<div class="exec-tooltip-role-footer"><span>Decision role</span><b>{resolved_role}</b></div>'
-    return f'<span class="{icon_class}" tabindex="0" aria-label="{hesc(title)} tooltip">i<span class="exec-tooltip">{title_html}{definition_html}{row_html}{bullets_html}{interpretation_html}{usage_html}{footer_html}{role_footer}</span></span>'
-
 def tooltip_html(title, rows=None, footer=None):
-    return standard_tooltip_html(title, rows=rows, footer=footer, role='AUTO', icon_class='exec-info-dot')
+    rows = rows or []
+    row_html = ''.join([f'<div class="exec-tooltip-row"><span class="exec-tooltip-label">{hesc(k)}</span><span class="exec-tooltip-value">{hesc(v)}</span></div>' for k,v in rows])
+    footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
+    return f'<span class="exec-info-dot" tabindex="0">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
 
 def card(title,value,sub,accent,tooltip=None,pill=None):
     info = tooltip or ''
     pill_html = pill or ''
     return f'<div class="light-card" style="border-top:4px solid {accent};"><div class="exec-title-row">{title}{info}</div><div style="font-size:1.55rem;font-weight:800;color:{TEXT};margin-top:4px;">{value}</div><div style="font-size:.82rem;color:{MUTED};margin-top:3px;">{sub}</div>{pill_html}</div>'
 
+
+
 def tooltip_html_variant(title, rows=None, footer=None, icon_class='exec-info-dot'):
-    return standard_tooltip_html(title, rows=rows, footer=footer, role='AUTO', icon_class=icon_class)
+    rows = rows or []
+    row_html = ''.join([f'<div class="exec-tooltip-row"><div class="exec-tooltip-label">{hesc(k)}</div><div class="exec-tooltip-value">{hesc(v)}</div></div>' for k,v in rows])
+    footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
+    return f'<span class="{icon_class}" tabindex="0">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
 
 def _normalise_series_values(values, limit=252):
     try:
@@ -1187,105 +1213,101 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 
 # ------------------------- renderers -------------------------
 def render_executive():
-    st.markdown('---')
+    # Revised top main page: diagnosis only + full-width strategy anchor.
     display_dd = min(dd, 0.0)
-    hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
+    structural_tip=tooltip_html(
+        'Active Structural Drawdown',
+        [('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}'),('Display Rule','Positive drawdown is floored at 0.0% on the Executive Centre')],
+        'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
+    )
+    stance_tip=tooltip_html(
+        'Decision Rule Explanation',
+        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],
+        f'Decision note:<br>{hesc(decision_line)}'
+    )
+    deploy_tip=tooltip_html(
+        'Suggested Deploy',
+        [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],
+        'Suggested Deploy is calculated from selected investible capital and the cumulative deployment rule. Details are shown in the Suggested Deploy Basis & Capital Source section below.'
+    )
+    index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'The displayed level is the latest available close used by the platform for drawdown and allocation calculations.')
+    risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.')
+    z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Z-score below -1'),('Normal','Z-score between -1 and +1'),('Expensive','Z-score above +1'),('Model','Expanding Window')],'The mini chart splits the valuation curve into Attractive, Normal and Expensive zones. It supports context, not automatic deployment.')
+    macro_tip=tooltip_html('Macro Alignment Check',[('Purpose','Quick diagnostic inputs only'),('PMI / VIX / Yield Curve','Live or cached market inputs where available'),('Inflation / Jobs / Claims','Manual/external placeholders unless connected to a data source')],'This row is separated from the KPI cards to avoid visual overlap and keep the Executive Centre readable on web and mobile.')
+
     structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
-    risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
+    hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
-    risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
-    z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
+    risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'
+    z_value_class='green' if exec_valuation_colour in [GREEN, '#059669'] else 'red' if exec_valuation_colour == RED else 'amber' if exec_valuation_colour == ORANGE else ''
     recent_price = ud['Close'].tail(126).copy()
-    price_mini = svg_price_high_current(recent_price, BLUE, limit=126, high_label=f'{peak:,.0f}', current_label=f'{close:,.0f}')
+    price_mini = svg_price_high_current(recent_price, BLUE, limit=126, high_label='', current_label='')
     drawdown_mini = svg_price_high_current(recent_price, structural_colour, limit=126, high_label=f'{peak:,.0f}', current_label=f'{close:,.0f}')
     z_mini = svg_valuation_bell(exec_z_score if exec_z_score is not None else 0, exec_valuation_colour)
     risk_mini = svg_risk_gauge(live_score, 'Scorecard')
     next_trigger_compact = compact_next_trigger_label(zone)
+    progress_fill = max(0, min(100, deploy_pct*100))
+    marker_pos = min(96, max(4, progress_fill if progress_fill > 0 else 8))
 
-    stance_tip=standard_tooltip_html('Decision Rule Explanation', rows=[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',next_trigger_compact)], definition=f'Decision note: {hesc(decision_line)}', role='PRIMARY')
-    amount_tip=standard_tooltip_html('Suggested Deploy Amount', rows=[('Amount',fmt_sgd(deploy)),('Basis','Selected investible capital × cumulative deployment rule'),('Rule',f'{deploy_pct:.0%} cumulative')], footer='Not a buy call, trading instruction, portfolio recommendation, or financial advice.', role='PRIMARY')
-    next_trigger_tip=standard_tooltip_html('Next Trigger', rows=[('Current Zone',zone),('Next Trigger',next_trigger_compact),('Basis','Structural drawdown threshold')], interpretation='Shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.', role='PRIMARY')
-    index_tip=standard_tooltip_html('Current Market Level', rows=[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')], definition='Latest available closing level used throughout the platform.', bullets=['Structural drawdown calculation','Risk scoring','Deployment decisions'], usage='Intraday values are not used in this decision layer.', role='PRIMARY')
-    structural_tip=standard_tooltip_html('Structural Drawdown', rows=[('Formula','(Current close − structural peak) ÷ structural peak'),('Peak',f'{peak:,.0f} ({struct_peak_date.strftime("%d %b %Y")})'),('Current',f'{close:,.0f} ({struct_current_date.strftime("%d %b %Y")})')], bullets=['Allocation stance','Suggested deploy amount','Deployment tier position'], interpretation='Primary drawdown basis. Positive drawdown is floored at 0.0% on the Executive Centre.', usage='Uses bounded causal peak logic where applicable to avoid look-ahead bias.', role='PRIMARY')
-    z_tip=standard_tooltip_html('Valuation Z-Score (OOS)', rows=[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Model','Expanding Window / Out-of-Sample')], bullets=['Above +1 → Expensive','-1 to +1 → Fair Value','Below -1 → Attractive'], interpretation='Valuation context layer. Supports accumulation decisions but does not trigger deployment independently.', role='CONTEXT')
-    risk_tip=standard_tooltip_html('Macro Risk Score', rows=[('Current Score',f'{live_score:.0f}/100 → {alert}'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')], bullets=['Drawdown stress','Trend condition','PMI / cycle signal','VIX volatility signal','Yield curve where applicable'], interpretation='<30 Normal · 30–50 Watch · 50–70 Warning · >70 Crash Risk. Risk-condition indicator, not a timing signal.', role='PRIMARY')
-
-    if deploy > 0:
-        deploy_title = f'SUGGESTED DEPLOY: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {amount_tip}'
-        deploy_status = '<span class="v37-badge green">Active</span>'
-        bar_width = max(1, min(100, deploy_pct*100))
-        decision_status = f'<span class="v37-badge green">Deployment active · {deploy_pct:.0%} cumulative</span>'
-        decision_line_clean = decision_line.replace('approximately ', '').replace('Approximate ', '')
+    if deploy>0:
+        stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>'
+        active_badge='Active'
     else:
-        deploy_title = f'DEPLOYMENT STATUS: Not triggered {amount_tip}'
-        deploy_status = '<span class="v37-badge amber">Capital preserved</span>'
-        bar_width = 0
-        decision_status = '<span class="v37-badge amber">Capital preserved</span>'
-        decision_line_clean = decision_line
+        stance_pill='<span class="xec-pill green">Capital preserved</span>'
+        active_badge='Watch'
+    deploy_sub='Capital base: selected investible capital only'
 
-    pmi_display = 'N/A' if sel in PMI_NA_MARKETS else f'{latest_pmi:.1f}'
-    pmi_status = 'N/A' if sel in PMI_NA_MARKETS else ('Expansion' if latest_pmi >= 50 else 'Contraction')
-    pmi_colour = 'blue' if sel in PMI_NA_MARKETS else ('green' if latest_pmi >= 50 else 'red')
-    vix_display = 'N/A' if (vix is None or sel in PMI_NA_MARKETS) else f'{vix:.1f}'
-    vix_status = 'N/A' if (vix is None or sel in PMI_NA_MARKETS) else ('Moderate' if vix < 25 else 'Elevated')
-    vix_colour = 'blue' if (vix is None or sel in PMI_NA_MARKETS) else ('amber' if vix < 25 else 'red')
-    curve_display = 'N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else ('Flat' if curve_spread < 0.5 else f'{curve_spread:.2f}%')
-    curve_status = 'N/A' if (curve_spread is None or sel in PMI_NA_MARKETS) else ('Inverted' if curve_spread < 0 else 'Flat' if curve_spread < 0.5 else 'Normal')
-    curve_colour = 'blue' if (curve_spread is None or sel in PMI_NA_MARKETS) else ('red' if curve_spread < 0 else 'amber' if curve_spread < 0.5 else 'green')
-    inflation_level = st.session_state.get('macro_inflation_display','3.2%')
-    inflation_status = st.session_state.get('macro_inflation_status','Cooling')
-    jobs_status='Strong'; rates_status='Restrictive'; claims_status='Stable'
-    macro_regime = 'Late Cycle / Cautious' if alert in ['WATCH','WARNING'] or rates_status == 'Restrictive' else 'Constructive'
-    macro_trend = 'Improving ↑ (policy still tight)' if inflation_status == 'Cooling' else 'Mixed →'
-    execution_status = 'Active Buy' if deploy > 0 else 'Wait / Preserve cash'
-    confidence_text = confidence_label(conf_score)
-    inflation_tip=standard_tooltip_html('Inflation', rows=[('Current',inflation_level),('State',inflation_status)], interpretation='Cooling inflation reduces rate-hike pressure and improves valuation conditions.', usage='Primary macro input; supportive for staged entry, not a standalone deployment trigger.', role='SECONDARY')
-    jobs_tip=standard_tooltip_html('Jobs', rows=[('State',jobs_status),('Proxy','Payroll / unemployment / wage momentum')], interpretation='Strong employment supports growth, but can also delay rate cuts if inflation is sticky.', usage='Primary macro input; confirms growth resilience.', role='SECONDARY')
-    rates_tip=standard_tooltip_html('Rates', rows=[('State',rates_status),('Meaning','Policy remains tight')], interpretation='Restrictive rates constrain liquidity and cap valuation upside.', usage='Primary policy input; reduces conviction when tight.', role='SECONDARY')
-    claims_tip=standard_tooltip_html('Claims', rows=[('State',claims_status)], interpretation='Weekly jobless claims are an early labour-market stress signal.', usage='Secondary early-warning input.', role='SECONDARY')
-    pmi_tip=standard_tooltip_html('PMI', rows=[('Value',pmi_display),('State',pmi_status),('Proxy',st.session_state.get('pmi_proxy_label', pmi_label))], interpretation='PMI above 50 indicates expansion; below 50 indicates contraction.', usage='Secondary cycle input.', role='SECONDARY')
-    curve_tip=standard_tooltip_html('Yield Curve', rows=[('State',curve_status),('Value',curve_display)], interpretation='Flat or inverted curve can indicate tighter financial conditions and recession risk.', usage='Secondary risk input.', role='SECONDARY')
-    vix_tip=standard_tooltip_html('VIX', rows=[('Value',vix_display),('State',vix_status)], interpretation='Measures expected equity volatility. Elevated VIX indicates market stress.', usage='Secondary stress input.', role='SECONDARY')
-
-    preview_rows=[]
-    try:
-        perf_df=add_performance_and_gap(build_etf_reference_rows(index_label), index_label)
-        if perf_df is not None and not perf_df.empty:
-            perf_df=perf_df[perf_df['Data Status'].eq('OK')].copy().head(4)
-            for _,r in perf_df.iterrows():
-                preview_rows.append({'Instrument':hesc(r.get('Instrument','')),'Ticker':hesc(r.get('Ticker','')),'Level':'—' if pd.isna(r.get('Since Listing %')) else f"{float(r.get('Since Listing %')):.1f}%",'Gap':hesc(r.get('1Y Gap','—')),'Deploy':fmt_sgd_html(deploy) if deploy>0 else '—'})
-    except Exception:
-        preview_rows=[]
-    if not preview_rows:
-        for role,name,tick,use in ETF_UNIVERSE.get(index_label, [])[:4]:
-            preview_rows.append({'Instrument':hesc(name),'Ticker':hesc(tick),'Level':'—','Gap':'—','Deploy':fmt_sgd_html(deploy) if deploy>0 else '—'})
-    table_rows=''.join([f"<tr><td>{r['Instrument']}</td><td>{r['Ticker']}</td><td>{r['Level']}</td><td>{r['Gap']}</td><td class='v37-money'>{r['Deploy']}</td></tr>" for r in preview_rows])
+    def _fmt_value(v, suffix='', na='N/A'):
+        try:
+            if v is None or pd.isna(v): return na
+            return f'{float(v):.1f}{suffix}'
+        except Exception:
+            return na
+    def _fmt_curve(v):
+        try:
+            if v is None or pd.isna(v): return 'N/A'
+            return f'{float(v):.2f}%'
+        except Exception:
+            return 'N/A'
+    pmi_state = 'N/A' if not pmi_applicable else ('Expansion' if latest_pmi >= 50 else 'Contraction')
+    curve_state = 'N/A' if curve_spread is None else ('Normal' if curve_spread >= 0 else 'Inverted')
+    rates_value = _fmt_curve(tnx)
+    rates_state = 'External input' if tnx is None else 'Rate input'
+    macro_cards = [('Inflation','N/A','External input'),('Jobs','N/A','External input'),('Rates',rates_value,rates_state),('Claims','N/A','External input'),('PMI',_fmt_value(latest_pmi) if pmi_applicable else 'N/A',pmi_state),('Yield Curve',_fmt_curve(curve_spread),curve_state),('VIX',_fmt_value(vix),'Stress input' if vix is not None else 'N/A')]
+    macro_html=''.join([f'''<div class="xec-card xec-micro-card"><div class="xec-micro-name">{hesc(name)} {tooltip_html(name, [('Status', sub)], 'Diagnostic macro input used for high-level context where data is available.')}</div><div class="xec-micro-value">{hesc(value)}</div><div class="xec-micro-sub">{hesc(sub)}</div></div>''' for name,value,sub in macro_cards])
 
     st.markdown(f'''
-    <div class="v37-title">Executive Centre — Macro-Tactical Deploy Layer</div>
-    <section class="v37-grid v37-top">
-      <div class="v37-card v37-pad" style="border-left:5px solid {hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 145%);"><div style="font-size:1.05rem;font-weight:950;text-transform:uppercase;">Crash-Buy Decision ({hesc(index_label)}): <span style="color:#079669;">{hesc(zone if deploy==0 else zone+' ('+str(int(deploy_pct*100))+'%)')}</span>{stance_tip}</div><div style="font-size:.82rem;margin-top:6px;">{hesc(decision_line_clean)}</div><div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">{decision_status}<span class="v37-badge blue">Confidence: {hesc(confidence_text)}</span></div></div>
-      <div class="v37-card v37-pad"><div style="display:flex;justify-content:space-between;gap:8px;"><div class="v37-label">{deploy_title}</div>{deploy_status}</div><div class="v37-bar"><span style="width:{bar_width:.0f}%;"></span></div><div style="display:flex;justify-content:space-between;font-size:.75rem;"><span>Next Trigger: <span class="v37-trigger">{hesc(next_trigger_compact)}</span>{next_trigger_tip}</span><span>Cumulative deploy: <b>{deploy_pct:.0%}</b></span></div><div class="v37-sub">Funding source: {hesc(funding_source)} · Capital base: selected investible capital only</div></div>
+    <div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div>
+    <section class="xec-grid xec-top-grid">
+      <div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);">
+        <div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div>
+        <div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div>
+        <div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div>
+        <div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div>
+      </div>
+      <div class="xec-card xec-deploy-card">
+        <div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">{hesc(deploy_sub)}</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div>
+        <div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(next_trigger_compact)}</div></div>
+        <div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger)}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div>
+      </div>
     </section>
-    <section class="v37-grid v37-main" style="margin-top:8px;"><div>
-      <div class="v37-grid v37-kpis"><div class="v37-card v37-kpi"><div class="v37-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="v37-big">{close:,.0f}</div><div class="v37-sub">Latest available close</div><div class="v37-mini">{price_mini}</div></div><div class="v37-card v37-kpi"><div class="v37-label">Structural Drawdown {structural_tip}</div><div class="v37-big">{display_dd:.1f}%</div><div class="v37-sub">Peak: {peak:,.0f} ({struct_peak_date.strftime('%d %b %Y')})<br>Current: {close:,.0f} ({struct_current_date.strftime('%d %b %Y')})</div><div class="v37-mini">{drawdown_mini}</div></div><div class="v37-card v37-kpi"><div class="v37-label">Valuation Z-Score (OOS) {z_tip}</div><div class="v37-big {z_value_class}">{z_display}</div><div class="v37-sub">{hesc(exec_valuation_zone)}</div><div class="v37-mini">{z_mini}</div></div><div class="v37-card v37-kpi"><div class="v37-label">Macro Risk Score {risk_tip}</div><div class="v37-big {risk_value_class}">{hesc(alert)}</div><div class="v37-sub">Score {live_score:.0f}/100 · {hesc('Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')}</div><div class="v37-mini">{risk_mini}</div></div></div>
-      <div class="v37-section">Macro Alignment Check</div><div class="v37-grid v37-primary"><div class="v37-card v37-macro primary"><div class="v37-mhead"><div class="v37-mname">Inflation {inflation_tip}</div><span class="v37-status green">{hesc(inflation_status)}</span></div><div class="v37-mbig">{hesc(inflation_level)}</div><div class="v37-sub">Supportive</div></div><div class="v37-card v37-macro primary"><div class="v37-mhead"><div class="v37-mname">Jobs {jobs_tip}</div><span class="v37-status green">{hesc(jobs_status)}</span></div><div class="v37-mbig">{hesc(jobs_status)}</div><div class="v37-sub">Supportive</div></div><div class="v37-card v37-macro primary"><div class="v37-mhead"><div class="v37-mname">Rates {rates_tip}</div><span class="v37-status red">{hesc(rates_status)}</span></div><div class="v37-mbig">{hesc(rates_status)}</div><div class="v37-sub">Constraint</div></div></div>
-      <div class="v37-grid v37-secondary" style="margin-top:8px;"><div class="v37-card v37-macro"><div class="v37-mhead"><div class="v37-mname">Claims {claims_tip}</div><span class="v37-status amber">{hesc(claims_status)}</span></div><div class="v37-mbig">{hesc(claims_status)}</div><div class="v37-sub">Neutral</div></div><div class="v37-card v37-macro"><div class="v37-mhead"><div class="v37-mname">PMI {pmi_tip}</div><span class="v37-status {pmi_colour}">{hesc(pmi_status)}</span></div><div class="v37-mbig">{hesc(pmi_display)}</div><div class="v37-sub">Cycle input</div></div><div class="v37-card v37-macro"><div class="v37-mhead"><div class="v37-mname">Yield Curve {curve_tip}</div><span class="v37-status {curve_colour}">{hesc(curve_status)}</span></div><div class="v37-mbig">{hesc(curve_display)}</div><div class="v37-sub">Risk input</div></div><div class="v37-card v37-macro"><div class="v37-mhead"><div class="v37-mname">VIX {vix_tip}</div><span class="v37-status {vix_colour}">{hesc(vix_status)}</span></div><div class="v37-mbig">{hesc(vix_display)}</div><div class="v37-sub">Stress input</div></div></div>
-      <div class="v37-summary"><b>STRATEGY EXECUTION SUMMARY</b><div class="v37-summary-row"><span class="v37-chip">STATUS: <b>{hesc(execution_status)}</b></span><span class="v37-chip">MACRO: {hesc(macro_regime)}</span><span class="v37-chip">TREND: {hesc(macro_trend)}</span><span class="v37-chip">RISK: {hesc(alert)} ({hesc(confidence_text)})</span></div></div>
-    </div><div>
-      <div class="v37-grid v37-right"><div class="v37-card v37-info"><div class="v37-info-title">Deployment Mechanics & Source</div><div style="font-size:.74rem;line-height:1.4;">Preserve dry powder first. Deploy cash first, then rebalance only if tranche conditions remain valid.<br><br><b>Current tranche:</b> {deploy_pct:.0%}<br><b>Next trigger:</b> {hesc(next_trigger_compact)}<br><b>Method:</b> staged allocation</div></div><div class="v37-card v37-info"><div class="v37-info-title">Tranche Execution Schedule</div><div style="font-size:.74rem;line-height:1.55;"><b>Execution Checklist</b><br>Initial tranche — {'current trigger active' if deploy>0 else 'await trigger'}<br>Add-on tranche — {hesc(next_trigger_compact)}<br>Full deployment review — conditional</div></div><div class="v37-card v37-info"><div class="v37-info-title">Tactical Deployment Tiers</div><div class="v37-sub">Cumulative allocation of deployable capital</div><div class="v37-tier"><span>HOLD</span><span>0%</span></div><div class="v37-tier {'active' if zone=='INITIAL BUY' else ''}"><span>INITIAL BUY</span><span>10%</span></div><div class="v37-tier {'active' if zone=='BUY' else ''}"><span>BUY</span><span>25%</span></div><div class="v37-tier {'active' if zone=='STRONG BUY' else ''}"><span>STRONG BUY</span><span>50%</span></div><div class="v37-tier {'active' if zone in ['CRISIS BUY','MAX CRISIS BUY'] else ''}"><span>CRISIS</span><span>75–100%</span></div></div></div>
-      <div class="v37-card" style="margin-top:8px;"><div class="v37-info-title" style="padding:10px 12px;margin:0;">Suggested Investment Options Preview</div><table class="v37-table"><thead><tr><th>Instrument</th><th>Ticker</th><th>Since Listing</th><th>1Y Gap</th><th class="v37-money">Deploy</th></tr></thead><tbody>{table_rows}</tbody></table><div class="v37-sub" style="padding:8px 12px;">Full ETF Implementation Reference remains in Market Performance & ETF Tracker. User-added ETFs do not affect Suggested Deploy unless promoted by owner governance.</div></div>
-    </div></section>
+    <section class="xec-grid xec-kpi-grid">
+      <div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div>
+      <div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div>
+      <div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div>
+      <div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div>
+    </section>
+    <section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Alignment Check {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section>
+    <section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk</span><b>{hesc(alert)} [{hesc(conf_label)}]</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>
     ''', unsafe_allow_html=True)
 
-
 def render_suggested(expanded=False):
+    # Single source of truth for deploy calculation, funding and execution details.
     suggested_title = f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
-    with st.expander(suggested_title,expanded=expanded):
-        s1,s2,s3,s4=st.columns([1.05,1.15,1.05,1.25])
-        s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
-        s2.markdown('#### 🏦 Capital Source Breakdown')
-        show_srs_row = (sel == 'STI' and available_srs > 0); show_cpf_row = (sel == 'STI' and available_cpf > 0)
+
+    def _render_suggested_content():
+        show_srs_row = (sel == 'STI' and available_srs > 0)
+        show_cpf_row = (sel == 'STI' and available_cpf > 0)
         if show_srs_row and show_cpf_row:
             buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
         elif show_srs_row:
@@ -1299,16 +1321,28 @@ def render_suggested(expanded=False):
         if show_srs_row: capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
         if show_cpf_row: capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
         capital_rows += kv('Reason',display_reason,SLATE)
-        s2.markdown('<div class="light-card">'+capital_rows+'</div>',unsafe_allow_html=True)
-        s3.markdown('#### 🧱 Tranche Deployment Plan')
-        if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
-        else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
         ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'The ladder shows cumulative deployment percentages. Each deeper drawdown zone increases total deployed capital rather than adding unrelated new capital.')
-        s4.markdown(f'<h4 style="margin-bottom:0.4rem;">🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4>',unsafe_allow_html=True)
-        s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
+        tranche_html = '<div class="info-box">No active tranche. Deployment begins only when trigger conditions are met.</div>' if deploy<=0 else '<div>'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>'
+        st.markdown(f'''
+        <div class="xec-visible-section-title">{hesc(suggested_title)}</div>
+        <section class="xec-action-grid">
+          <div class="xec-card xec-action-card"><h4>📌 Suggested Deploy Basis</h4><div class="xec-sub">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div class="xec-note">Source: selected price data, structural drawdown formula, and sidebar capital inputs. This is the calculation basis, not a buy call.</div></div>
+          <div class="xec-card xec-action-card"><h4>🏦 Capital Source Breakdown</h4><div>{capital_rows}</div></div>
+        </section>
+        <section class="xec-action-grid">
+          <div class="xec-card xec-action-card"><h4>📦 Tranche Deployment Plan</h4>{tranche_html}</div>
+          <div class="xec-card xec-action-card"><h4>🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div>
+        </section>
+        ''', unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
+
+    if expanded:
+        _render_suggested_content()
+    else:
+        with st.expander(suggested_title,expanded=False):
+            _render_suggested_content()
 
 def render_assumptions():
     with st.expander('🧾 Assumptions & Limits — Methodology guardrails', expanded=False):
@@ -1878,7 +1912,7 @@ def run_render_loop():
             if active_section == section:
                 RENDERERS[section](expanded=True)
             else:
-                RENDERERS[section](expanded=deploy>0 if active_section == '🧠 Executive Centre' else False)
+                RENDERERS[section](expanded=True if active_section == '🧠 Executive Centre' else False)
             render_assumptions()
         elif active_section == section:
             RENDERERS[section](expanded=True)
