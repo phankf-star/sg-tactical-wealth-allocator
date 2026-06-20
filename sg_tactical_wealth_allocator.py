@@ -128,16 +128,19 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final polish - deploy tint + next trigger tooltip */
+/* v36z+ Executive Centre final polish - raised tooltips + stronger deploy tint */
 .exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(320px,.82fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
-.exec-deploy-box {background:linear-gradient(180deg,#FFFFFF 0%,var(--deploy-bg,#F8FAFC) 100%);border:1px solid var(--deploy-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
+.exec-deploy-box {background:linear-gradient(180deg,#FFFFFF 0%,var(--deploy-bg,#F1F5F9) 100%);border:1px solid var(--deploy-border,#CBD5E1);border-radius:22px;padding:22px 24px;min-height:172px;box-shadow:0 1px 2px rgba(15,23,42,.04);}
 .exec-deploy-label {color:#64748B;font-size:.78rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:6px;}
-.exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.45rem;line-height:1.02;font-weight:950;letter-spacing:-.035em;margin-top:10px;display:flex;align-items:center;gap:8px;}
+.exec-deploy-amount {color:var(--hero-border,#64748B);font-size:2.45rem;line-height:1.02;font-weight:950;letter-spacing:-.035em;margin-top:10px;display:flex;align-items:flex-start;gap:5px;}
 .exec-deploy-sub {color:#111827;font-size:.93rem;font-weight:800;margin-top:10px;}
-.exec-next-trigger {color:#475569;font-size:.82rem;font-weight:800;margin-top:8px;line-height:1.35;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.exec-next-trigger {color:#475569;font-size:.82rem;font-weight:800;margin-top:8px;line-height:1.35;display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
 .exec-next-trigger-value {color:var(--hero-border,#64748B);font-weight:900;}
+.exec-info-dot-amount {position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:999px;background:#EEF2FF;color:#2563EB;border:1px solid #BFDBFE;font-size:9px;font-weight:900;cursor:help;line-height:1;margin-left:2px;transform:translateY(-9px);flex:0 0 auto;}
+.exec-info-dot-trigger {position:relative;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;border-radius:999px;background:#EEF2FF;color:#2563EB;border:1px solid #BFDBFE;font-size:8px;font-weight:900;cursor:help;line-height:1;margin-left:2px;transform:translateY(-5px);flex:0 0 auto;}
+.exec-info-dot-amount:hover .exec-tooltip, .exec-info-dot-amount:focus .exec-tooltip, .exec-info-dot-trigger:hover .exec-tooltip, .exec-info-dot-trigger:focus .exec-tooltip {visibility:visible;opacity:1;transform:translateY(0);}
 .exec-pill-hold {background:#F8FAFC !important;border:1px solid #CBD5E1 !important;color:#475569 !important;}
 .exec-main-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-bottom:12px;}
 .exec-kpi-card {position:relative;overflow:visible;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:22px;padding:22px 24px 20px 24px;box-shadow:0 8px 22px rgba(15,23,42,.07);min-height:168px;}
@@ -164,6 +167,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .exec-mini-panel {width:100%;max-width:285px;min-width:0;margin:2px auto 0 auto;justify-content:center;}
   .exec-mini-zone-label {font-size:10px;}
   .exec-mini-caption {font-size:9.8px;}
+  .exec-info-dot-amount {width:14px;height:14px;font-size:8px;transform:translateY(-7px);}
+  .exec-info-dot-trigger {width:12px;height:12px;font-size:7.5px;transform:translateY(-4px);}
 }
 
 </style>
@@ -346,6 +351,12 @@ def card(title,value,sub,accent,tooltip=None,pill=None):
 
 
 
+def tooltip_html_variant(title, rows=None, footer=None, icon_class='exec-info-dot'):
+    rows = rows or []
+    row_html = ''.join([f'<div class="exec-tooltip-row"><div class="exec-tooltip-label">{hesc(k)}</div><div class="exec-tooltip-value">{hesc(v)}</div></div>' for k,v in rows])
+    footer_html = f'<div class="exec-tooltip-footer">{footer}</div>' if footer else ''
+    return f'<span class="{icon_class}">i<span class="exec-tooltip"><div class="exec-tooltip-title">{hesc(title)}</div>{row_html}{footer_html}</span></span>'
+
 def _normalise_series_values(values, limit=252):
     try:
         arr = pd.Series(values).astype(float).replace([np.inf, -np.inf], np.nan).dropna()
@@ -492,6 +503,19 @@ def hero_colours_for_zone(zone_name):
     if zone_name in ['CRISIS BUY', 'MAX CRISIS BUY']:
         return RED, '#FEF2F2', '#FECACA'
     return SLATE, '#F8FAFC', '#CBD5E1'
+
+def deploy_box_colours_for_zone(zone_name):
+    if zone_name == 'HOLD / NO DEPLOYMENT':
+        return '#F1F5F9', '#CBD5E1'
+    if zone_name == 'INITIAL BUY':
+        return '#DBEAFE', '#93C5FD'
+    if zone_name == 'BUY':
+        return '#DCFCE7', '#86EFAC'
+    if zone_name == 'STRONG BUY':
+        return '#FFFBEB', '#FDE68A'
+    if zone_name in ['CRISIS BUY', 'MAX CRISIS BUY']:
+        return '#FEF2F2', '#FECACA'
+    return '#F8FAFC', '#CBD5E1'
 
 def compact_next_trigger_label(zone_name):
     mapping = {
@@ -1150,15 +1174,17 @@ def render_executive():
         [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],
         'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.'
     )
-    amount_tip=tooltip_html(
+    amount_tip=tooltip_html_variant(
         'Suggested Deploy Amount',
         [('Amount',fmt_sgd(deploy)),('Basis','Selected investible capital × cumulative deployment rule'),('Current Rule',f'{deploy_pct:.0%} cumulative')],
-        'Calculated from selected investible capital and the platform cumulative deployment rule.<br><br>Not a buy call, trading instruction, portfolio recommendation, or financial advice.'
+        'Calculated from selected investible capital and the platform cumulative deployment rule.<br><br>Not a buy call, trading instruction, portfolio recommendation, or financial advice.',
+        icon_class='exec-info-dot-amount'
     )
-    next_trigger_tip=tooltip_html(
+    next_trigger_tip=tooltip_html_variant(
         'Next Trigger',
         [('Current Zone',zone),('Next Trigger',compact_next_trigger_label(zone)),('Basis','Structural drawdown threshold')],
-        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.'
+        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.',
+        icon_class='exec-info-dot-trigger'
     )
     index_tip=tooltip_html(
         'Current Market Level',
@@ -1180,8 +1206,7 @@ def render_executive():
     risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
     model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
     hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
-    deploy_bg = hero_bg
-    deploy_border = hero_soft
+    deploy_bg, deploy_border = deploy_box_colours_for_zone(zone)
 
     if deploy>0:
         stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
@@ -1209,7 +1234,7 @@ def render_executive():
       </div>
       <aside class="exec-deploy-box">
         <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
-        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)} {amount_tip}</div>
+        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)}{amount_tip}</div>
         <div class="exec-deploy-sub">{hesc(deploy_sub)}</div>
         <div class="exec-next-trigger">→ Next Trigger: <span class="exec-next-trigger-value">{hesc(next_trigger_compact)}</span>{next_trigger_tip}</div>
       </aside>
