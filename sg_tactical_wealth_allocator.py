@@ -128,7 +128,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z+ Executive Centre final mockup-positioned mini charts - z-score zones + high/current labels */
+/* v36z+ Executive Centre final polish - web + mobile */
 .exec-hero {background:var(--hero-bg,#F8FAFC);border:3px solid var(--hero-border,#64748B);border-radius:28px;padding:26px 28px;margin:12px 0 22px 0;box-shadow:0 10px 26px rgba(15,23,42,.08);display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:24px;align-items:stretch;}
 .exec-hero-eyebrow {color:var(--hero-border,#64748B);font-size:.78rem;font-weight:900;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;}
 .exec-hero-title {color:#111827;font-size:2.15rem;line-height:1.06;font-weight:900;letter-spacing:-.035em;margin:0 0 14px 0;}
@@ -153,8 +153,17 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 .exec-mini-panel {height:94px;min-width:225px;border:0;background:transparent;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .exec-mini-panel svg {width:100%;height:94px;display:block;overflow:visible;}
 .exec-mini-caption {font-size:9.5px;fill:#64748B;font-weight:750;}
-.exec-mini-zone-label {font-size:9px;fill:#64748B;font-weight:800;letter-spacing:.02em;}
-@media (max-width: 900px) {.exec-hero {grid-template-columns:1fr;padding:22px 20px;}.exec-main-grid {grid-template-columns:1fr;}.exec-hero-title {font-size:1.72rem;}.exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}.exec-kpi-body {grid-template-columns:1fr;}.exec-mini-panel {width:100%;min-width:0;justify-content:flex-start;}}
+.exec-mini-zone-label {font-size:9.8px;fill:#64748B;font-weight:800;letter-spacing:.02em;}
+@media (max-width: 900px) {
+  .exec-hero {grid-template-columns:1fr;padding:22px 20px;}
+  .exec-main-grid {grid-template-columns:1fr;}
+  .exec-hero-title {font-size:1.72rem;}
+  .exec-deploy-amount, .exec-kpi-value {font-size:1.85rem;}
+  .exec-kpi-body {grid-template-columns:1fr;gap:8px;margin-top:10px;}
+  .exec-mini-panel {width:100%;max-width:285px;min-width:0;margin:2px auto 0 auto;justify-content:center;}
+  .exec-mini-zone-label {font-size:10px;}
+  .exec-mini-caption {font-size:9.8px;}
+}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -365,7 +374,6 @@ def svg_price_high_current(values, colour=BLUE, limit=126, high_label='', curren
     hi_idx = max(range(len(vals)), key=lambda i: vals[i])
     hx, hy = pts[hi_idx]
     cx, cy = pts[-1]
-    # Keep high label inside chart and slightly above the high point, with horizontal clamping.
     high_text = high_label or f'{vals[hi_idx]:,.0f}'
     cur_text = current_label or f'{vals[-1]:,.0f}'
     ht_x = max(26, min(w-34, hx))
@@ -375,7 +383,7 @@ def svg_price_high_current(values, colour=BLUE, limit=126, high_label='', curren
     return f'''<div class="exec-mini-panel"><svg viewBox="0 0 {w} {h}" preserveAspectRatio="xMidYMid meet">
       <polygon points="{area}" fill="{colour}" opacity="0.12"></polygon>
       <polyline points="{line}" fill="none" stroke="{colour}" stroke-width="3.0" stroke-linecap="round" stroke-linejoin="round"></polyline>
-      <circle cx="{hx:.1f}" cy="{hy:.1f}" r="3.4" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.2"></circle>
+      <circle cx="{hx:.1f}" cy="{hy:.1f}" r="3.4" fill="#F59E0B" stroke="#FFFFFF" stroke-width="1.2"></circle>
       <circle cx="{cx:.1f}" cy="{cy:.1f}" r="3.4" fill="{colour}" stroke="#FFFFFF" stroke-width="1.2"></circle>
       <text x="{ht_x:.1f}" y="{ht_y:.1f}" text-anchor="middle" class="exec-mini-caption">{high_text}</text>
       <text x="{ct_x:.1f}" y="{ct_y:.1f}" text-anchor="end" class="exec-mini-caption">{cur_text}</text>
