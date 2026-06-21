@@ -4,6 +4,7 @@ import time
 import json
 import os
 import urllib.request
+import urllib.parse
 from pathlib import Path
 from datetime import datetime
 
@@ -175,8 +176,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 
-/* v36z-source-priority-final — official adapters, upload fallback, tooltip fixes */
-.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px;overflow:visible!important}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card{padding:22px 24px;border-left:5px solid var(--accent,#2563EB);min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.35rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important;transform:none!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(360px,calc(100vw - 56px))!important;max-width:min(360px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-kpi-grid .xec-card:nth-child(3) .exec-tooltip,.xec-kpi-grid .xec-card:nth-child(4) .exec-tooltip,.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}.xec-mini,.xec-mini svg{height:58px}}
+/* v36z-full-macro-mapping */
+.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px;overflow:visible!important}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card{padding:22px 24px;border-left:5px solid var(--accent,#2563EB);min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.35rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important;transform:none!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(360px,calc(100vw - 56px))!important;max-width:min(360px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-kpi-grid .xec-card:nth-child(3) .exec-tooltip,.xec-kpi-grid .xec-card:nth-child(4) .exec-tooltip,.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}.xec-mini,.xec-mini svg{height:58px}}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -340,22 +341,23 @@ def fetch_fred_pmi(series_id='NAPM'):
 
 
 # ------------------------- Macro source registry / official adapters / upload fallback -------------------------
-MACRO_OVERRIDE_FILE = Path('macro_overrides.csv')
-US_MARKETS = {'S&P 500','Nasdaq','DJIA'}
-MARKET_UPLOAD_ALIASES = {'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
-MACRO_SOURCE_REGISTRY = {
-    'S&P 500': {'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},
-    'Nasdaq': {'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},
-    'DJIA': {'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},
-    'HSI': {'Inflation':'HKMA economic statistics API','Jobs':'HKMA economic statistics API','Claims':'Not applicable'},
-    'STI': {'Inflation':'SingStat / data.gov.sg official adapter pending mapping','Jobs':'SingStat / MOM official adapter pending mapping','Claims':'Not applicable'},
-    'A-Share': {'Inflation':'NBS official adapter pending validation','Jobs':'NBS official adapter pending validation','PMI':'NBS official adapter pending validation','Claims':'Not applicable'},
-}
+MACRO_OVERRIDE_FILE=Path('macro_overrides.csv')
+US_MARKETS={'S&P 500','Nasdaq','DJIA'}
+MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
+MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable'}}
+def _clean_number(v):
+    try:
+        if v is None: return None
+        s=str(v).replace(',','').replace('%','').replace('+','').strip()
+        if s in ['', 'na','n.a.','N.A.','-','--','—']: return None
+        return float(s)
+    except Exception: return None
+def _source_result(value,display,sub,source_type,date=''): return {'value':value,'display':display,'sub':sub,'source_type':source_type,'date':date}
 @st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
     try:
-        url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
-        df=pd.read_csv(url,parse_dates=['DATE'])
+        url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'; df=pd.read_csv(url,parse_dates=['DATE'])
         if df.empty or series_id not in df.columns: return pd.DataFrame()
         df=df.rename(columns={series_id:'Value'}).set_index('DATE'); df['Value']=pd.to_numeric(df['Value'],errors='coerce')
         return df.dropna()
@@ -377,24 +379,73 @@ def us_macro_dashboard_data():
     except Exception: pass
     return out
 @st.cache_data(ttl=21600)
-def hkma_macro_dashboard_data():
-    out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A'}
+def fetch_datagovsg_records(resource_id):
     try:
-        url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
-        with urllib.request.urlopen(url,timeout=10) as req: payload=json.loads(req.read().decode('utf-8'))
-        records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
-        if records:
-            df=pd.DataFrame(records)
-            if 'end_of_month' in df.columns: df['end_of_month']=pd.to_datetime(df['end_of_month'],errors='coerce'); df=df.sort_values('end_of_month')
-            if 'composite_cpi' in df.columns:
-                s=pd.to_numeric(df['composite_cpi'],errors='coerce').dropna()
-                if len(s)>=13: out['inflation_value']=((float(s.iloc[-1])/float(s.iloc[-13]))-1)*100; out['inflation_date']='Latest'
-            if 'unemploy_rate' in df.columns:
-                s=pd.to_numeric(df['unemploy_rate'],errors='coerce').dropna()
-                if len(s)>0: out['jobs_rate']=float(s.iloc[-1]); out['jobs_date']='Latest'
+        url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
+        with urllib.request.urlopen(url,timeout=15) as req: payload=json.loads(req.read().decode('utf-8'))
+        return payload.get('result',{}).get('records',[])
+    except Exception: return []
+def _wide_period_values(row,freq='M'):
+    out=[]
+    for k,v in row.items():
+        if not isinstance(k,str): continue
+        val=_clean_number(v); parts=k.strip().split()
+        if val is None: continue
+        if freq=='M' and len(parts)==2 and parts[0].isdigit() and parts[1] in MONTH_MAP: out.append((pd.Timestamp(int(parts[0]),MONTH_MAP[parts[1]],1),k,val))
+        if freq=='Q' and len(parts)==2 and parts[0].isdigit() and parts[1].endswith('Q'):
+            q=_clean_number(parts[1].replace('Q',''))
+            if q in [1,2,3,4]: out.append((pd.Timestamp(int(parts[0]),int(q)*3,1),k,val))
+    return sorted(out,key=lambda x:x[0])
+def _pick_row(records,preferred_terms=None,avoid_terms=None):
+    preferred_terms=[t.lower() for t in (preferred_terms or [])]; avoid_terms=[t.lower() for t in (avoid_terms or [])]
+    if not records: return None
+    def label(r):
+        for k in ['Data Series','data_series','data series','DataSeries','series','Series']:
+            if k in r: return str(r.get(k,''))
+        return ' '.join(str(x) for x in r.values())[:200]
+    for r in records:
+        lab=label(r).lower()
+        if all(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms): return r
+    for r in records:
+        lab=label(r).lower()
+        if any(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms): return r
+    return records[0]
+@st.cache_data(ttl=21600)
+def singapore_macro_dashboard_data():
+    out={'inflation_yoy':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A'}
+    try:
+        row=_pick_row(fetch_datagovsg_records('d_bdaff844e3ef89d39fceb962ff8f0791'),['all items'],['less','excluding']); vals=_wide_period_values(row or {},'M')
+        if len(vals)>=13:
+            latest_dt,_,latest_val=vals[-1]; prior=[x for x in vals if x[0].year==latest_dt.year-1 and x[0].month==latest_dt.month]
+            if prior and prior[-1][2]: out['inflation_yoy']=((latest_val/prior[-1][2])-1)*100; out['inflation_date']=latest_dt.strftime('%b %Y')
+    except Exception: pass
+    try:
+        recs=fetch_datagovsg_records('d_b816a930bca0eb19fdf20fcbfcdd4c39'); row=_pick_row(recs,['overall']) or _pick_row(recs,['total']); vals=_wide_period_values(row or {},'Q')
+        if vals: out['jobs_rate']=vals[-1][2]; out['jobs_date']=vals[-1][1]
     except Exception: pass
     return out
-
+@st.cache_data(ttl=21600)
+def hkma_macro_dashboard_data():
+    out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','inflation_status':'Official API'}
+    try:
+        url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
+        with urllib.request.urlopen(url,timeout=15) as req: payload=json.loads(req.read().decode('utf-8'))
+        records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
+        if records:
+            df=pd.DataFrame(records).copy()
+            if 'end_of_month' in df.columns: df['end_of_month']=pd.to_datetime(df['end_of_month'],errors='coerce'); df=df.sort_values('end_of_month').reset_index(drop=True)
+            if 'composite_cpi' in df.columns:
+                vals=pd.to_numeric(df['composite_cpi'],errors='coerce'); valid=df.loc[vals.notna()].copy(); valid['composite_cpi']=vals[vals.notna()].values
+                if len(valid)>=13:
+                    yoy=((float(valid['composite_cpi'].iloc[-1])/float(valid['composite_cpi'].iloc[-13]))-1)*100; out['inflation_value']=yoy; out['inflation_date']=valid['end_of_month'].iloc[-1].strftime('%b %Y') if 'end_of_month' in valid.columns and pd.notna(valid['end_of_month'].iloc[-1]) else 'Latest'
+                    if yoy<-5 or yoy>15: out['inflation_status']='Needs validation'
+            if 'unemploy_rate' in df.columns:
+                vals=pd.to_numeric(df['unemploy_rate'],errors='coerce'); valid=df.loc[vals.notna()].copy(); valid['unemploy_rate']=vals[vals.notna()].values
+                if len(valid)>0: out['jobs_rate']=float(valid['unemploy_rate'].iloc[-1]); out['jobs_date']=valid['end_of_month'].iloc[-1].strftime('%b %Y') if 'end_of_month' in valid.columns and pd.notna(valid['end_of_month'].iloc[-1]) else 'Latest'
+    except Exception: pass
+    return out
+@st.cache_data(ttl=21600)
+def nbs_validation_dashboard_data(): return {'inflation_value':None,'jobs_rate':None,'pmi_value':None,'status':'Needs validation'}
 def _normalise_macro_upload(df):
     required=['market','indicator','date','value','unit','source']; df=df.copy(); df.columns=[str(c).strip().lower() for c in df.columns]
     for c in required:
@@ -413,31 +464,52 @@ def get_uploaded_macro_value(market,indicator):
     df=load_macro_overrides_from_disk()
     if 'macro_upload_df' in st.session_state and isinstance(st.session_state.macro_upload_df,pd.DataFrame): df=pd.concat([df,st.session_state.macro_upload_df],ignore_index=True)
     if df.empty: return None
-    aliases={market,MARKET_UPLOAD_ALIASES.get(market,market)}
-    sub=df[df['market'].astype(str).str.upper().isin({x.upper() for x in aliases}) & df['indicator'].astype(str).str.lower().eq(indicator.lower())].copy()
+    aliases={market,MARKET_UPLOAD_ALIASES.get(market,market)}; sub=df[df['market'].astype(str).str.upper().isin({x.upper() for x in aliases}) & df['indicator'].astype(str).str.lower().eq(indicator.lower())].copy()
     if sub.empty: return None
     sub['_date_sort']=pd.to_datetime(sub['date'],errors='coerce'); sub=sub.sort_values(['_date_sort','date'],na_position='first'); r=sub.iloc[-1]
     return {'value':float(r['value']),'date':str(r.get('date','')),'unit':str(r.get('unit','')),'source':str(r.get('source','Owner-uploaded')),'source_type':str(r.get('source_type','Owner-uploaded'))}
+def _uploaded_result(uploaded):
+    unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
+    return _source_result(uploaded['value'],display,f"Owner-uploaded · {uploaded.get('source','')} · {uploaded.get('date','')}",'Owner-uploaded',uploaded.get('date',''))
+def _awaiting_live(source_label): return _source_result(None,'Awaiting live data',source_label,'Awaiting')
+def _awaiting_validation(source_label): return _source_result(None,'Awaiting validation',source_label,'Needs validation')
 def resolve_macro_value(market,indicator):
-    if indicator=='Claims' and market not in US_MARKETS:
-        return {'value':None,'display':'N/A','sub':'Not applicable for this market','source_type':'N/A'}
+    if indicator=='Claims' and market not in US_MARKETS: return _source_result(None,'N/A','Not applicable for this market','N/A')
     if market in US_MARKETS:
         data=us_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return {'value':data['inflation_yoy'],'display':f"{data['inflation_yoy']:.1f}%",'sub':f"Official API · FRED CPI YoY · {data['inflation_date']}",'source_type':'Official API'}
-        if indicator=='Jobs' and data.get('jobs_rate') is not None: return {'value':data['jobs_rate'],'display':f"{data['jobs_rate']:.1f}%",'sub':f"Official API · FRED UNRATE · {data['jobs_date']}",'source_type':'Official API'}
-        if indicator=='Claims' and data.get('claims_k') is not None: return {'value':data['claims_k'],'display':f"{data['claims_k']:.0f}k",'sub':f"Official API · FRED ICSA · {data['claims_date']}",'source_type':'Official API'}
+        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
+        if indicator=='Jobs' and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · FRED UNRATE · {data['jobs_date']}",'Official API',data['jobs_date'])
+        if indicator=='Claims' and data.get('claims_k') is not None: return _source_result(data['claims_k'],f"{data['claims_k']:.0f}k",f"Official API · FRED ICSA · {data['claims_date']}",'Official API',data['claims_date'])
+        uploaded=get_uploaded_macro_value(market,indicator)
+        if uploaded is not None: return _uploaded_result(uploaded)
+        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'FRED'))
+    if market=='STI' and indicator in ['Inflation','Jobs']:
+        data=singapore_macro_dashboard_data()
+        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · SingStat CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
+        if indicator=='Jobs' and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · SingStat/MOM unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
+        uploaded=get_uploaded_macro_value(market,indicator)
+        if uploaded is not None: return _uploaded_result(uploaded)
+        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'SingStat official adapter'))
     if market=='HSI' and indicator in ['Inflation','Jobs']:
         data=hkma_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_value') is not None: return {'value':data['inflation_value'],'display':f"{data['inflation_value']:.1f}%",'sub':f"Official API · HKMA CPI YoY · {data['inflation_date']}",'source_type':'Official API'}
-        if indicator=='Jobs' and data.get('jobs_rate') is not None: return {'value':data['jobs_rate'],'display':f"{data['jobs_rate']:.1f}%",'sub':f"Official API · HKMA unemployment · {data['jobs_date']}",'source_type':'Official API'}
+        if indicator=='Inflation' and data.get('inflation_value') is not None:
+            src='Official API' if data.get('inflation_status')!='Needs validation' else 'Needs validation'
+            return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
+        if indicator=='Jobs' and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
+        uploaded=get_uploaded_macro_value(market,indicator)
+        if uploaded is not None: return _uploaded_result(uploaded)
+        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'HK official adapter'))
+    if market=='A-Share' and indicator in ['Inflation','Jobs','PMI']:
+        uploaded=get_uploaded_macro_value(market,indicator)
+        if uploaded is not None: return _uploaded_result(uploaded)
+        return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'NBS official adapter'))
     uploaded=get_uploaded_macro_value(market,indicator)
-    if uploaded is not None:
-        unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
-        return {'value':uploaded['value'],'display':display,'sub':f"Owner-uploaded · {uploaded.get('source','')} · {uploaded.get('date','')}",'source_type':'Owner-uploaded'}
-    return {'value':None,'display':'Awaiting input','sub':MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'source_type':'Awaiting'}
+    if uploaded is not None: return _uploaded_result(uploaded)
+    return _source_result(None,'Awaiting input',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
         st.caption('Source priority: Official API → official downloadable table → owner-upload CSV/XLSX → awaiting input. Claims is US-only; non-US markets show N/A.')
+        st.caption('Mapped adapters: FRED for US; SingStat/data.gov.sg for STI; HKMA for HSI; NBS validation mode for A-Share.')
         st.caption('Upload fallback columns: market, indicator, date, value, unit, source, source_type, notes')
         uploaded=st.file_uploader('Upload macro CSV/XLSX fallback',type=['csv','xlsx'],key='macro_upload_file')
         if uploaded is not None:
@@ -1284,21 +1356,25 @@ def render_executive():
     index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'Latest available close used for drawdown and allocation calculations.')
     risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Risk-condition indicator, not a crash prediction.')
     z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Below -1'),('Normal','-1 to +1'),('Expensive','Above +1')],'Context only; not automatic deployment.')
-    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API → official download → owner-upload → awaiting input'),('Claims','US-only; non-US markets show N/A'),('Current market',index_label)],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
+    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API → official download → owner-upload → awaiting input'),('Claims','US-only; non-US markets show N/A'),('China','NBS mapping is validation mode until runtime verified'),('Current market',index_label)],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
     structural_colour=zc if zone!='HOLD / NO DEPLOYMENT' else SLATE; hero_border,hero_bg,hero_soft=hero_colours_for_zone(zone)
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'; risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'; z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
     recent_price=ud['Close'].tail(126).copy(); price_mini=svg_price_high_current(recent_price,BLUE,126,'',''); drawdown_mini=svg_price_high_current(recent_price,structural_colour,126,f'{peak:,.0f}',f'{close:,.0f}'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
     next_trigger_compact=compact_next_trigger_label(zone); marker_label='Fully deployed' if next_trigger_compact=='Fully deployed' else f'Next: {next_trigger_compact}'
     progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8)); stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
     inflation=resolve_macro_value(index_label,'Inflation'); jobs=resolve_macro_value(index_label,'Jobs'); claims=resolve_macro_value(index_label,'Claims')
+    pmi_res=resolve_macro_value(index_label,'PMI') if index_label=='A-Share' else None
     def _curve(v):
         try:
             if v is None or pd.isna(v): return 'N/A'
             return f'{float(v):.2f}%'
         except Exception: return 'N/A'
     pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
-    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type']),('Jobs',jobs['display'],jobs['sub'],jobs['source_type']),('Rates',_curve(tnx),'Rate input' if tnx is not None else 'External input','Official API' if tnx is not None else 'Awaiting'),('Claims',claims['display'],claims['sub'],claims['source_type']),('PMI',f'{latest_pmi:.1f}' if pmi_applicable else 'N/A',pmi_state,'Manual/Default'),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting'),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting')]
-    def _source_class(src): return 'source-official' if src=='Official API' else 'source-upload' if src=='Owner-uploaded' else 'source-na' if src=='N/A' else 'source-awaiting'
+    pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
+    pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
+    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('source_type') in ['Owner-uploaded','Needs validation'] else 'Manual/Default'
+    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type']),('Jobs',jobs['display'],jobs['sub'],jobs['source_type']),('Rates',_curve(tnx),'Rate input' if tnx is not None else 'External input','Official API' if tnx is not None else 'Awaiting'),('Claims',claims['display'],claims['sub'],claims['source_type']),('PMI',pmi_display,pmi_sub,pmi_src),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting'),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting')]
+    def _source_class(src): return 'source-official' if src=='Official API' else 'source-upload' if src=='Owner-uploaded' else 'source-na' if src=='N/A' else 'source-validation' if src=='Needs validation' else 'source-awaiting'
     macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source',src),('Status',s)],'Macro data source priority: Official API, official download, owner-upload, awaiting input. Claims is US-only by default.')}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(s)} <span class="source-pill {_source_class(src)}">{hesc(src)}</span></div></div>''' for n,v,s,src in cards])
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
     st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger)}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Alignment Check {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
