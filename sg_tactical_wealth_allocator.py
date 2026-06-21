@@ -3,9 +3,6 @@ import math
 import time
 import json
 import os
-import urllib.request
-import urllib.parse
-import io
 from pathlib import Path
 from datetime import datetime
 
@@ -176,9 +173,6 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .exec-info-dot-trigger {width:12px;height:12px;font-size:7.5px;transform:translateY(-4px);}
 }
 
-/* v36z diagnostics-state-fix compact */
-.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
-
 </style>
 ''', unsafe_allow_html=True)
 
@@ -337,409 +331,6 @@ def fetch_fred_pmi(series_id='NAPM'):
         return df.dropna()
     except Exception:
         return pd.DataFrame()
-
-
-
-# ------------------------- Macro adapter diagnostics and defensive source fetch -------------------------
-MACRO_OVERRIDE_FILE=Path('macro_overrides.csv')
-US_MARKETS={'S&P 500','Nasdaq','DJIA'}
-USD_PROXY_MARKETS={'Gold','Bitcoin'}
-MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
-MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
-MACRO_DIAGNOSTICS={}
-
-def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
-    return {'Adapter':adapter,'Endpoint':endpoint,'Reached':bool(reached),'Rows':int(rows or 0),'Matched':matched or '', 'Latest':latest or '', 'Reason':reason or ''}
-
-def _diag(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
-    row=_diag_row(adapter,endpoint,reached,rows,matched,latest,reason)
-    MACRO_DIAGNOSTICS[adapter]=row
-    return row
-
-def _clean_number(v):
-    try:
-        if v is None: return None
-        s=str(v).replace(',','').replace('%','').replace('+','').strip()
-        if s in ['', 'na','n.a.','N.A.','-','--','—']: return None
-        return float(s)
-    except Exception: return None
-
-def _source_result(value,display,sub,source_type,date='',diagnostic=''):
-    return {'value':value,'display':display,'sub':sub,'source_type':source_type,'date':date,'diagnostic':diagnostic}
-
-def _request_text(url, adapter, timeout=15, capture_global=True):
-    headers={'User-Agent':'Mozilla/5.0 Global20Engine/1.0','Accept':'text/csv,application/json,text/plain,*/*'}
-    try:
-        req=urllib.request.Request(url,headers=headers)
-        with urllib.request.urlopen(req,timeout=timeout) as resp: raw=resp.read()
-        body=raw.decode('utf-8-sig',errors='replace')
-        row=_diag_row(adapter,url,True,0,'','',f'HTTP fetch ok; {len(body)} chars')
-        if capture_global: MACRO_DIAGNOSTICS[adapter]=row
-        return body,'',row
-    except Exception as e:
-        row=_diag_row(adapter,url,False,0,'','',f'HTTP fetch failed: {e}')
-        if capture_global: MACRO_DIAGNOSTICS[adapter]=row
-        return '',str(e),row
-
-# -------- uncached diagnostics: does not rely on cached side effects --------
-def _test_fred_series(series_id):
-    url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
-    adapter=f'FRED {series_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=False)
-    if not txt: return row
-    try:
-        df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
-        if df.empty or series_id not in df.columns: return _diag_row(adapter,url,True,0,'series column not matched','',f'Columns returned: {list(df.columns)[:8]}')
-        s=pd.to_numeric(df[series_id],errors='coerce').dropna()
-        latest='' if s.empty else f"{df.loc[s.index[-1],'DATE']}={s.iloc[-1]}"
-        return _diag_row(adapter,url,True,len(s),'series column matched',latest,'' if not s.empty else 'No numeric values')
-    except Exception as e: return _diag_row(adapter,url,True,0,'parser error','',f'CSV parse error: {e}')
-
-def _test_datagovsg_resource(resource_id):
-    url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
-    adapter=f'data.gov.sg {resource_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=False)
-    if not txt: return row
-    try:
-        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
-        sample=''
-        if records:
-            first=records[0]
-            sample=str(first.get('Data Series') or first.get('data_series') or list(first.keys())[:5])[:120]
-        return _diag_row(adapter,url,True,len(records),'records',sample,'' if records else 'JSON ok but no records returned')
-    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
-
-def _test_singstat_table(table_id):
-    url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
-    adapter=f'SingStat {table_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=False)
-    if not txt: return row
-    try:
-        payload=json.loads(txt); data=payload.get('Data',{}) or payload.get('data',{}) or {}
-        records=[]
-        if isinstance(data,dict): records=data.get('row') or data.get('records') or data.get('Records') or []
-        if not isinstance(records,list): records=[]
-        sample=''
-        if records:
-            first=records[0]
-            sample=str(first.get('rowText') or first.get('Data Series') or list(first.keys())[:6])[:120] if isinstance(first,dict) else str(first)[:120]
-        return _diag_row(adapter,url,True,len(records),'row/records',sample,'' if records else 'JSON ok but table rows not found')
-    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
-
-def _test_hkma_economic_statistics():
-    url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
-    adapter='HKMA economic statistics'
-    txt,err,row=_request_text(url,adapter,capture_global=False)
-    if not txt: return row
-    try:
-        payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
-        sample=''
-        if records: sample=str(list(records[0].keys())[:8])
-        return _diag_row(adapter,url,True,len(records),'records',sample,'' if records else 'JSON ok but no records')
-    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
-
-def run_macro_adapter_diagnostics_uncached():
-    rows=[]
-    for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
-        rows.append(_test_fred_series(sid))
-    for rid in ['d_bdaff844e3ef89d39fceb962ff8f0791','d_b816a930bca0eb19fdf20fcbfcdd4c39','d_5fe5a4bb4a1ecc4d8a56a095832e2b24']:
-        rows.append(_test_datagovsg_resource(rid))
-    for tid in ['M213751','M182342']:
-        rows.append(_test_singstat_table(tid))
-    rows.append(_test_hkma_economic_statistics())
-    rows.append(_diag_row('NBS validation mode','data.stats.gov.cn / CFETS/PBC mapping',False,0,'validation mode','','NBS endpoint not promoted to production adapter in this file'))
-    return rows
-
-@st.cache_data(ttl=21600)
-def fetch_fred_series(series_id):
-    url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
-    adapter=f'FRED {series_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=True)
-    if not txt: return pd.DataFrame()
-    try:
-        df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
-        if df.empty or series_id not in df.columns:
-            _diag(adapter,url,True,0,'series column not matched','',f'Columns returned: {list(df.columns)[:8]}')
-            return pd.DataFrame()
-        df=df.rename(columns={series_id:'Value'}).set_index('DATE')
-        df['Value']=pd.to_numeric(df['Value'],errors='coerce')
-        df=df.dropna()
-        latest='' if df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
-        _diag(adapter,url,True,len(df),'series column matched',latest,'' if not df.empty else 'CSV parsed but no numeric values')
-        return df
-    except Exception as e:
-        _diag(adapter,url,True,0,'parser error','',f'CSV parse error: {e}')
-        return pd.DataFrame()
-
-@st.cache_data(ttl=21600)
-def us_macro_dashboard_data():
-    cpi=fetch_fred_series('CPIAUCSL'); unrate=fetch_fred_series('UNRATE'); claims=fetch_fred_series('ICSA'); dgs10=fetch_fred_series('DGS10')
-    out={'inflation_yoy':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','claims_k':None,'claims_date':'N/A','dgs10':None,'dgs10_date':'N/A'}
-    try:
-        if len(cpi)>=13:
-            latest=float(cpi['Value'].iloc[-1]); prior=float(cpi['Value'].iloc[-13])
-            if prior: out['inflation_yoy']=((latest/prior)-1)*100; out['inflation_date']=pd.Timestamp(cpi.index[-1]).strftime('%b %Y')
-    except Exception: pass
-    try:
-        if not unrate.empty: out['jobs_rate']=float(unrate['Value'].iloc[-1]); out['jobs_date']=pd.Timestamp(unrate.index[-1]).strftime('%b %Y')
-    except Exception: pass
-    try:
-        if not claims.empty: out['claims_k']=float(claims['Value'].iloc[-1])/1000.0; out['claims_date']=pd.Timestamp(claims.index[-1]).strftime('%d %b %Y')
-    except Exception: pass
-    try:
-        if not dgs10.empty: out['dgs10']=float(dgs10['Value'].iloc[-1]); out['dgs10_date']=pd.Timestamp(dgs10.index[-1]).strftime('%d %b %Y')
-    except Exception: pass
-    return out
-
-@st.cache_data(ttl=21600)
-def fetch_datagovsg_records(resource_id):
-    url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
-    adapter=f'data.gov.sg {resource_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=True)
-    if not txt: return []
-    try:
-        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
-        _diag(adapter,url,True,len(records),'records',f'{len(records)} records','' if records else 'JSON ok but no records returned')
-        return records
-    except Exception as e:
-        _diag(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
-        return []
-
-@st.cache_data(ttl=21600)
-def fetch_singstat_tabledata(table_id):
-    url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
-    adapter=f'SingStat {table_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=True)
-    if not txt: return []
-    try:
-        payload=json.loads(txt); data=payload.get('Data',{}) or payload.get('data',{}) or {}
-        records=[]
-        if isinstance(data,dict): records=data.get('row') or data.get('records') or data.get('Records') or []
-        if not isinstance(records,list): records=[]
-        _diag(adapter,url,True,len(records),'row/records',f'{len(records)} rows','' if records else 'JSON ok but table rows not found')
-        return records
-    except Exception as e:
-        _diag(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
-        return []
-
-def _wide_period_values(row,freq='M'):
-    out=[]
-    if not isinstance(row,dict): return out
-    for k,v in row.items():
-        if not isinstance(k,str): continue
-        val=_clean_number(v); parts=k.strip().split()
-        if val is None: continue
-        if freq=='M' and len(parts)==2 and parts[0].isdigit() and parts[1] in MONTH_MAP: out.append((pd.Timestamp(int(parts[0]),MONTH_MAP[parts[1]],1),k,val))
-        if freq=='Q' and len(parts)==2 and parts[0].isdigit() and parts[1].endswith('Q'):
-            q=_clean_number(parts[1].replace('Q',''))
-            if q in [1,2,3,4]: out.append((pd.Timestamp(int(parts[0]),int(q)*3,1),k,val))
-    return sorted(out,key=lambda x:x[0])
-
-def _pick_row(records,preferred_terms=None,avoid_terms=None,adapter=''):
-    preferred_terms=[t.lower() for t in (preferred_terms or [])]; avoid_terms=[t.lower() for t in (avoid_terms or [])]
-    if not records: return None
-    def label(r):
-        for k in ['Data Series','data_series','data series','DataSeries','series','Series','rowText','row_text','label','title']:
-            if isinstance(r,dict) and k in r: return str(r.get(k,''))
-        return ' '.join(str(x) for x in (r.values() if isinstance(r,dict) else [r]))[:200]
-    sample=[label(r) for r in records[:5]]
-    for r in records:
-        lab=label(r).lower()
-        if all(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms):
-            if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),label(r),'','')
-            return r
-    for r in records:
-        lab=label(r).lower()
-        if any(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms):
-            if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),label(r),'','')
-            return r
-    if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),'not matched','',f'First row labels: {sample}')
-    return records[0]
-
-@st.cache_data(ttl=21600)
-def singapore_macro_dashboard_data():
-    out={'inflation_yoy':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','sg_rate':None,'sg_rate_date':'N/A','diagnostic':''}
-    try:
-        recs=fetch_datagovsg_records('d_bdaff844e3ef89d39fceb962ff8f0791'); adapter='data.gov.sg d_bdaff844e3ef89d39fceb962ff8f0791'
-        if not recs: recs=fetch_singstat_tabledata('M213751'); adapter='SingStat M213751'
-        row=_pick_row(recs,['all items'],['less','excluding'],adapter) or _pick_row(recs,['overall'],adapter=adapter)
-        vals=_wide_period_values(row or {},'M')
-        if len(vals)>=13:
-            latest_dt,_,latest_val=vals[-1]; prior=[x for x in vals if x[0].year==latest_dt.year-1 and x[0].month==latest_dt.month]
-            if prior and prior[-1][2]: out['inflation_yoy']=((latest_val/prior[-1][2])-1)*100; out['inflation_date']=latest_dt.strftime('%b %Y'); _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'CPI row/date matched',f'{out["inflation_date"]}={out["inflation_yoy"]:.2f}%','')
-        elif recs: out['diagnostic']='Singapore CPI source reached, but CPI row/date parser did not return usable series.'
-    except Exception as e: out['diagnostic']=f'Singapore CPI adapter error: {e}'
-    try:
-        recs=fetch_datagovsg_records('d_b816a930bca0eb19fdf20fcbfcdd4c39'); adapter='data.gov.sg d_b816a930bca0eb19fdf20fcbfcdd4c39'
-        if not recs: recs=fetch_singstat_tabledata('M182342'); adapter='SingStat M182342'
-        row=_pick_row(recs,['overall'],adapter=adapter) or _pick_row(recs,['total'],adapter=adapter)
-        vals=_wide_period_values(row or {},'Q')
-        if vals: out['jobs_rate']=vals[-1][2]; out['jobs_date']=vals[-1][1]; _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'unemployment row/date matched',f'{out["jobs_date"]}={out["jobs_rate"]}','')
-    except Exception: pass
-    try:
-        recs=fetch_datagovsg_records('d_5fe5a4bb4a1ecc4d8a56a095832e2b24'); adapter='data.gov.sg d_5fe5a4bb4a1ecc4d8a56a095832e2b24'
-        row=_pick_row(recs,['prime lending'],adapter=adapter) or _pick_row(recs,['sora'],adapter=adapter) or _pick_row(recs,['savings'],adapter=adapter)
-        vals=_wide_period_values(row or {},'M')
-        if vals: out['sg_rate']=vals[-1][2]; out['sg_rate_date']=vals[-1][1]; _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'rates row/date matched',f'{out["sg_rate_date"]}={out["sg_rate"]}','')
-    except Exception: pass
-    return out
-
-@st.cache_data(ttl=21600)
-def hkma_macro_dashboard_data():
-    out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','hk_rate':None,'hk_rate_date':'N/A','inflation_status':'Official API'}
-    adapter='HKMA economic statistics'; url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
-    txt,err,row=_request_text(url,adapter,capture_global=True)
-    if not txt: return out
-    try:
-        payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
-        _diag(adapter,url,True,len(records),'records',f'{len(records)} records','' if records else 'JSON ok but no records')
-        if records:
-            df=pd.DataFrame(records).copy()
-            if 'end_of_month' in df.columns: df['end_of_month']=pd.to_datetime(df['end_of_month'],errors='coerce'); df=df.sort_values('end_of_month').reset_index(drop=True)
-            if 'composite_cpi' in df.columns:
-                vals=pd.to_numeric(df['composite_cpi'],errors='coerce'); valid=df.loc[vals.notna()].copy(); valid['composite_cpi']=vals[vals.notna()].values
-                if len(valid)>=13:
-                    yoy=((float(valid['composite_cpi'].iloc[-1])/float(valid['composite_cpi'].iloc[-13]))-1)*100; out['inflation_value']=yoy; out['inflation_date']=valid['end_of_month'].iloc[-1].strftime('%b %Y') if 'end_of_month' in valid.columns and pd.notna(valid['end_of_month'].iloc[-1]) else 'Latest'
-                    if yoy<-5 or yoy>15: out['inflation_status']='Needs validation'
-            if 'unemploy_rate' in df.columns:
-                vals=pd.to_numeric(df['unemploy_rate'],errors='coerce'); valid=df.loc[vals.notna()].copy(); valid['unemploy_rate']=vals[vals.notna()].values
-                if len(valid)>0: out['jobs_rate']=float(valid['unemploy_rate'].iloc[-1]); out['jobs_date']=valid['end_of_month'].iloc[-1].strftime('%b %Y') if 'end_of_month' in valid.columns and pd.notna(valid['end_of_month'].iloc[-1]) else 'Latest'
-    except Exception as e: _diag(adapter,url,True,0,'parser error','',f'HKMA parser error: {e}')
-    return out
-
-@st.cache_data(ttl=21600)
-def nbs_validation_dashboard_data():
-    _diag('NBS validation mode','data.stats.gov.cn / CFETS/PBC mapping',False,0,'validation mode','','NBS endpoint not promoted to production adapter in this file')
-    return {'inflation_value':None,'jobs_rate':None,'pmi_value':None,'cn_rate':None,'status':'Needs validation'}
-
-def _normalise_macro_upload(df):
-    required=['market','indicator','date','value','unit','source']; df=df.copy(); df.columns=[str(c).strip().lower() for c in df.columns]
-    for c in required:
-        if c not in df.columns: df[c]=''
-    if 'source_type' not in df.columns: df['source_type']='Owner-uploaded'
-    if 'notes' not in df.columns: df['notes']=''
-    df['market']=df['market'].astype(str).str.strip(); df['indicator']=df['indicator'].astype(str).str.strip().str.title(); df['value']=pd.to_numeric(df['value'],errors='coerce')
-    return df.dropna(subset=['value'])[required+['source_type','notes']]
-@st.cache_data(ttl=60)
-def load_macro_overrides_from_disk():
-    try:
-        if MACRO_OVERRIDE_FILE.exists(): return _normalise_macro_upload(pd.read_csv(MACRO_OVERRIDE_FILE))
-    except Exception: pass
-    return pd.DataFrame(columns=['market','indicator','date','value','unit','source','source_type','notes'])
-def get_uploaded_macro_value(market,indicator):
-    df=load_macro_overrides_from_disk()
-    if 'macro_upload_df' in st.session_state and isinstance(st.session_state.macro_upload_df,pd.DataFrame): df=pd.concat([df,st.session_state.macro_upload_df],ignore_index=True)
-    if df.empty: return None
-    aliases={market,MARKET_UPLOAD_ALIASES.get(market,market)}; indicators={indicator, 'Jobs' if indicator=='Unemployment' else indicator, 'Unemployment' if indicator=='Jobs' else indicator}
-    sub=df[df['market'].astype(str).str.upper().isin({x.upper() for x in aliases}) & df['indicator'].astype(str).str.lower().isin({x.lower() for x in indicators})].copy()
-    if sub.empty: return None
-    sub['_date_sort']=pd.to_datetime(sub['date'],errors='coerce'); sub=sub.sort_values(['_date_sort','date'],na_position='first'); r=sub.iloc[-1]
-    return {'value':float(r['value']),'date':str(r.get('date','')),'unit':str(r.get('unit','')),'source':str(r.get('source','Owner-uploaded')),'source_type':str(r.get('source_type','Owner-uploaded'))}
-def _uploaded_result(uploaded):
-    unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
-    return _source_result(uploaded['value'],display,f"Owner-uploaded · {uploaded.get('source','')} · {uploaded.get('date','')}",'Owner-uploaded',uploaded.get('date',''))
-def _awaiting_live(source_label, diagnostic='Live fetch unavailable or parser returned no usable value.'):
-    return _source_result(None,'Live fetch unavailable',source_label,'Awaiting',diagnostic=diagnostic)
-def _awaiting_validation(source_label): return _source_result(None,'Awaiting validation',source_label,'Needs validation',diagnostic='Official adapter is mapped but still requires runtime validation.')
-
-def rate_card_label(market):
-    if market in US_MARKETS: return 'US 10Y Yield'
-    if market=='STI': return 'SG Rates'
-    if market=='HSI': return 'HK Rates'
-    if market=='A-Share': return 'China Rates'
-    if market in USD_PROXY_MARKETS: return 'USD Rates Proxy'
-    return 'Rates'
-def rate_basis_text(market):
-    if market in US_MARKETS: return 'Basis: US 10-year Treasury constant maturity yield. Preferred source: FRED DGS10.'
-    if market=='STI': return 'Basis: Singapore-dollar interest-rate environment. Preferred basis: MAS/SingStat SORA or official domestic interest-rate series.'
-    if market=='HSI': return 'Basis: Hong Kong-dollar interest-rate environment. Preferred basis: HKMA HIBOR, base rate or discount-window related rates.'
-    if market=='A-Share': return 'Basis: China lending-rate benchmark. Preferred basis: CFETS/PBC 1-year Loan Prime Rate, validation mode.'
-    if market in USD_PROXY_MARKETS: return 'Basis: US 10-year Treasury yield used as global USD rates / discount-rate proxy.'
-    return 'Basis: selected market interest-rate input where mapped.'
-def macro_tooltip_text(display_name, market):
-    if display_name=='Unemployment': return 'Basis: official unemployment-rate series, not employment level. US uses FRED UNRATE; Singapore uses SingStat/MOM unemployment where available; Hong Kong uses HKMA unemployment; China remains NBS validation mode.'
-    if display_name=='Claims': return 'Basis: US Initial Jobless Claims / Initial Claims. US markets use FRED ICSA as a labour-stress indicator. Non-US markets show N/A by default unless a comparable official claims series is deliberately mapped.'
-    if display_name in ['US 10Y Yield','SG Rates','HK Rates','China Rates','USD Rates Proxy','Rates']: return rate_basis_text(market)+' Source priority: official API/table, owner-upload fallback, then live-fetch diagnostic.'
-    return 'Macro data source priority: official API/table, owner-upload fallback, then diagnostic awaiting state.'
-
-def resolve_macro_value(market,indicator):
-    if indicator=='Claims' and market not in US_MARKETS: return _source_result(None,'N/A','Not applicable for this market','N/A')
-    if indicator=='Rates':
-        uploaded=get_uploaded_macro_value(market,'Rates')
-        if uploaded is not None: return _uploaded_result(uploaded)
-        if market in US_MARKETS or market in USD_PROXY_MARKETS:
-            data=us_macro_dashboard_data()
-            if data.get('dgs10') is not None: return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · FRED DGS10 · {data['dgs10_date']}",'Official API',data['dgs10_date'])
-            return _awaiting_live('FRED DGS10', MACRO_DIAGNOSTICS.get('FRED DGS10',{}).get('Reason','FRED DGS10 returned no usable value'))
-        if market=='STI':
-            data=singapore_macro_dashboard_data()
-            if data.get('sg_rate') is not None: return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
-            return _awaiting_live('MAS/SingStat SORA or domestic rates')
-        if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
-        if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
-        return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get('Rates','Local rates adapter'),'Awaiting')
-    if market in US_MARKETS:
-        data=us_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · FRED UNRATE · {data['jobs_date']}",'Official API',data['jobs_date'])
-        if indicator=='Claims' and data.get('claims_k') is not None: return _source_result(data['claims_k'],f"{data['claims_k']:.0f}k",f"Official API · FRED ICSA · {data['claims_date']}",'Official API',data['claims_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
-        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'FRED'))
-    if market=='STI' and indicator in ['Inflation','Jobs','Unemployment']:
-        data=singapore_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · SingStat CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · SingStat/MOM unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
-        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'SingStat official adapter'), data.get('diagnostic','Live fetch unavailable or row parser returned no usable value.'))
-    if market=='HSI' and indicator in ['Inflation','Jobs','Unemployment']:
-        data=hkma_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_value') is not None:
-            src='Official API' if data.get('inflation_status')!='Needs validation' else 'Needs validation'
-            return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
-        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'HK official adapter'))
-    if market=='A-Share' and indicator in ['Inflation','Jobs','Unemployment','PMI']:
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
-        return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'NBS official adapter'))
-    uploaded=get_uploaded_macro_value(market,indicator)
-    if uploaded is not None: return _uploaded_result(uploaded)
-    return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
-
-def render_macro_adapter_diagnostics_sidebar():
-    with st.expander('🧪 Macro Adapter Diagnostics', expanded=False):
-        st.caption('Uncached tests stored in session state. This avoids cached side effects and Streamlit rerun resets.')
-        if st.button('Run diagnostics now', use_container_width=True, key='run_macro_diag'):
-            try:
-                st.session_state['macro_diagnostics']=run_macro_adapter_diagnostics_uncached()
-                st.success('Diagnostics executed and stored for this session.')
-            except Exception as e:
-                st.session_state['macro_diagnostics']=[_diag_row('Diagnostics runner','local',False,0,'runner error','',str(e))]
-                st.warning(f'Diagnostics execution issue: {e}')
-        rows=st.session_state.get('macro_diagnostics', [])
-        if rows: st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        else: st.caption('No diagnostics captured yet. Click Run diagnostics now.')
-
-def render_macro_data_manager_sidebar():
-    with st.expander('📥 Macro Data Manager',expanded=False):
-        st.caption('Source priority: Official API/table → owner-upload CSV/XLSX → diagnostic awaiting state. Claims is US-only; non-US markets show N/A.')
-        st.caption('Upload fallback columns: market, indicator, date, value, unit, source, source_type, notes')
-        uploaded=st.file_uploader('Upload macro CSV/XLSX fallback',type=['csv','xlsx'],key='macro_upload_file')
-        if uploaded is not None:
-            try:
-                raw=pd.read_excel(uploaded,engine='openpyxl') if uploaded.name.lower().endswith('.xlsx') else pd.read_csv(uploaded)
-                parsed=_normalise_macro_upload(raw); st.session_state.macro_upload_df=parsed
-                st.success(f'{len(parsed)} macro row(s) loaded for this session.'); st.dataframe(parsed.tail(8),use_container_width=True,hide_index=True)
-                if is_platform_owner() and st.button('Save macro overrides',use_container_width=True,key='save_macro_overrides_button'):
-                    parsed.to_csv(MACRO_OVERRIDE_FILE,index=False); load_macro_overrides_from_disk.clear(); st.success('Macro overrides saved to macro_overrides.csv.')
-            except Exception as e: st.warning(f'Could not read macro file: {e}')
-        current=load_macro_overrides_from_disk()
-        if not current.empty: st.caption('Saved macro overrides currently available:'); st.dataframe(current.tail(8),use_container_width=True,hide_index=True)
 
 if 'pmi_history' not in st.session_state: st.session_state.pmi_history = {}
 
@@ -1538,8 +1129,6 @@ with st.sidebar:
     st.session_state.funding_profile=funding_profile
     st.markdown('---')
     render_owner_mode_sidebar()
-    render_macro_data_manager_sidebar()
-    render_macro_adapter_diagnostics_sidebar()
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
@@ -1568,64 +1157,132 @@ st.caption('v36 Phase 2 · Multi-asset drawdown allocation platform with OOS val
 
 # ------------------------- renderers -------------------------
 def render_executive():
-    display_dd=min(dd,0.0)
-    structural_tip=tooltip_html('Active Structural Drawdown',[('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],'Formula:<br>(current close − structural peak) ÷ structural peak')
-    stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],f'Decision note:<br>{hesc(decision_line)}')
-    deploy_tip=tooltip_html('Suggested Deploy',[('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],'Details are shown in the Calculation Basis & Capital Source section below.')
-    index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'Latest available close used for drawdown and allocation calculations.')
-    risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Risk-condition indicator, not a crash prediction.')
-    z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Below -1'),('Normal','-1 to +1'),('Expensive','Above +1')],'Context only; not automatic deployment.')
-    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API/table → owner-upload → diagnostic awaiting state'),('Diagnostics','See Macro Adapter Diagnostics in sidebar'),('Claims','US Initial Jobless Claims; US-only'),('Rates','Market-specific basis shown in each tooltip')],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
-    structural_colour=zc if zone!='HOLD / NO DEPLOYMENT' else SLATE; hero_border,hero_bg,hero_soft=hero_colours_for_zone(zone)
+    st.markdown('---')
+    st.markdown('## 🧠 Executive Tactical Allocation Centre')
+
+    display_dd = min(dd, 0.0)
+    structural_tip=tooltip_html(
+        'Active Structural Drawdown',
+        [('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}'),('Display Rule','Positive drawdown is floored at 0.0% on the Executive Centre')],
+        'Formula:<br>(current close − structural peak) ÷ structural peak<br><br>Used as the primary drawdown basis for deployment decisions.'
+    )
+    stance_tip=tooltip_html(
+        'Decision Rule Explanation',
+        [('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],
+        f'Decision note:<br>{hesc(decision_line)}'
+    )
+    deploy_tip=tooltip_html(
+        'Suggested Deploy',
+        [('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],
+        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.'
+    )
+    amount_tip=tooltip_html_variant(
+        'Suggested Deploy Amount',
+        [('Amount',fmt_sgd(deploy)),('Basis','Selected investible capital × cumulative deployment rule'),('Current Rule',f'{deploy_pct:.0%} cumulative')],
+        'Calculated from selected investible capital and the platform cumulative deployment rule.<br><br>Not a buy call, trading instruction, portfolio recommendation, or financial advice.',
+        icon_class='exec-info-dot-amount'
+    )
+    next_trigger_tip=tooltip_html_variant(
+        'Next Trigger',
+        [('Current Zone',zone),('Next Trigger',compact_next_trigger_label(zone)),('Basis','Structural drawdown threshold')],
+        'The next trigger shows the next cumulative deployment zone if structural drawdown reaches the stated threshold.',
+        icon_class='exec-info-dot-trigger'
+    )
+    index_tip=tooltip_html(
+        'Current Market Level',
+        [('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],
+        'The displayed level is the latest available close used by the platform for drawdown and allocation calculations.'
+    )
+    risk_tip=tooltip_html(
+        'Risk Regime Methodology',
+        [('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],
+        'Rules-based monitor combining drawdown, trend and macro inputs where applicable. It is a risk-condition indicator, not a crash prediction.'
+    )
+    z_tip=tooltip_html(
+        'Valuation Z-Score (OOS)',
+        [('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Z-score below -1'),('Normal','Z-score between -1 and +1'),('Expensive','Z-score above +1'),('Model','Expanding Window')],
+        'The mini chart splits the valuation curve into Attractive, Normal and Expensive zones. It supports context, not automatic deployment.'
+    )
+
+    structural_colour = zc if zone != 'HOLD / NO DEPLOYMENT' else SLATE
+    risk_colour=RED if alert=='CRASH RISK' else ORANGE if alert=='WARNING' else AMBER if alert=='WATCH' else GREEN
+    model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model'
+    hero_border, hero_bg, hero_soft = hero_colours_for_zone(zone)
+    deploy_bg, deploy_border = deploy_box_colours_for_zone(zone)
+
+    if deploy>0:
+        stance_pill=f'<div class="exec-pill exec-pill-action">✓ Deployment active · {deploy_pct:.0%} cumulative</div>'
+        deploy_sub=f'{deploy_pct:.0%} cumulative · {funding_source}'
+    else:
+        stance_pill='<div class="exec-pill exec-pill-hold">✓ Capital preserved · Next trigger near -8%</div>'
+        deploy_sub='No deployment triggered'
+
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
-    risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'
-    z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
-    recent_price=ud['Close'].tail(126).copy(); price_mini=svg_price_high_current(recent_price,BLUE,126,'',''); drawdown_mini=svg_price_high_current(recent_price,structural_colour,126,f'{peak:,.0f}',f'{close:,.0f}'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
-    next_trigger_compact=compact_next_trigger_label(zone); marker_label='Fully deployed' if next_trigger_compact=='Fully deployed' else f'Next: {next_trigger_compact}'
-    progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8))
-    stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
-    inflation=resolve_macro_value(index_label,'Inflation'); unemployment=resolve_macro_value(index_label,'Unemployment'); rates=resolve_macro_value(index_label,'Rates'); claims=resolve_macro_value(index_label,'Claims')
-    pmi_res=resolve_macro_value(index_label,'PMI') if index_label=='A-Share' else None
-    def _curve(v):
-        try:
-            if v is None or pd.isna(v): return 'N/A'
-            return f'{float(v):.2f}%'
-        except Exception: return 'N/A'
-    pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
-    pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
-    pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
-    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('source_type') in ['Owner-uploaded','Needs validation'] else 'Manual/Default'
-    rate_label=rate_card_label(index_label)
-    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
-    def _source_class(src): return 'source-official' if src=='Official API' else 'source-upload' if src=='Owner-uploaded' else 'source-na' if src=='N/A' else 'source-validation' if src=='Needs validation' else 'source-awaiting'
-    macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source',src),('Status',s),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(s)} <span class="source-pill {_source_class(src)}">{hesc(src)}</span></div></div>''' for n,v,s,src,diag in cards])
-    risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
-    st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger)}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Alignment Check {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
+    risk_value_class='red-value' if alert=='CRASH RISK' else 'amber-value' if alert in ['WARNING','WATCH'] else 'green-value'
+    z_value_class='green-value' if exec_valuation_colour in [GREEN, '#059669'] else 'red-value' if exec_valuation_colour == RED else 'amber-value' if exec_valuation_colour == ORANGE else ''
+
+    recent_price = ud['Close'].tail(126).copy()
+    drawdown_mini = svg_price_high_current(recent_price, structural_colour, limit=126, high_label=f'{peak:,.0f}', current_label=f'{close:,.0f}')
+    z_mini = svg_valuation_bell(exec_z_score if exec_z_score is not None else 0, exec_valuation_colour)
+    risk_mini = svg_risk_gauge(live_score, 'Scorecard')
+    next_trigger_compact = compact_next_trigger_label(zone)
+
+    st.markdown(f'''
+    <section class="exec-hero" style="--hero-border:{hero_border};--hero-bg:{hero_bg};--hero-soft-border:{hero_soft};--deploy-bg:{deploy_bg};--deploy-border:{deploy_border};">
+      <div>
+        <div class="exec-hero-eyebrow">Allocation Stance {stance_tip}</div>
+        <div class="exec-hero-title">Crash-Buy Decision ({hesc(index_label)}):<br>{hesc(zone)}</div>
+        {stance_pill}
+      </div>
+      <aside class="exec-deploy-box">
+        <div class="exec-deploy-label">Suggested Deploy {deploy_tip}</div>
+        <div class="exec-deploy-amount">{fmt_sgd_html(deploy)}{amount_tip}</div>
+        <div class="exec-deploy-sub">{hesc(deploy_sub)}</div>
+        <div class="exec-next-trigger">→ Next Trigger: <span class="exec-next-trigger-value">{hesc(next_trigger_compact)}</span>{next_trigger_tip}</div>
+      </aside>
+    </section>
+    ''', unsafe_allow_html=True)
+
+    kpi_html = f'''
+    <section class="exec-main-grid">
+      {exec_kpi_card(hesc(ticker) + ' · CURRENT MARKET LEVEL', f'{close:,.0f}', '', BLUE, tooltip=index_tip, mini_html='')}
+      {exec_kpi_card('CURRENT STRUCTURAL DRAWDOWN', f'{display_dd:.1f}%', f'Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}', structural_colour, tooltip=structural_tip, mini_html=drawdown_mini)}
+      {exec_kpi_card('VALUATION Z-SCORE (OOS)', z_display, hesc(exec_valuation_zone), exec_valuation_colour, tooltip=z_tip, mini_html=z_mini, value_class=z_value_class)}
+      {exec_kpi_card('RISK REGIME', hesc(alert), f'{hesc(model_note)} · Score {live_score:.0f}/100', risk_colour, tooltip=risk_tip, mini_html=risk_mini, value_class=risk_value_class)}
+    </section>
+    '''
+    st.markdown(kpi_html, unsafe_allow_html=True)
 
 def render_suggested(expanded=False):
-    suggested_title=f'💰 Calculation Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Calculation Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
-    def _render_suggested_content():
-        show_srs_row=(sel=='STI' and available_srs>0); show_cpf_row=(sel=='STI' and available_cpf>0)
-        if show_srs_row and show_cpf_row: buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
-        elif show_srs_row: buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
-        else: buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
-        display_reason=initial_reason if zone=='INITIAL BUY' else capital_reason
-        capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
-        if show_srs_row: capital_rows+=kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
-        if show_cpf_row: capital_rows+=kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
-        capital_rows+=kv('Reason',display_reason,SLATE)
-        ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'Cumulative deployment percentages by drawdown zone.')
-        if deploy<=0:
-            action_title='🧭 Current Action Plan'; action_class='xec-card xec-action-card compact'; action_html='<div>'+kv('Deploy now',fmt_sgd(0),SLATE)+kv('Capital stance','Preserved',GREEN)+kv('Next trigger',next_trigger,ORANGE)+kv('Action note','No active tranche until trigger conditions are met.',SLATE)+'</div>'
+    suggested_title = f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Suggested Deploy Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
+    with st.expander(suggested_title,expanded=expanded):
+        s1,s2,s3,s4=st.columns([1.05,1.15,1.05,1.25])
+        s1.markdown(f'<div class="light-card"><div style="font-weight:700; font-size:1.05rem; margin-bottom:8px;">📌 Suggested Deploy Basis</div><div style="color:#374151; margin-bottom:8px;">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div style="font-size:1.45rem; font-weight:800; color:#111827; margin:8px 0;">{current_currency_html()}{deploy:,.0f} = {current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div style="color:#6B7280; font-size:0.88rem;">Source: selected price data, structural drawdown formula, and sidebar capital inputs.</div></div>', unsafe_allow_html=True)
+        s2.markdown('#### 🏦 Capital Source Breakdown')
+        show_srs_row = (sel == 'STI' and available_srs > 0); show_cpf_row = (sel == 'STI' and available_cpf > 0)
+        if show_srs_row and show_cpf_row:
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
+        elif show_srs_row:
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
         else:
-            action_title='📦 Tranche Deployment Plan'; action_class='xec-card xec-action-card'; action_html='<div>'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>'
-        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>📌 Calculation Basis</h4><div class="xec-sub">Suggested Deploy = Available Deployable Capital × Deployment Rule</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{total_available:,.0f} × {deploy_pct:.0%}</div><div class="xec-note">Source: selected price data, structural drawdown formula, and sidebar capital inputs. This is the calculation basis, not a buy call.</div></div><div class="xec-card xec-action-card"><h4>🏦 Capital Source Breakdown</h4><div>{capital_rows}</div></div></section><section class="xec-action-grid"><div class="{action_class}"><h4>{action_title}</h4>{action_html}</div><div class="xec-card xec-action-card"><h4>🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
+            buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
+        display_reason = initial_reason if zone == 'INITIAL BUY' else capital_reason
+        if sel != 'STI' or (not show_srs_row and not show_cpf_row):
+            display_reason = display_reason.replace('SRS/CPF-OA are preserved for deeper drawdowns.','other funding sources are not included in the selected profile.').replace(' then SRS if cash is insufficient. CPF-OA remains reserved.',' first under the selected cash-only profile.').replace('cash, SRS and CPF-OA','cash').replace('using cash, SRS and CPF-OA above preserved floor','using selected investible cash')
+        capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
+        if show_srs_row: capital_rows += kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
+        if show_cpf_row: capital_rows += kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
+        capital_rows += kv('Reason',display_reason,SLATE)
+        s2.markdown('<div class="light-card">'+capital_rows+'</div>',unsafe_allow_html=True)
+        s3.markdown('#### 🧱 Tranche Deployment Plan')
+        if deploy<=0: s3.info('No tranche plan because Suggested Deploy is S$0 under current rule engine.')
+        else: s3.markdown('<div class="light-card">'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>',unsafe_allow_html=True)
+        ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'The ladder shows cumulative deployment percentages. Each deeper drawdown zone increases total deployed capital rather than adding unrelated new capital.')
+        s4.markdown(f'<h4 style="margin-bottom:0.4rem;">🧭 Deployment Ladder — Cumulative Investible Capital {ladder_tip}</h4>',unsafe_allow_html=True)
+        s4.markdown('<div class="light-card">'+kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)+'</div>',unsafe_allow_html=True)
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
-    if expanded: _render_suggested_content()
-    else:
-        with st.expander(suggested_title,expanded=False): _render_suggested_content()
 
 def render_assumptions():
     with st.expander('🧾 Assumptions & Limits — Methodology guardrails', expanded=False):
@@ -2195,7 +1852,7 @@ def run_render_loop():
             if active_section == section:
                 RENDERERS[section](expanded=True)
             else:
-                RENDERERS[section](expanded=True if active_section == '🧠 Executive Centre' else False)
+                RENDERERS[section](expanded=deploy>0 if active_section == '🧠 Executive Centre' else False)
             render_assumptions()
         elif active_section == section:
             RENDERERS[section](expanded=True)
