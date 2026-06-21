@@ -176,8 +176,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .exec-info-dot-trigger {width:12px;height:12px;font-size:7.5px;transform:translateY(-4px);}
 }
 
-/* v36z adapter diagnostics compact */
-.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
+/* v36z diagnostics-state-fix compact */
+.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -349,9 +349,13 @@ MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep'
 MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
 MACRO_DIAGNOSTICS={}
 
+def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
+    return {'Adapter':adapter,'Endpoint':endpoint,'Reached':bool(reached),'Rows':int(rows or 0),'Matched':matched or '', 'Latest':latest or '', 'Reason':reason or ''}
+
 def _diag(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
-    MACRO_DIAGNOSTICS[adapter]={'Adapter':adapter,'Endpoint':endpoint,'Reached':bool(reached),'Rows':int(rows or 0),'Matched':matched or '', 'Latest':latest or '', 'Reason':reason or ''}
-    return MACRO_DIAGNOSTICS[adapter]
+    row=_diag_row(adapter,endpoint,reached,rows,matched,latest,reason)
+    MACRO_DIAGNOSTICS[adapter]=row
+    return row
 
 def _clean_number(v):
     try:
@@ -364,23 +368,94 @@ def _clean_number(v):
 def _source_result(value,display,sub,source_type,date='',diagnostic=''):
     return {'value':value,'display':display,'sub':sub,'source_type':source_type,'date':date,'diagnostic':diagnostic}
 
-def _request_text(url, adapter, timeout=15):
+def _request_text(url, adapter, timeout=15, capture_global=True):
     headers={'User-Agent':'Mozilla/5.0 Global20Engine/1.0','Accept':'text/csv,application/json,text/plain,*/*'}
     try:
         req=urllib.request.Request(url,headers=headers)
         with urllib.request.urlopen(req,timeout=timeout) as resp: raw=resp.read()
         body=raw.decode('utf-8-sig',errors='replace')
-        _diag(adapter,url,True,0,'','',f'HTTP fetch ok; {len(body)} chars')
-        return body,''
+        row=_diag_row(adapter,url,True,0,'','',f'HTTP fetch ok; {len(body)} chars')
+        if capture_global: MACRO_DIAGNOSTICS[adapter]=row
+        return body,'',row
     except Exception as e:
-        _diag(adapter,url,False,0,'','',f'HTTP fetch failed: {e}')
-        return '',str(e)
+        row=_diag_row(adapter,url,False,0,'','',f'HTTP fetch failed: {e}')
+        if capture_global: MACRO_DIAGNOSTICS[adapter]=row
+        return '',str(e),row
+
+# -------- uncached diagnostics: does not rely on cached side effects --------
+def _test_fred_series(series_id):
+    url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
+    adapter=f'FRED {series_id}'
+    txt,err,row=_request_text(url,adapter,capture_global=False)
+    if not txt: return row
+    try:
+        df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
+        if df.empty or series_id not in df.columns: return _diag_row(adapter,url,True,0,'series column not matched','',f'Columns returned: {list(df.columns)[:8]}')
+        s=pd.to_numeric(df[series_id],errors='coerce').dropna()
+        latest='' if s.empty else f"{df.loc[s.index[-1],'DATE']}={s.iloc[-1]}"
+        return _diag_row(adapter,url,True,len(s),'series column matched',latest,'' if not s.empty else 'No numeric values')
+    except Exception as e: return _diag_row(adapter,url,True,0,'parser error','',f'CSV parse error: {e}')
+
+def _test_datagovsg_resource(resource_id):
+    url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
+    adapter=f'data.gov.sg {resource_id}'
+    txt,err,row=_request_text(url,adapter,capture_global=False)
+    if not txt: return row
+    try:
+        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
+        sample=''
+        if records:
+            first=records[0]
+            sample=str(first.get('Data Series') or first.get('data_series') or list(first.keys())[:5])[:120]
+        return _diag_row(adapter,url,True,len(records),'records',sample,'' if records else 'JSON ok but no records returned')
+    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
+
+def _test_singstat_table(table_id):
+    url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
+    adapter=f'SingStat {table_id}'
+    txt,err,row=_request_text(url,adapter,capture_global=False)
+    if not txt: return row
+    try:
+        payload=json.loads(txt); data=payload.get('Data',{}) or payload.get('data',{}) or {}
+        records=[]
+        if isinstance(data,dict): records=data.get('row') or data.get('records') or data.get('Records') or []
+        if not isinstance(records,list): records=[]
+        sample=''
+        if records:
+            first=records[0]
+            sample=str(first.get('rowText') or first.get('Data Series') or list(first.keys())[:6])[:120] if isinstance(first,dict) else str(first)[:120]
+        return _diag_row(adapter,url,True,len(records),'row/records',sample,'' if records else 'JSON ok but table rows not found')
+    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
+
+def _test_hkma_economic_statistics():
+    url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
+    adapter='HKMA economic statistics'
+    txt,err,row=_request_text(url,adapter,capture_global=False)
+    if not txt: return row
+    try:
+        payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
+        sample=''
+        if records: sample=str(list(records[0].keys())[:8])
+        return _diag_row(adapter,url,True,len(records),'records',sample,'' if records else 'JSON ok but no records')
+    except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
+
+def run_macro_adapter_diagnostics_uncached():
+    rows=[]
+    for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
+        rows.append(_test_fred_series(sid))
+    for rid in ['d_bdaff844e3ef89d39fceb962ff8f0791','d_b816a930bca0eb19fdf20fcbfcdd4c39','d_5fe5a4bb4a1ecc4d8a56a095832e2b24']:
+        rows.append(_test_datagovsg_resource(rid))
+    for tid in ['M213751','M182342']:
+        rows.append(_test_singstat_table(tid))
+    rows.append(_test_hkma_economic_statistics())
+    rows.append(_diag_row('NBS validation mode','data.stats.gov.cn / CFETS/PBC mapping',False,0,'validation mode','','NBS endpoint not promoted to production adapter in this file'))
+    return rows
 
 @st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
     url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
     adapter=f'FRED {series_id}'
-    txt,err=_request_text(url,adapter)
+    txt,err,row=_request_text(url,adapter,capture_global=True)
     if not txt: return pd.DataFrame()
     try:
         df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
@@ -421,7 +496,7 @@ def us_macro_dashboard_data():
 def fetch_datagovsg_records(resource_id):
     url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
     adapter=f'data.gov.sg {resource_id}'
-    txt,err=_request_text(url,adapter)
+    txt,err,row=_request_text(url,adapter,capture_global=True)
     if not txt: return []
     try:
         payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
@@ -435,7 +510,7 @@ def fetch_datagovsg_records(resource_id):
 def fetch_singstat_tabledata(table_id):
     url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
     adapter=f'SingStat {table_id}'
-    txt,err=_request_text(url,adapter)
+    txt,err,row=_request_text(url,adapter,capture_global=True)
     if not txt: return []
     try:
         payload=json.loads(txt); data=payload.get('Data',{}) or payload.get('data',{}) or {}
@@ -514,7 +589,7 @@ def singapore_macro_dashboard_data():
 def hkma_macro_dashboard_data():
     out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','hk_rate':None,'hk_rate_date':'N/A','inflation_status':'Official API'}
     adapter='HKMA economic statistics'; url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
-    txt,err=_request_text(url,adapter)
+    txt,err,row=_request_text(url,adapter,capture_global=True)
     if not txt: return out
     try:
         payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
@@ -638,15 +713,17 @@ def resolve_macro_value(market,indicator):
 
 def render_macro_adapter_diagnostics_sidebar():
     with st.expander('🧪 Macro Adapter Diagnostics', expanded=False):
-        st.caption('Shows endpoint reachability, returned rows, row/series matching, latest parsed value and failure reason.')
+        st.caption('Uncached tests stored in session state. This avoids cached side effects and Streamlit rerun resets.')
         if st.button('Run diagnostics now', use_container_width=True, key='run_macro_diag'):
             try:
-                _=us_macro_dashboard_data(); _=singapore_macro_dashboard_data(); _=hkma_macro_dashboard_data(); _=nbs_validation_dashboard_data()
-                st.success('Diagnostics executed for mapped adapters.')
-            except Exception as e: st.warning(f'Diagnostics execution issue: {e}')
-        rows=list(MACRO_DIAGNOSTICS.values())
+                st.session_state['macro_diagnostics']=run_macro_adapter_diagnostics_uncached()
+                st.success('Diagnostics executed and stored for this session.')
+            except Exception as e:
+                st.session_state['macro_diagnostics']=[_diag_row('Diagnostics runner','local',False,0,'runner error','',str(e))]
+                st.warning(f'Diagnostics execution issue: {e}')
+        rows=st.session_state.get('macro_diagnostics', [])
         if rows: st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
-        else: st.caption('No diagnostics captured yet. Use Run diagnostics now or refresh market data.')
+        else: st.caption('No diagnostics captured yet. Click Run diagnostics now.')
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
@@ -1533,7 +1610,6 @@ def render_suggested(expanded=False):
         elif show_srs_row: buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
         else: buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
         display_reason=initial_reason if zone=='INITIAL BUY' else capital_reason
-        if sel!='STI' or (not show_srs_row and not show_cpf_row): display_reason=display_reason.replace('SRS/CPF-OA are preserved for deeper drawdowns.','other funding sources are not included in the selected profile.').replace(' then SRS if cash is insufficient. CPF-OA remains reserved.',' first under the selected cash-only profile.').replace('cash, SRS and CPF-OA','cash').replace('using cash, SRS and CPF-OA above preserved floor','using selected investible cash')
         capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
         if show_srs_row: capital_rows+=kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
         if show_cpf_row: capital_rows+=kv('CPF-OA Deployment',fmt_sgd(cpf_deploy),SLATE)
