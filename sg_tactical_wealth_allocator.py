@@ -5,6 +5,7 @@ import json
 import os
 import urllib.request
 import urllib.parse
+import io
 from pathlib import Path
 from datetime import datetime
 
@@ -175,9 +176,8 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
   .exec-info-dot-trigger {width:12px;height:12px;font-size:7.5px;transform:translateY(-4px);}
 }
 
-
-/* v36z-macro-card-precision — terminology, rates basis, tooltip diagnostics */
-.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px;overflow:visible!important}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card{padding:22px 24px;border-left:5px solid var(--accent,#2563EB);min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.35rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important;transform:none!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(390px,calc(100vw - 56px))!important;max-width:min(390px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-kpi-grid .xec-card:nth-child(3) .exec-tooltip,.xec-kpi-grid .xec-card:nth-child(4) .exec-tooltip,.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}.xec-mini,.xec-mini svg{height:58px}}
+/* v36z adapter diagnostics compact */
+.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -340,13 +340,18 @@ def fetch_fred_pmi(series_id='NAPM'):
 
 
 
-# ------------------------- Macro source registry / official adapters / upload fallback -------------------------
+# ------------------------- Macro adapter diagnostics and defensive source fetch -------------------------
 MACRO_OVERRIDE_FILE=Path('macro_overrides.csv')
 US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
 MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
+MACRO_DIAGNOSTICS={}
+
+def _diag(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
+    MACRO_DIAGNOSTICS[adapter]={'Adapter':adapter,'Endpoint':endpoint,'Reached':bool(reached),'Rows':int(rows or 0),'Matched':matched or '', 'Latest':latest or '', 'Reason':reason or ''}
+    return MACRO_DIAGNOSTICS[adapter]
 
 def _clean_number(v):
     try:
@@ -359,16 +364,37 @@ def _clean_number(v):
 def _source_result(value,display,sub,source_type,date='',diagnostic=''):
     return {'value':value,'display':display,'sub':sub,'source_type':source_type,'date':date,'diagnostic':diagnostic}
 
+def _request_text(url, adapter, timeout=15):
+    headers={'User-Agent':'Mozilla/5.0 Global20Engine/1.0','Accept':'text/csv,application/json,text/plain,*/*'}
+    try:
+        req=urllib.request.Request(url,headers=headers)
+        with urllib.request.urlopen(req,timeout=timeout) as resp: raw=resp.read()
+        body=raw.decode('utf-8-sig',errors='replace')
+        _diag(adapter,url,True,0,'','',f'HTTP fetch ok; {len(body)} chars')
+        return body,''
+    except Exception as e:
+        _diag(adapter,url,False,0,'','',f'HTTP fetch failed: {e}')
+        return '',str(e)
+
 @st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
+    url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
+    adapter=f'FRED {series_id}'
+    txt,err=_request_text(url,adapter)
+    if not txt: return pd.DataFrame()
     try:
-        url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
-        df=pd.read_csv(url,parse_dates=['DATE'])
-        if df.empty or series_id not in df.columns: return pd.DataFrame()
+        df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
+        if df.empty or series_id not in df.columns:
+            _diag(adapter,url,True,0,'series column not matched','',f'Columns returned: {list(df.columns)[:8]}')
+            return pd.DataFrame()
         df=df.rename(columns={series_id:'Value'}).set_index('DATE')
         df['Value']=pd.to_numeric(df['Value'],errors='coerce')
-        return df.dropna()
-    except Exception:
+        df=df.dropna()
+        latest='' if df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+        _diag(adapter,url,True,len(df),'series column matched',latest,'' if not df.empty else 'CSV parsed but no numeric values')
+        return df
+    except Exception as e:
+        _diag(adapter,url,True,0,'parser error','',f'CSV parse error: {e}')
         return pd.DataFrame()
 
 @st.cache_data(ttl=21600)
@@ -393,29 +419,38 @@ def us_macro_dashboard_data():
 
 @st.cache_data(ttl=21600)
 def fetch_datagovsg_records(resource_id):
+    url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
+    adapter=f'data.gov.sg {resource_id}'
+    txt,err=_request_text(url,adapter)
+    if not txt: return []
     try:
-        url='https://data.gov.sg/api/action/datastore_search?resource_id='+urllib.parse.quote(resource_id)+'&limit=5000'
-        with urllib.request.urlopen(url,timeout=15) as req: payload=json.loads(req.read().decode('utf-8'))
-        return payload.get('result',{}).get('records',[])
-    except Exception:
+        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
+        _diag(adapter,url,True,len(records),'records',f'{len(records)} records','' if records else 'JSON ok but no records returned')
+        return records
+    except Exception as e:
+        _diag(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
         return []
 
 @st.cache_data(ttl=21600)
 def fetch_singstat_tabledata(table_id):
-    # Direct SingStat Table Builder route. Falls back silently if endpoint response shape differs.
+    url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
+    adapter=f'SingStat {table_id}'
+    txt,err=_request_text(url,adapter)
+    if not txt: return []
     try:
-        url=f'https://tablebuilder.singstat.gov.sg/api/table/tabledata/{table_id}'
-        with urllib.request.urlopen(url,timeout=15) as req: payload=json.loads(req.read().decode('utf-8'))
-        data=payload.get('Data',{}) or payload.get('data',{}) or {}
-        if isinstance(data,dict):
-            records=data.get('row') or data.get('records') or data.get('Records') or []
-            return records if isinstance(records,list) else []
-    except Exception:
+        payload=json.loads(txt); data=payload.get('Data',{}) or payload.get('data',{}) or {}
+        records=[]
+        if isinstance(data,dict): records=data.get('row') or data.get('records') or data.get('Records') or []
+        if not isinstance(records,list): records=[]
+        _diag(adapter,url,True,len(records),'row/records',f'{len(records)} rows','' if records else 'JSON ok but table rows not found')
+        return records
+    except Exception as e:
+        _diag(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
         return []
-    return []
 
 def _wide_period_values(row,freq='M'):
     out=[]
+    if not isinstance(row,dict): return out
     for k,v in row.items():
         if not isinstance(k,str): continue
         val=_clean_number(v); parts=k.strip().split()
@@ -426,55 +461,64 @@ def _wide_period_values(row,freq='M'):
             if q in [1,2,3,4]: out.append((pd.Timestamp(int(parts[0]),int(q)*3,1),k,val))
     return sorted(out,key=lambda x:x[0])
 
-def _pick_row(records,preferred_terms=None,avoid_terms=None):
+def _pick_row(records,preferred_terms=None,avoid_terms=None,adapter=''):
     preferred_terms=[t.lower() for t in (preferred_terms or [])]; avoid_terms=[t.lower() for t in (avoid_terms or [])]
     if not records: return None
     def label(r):
         for k in ['Data Series','data_series','data series','DataSeries','series','Series','rowText','row_text','label','title']:
-            if k in r: return str(r.get(k,''))
-        return ' '.join(str(x) for x in r.values())[:200]
+            if isinstance(r,dict) and k in r: return str(r.get(k,''))
+        return ' '.join(str(x) for x in (r.values() if isinstance(r,dict) else [r]))[:200]
+    sample=[label(r) for r in records[:5]]
     for r in records:
         lab=label(r).lower()
-        if all(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms): return r
+        if all(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms):
+            if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),label(r),'','')
+            return r
     for r in records:
         lab=label(r).lower()
-        if any(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms): return r
+        if any(t in lab for t in preferred_terms) and not any(t in lab for t in avoid_terms):
+            if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),label(r),'','')
+            return r
+    if adapter: _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(records),'not matched','',f'First row labels: {sample}')
     return records[0]
 
 @st.cache_data(ttl=21600)
 def singapore_macro_dashboard_data():
     out={'inflation_yoy':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','sg_rate':None,'sg_rate_date':'N/A','diagnostic':''}
     try:
-        # Prefer data.gov.sg datastore for wide table; fallback route retained via SingStat table id.
-        recs=fetch_datagovsg_records('d_bdaff844e3ef89d39fceb962ff8f0791') or fetch_singstat_tabledata('M213751')
-        row=_pick_row(recs,['all items'],['less','excluding']) or _pick_row(recs,['overall'])
+        recs=fetch_datagovsg_records('d_bdaff844e3ef89d39fceb962ff8f0791'); adapter='data.gov.sg d_bdaff844e3ef89d39fceb962ff8f0791'
+        if not recs: recs=fetch_singstat_tabledata('M213751'); adapter='SingStat M213751'
+        row=_pick_row(recs,['all items'],['less','excluding'],adapter) or _pick_row(recs,['overall'],adapter=adapter)
         vals=_wide_period_values(row or {},'M')
         if len(vals)>=13:
             latest_dt,_,latest_val=vals[-1]; prior=[x for x in vals if x[0].year==latest_dt.year-1 and x[0].month==latest_dt.month]
-            if prior and prior[-1][2]: out['inflation_yoy']=((latest_val/prior[-1][2])-1)*100; out['inflation_date']=latest_dt.strftime('%b %Y')
+            if prior and prior[-1][2]: out['inflation_yoy']=((latest_val/prior[-1][2])-1)*100; out['inflation_date']=latest_dt.strftime('%b %Y'); _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'CPI row/date matched',f'{out["inflation_date"]}={out["inflation_yoy"]:.2f}%','')
         elif recs: out['diagnostic']='Singapore CPI source reached, but CPI row/date parser did not return usable series.'
     except Exception as e: out['diagnostic']=f'Singapore CPI adapter error: {e}'
     try:
-        recs=fetch_datagovsg_records('d_b816a930bca0eb19fdf20fcbfcdd4c39') or fetch_singstat_tabledata('M182342')
-        row=_pick_row(recs,['overall']) or _pick_row(recs,['total'])
+        recs=fetch_datagovsg_records('d_b816a930bca0eb19fdf20fcbfcdd4c39'); adapter='data.gov.sg d_b816a930bca0eb19fdf20fcbfcdd4c39'
+        if not recs: recs=fetch_singstat_tabledata('M182342'); adapter='SingStat M182342'
+        row=_pick_row(recs,['overall'],adapter=adapter) or _pick_row(recs,['total'],adapter=adapter)
         vals=_wide_period_values(row or {},'Q')
-        if vals: out['jobs_rate']=vals[-1][2]; out['jobs_date']=vals[-1][1]
+        if vals: out['jobs_rate']=vals[-1][2]; out['jobs_date']=vals[-1][1]; _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'unemployment row/date matched',f'{out["jobs_date"]}={out["jobs_rate"]}','')
     except Exception: pass
     try:
-        recs=fetch_datagovsg_records('d_5fe5a4bb4a1ecc4d8a56a095832e2b24')
-        row=_pick_row(recs,['prime lending']) or _pick_row(recs,['sora']) or _pick_row(recs,['savings'])
+        recs=fetch_datagovsg_records('d_5fe5a4bb4a1ecc4d8a56a095832e2b24'); adapter='data.gov.sg d_5fe5a4bb4a1ecc4d8a56a095832e2b24'
+        row=_pick_row(recs,['prime lending'],adapter=adapter) or _pick_row(recs,['sora'],adapter=adapter) or _pick_row(recs,['savings'],adapter=adapter)
         vals=_wide_period_values(row or {},'M')
-        if vals: out['sg_rate']=vals[-1][2]; out['sg_rate_date']=vals[-1][1]
+        if vals: out['sg_rate']=vals[-1][2]; out['sg_rate_date']=vals[-1][1]; _diag(adapter,MACRO_DIAGNOSTICS.get(adapter,{}).get('Endpoint',''),True,len(recs),'rates row/date matched',f'{out["sg_rate_date"]}={out["sg_rate"]}','')
     except Exception: pass
     return out
 
 @st.cache_data(ttl=21600)
 def hkma_macro_dashboard_data():
     out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','hk_rate':None,'hk_rate_date':'N/A','inflation_status':'Official API'}
+    adapter='HKMA economic statistics'; url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
+    txt,err=_request_text(url,adapter)
+    if not txt: return out
     try:
-        url='https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics?offset=0'
-        with urllib.request.urlopen(url,timeout=15) as req: payload=json.loads(req.read().decode('utf-8'))
-        records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
+        payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
+        _diag(adapter,url,True,len(records),'records',f'{len(records)} records','' if records else 'JSON ok but no records')
         if records:
             df=pd.DataFrame(records).copy()
             if 'end_of_month' in df.columns: df['end_of_month']=pd.to_datetime(df['end_of_month'],errors='coerce'); df=df.sort_values('end_of_month').reset_index(drop=True)
@@ -486,11 +530,13 @@ def hkma_macro_dashboard_data():
             if 'unemploy_rate' in df.columns:
                 vals=pd.to_numeric(df['unemploy_rate'],errors='coerce'); valid=df.loc[vals.notna()].copy(); valid['unemploy_rate']=vals[vals.notna()].values
                 if len(valid)>0: out['jobs_rate']=float(valid['unemploy_rate'].iloc[-1]); out['jobs_date']=valid['end_of_month'].iloc[-1].strftime('%b %Y') if 'end_of_month' in valid.columns and pd.notna(valid['end_of_month'].iloc[-1]) else 'Latest'
-    except Exception: pass
+    except Exception as e: _diag(adapter,url,True,0,'parser error','',f'HKMA parser error: {e}')
     return out
 
 @st.cache_data(ttl=21600)
-def nbs_validation_dashboard_data(): return {'inflation_value':None,'jobs_rate':None,'pmi_value':None,'cn_rate':None,'status':'Needs validation'}
+def nbs_validation_dashboard_data():
+    _diag('NBS validation mode','data.stats.gov.cn / CFETS/PBC mapping',False,0,'validation mode','','NBS endpoint not promoted to production adapter in this file')
+    return {'inflation_value':None,'jobs_rate':None,'pmi_value':None,'cn_rate':None,'status':'Needs validation'}
 
 def _normalise_macro_upload(df):
     required=['market','indicator','date','value','unit','source']; df=df.copy(); df.columns=[str(c).strip().lower() for c in df.columns]
@@ -529,7 +575,6 @@ def rate_card_label(market):
     if market=='A-Share': return 'China Rates'
     if market in USD_PROXY_MARKETS: return 'USD Rates Proxy'
     return 'Rates'
-
 def rate_basis_text(market):
     if market in US_MARKETS: return 'Basis: US 10-year Treasury constant maturity yield. Preferred source: FRED DGS10.'
     if market=='STI': return 'Basis: Singapore-dollar interest-rate environment. Preferred basis: MAS/SingStat SORA or official domestic interest-rate series.'
@@ -537,14 +582,10 @@ def rate_basis_text(market):
     if market=='A-Share': return 'Basis: China lending-rate benchmark. Preferred basis: CFETS/PBC 1-year Loan Prime Rate, validation mode.'
     if market in USD_PROXY_MARKETS: return 'Basis: US 10-year Treasury yield used as global USD rates / discount-rate proxy.'
     return 'Basis: selected market interest-rate input where mapped.'
-
 def macro_tooltip_text(display_name, market):
-    if display_name=='Unemployment':
-        return 'Basis: official unemployment-rate series, not employment level. US uses FRED UNRATE; Singapore uses SingStat/MOM unemployment where available; Hong Kong uses HKMA unemployment; China remains NBS validation mode.'
-    if display_name=='Claims':
-        return 'Basis: US Initial Jobless Claims / Initial Claims. US markets use FRED ICSA as a labour-stress indicator. Non-US markets show N/A by default unless a comparable official claims series is deliberately mapped.'
-    if display_name in ['US 10Y Yield','SG Rates','HK Rates','China Rates','USD Rates Proxy','Rates']:
-        return rate_basis_text(market)+' Source priority: official API/table, owner-upload fallback, then live-fetch diagnostic.'
+    if display_name=='Unemployment': return 'Basis: official unemployment-rate series, not employment level. US uses FRED UNRATE; Singapore uses SingStat/MOM unemployment where available; Hong Kong uses HKMA unemployment; China remains NBS validation mode.'
+    if display_name=='Claims': return 'Basis: US Initial Jobless Claims / Initial Claims. US markets use FRED ICSA as a labour-stress indicator. Non-US markets show N/A by default unless a comparable official claims series is deliberately mapped.'
+    if display_name in ['US 10Y Yield','SG Rates','HK Rates','China Rates','USD Rates Proxy','Rates']: return rate_basis_text(market)+' Source priority: official API/table, owner-upload fallback, then live-fetch diagnostic.'
     return 'Macro data source priority: official API/table, owner-upload fallback, then diagnostic awaiting state.'
 
 def resolve_macro_value(market,indicator):
@@ -555,14 +596,14 @@ def resolve_macro_value(market,indicator):
         if market in US_MARKETS or market in USD_PROXY_MARKETS:
             data=us_macro_dashboard_data()
             if data.get('dgs10') is not None: return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · FRED DGS10 · {data['dgs10_date']}",'Official API',data['dgs10_date'])
-            return _awaiting_live('FRED DGS10')
+            return _awaiting_live('FRED DGS10', MACRO_DIAGNOSTICS.get('FRED DGS10',{}).get('Reason','FRED DGS10 returned no usable value'))
         if market=='STI':
             data=singapore_macro_dashboard_data()
             if data.get('sg_rate') is not None: return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
             return _awaiting_live('MAS/SingStat SORA or domestic rates')
         if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
         if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
-        return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Rates','Local rates adapter'))
+        return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get('Rates','Local rates adapter'),'Awaiting')
     if market in US_MARKETS:
         data=us_macro_dashboard_data()
         if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
@@ -593,12 +634,23 @@ def resolve_macro_value(market,indicator):
         return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'NBS official adapter'))
     uploaded=get_uploaded_macro_value(market,indicator)
     if uploaded is not None: return _uploaded_result(uploaded)
-    return _source_result(None,'Awaiting input',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
+    return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
+
+def render_macro_adapter_diagnostics_sidebar():
+    with st.expander('🧪 Macro Adapter Diagnostics', expanded=False):
+        st.caption('Shows endpoint reachability, returned rows, row/series matching, latest parsed value and failure reason.')
+        if st.button('Run diagnostics now', use_container_width=True, key='run_macro_diag'):
+            try:
+                _=us_macro_dashboard_data(); _=singapore_macro_dashboard_data(); _=hkma_macro_dashboard_data(); _=nbs_validation_dashboard_data()
+                st.success('Diagnostics executed for mapped adapters.')
+            except Exception as e: st.warning(f'Diagnostics execution issue: {e}')
+        rows=list(MACRO_DIAGNOSTICS.values())
+        if rows: st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        else: st.caption('No diagnostics captured yet. Use Run diagnostics now or refresh market data.')
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
         st.caption('Source priority: Official API/table → owner-upload CSV/XLSX → diagnostic awaiting state. Claims is US-only; non-US markets show N/A.')
-        st.caption('Terminology: Jobs is displayed as Unemployment because the mapped basis is unemployment-rate series. Rates are market-specific and include basis in tooltip.')
         st.caption('Upload fallback columns: market, indicator, date, value, unit, source, source_type, notes')
         uploaded=st.file_uploader('Upload macro CSV/XLSX fallback',type=['csv','xlsx'],key='macro_upload_file')
         if uploaded is not None:
@@ -1410,6 +1462,7 @@ with st.sidebar:
     st.markdown('---')
     render_owner_mode_sidebar()
     render_macro_data_manager_sidebar()
+    render_macro_adapter_diagnostics_sidebar()
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
@@ -1445,12 +1498,15 @@ def render_executive():
     index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'Latest available close used for drawdown and allocation calculations.')
     risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Risk-condition indicator, not a crash prediction.')
     z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Below -1'),('Normal','-1 to +1'),('Expensive','Above +1')],'Context only; not automatic deployment.')
-    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API/table → owner-upload → diagnostic awaiting state'),('Unemployment','Displayed name for unemployment-rate basis'),('Claims','US Initial Jobless Claims; US-only'),('Rates','Market-specific basis shown in each tooltip')],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
+    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API/table → owner-upload → diagnostic awaiting state'),('Diagnostics','See Macro Adapter Diagnostics in sidebar'),('Claims','US Initial Jobless Claims; US-only'),('Rates','Market-specific basis shown in each tooltip')],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
     structural_colour=zc if zone!='HOLD / NO DEPLOYMENT' else SLATE; hero_border,hero_bg,hero_soft=hero_colours_for_zone(zone)
-    z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'; risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'; z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
+    z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
+    risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'
+    z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
     recent_price=ud['Close'].tail(126).copy(); price_mini=svg_price_high_current(recent_price,BLUE,126,'',''); drawdown_mini=svg_price_high_current(recent_price,structural_colour,126,f'{peak:,.0f}',f'{close:,.0f}'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
     next_trigger_compact=compact_next_trigger_label(zone); marker_label='Fully deployed' if next_trigger_compact=='Fully deployed' else f'Next: {next_trigger_compact}'
-    progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8)); stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
+    progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8))
+    stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
     inflation=resolve_macro_value(index_label,'Inflation'); unemployment=resolve_macro_value(index_label,'Unemployment'); rates=resolve_macro_value(index_label,'Rates'); claims=resolve_macro_value(index_label,'Claims')
     pmi_res=resolve_macro_value(index_label,'PMI') if index_label=='A-Share' else None
     def _curve(v):
