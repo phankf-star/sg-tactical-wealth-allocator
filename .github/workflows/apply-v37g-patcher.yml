@@ -1,1 +1,38 @@
 
+name: Apply v37g patcher
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply-patcher:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Backup current app file
+        run: |
+          cp sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator_v37f_backup.py
+
+      - name: Run v37g patcher against existing GitHub app file
+        run: |
+          python Global20Engine_v37g_patcher.py sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator_v37g.py
+
+      - name: Commit generated v37g file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sg_tactical_wealth_allocator_v37g.py sg_tactical_wealth_allocator_v37f_backup.py
+          git commit -m "Generate v37g patched app file" || echo "No changes to commit"
+          git push
+
