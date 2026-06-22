@@ -1,17 +1,15 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v37d — patched from v37b on 2026-06-22
-# Macro adapter changes only:
-#   • NEW: fetch_dbnomics_fred_mirror, fetch_yahoo_us_10y, fetch_fred_data_page_series
-#   • MOD: fetch_fred_series cascades FRED graph CSV → FRED /data → DBnomics
-#   • MOD: us_macro_dashboard_data prefers Yahoo ^TNX for US 10Y
-#   • MOD: resolve_macro_value US rates branch shows dynamic source
-#   • MOD: diagnostics include FRED /data + DBnomics + Yahoo tests
-# UI / scoring / valuation / crash analytics: unchanged from v37b.
+# Global20Engine v37e — patched from v37b on 2026-06-22
+# Major change: web-based Monthly Macro Pack Generator in Macro Data Manager.
+# Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
+# PMI included with multi-source fallback chains for US, SG, HK, CN, MY, JP.
+# UI / scoring / valuation / crash analytics otherwise preserved from v37b.
 # ─────────────────────────────────────────────────────────────────────────────
 
 import math
 import time
 import json
+import re
 import os
 import urllib.request
 import urllib.parse
@@ -349,7 +347,7 @@ def fetch_fred_pmi(series_id='NAPM'):
         return pd.DataFrame()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37d PATCH 1 — NEW fallback fetchers
+# v37e PATCH 1 — Defensive macro source fetchers and web-pack utilities
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=21600)
 def fetch_dbnomics_fred_mirror(series_id):
@@ -368,8 +366,6 @@ def fetch_dbnomics_fred_mirror(series_id):
             continue
         try:
             payload = json.loads(txt)
-            # DBnomics can return either {'series': {'docs': [...]}} or direct tabular structures,
-            # depending on endpoint/provider shape. Support the common structures defensively.
             docs = payload.get('series', {}).get('docs', []) if isinstance(payload.get('series'), dict) else []
             if docs:
                 doc = docs[0]
@@ -418,8 +414,7 @@ def fetch_yahoo_us_10y():
 
 @st.cache_data(ttl=21600)
 def fetch_fred_data_page_series(series_id):
-    """Second fallback: FRED public /data/<series_id> text table.
-    This route does not require an API key and is useful when fredgraph.csv is unavailable."""
+    """Fallback: FRED public /data/<series_id> text table."""
     url = f'https://fred.stlouisfed.org/data/{series_id}'
     adapter = f'FRED data/{series_id}'
     txt, err, row = _request_text(url, adapter, capture_global=True)
@@ -457,7 +452,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'Nasdaq':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'DJIA':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -568,10 +563,8 @@ def _test_yahoo_tnx():
 
 def run_macro_adapter_diagnostics_uncached():
     rows = []
-    # Direct FRED graph CSV tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         rows.append(_test_fred_series(sid))
-    # v37d: FRED public /data text-table fallback tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         try:
             df = fetch_fred_data_page_series(sid)
@@ -579,10 +572,8 @@ def run_macro_adapter_diagnostics_uncached():
             rows.append(_diag_row(f'FRED data/{sid}', f'https://fred.stlouisfed.org/data/{sid}', df is not None and not df.empty, 0 if df is None else len(df), 'fallback data page', latest, '' if df is not None and not df.empty else 'No rows parsed'))
         except Exception as e:
             rows.append(_diag_row(f'FRED data/{sid}', f'https://fred.stlouisfed.org/data/{sid}', False, 0, 'fallback error', '', str(e)))
-    # DBnomics FRED-mirror fallback tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         rows.append(_test_dbnomics_fred(sid))
-    # Yahoo US 10Y preferred source test
     rows.append(_test_yahoo_tnx())
     for rid in ['d_bdaff844e3ef89d39fceb962ff8f0791','d_b816a930bca0eb19fdf20fcbfcdd4c39','d_5fe5a4bb4a1ecc4d8a56a095832e2b24']:
         rows.append(_test_datagovsg_resource(rid))
@@ -630,30 +621,24 @@ def us_macro_dashboard_data():
     unrate = fetch_fred_series('UNRATE')
     claims = fetch_fred_series('ICSA')
     yahoo_10y_val, yahoo_10y_date = fetch_yahoo_us_10y()
-    out = {'inflation_yoy': None, 'inflation_date': 'N/A',
-           'jobs_rate': None, 'jobs_date': 'N/A',
-           'claims_k': None, 'claims_date': 'N/A',
-           'dgs10': None, 'dgs10_date': 'N/A', 'dgs10_source': 'N/A'}
+    out = {'inflation_yoy': None, 'inflation_date': 'N/A', 'jobs_rate': None, 'jobs_date': 'N/A', 'claims_k': None, 'claims_date': 'N/A', 'dgs10': None, 'dgs10_date': 'N/A', 'dgs10_source': 'N/A'}
     try:
         if len(cpi) >= 13:
             latest = float(cpi['Value'].iloc[-1]); prior = float(cpi['Value'].iloc[-13])
             if prior:
                 out['inflation_yoy'] = ((latest/prior)-1)*100
                 out['inflation_date'] = pd.Timestamp(cpi.index[-1]).strftime('%b %Y')
-    except Exception:
-        pass
+    except Exception: pass
     try:
         if not unrate.empty:
             out['jobs_rate'] = float(unrate['Value'].iloc[-1])
             out['jobs_date'] = pd.Timestamp(unrate.index[-1]).strftime('%b %Y')
-    except Exception:
-        pass
+    except Exception: pass
     try:
         if not claims.empty:
             out['claims_k'] = float(claims['Value'].iloc[-1]) / 1000.0
             out['claims_date'] = pd.Timestamp(claims.index[-1]).strftime('%d %b %Y')
-    except Exception:
-        pass
+    except Exception: pass
     if yahoo_10y_val is not None:
         out['dgs10'] = yahoo_10y_val
         out['dgs10_date'] = yahoo_10y_date
@@ -665,8 +650,7 @@ def us_macro_dashboard_data():
                 out['dgs10'] = float(dgs10['Value'].iloc[-1])
                 out['dgs10_date'] = pd.Timestamp(dgs10.index[-1]).strftime('%d %b %Y')
                 out['dgs10_source'] = 'FRED DGS10'
-        except Exception:
-            pass
+        except Exception: pass
     return out
 
 @st.cache_data(ttl=21600)
@@ -815,7 +799,7 @@ def get_uploaded_macro_value(market,indicator):
     return {'value':float(r['value']),'date':str(r.get('date','')),'unit':str(r.get('unit','')),'source':str(r.get('source','Owner-uploaded')),'source_type':str(r.get('source_type','Owner-uploaded'))}
 def _uploaded_result(uploaded):
     unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
-    return _source_result(uploaded['value'],display,f"Owner-uploaded · {uploaded.get('source','')} · {uploaded.get('date','')}",'Owner-uploaded',uploaded.get('date',''))
+    return _source_result(uploaded['value'],display,f"{uploaded.get('source_type','Owner-uploaded')} · {uploaded.get('source','')} · {uploaded.get('date','')}",uploaded.get('source_type','Owner-uploaded'),uploaded.get('date',''))
 def _awaiting_live(source_label, diagnostic='Live fetch unavailable or parser returned no usable value.'):
     return _source_result(None,'Live fetch unavailable',source_label,'Awaiting',diagnostic=diagnostic)
 def _awaiting_validation(source_label): return _source_result(None,'Awaiting validation',source_label,'Needs validation',diagnostic='Official adapter is mapped but still requires runtime validation.')
@@ -843,10 +827,13 @@ def macro_tooltip_text(display_name, market):
 def resolve_macro_value(market,indicator):
     if indicator=='Claims' and market not in US_MARKETS:
         return _source_result(None,'N/A','Not applicable for this market','N/A')
+    # v37e: generated/applied pack and uploaded pack are source-of-truth before live adapters.
+    uploaded=get_uploaded_macro_value(market,indicator)
+    if uploaded is not None:
+        return _uploaded_result(uploaded)
+    if indicator=='PMI':
+        return _source_result(None,'Awaiting pack',MACRO_SOURCE_REGISTRY.get(market,{}).get('PMI','Monthly macro pack PMI'),'Awaiting',diagnostic='PMI is now resolved from generated/uploaded monthly macro pack first; default/session PMI remains display fallback only.')
     if indicator=='Rates':
-        uploaded=get_uploaded_macro_value(market,'Rates')
-        if uploaded is not None:
-            return _uploaded_result(uploaded)
         if market in US_MARKETS or market in USD_PROXY_MARKETS:
             data=us_macro_dashboard_data()
             if data.get('dgs10') is not None:
@@ -858,10 +845,8 @@ def resolve_macro_value(market,indicator):
             if data.get('sg_rate') is not None:
                 return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
             return _awaiting_live('MAS/SingStat SORA or domestic rates')
-        if market=='HSI':
-            return _awaiting_live('HKMA HIBOR / base-rate related data')
-        if market=='A-Share':
-            return _awaiting_validation('CFETS/PBC 1Y LPR')
+        if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
+        if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
         return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get('Rates','Local rates adapter'),'Awaiting')
     if market in US_MARKETS:
         data=us_macro_dashboard_data()
@@ -871,9 +856,6 @@ def resolve_macro_value(market,indicator):
             return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · FRED UNRATE · {data['jobs_date']}",'Official API',data['jobs_date'])
         if indicator=='Claims' and data.get('claims_k') is not None:
             return _source_result(data['claims_k'],f"{data['claims_k']:.0f}k",f"Official API · FRED ICSA · {data['claims_date']}",'Official API',data['claims_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None:
-            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'FRED'))
     if market=='STI' and indicator in ['Inflation','Jobs','Unemployment']:
         data=singapore_macro_dashboard_data()
@@ -881,9 +863,6 @@ def resolve_macro_value(market,indicator):
             return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · SingStat CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
         if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None:
             return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · SingStat/MOM unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None:
-            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'SingStat official adapter'), data.get('diagnostic','Live fetch unavailable or row parser returned no usable value.'))
     if market=='HSI' and indicator in ['Inflation','Jobs','Unemployment']:
         data=hkma_macro_dashboard_data()
@@ -892,20 +871,211 @@ def resolve_macro_value(market,indicator):
             return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
         if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None:
             return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None:
-            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'HK official adapter'))
-    if market=='A-Share' and indicator in ['Inflation','Jobs','Unemployment','PMI']:
-        uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None:
-            return _uploaded_result(uploaded)
+    if market=='A-Share' and indicator in ['Inflation','Jobs','Unemployment']:
         return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'NBS official adapter'))
-    uploaded=get_uploaded_macro_value(market,indicator)
-    if uploaded is not None:
-        return _uploaded_result(uploaded)
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 
+# ─────────────────────────────────────────────────────────────────────────────
+# v37e — Web-based monthly macro pack generator
+# ─────────────────────────────────────────────────────────────────────────────
+MACRO_PACK_REQUIRED_COLUMNS = ['market','indicator','date','value','unit','source','source_type','notes']
+MARKET_ALIAS_TO_PLATFORM = {'US':['S&P 500','Nasdaq','DJIA'], 'SG':['STI'], 'HK':['HSI'], 'CN':['A-Share'], 'MY':['KLSE'], 'JP':['Nikkei 225'], 'GLOBAL':['Gold','Bitcoin']}
+PLATFORM_TO_UPLOAD_ALIAS = {v:k for k, vals in MARKET_ALIAS_TO_PLATFORM.items() for v in vals}
+
+PMI_PRIMARY_MAP = {
+    'US': {'name':'ISM Manufacturing PMI','preferred_date':'month'},
+    'SG': {'name':'SIPMM Singapore Manufacturing PMI','preferred_date':'month'},
+    'HK': {'name':'S&P Global Hong Kong SAR PMI','preferred_date':'month'},
+    'CN': {'name':'NBS Manufacturing PMI','preferred_date':'month'},
+    'MY': {'name':'S&P Global Malaysia Manufacturing PMI','preferred_date':'month'},
+    'JP': {'name':'au Jibun Bank Japan Manufacturing PMI','preferred_date':'month'},
+}
+
+PMI_SOURCE_CHAINS = {
+    'US': [
+        {'rank':1,'name':'FRED NAPM / ISM PMI','type':'Official / Pack','kind':'fred_pmi','source_label':'ISM Manufacturing PMI'},
+        {'rank':2,'name':'Investing.com ISM Manufacturing PMI calendar','type':'Calendar / Pack','kind':'html_patterns','url':'https://www.investing.com/economic-calendar/ism-manufacturing-pmi-173','patterns':[r'Actual\s*([0-9]+(?:\.[0-9]+)?)', r'May\s+\d{1,2},\s+2026.*?Actual\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'ISM Manufacturing PMI'},
+    ],
+    'SG': [
+        {'rank':1,'name':'SIPMM official Singapore PMI page','type':'Official / Pack','kind':'html_patterns','url':'https://sipmm.edu.sg/pmi/','patterns':[r'Singapore PMI[^0-9]{0,80}([0-9]{2}\.[0-9])', r'Manufacturing PMI[^0-9]{0,80}([0-9]{2}\.[0-9])'],'source_label':'SIPMM Singapore Manufacturing PMI'},
+        {'rank':2,'name':'Investing.com Singapore PMI calendar','type':'Calendar / Pack','kind':'html_patterns','url':'https://www.investing.com/economic-calendar/singaporean-pmi-792','patterns':[r'Actual\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'SIPMM Singapore Manufacturing PMI'},
+        {'rank':3,'name':'MQL5 Singapore PMI calendar','type':'Calendar / Pack','kind':'html_patterns','url':'https://www.mql5.com/en/economic-calendar/singapore/sippm-manufacturing-pmi','patterns':[r'May\s+2026\s+([0-9]+(?:\.[0-9]+)?)', r'Last release[^0-9]{0,120}([0-9]+(?:\.[0-9]+)?)'],'source_label':'SIPMM Singapore Manufacturing PMI'},
+    ],
+    'HK': [
+        {'rank':1,'name':'S&P Global Hong Kong SAR PMI release/search page','type':'Official / Pack','kind':'html_patterns','url':'https://www.pmi.spglobal.com/Public/Home/PressRelease','patterns':[r'Hong Kong SAR PMI[^0-9]{0,120}([0-9]{2}\.[0-9])'],'source_label':'S&P Global Hong Kong SAR PMI'},
+        {'rank':2,'name':'Trading Economics Hong Kong PMI page','type':'Calendar / Pack','kind':'html_patterns','url':'https://tradingeconomics.com/hong-kong/manufacturing-pmi','patterns':[r'rose to\s*([0-9]+(?:\.[0-9]+)?)', r'increased to\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'S&P Global Hong Kong SAR PMI'},
+        {'rank':3,'name':'MQL5 Hong Kong PMI calendar','type':'Calendar / Pack','kind':'html_patterns','url':'https://www.mql5.com/en/economic-calendar/hong-kong/nikkei-pmi','patterns':[r'May\s+2026\s+([0-9]+(?:\.[0-9]+)?)', r'Last release[^0-9]{0,120}([0-9]+(?:\.[0-9]+)?)'],'source_label':'S&P Global Hong Kong SAR PMI'},
+    ],
+    'CN': [
+        {'rank':1,'name':'NBS China PMI official release','type':'Official / Pack','kind':'html_patterns','url':'https://www.stats.gov.cn/english/PressRelease/202606/t20260601_1963851.html','patterns':[r'PMI[^0-9]{0,60}was\s*([0-9]+(?:\.[0-9]+)?)\s*%', r'manufacturing industry was\s*([0-9]+(?:\.[0-9]+)?)%'],'source_label':'NBS Manufacturing PMI'},
+        {'rank':2,'name':'State Council China PMI mirror','type':'Calendar / Pack','kind':'html_patterns','url':'https://english.www.gov.cn/archive/statistics/202605/31/content_WS6a1be28bc6d00ca5f9a0b582.html','patterns':[r'stood at\s*([0-9]+(?:\.[0-9]+)?)', r'PMI[^0-9]{0,80}([0-9]+(?:\.[0-9]+)?)'],'source_label':'NBS Manufacturing PMI'},
+        {'rank':3,'name':'Trading Economics China NBS PMI page','type':'Calendar / Pack','kind':'html_patterns','url':'https://tradingeconomics.com/china/business-confidence','patterns':[r'edged down to\s*([0-9]+(?:\.[0-9]+)?)', r'decreased to\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'NBS Manufacturing PMI'},
+    ],
+    'MY': [
+        {'rank':1,'name':'S&P Global Malaysia Manufacturing PMI release','type':'Official / Pack','kind':'html_patterns','url':'https://www.pmi.spglobal.com/Public/Home/PressRelease/46f012a13a274bf5b4db5bc6f3bca946','patterns':[r'dropped to\s*([0-9]+(?:\.[0-9]+)?)', r'Manufacturing Purchasing Managers.*?posted\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'S&P Global Malaysia Manufacturing PMI'},
+        {'rank':2,'name':'Trading Economics Malaysia PMI page','type':'Calendar / Pack','kind':'html_patterns','url':'https://tradingeconomics.com/malaysia/manufacturing-pmi','patterns':[r'decreased to\s*([0-9]+(?:\.[0-9]+)?)', r'declined to\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'S&P Global Malaysia Manufacturing PMI'},
+    ],
+    'JP': [
+        {'rank':1,'name':'S&P Global / au Jibun Bank release','type':'Official / Pack','kind':'html_patterns','url':'https://www.pmi.spglobal.com/Public/Home/PressRelease/9fe04d02e2f545038afb0d8fb5884daa','patterns':[r'increased from\s*[0-9]+(?:\.[0-9]+)?\s*in April to\s*([0-9]+(?:\.[0-9]+)?)', r'PMI[^0-9]{0,120}([0-9]{2}\.[0-9])'],'source_label':'au Jibun Bank Japan Manufacturing PMI'},
+        {'rank':2,'name':'Trading Economics Japan PMI page','type':'Calendar / Pack','kind':'html_patterns','url':'https://tradingeconomics.com/japan/manufacturing-pmi','patterns':[r'confirmed at\s*([0-9]+(?:\.[0-9]+)?)', r'decreased to\s*([0-9]+(?:\.[0-9]+)?)'],'source_label':'au Jibun Bank Japan Manufacturing PMI'},
+        {'rank':3,'name':'MetaTrader Japan PMI calendar','type':'Calendar / Pack','kind':'html_patterns','url':'https://www.metatrader.com/en/economic-calendar/japan/nikkei-manufacturing-pmi','patterns':[r'May\s+2026\s+([0-9]+(?:\.[0-9]+)?)', r'Last release[^0-9]{0,120}([0-9]+(?:\.[0-9]+)?)'],'source_label':'au Jibun Bank Japan Manufacturing PMI'},
+    ],
+}
+
+def _month_start_from_pack_month(pack_month):
+    try:
+        return pd.Timestamp(str(pack_month) + '-01').strftime('%Y-%m-%d')
+    except Exception:
+        return pd.Timestamp.today().replace(day=1).strftime('%Y-%m-%d')
+
+def _macro_status_from_value(indicator, value):
+    try:
+        v = float(value)
+    except Exception:
+        return False, 'not numeric'
+    if indicator == 'PMI': return (30 <= v <= 70), 'PMI outside 30–70 validation band'
+    if indicator in ['Inflation']: return (-10 <= v <= 20), 'Inflation outside -10% to 20% validation band'
+    if indicator in ['Unemployment','Jobs']: return (0 <= v <= 30), 'Unemployment outside 0% to 30% validation band'
+    if indicator == 'Claims': return (0 <= v <= 2000), 'Claims outside 0k to 2,000k validation band'
+    if indicator == 'Rates': return (-2 <= v <= 25), 'Rates outside -2% to 25% validation band'
+    return True, ''
+
+def _accepted_macro_row(market, indicator, date, value, unit, source, source_type, notes=''):
+    return {'market':market,'indicator':indicator,'date':date,'value':value,'unit':unit,'source':source,'source_type':source_type,'notes':notes}
+
+def _diagnostic_row(market, indicator, source_rank, source_name, source_type, status, value=None, date='', reason='', endpoint=''):
+    return {'market':market,'indicator':indicator,'source_rank':source_rank,'source_name':source_name,'source_type':source_type,'status':status,'value':value,'date':date,'reason':reason,'endpoint':endpoint}
+
+def _manual_required_row(market, indicator, reason, suggested_action):
+    return {'market':market,'indicator':indicator,'reason':reason,'suggested_action':suggested_action}
+
+def _extract_first_numeric_by_patterns(text, patterns):
+    if not text:
+        return None
+    normalised = re.sub(r'\s+', ' ', text)
+    for pat in patterns:
+        m = re.search(pat, normalised, flags=re.I|re.S)
+        if m:
+            try:
+                return float(m.group(1))
+            except Exception:
+                continue
+    return None
+
+def _try_fetch_pmi_source(alias, source, pack_month):
+    indicator='PMI'; date=_month_start_from_pack_month(pack_month)
+    if source.get('kind') == 'fred_pmi':
+        df = fetch_fred_pmi('NAPM')
+        if df is not None and not df.empty:
+            val = float(df.PMI.iloc[-1]); dt = pd.Timestamp(df.index[-1]).strftime('%Y-%m-%d')
+            ok, reason = _macro_status_from_value('PMI', val)
+            return val, dt, ok, '' if ok else reason, source.get('source_label','ISM Manufacturing PMI')
+        return None, date, False, 'FRED PMI returned no usable rows', source.get('source_label','ISM Manufacturing PMI')
+    if source.get('kind') == 'html_patterns':
+        url=source.get('url',''); txt, err, row = _request_text(url, source.get('name','PMI source'), capture_global=False)
+        if not txt:
+            return None, date, False, err or row.get('Reason','HTTP fetch failed'), source.get('source_label',source.get('name','PMI'))
+        val = _extract_first_numeric_by_patterns(txt, source.get('patterns',[]))
+        if val is None:
+            return None, date, False, 'No PMI value matched configured patterns', source.get('source_label',source.get('name','PMI'))
+        ok, reason = _macro_status_from_value('PMI', val)
+        return val, date, ok, '' if ok else reason, source.get('source_label',source.get('name','PMI'))
+    return None, date, False, 'Unsupported source kind', source.get('source_label',source.get('name','PMI'))
+
+def fetch_pmi_for_pack(alias, pack_month):
+    attempts=[]
+    for source in PMI_SOURCE_CHAINS.get(alias, []):
+        val, dt, ok, reason, label = _try_fetch_pmi_source(alias, source, pack_month)
+        status='accepted' if ok else 'failed'
+        attempts.append(_diagnostic_row(alias,'PMI',source.get('rank',0),source.get('name',''),source.get('type',''),status,val,dt,reason,source.get('url','')))
+        if ok:
+            row=_accepted_macro_row(alias,'PMI',dt,val,'index',label,source.get('type','Calendar / Pack'),f'Auto-generated monthly macro pack; retrieval channel: {source.get("name","")}')
+            return row, attempts, None
+    return None, attempts, _manual_required_row(alias,'PMI','All configured PMI sources failed validation or fetch','Review latest market-recognised PMI and enter as manual override in the macro pack')
+
+def _add_us_macro_rows(pack_month, macro_rows, diag_rows, manual_rows):
+    data=us_macro_dashboard_data(); alias='US'
+    mappings=[('Inflation','inflation_yoy','inflation_date','%','FRED CPIAUCSL YoY'),('Unemployment','jobs_rate','jobs_date','%','FRED UNRATE'),('Claims','claims_k','claims_date','k','FRED ICSA'),('Rates','dgs10','dgs10_date','%','Yahoo ^TNX / FRED DGS10')]
+    for ind,key,date_key,unit,source in mappings:
+        val=data.get(key); dt=data.get(date_key,'N/A')
+        if val is not None:
+            ok, reason=_macro_status_from_value(ind,val)
+            if ok: macro_rows.append(_accepted_macro_row(alias,ind,dt,val,unit,source,'Official / Pack','Auto-generated from platform adapter'))
+            else: manual_rows.append(_manual_required_row(alias,ind,reason,'Review source value before accepting'))
+        else:
+            manual_rows.append(_manual_required_row(alias,ind,'No usable value from platform adapter','Review latest official value and enter manual override'))
+
+def _add_existing_adapter_macro_rows(alias, pack_month, macro_rows, manual_rows):
+    # Uses current platform adapters where available; unresolved values become manual-required rows.
+    platform = MARKET_ALIAS_TO_PLATFORM.get(alias, [alias])[0]
+    for ind in ['Inflation','Unemployment','Rates']:
+        if alias not in ['SG','HK','CN','MY','JP']:
+            continue
+        res = resolve_macro_value(platform, ind)
+        val = res.get('value') if isinstance(res, dict) else None
+        if val is not None:
+            ok, reason = _macro_status_from_value(ind, val)
+            if ok:
+                unit='%' if ind in ['Inflation','Unemployment','Rates'] else ''
+                macro_rows.append(_accepted_macro_row(alias,ind,res.get('date',''),val,unit,res.get('sub',''),res.get('source_type','Generated / Pack'),'Auto-generated from platform adapter'))
+            else:
+                manual_rows.append(_manual_required_row(alias,ind,reason,'Review latest official value and enter manual override'))
+        else:
+            manual_rows.append(_manual_required_row(alias,ind,f'{ind} adapter returned no usable value','Review latest official value and enter manual override'))
+    if alias != 'US':
+        macro_rows.append(_accepted_macro_row(alias,'Claims','N/A',np.nan,'','Not applicable','N/A','Claims is US-only in current model'))
+
+def build_monthly_macro_pack(pack_month=None, include_aliases=None):
+    pack_month = pack_month or pd.Timestamp.today().strftime('%Y-%m')
+    include_aliases = include_aliases or ['US','SG','HK','CN','MY','JP']
+    macro_rows=[]; diag_rows=[]; manual_rows=[]
+    for alias in include_aliases:
+        if alias == 'US':
+            _add_us_macro_rows(pack_month, macro_rows, diag_rows, manual_rows)
+        else:
+            _add_existing_adapter_macro_rows(alias, pack_month, macro_rows, manual_rows)
+        pmi_row, pmi_diag, pmi_manual = fetch_pmi_for_pack(alias, pack_month)
+        diag_rows.extend(pmi_diag)
+        if pmi_row is not None:
+            macro_rows.append(pmi_row)
+        if pmi_manual is not None:
+            manual_rows.append(pmi_manual)
+    readme=pd.DataFrame([
+        {'field':'pack_month','value':pack_month},
+        {'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},
+        {'field':'generator_version','value':'Global20Engine v37e web macro pack generator'},
+        {'field':'source_policy','value':'Generated/applied pack overrides uploaded/saved/live adapters in dashboard resolution'},
+    ])
+    source_catalogue=[]
+    for alias, cfg in PMI_PRIMARY_MAP.items():
+        source_catalogue.append({'market':alias,'indicator':'PMI','primary_source':cfg['name'],'fallback_policy':'Primary → secondary calendar/public source → tertiary source → manual_required','manual_allowed':'Yes, exception only'})
+    return {
+        'macro_data': pd.DataFrame(macro_rows, columns=MACRO_PACK_REQUIRED_COLUMNS),
+        'diagnostics': pd.DataFrame(diag_rows),
+        'manual_required': pd.DataFrame(manual_rows),
+        'README': readme,
+        'source_catalogue': pd.DataFrame(source_catalogue)
+    }
+
+def macro_pack_to_excel_bytes(pack):
+    bio = io.BytesIO()
+    with pd.ExcelWriter(bio, engine='openpyxl') as writer:
+        for sheet, df in pack.items():
+            if isinstance(df, pd.DataFrame):
+                df.to_excel(writer, sheet_name=sheet[:31], index=False)
+    bio.seek(0)
+    return bio.getvalue()
+
+def read_macro_pack_upload(uploaded):
+    name = getattr(uploaded, 'name', '').lower()
+    if name.endswith('.xlsx'):
+        try:
+            return pd.read_excel(uploaded, sheet_name='macro_data', engine='openpyxl')
+        except Exception:
+            uploaded.seek(0)
+            return pd.read_excel(uploaded, engine='openpyxl')
+    return pd.read_csv(uploaded)
 def render_macro_adapter_diagnostics_sidebar():
     with st.expander('🧪 Macro Adapter Diagnostics', expanded=False):
         st.caption('Uncached tests stored in session state. This avoids cached side effects and Streamlit rerun resets.')
@@ -922,19 +1092,51 @@ def render_macro_adapter_diagnostics_sidebar():
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
-        st.caption('Source priority: Official API/table → owner-upload CSV/XLSX → diagnostic awaiting state. Claims is US-only; non-US markets show N/A.')
-        st.caption('Upload fallback columns: market, indicator, date, value, unit, source, source_type, notes')
-        uploaded=st.file_uploader('Upload macro CSV/XLSX fallback',type=['csv','xlsx'],key='macro_upload_file')
+        st.caption('v37e source priority: generated/applied monthly pack → uploaded Excel pack → saved overrides → live adapters → awaiting/N/A.')
+        pack_month=st.text_input('Pack month',value=pd.Timestamp.today().strftime('%Y-%m'),key='macro_pack_month_input')
+        selected_aliases=st.multiselect('Markets in generated pack', ['US','SG','HK','CN','MY','JP'], default=['US','SG','HK','CN','MY','JP'], key='macro_pack_aliases_select')
+        if st.button('Generate Monthly Macro Pack',use_container_width=True,key='generate_macro_pack_button'):
+            try:
+                pack=build_monthly_macro_pack(pack_month,selected_aliases)
+                st.session_state.generated_macro_pack=pack
+                st.session_state.generated_macro_pack_bytes=macro_pack_to_excel_bytes(pack)
+                st.session_state.macro_upload_df=_normalise_macro_upload(pack['macro_data'])
+                st.success(f"Macro pack generated and applied for this session: {len(pack['macro_data'])} accepted row(s), {len(pack['manual_required'])} manual-required row(s).")
+            except Exception as e:
+                st.warning(f'Could not generate macro pack: {e}')
+        pack=st.session_state.get('generated_macro_pack')
+        if isinstance(pack,dict):
+            st.caption('Generated pack preview — accepted macro_data rows:')
+            st.dataframe(pack.get('macro_data',pd.DataFrame()).tail(12),use_container_width=True,hide_index=True)
+            if not pack.get('manual_required',pd.DataFrame()).empty:
+                st.caption('Manual-required exceptions:')
+                st.dataframe(pack.get('manual_required'),use_container_width=True,hide_index=True)
+            if st.session_state.get('generated_macro_pack_bytes'):
+                st.download_button('Download Excel Macro Pack',data=st.session_state.generated_macro_pack_bytes,file_name=f'macro_pack_{pack_month}.xlsx',mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',use_container_width=True,key='download_generated_macro_pack')
+            if is_platform_owner() and st.button('Save generated macro_data as active CSV',use_container_width=True,key='save_generated_macro_pack_csv'):
+                pack['macro_data'].to_csv(MACRO_OVERRIDE_FILE,index=False)
+                load_macro_overrides_from_disk.clear()
+                st.success('Generated macro_data saved to macro_overrides.csv.')
+        st.markdown('---')
+        st.caption('Upload fallback columns or Excel sheet macro_data: market, indicator, date, value, unit, source, source_type, notes')
+        uploaded=st.file_uploader('Upload monthly macro pack CSV/XLSX',type=['csv','xlsx'],key='macro_upload_file')
         if uploaded is not None:
             try:
-                raw=pd.read_excel(uploaded,engine='openpyxl') if uploaded.name.lower().endswith('.xlsx') else pd.read_csv(uploaded)
-                parsed=_normalise_macro_upload(raw); st.session_state.macro_upload_df=parsed
-                st.success(f'{len(parsed)} macro row(s) loaded for this session.'); st.dataframe(parsed.tail(8),use_container_width=True,hide_index=True)
-                if is_platform_owner() and st.button('Save macro overrides',use_container_width=True,key='save_macro_overrides_button'):
-                    parsed.to_csv(MACRO_OVERRIDE_FILE,index=False); load_macro_overrides_from_disk.clear(); st.success('Macro overrides saved to macro_overrides.csv.')
-            except Exception as e: st.warning(f'Could not read macro file: {e}')
+                raw=read_macro_pack_upload(uploaded)
+                parsed=_normalise_macro_upload(raw)
+                st.session_state.macro_upload_df=parsed
+                st.success(f'{len(parsed)} macro row(s) loaded and applied for this session.')
+                st.dataframe(parsed.tail(12),use_container_width=True,hide_index=True)
+                if is_platform_owner() and st.button('Save uploaded macro overrides',use_container_width=True,key='save_macro_overrides_button'):
+                    parsed.to_csv(MACRO_OVERRIDE_FILE,index=False)
+                    load_macro_overrides_from_disk.clear()
+                    st.success('Macro overrides saved to macro_overrides.csv.')
+            except Exception as e:
+                st.warning(f'Could not read macro file: {e}')
         current=load_macro_overrides_from_disk()
-        if not current.empty: st.caption('Saved macro overrides currently available:'); st.dataframe(current.tail(8),use_container_width=True,hide_index=True)
+        if not current.empty:
+            st.caption('Saved macro overrides currently available:')
+            st.dataframe(current.tail(8),use_container_width=True,hide_index=True)
 
 if 'pmi_history' not in st.session_state: st.session_state.pmi_history = {}
 
@@ -1753,7 +1955,10 @@ zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
 cash_deploy,srs_deploy,cpf_deploy,capital_reason=capital_breakdown(zone,deploy,available_cash,available_srs,available_cpf); funding_source='Cash First' if cash_deploy>0 else 'No deployment'
 macro=live_macro_data(); vix=macro.get('vix'); tnx=macro.get('tnx'); irx=macro.get('irx'); curve_spread=(tnx-irx) if (tnx is not None and irx is not None) else None
-trend_below=close<m[sel]['ma200']; pmi_label=pmi_proxy_default['label']; latest_pmi=float(st.session_state.get('latest_pmi_value', pmi_proxy_default['default'])); pmi_applicable=sel not in PMI_NA_MARKETS
+trend_below=close<m[sel]['ma200']; pmi_label=pmi_proxy_default['label']; latest_pmi=float(st.session_state.get('latest_pmi_value', pmi_proxy_default['default'])); uploaded_pmi_boot=get_uploaded_macro_value(sel,'PMI');
+if uploaded_pmi_boot is not None:
+    latest_pmi=float(uploaded_pmi_boot.get('value', latest_pmi)); st.session_state.latest_pmi_value=latest_pmi; st.session_state.latest_pmi_source=uploaded_pmi_boot.get('source','Monthly macro pack'); st.session_state.latest_pmi_month=uploaded_pmi_boot.get('date','')
+pmi_applicable=sel not in PMI_NA_MARKETS
 live_score,alert,vix_s,curve_s,pmi_s,dd_s,trend_s=calc_market_scores_by_asset(sel,latest_pmi,dd,trend_below,vix,curve_spread)
 conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); decision_line=f'Deploy approximately {fmt_sgd(deploy)} using staged tranches.' if deploy>0 else 'No deployment now. Capital is preserved until a deployment trigger appears.'; next_trigger=next_trigger_label(zone)
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
@@ -1780,7 +1985,7 @@ def render_executive():
     progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8))
     stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
     inflation=resolve_macro_value(index_label,'Inflation'); unemployment=resolve_macro_value(index_label,'Unemployment'); rates=resolve_macro_value(index_label,'Rates'); claims=resolve_macro_value(index_label,'Claims')
-    pmi_res=resolve_macro_value(index_label,'PMI') if index_label=='A-Share' else None
+    pmi_res=resolve_macro_value(index_label,'PMI')
     def _curve(v):
         try:
             if v is None or pd.isna(v): return 'N/A'
@@ -1789,7 +1994,7 @@ def render_executive():
     pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
     pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
     pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
-    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('source_type') in ['Owner-uploaded','Needs validation'] else 'Manual/Default'
+    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('value') is not None else 'Manual/Default'
     rate_label=rate_card_label(index_label)
     cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
     def _source_class(src): return 'source-official' if src=='Official API' else 'source-upload' if src=='Owner-uploaded' else 'source-na' if src=='N/A' else 'source-validation' if src=='Needs validation' else 'source-awaiting'
