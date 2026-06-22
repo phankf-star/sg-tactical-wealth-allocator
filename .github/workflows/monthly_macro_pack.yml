@@ -1,5 +1,18 @@
 
-name: Generate Global20Engine Macro Packnameatest
+name: Generate Global20Engine Macro Pack
+
+'on':
+  workflow_dispatch:
+  schedule:
+    - cron: "0 1 2 * *"
+
+permissions:
+  contents: write
+
+jobs:
+  generate-macro-pack:
+    runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,17 +37,3 @@ name: Generate Global20Engine Macro Packnameatest
           git add macro_pack_latest/*.csv macro_pack_latest/*.xlsx macro_pack_latest/*.zip
           git commit -m "Update Global20Engine macro pack" || echo "No changes to commit"
           git push
-``
-
-on:
-  workflow_dispatch:
-  schedule:
-    # Runs monthly on the 2nd day at 01:00 UTC.
-    # Adjust if your preferred monthly data-release window differs.
-    - cron: "0 1 2 * *"
-
-permissions:
-  contents: write
-
-jobs:
-  generate-macro-pack:
