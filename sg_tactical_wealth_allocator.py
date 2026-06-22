@@ -1,11 +1,11 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v37c — patched from v37b on 2026-06-22
+# Global20Engine v37d — patched from v37b on 2026-06-22
 # Macro adapter changes only:
-#   • NEW: fetch_dbnomics_fred_mirror, fetch_yahoo_us_10y
-#   • MOD: fetch_fred_series cascades to DBnomics on FRED failure
+#   • NEW: fetch_dbnomics_fred_mirror, fetch_yahoo_us_10y, fetch_fred_data_page_series
+#   • MOD: fetch_fred_series cascades FRED graph CSV → FRED /data → DBnomics
 #   • MOD: us_macro_dashboard_data prefers Yahoo ^TNX for US 10Y
 #   • MOD: resolve_macro_value US rates branch shows dynamic source
-#   • MOD: diagnostics include DBnomics + Yahoo tests
+#   • MOD: diagnostics include FRED /data + DBnomics + Yahoo tests
 # UI / scoring / valuation / crash analytics: unchanged from v37b.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -349,38 +349,54 @@ def fetch_fred_pmi(series_id='NAPM'):
         return pd.DataFrame()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37c PATCH 1 — NEW fallback fetchers
+# v37d PATCH 1 — NEW fallback fetchers
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=21600)
 def fetch_dbnomics_fred_mirror(series_id):
     """Fallback adapter: fetch FRED series via DBnomics REST API (no API key required).
     Returns same DataFrame shape as fetch_fred_series: index=DATE, column='Value'."""
-    url = f'https://api.db.nomics.world/v22/series/FRED/{series_id}?observations=1'
-    adapter = f'DBnomics FRED/{series_id}'
-    txt, err, row = _request_text(url, adapter, capture_global=True)
-    if not txt:
-        return pd.DataFrame()
-    try:
-        payload = json.loads(txt)
-        docs = payload.get('series', {}).get('docs', [])
-        if not docs:
-            _diag(adapter, url, True, 0, 'no docs', '', 'DBnomics returned empty docs list')
-            return pd.DataFrame()
-        doc = docs[0]
-        periods = doc.get('period', []) or []
-        values = doc.get('value', []) or []
-        if not periods or not values:
-            _diag(adapter, url, True, 0, 'empty observations', '', 'DBnomics returned no observations')
-            return pd.DataFrame()
-        df = pd.DataFrame({'Value': values}, index=pd.to_datetime(periods, errors='coerce'))
-        df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
-        df = df.dropna()
-        latest = '' if df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
-        _diag(adapter, url, True, len(df), 'mirror parsed', latest, '' if not df.empty else 'No numeric values after parse')
-        return df
-    except Exception as e:
-        _diag(adapter, url, True, 0, 'parser error', '', f'DBnomics JSON parse error: {e}')
-        return pd.DataFrame()
+    candidate_urls = [
+        f'https://api.db.nomics.world/v22/series/FRED/{series_id}?observations=1',
+        f'https://api.db.nomics.world/v22/series/FRED/FRED/{series_id}?observations=1',
+    ]
+    last_reason = ''
+    for url in candidate_urls:
+        adapter = f'DBnomics FRED/{series_id}'
+        txt, err, row = _request_text(url, adapter, capture_global=True)
+        if not txt:
+            last_reason = err or row.get('Reason','')
+            continue
+        try:
+            payload = json.loads(txt)
+            # DBnomics can return either {'series': {'docs': [...]}} or direct tabular structures,
+            # depending on endpoint/provider shape. Support the common structures defensively.
+            docs = payload.get('series', {}).get('docs', []) if isinstance(payload.get('series'), dict) else []
+            if docs:
+                doc = docs[0]
+                periods = doc.get('period', []) or doc.get('periods', []) or []
+                values = doc.get('value', []) or doc.get('values', []) or []
+            else:
+                periods = payload.get('period', []) or payload.get('periods', []) or []
+                values = payload.get('value', []) or payload.get('values', []) or []
+            if not periods or not values:
+                last_reason = 'DBnomics returned no recognised period/value arrays'
+                _diag(adapter, url, True, 0, 'empty observations', '', last_reason)
+                continue
+            df = pd.DataFrame({'Value': values}, index=pd.to_datetime(periods, errors='coerce'))
+            df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
+            df = df.dropna()
+            if df.empty:
+                last_reason = 'No numeric values after DBnomics parse'
+                _diag(adapter, url, True, 0, 'mirror parsed', '', last_reason)
+                continue
+            latest = f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+            _diag(adapter, url, True, len(df), 'mirror parsed', latest, '')
+            return df
+        except Exception as e:
+            last_reason = f'DBnomics JSON parse error: {e}'
+            _diag(adapter, url, True, 0, 'parser error', '', last_reason)
+    _diag(f'DBnomics FRED/{series_id}', ' | '.join(candidate_urls), False, 0, 'all candidates failed', '', last_reason)
+    return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
 def fetch_yahoo_us_10y():
@@ -400,6 +416,39 @@ def fetch_yahoo_us_10y():
         _diag(adapter, 'yfinance ^TNX', False, 0, 'fetch error', '', f'Yahoo ^TNX error: {e}')
         return None, 'N/A'
 
+@st.cache_data(ttl=21600)
+def fetch_fred_data_page_series(series_id):
+    """Second fallback: FRED public /data/<series_id> text table.
+    This route does not require an API key and is useful when fredgraph.csv is unavailable."""
+    url = f'https://fred.stlouisfed.org/data/{series_id}'
+    adapter = f'FRED data/{series_id}'
+    txt, err, row = _request_text(url, adapter, capture_global=True)
+    if not txt:
+        return pd.DataFrame()
+    try:
+        rows = []
+        for raw_line in txt.splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith('#') or line.upper().startswith('DATE'):
+                continue
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            dt = pd.to_datetime(parts[0], errors='coerce')
+            val = pd.to_numeric(parts[1], errors='coerce')
+            if pd.notna(dt) and pd.notna(val):
+                rows.append((dt, float(val)))
+        if not rows:
+            _diag(adapter, url, True, 0, 'table parser', '', 'No DATE VALUE rows parsed')
+            return pd.DataFrame()
+        df = pd.DataFrame(rows, columns=['DATE','Value']).set_index('DATE').sort_index()
+        latest = f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+        _diag(adapter, url, True, len(df), 'DATE VALUE rows parsed', latest, '')
+        return df
+    except Exception as e:
+        _diag(adapter, url, True, 0, 'parser error', '', f'FRED /data parse error: {e}')
+        return pd.DataFrame()
+
 
 
 # ------------------------- Macro adapter diagnostics and defensive source fetch -------------------------
@@ -408,7 +457,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'Nasdaq':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'DJIA':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'Nasdaq':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'DJIA':{'Inflation':'FRED CPIAUCSL (+ FRED /data + DBnomics fallback)','Jobs':'FRED UNRATE (+ FRED /data + DBnomics fallback)','Claims':'FRED ICSA (+ FRED /data + DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -502,23 +551,9 @@ def _test_hkma_economic_statistics():
     except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
 
 def _test_dbnomics_fred(series_id):
-    url = f'https://api.db.nomics.world/v22/series/FRED/{series_id}?observations=1'
-    adapter = f'DBnomics FRED/{series_id}'
-    txt, err, row = _request_text(url, adapter, capture_global=False)
-    if not txt:
-        return row
-    try:
-        payload = json.loads(txt)
-        docs = payload.get('series', {}).get('docs', [])
-        if not docs:
-            return _diag_row(adapter, url, True, 0, 'no docs', '', 'DBnomics returned empty docs')
-        doc = docs[0]
-        periods = doc.get('period', []) or []
-        values = doc.get('value', []) or []
-        latest = '' if not periods else f'{periods[-1]}={values[-1] if values else "N/A"}'
-        return _diag_row(adapter, url, True, len(periods), 'mirror series', latest, '' if periods else 'No observations returned')
-    except Exception as e:
-        return _diag_row(adapter, url, True, 0, 'json parser error', '', f'JSON parse error: {e}')
+    df = fetch_dbnomics_fred_mirror(series_id)
+    latest = '' if df is None or df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+    return _diag_row(f'DBnomics FRED/{series_id}', 'DBnomics candidate endpoints', df is not None and not df.empty, 0 if df is None else len(df), 'mirror fallback', latest, '' if df is not None and not df.empty else 'No rows parsed')
 
 def _test_yahoo_tnx():
     adapter = 'Yahoo ^TNX'
@@ -533,13 +568,21 @@ def _test_yahoo_tnx():
 
 def run_macro_adapter_diagnostics_uncached():
     rows = []
-    # Direct FRED tests
+    # Direct FRED graph CSV tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         rows.append(_test_fred_series(sid))
-    # v37c: DBnomics FRED-mirror fallback tests
+    # v37d: FRED public /data text-table fallback tests
+    for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
+        try:
+            df = fetch_fred_data_page_series(sid)
+            latest = '' if df is None or df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+            rows.append(_diag_row(f'FRED data/{sid}', f'https://fred.stlouisfed.org/data/{sid}', df is not None and not df.empty, 0 if df is None else len(df), 'fallback data page', latest, '' if df is not None and not df.empty else 'No rows parsed'))
+        except Exception as e:
+            rows.append(_diag_row(f'FRED data/{sid}', f'https://fred.stlouisfed.org/data/{sid}', False, 0, 'fallback error', '', str(e)))
+    # DBnomics FRED-mirror fallback tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         rows.append(_test_dbnomics_fred(sid))
-    # v37c: Yahoo US 10Y preferred source test
+    # Yahoo US 10Y preferred source test
     rows.append(_test_yahoo_tnx())
     for rid in ['d_bdaff844e3ef89d39fceb962ff8f0791','d_b816a930bca0eb19fdf20fcbfcdd4c39','d_5fe5a4bb4a1ecc4d8a56a095832e2b24']:
         rows.append(_test_datagovsg_resource(rid))
@@ -552,7 +595,7 @@ def run_macro_adapter_diagnostics_uncached():
 @st.cache_data(ttl=21600)
 @st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
-    """Primary: FRED direct CSV. Fallback: DBnomics FRED mirror (no API key needed)."""
+    """Primary: FRED direct CSV. Fallbacks: FRED /data text table, then DBnomics FRED mirror."""
     url = f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
     adapter = f'FRED {series_id}'
     txt, err, row = _request_text(url, adapter, capture_global=True)
@@ -568,17 +611,20 @@ def fetch_fred_series(series_id):
                     _diag(adapter, url, True, len(df), 'series column matched', latest, '')
                     return df
                 else:
-                    _diag(adapter, url, True, 0, 'series column matched', '', 'CSV parsed but no numeric values; trying DBnomics fallback')
+                    _diag(adapter, url, True, 0, 'series column matched', '', 'CSV parsed but no numeric values; trying FRED /data fallback')
             else:
-                _diag(adapter, url, True, 0, 'series column not matched', '', f'Columns: {list(df.columns)[:8]}; trying DBnomics fallback')
+                _diag(adapter, url, True, 0, 'series column not matched', '', f'Columns: {list(df.columns)[:8]}; trying FRED /data fallback')
         except Exception as e:
-            _diag(adapter, url, True, 0, 'parser error', '', f'CSV parse error: {e}; trying DBnomics fallback')
+            _diag(adapter, url, True, 0, 'parser error', '', f'CSV parse error: {e}; trying FRED /data fallback')
+    data_page = fetch_fred_data_page_series(series_id)
+    if data_page is not None and not data_page.empty:
+        return data_page
     return fetch_dbnomics_fred_mirror(series_id)
 
 @st.cache_data(ttl=21600)
 @st.cache_data(ttl=21600)
 def us_macro_dashboard_data():
-    """US macro bundle. CPI/UNRATE/ICSA via FRED→DBnomics cascade.
+    """US macro bundle. CPI/UNRATE/ICSA via FRED graph CSV → FRED /data → DBnomics cascade.
     US 10Y prefers Yahoo ^TNX (real-time); falls back to FRED DGS10."""
     cpi = fetch_fred_series('CPIAUCSL')
     unrate = fetch_fred_series('UNRATE')
