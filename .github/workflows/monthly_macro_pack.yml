@@ -1,4 +1,3 @@
-
 name: Generate Global20Engine Macro Pack
 
 'on':
@@ -16,6 +15,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,10 +31,18 @@ jobs:
       - name: Generate macro pack outside Streamlit
         run: python g20_macro_fetcher.py
 
+      - name: Show generated files
+        run: |
+          echo "Repository root:"
+          pwd
+          echo "Generated macro_pack_latest contents:"
+          ls -la macro_pack_latest || true
+
       - name: Commit generated macro pack
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add macro_pack_latest/*.csv macro_pack_latest/*.xlsx macro_pack_latest/*.zip
-          git commit -m "Update Global20Engine macro pack" || echo "No changes to commit"
+          git add -A macro_pack_latest
+          git status --short
+          git diff --cached --quiet && echo "No generated macro pack changes to commit" || git commit -m "Update Global20Engine macro pack"
           git push
