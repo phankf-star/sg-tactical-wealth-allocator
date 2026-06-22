@@ -1,0 +1,31 @@
+﻿market,indicator,primary_source,fallback_policy,manual_allowed
+US,Inflation,FRED CPIAUCSL,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+US,Unemployment,FRED UNRATE,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+US,Claims,FRED ICSA,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+US,Rates,FRED DGS10,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+US,PMI,FRED NAPM / ISM Manufacturing PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only
+SG,Inflation,SingStat CPI table,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+SG,Unemployment,SingStat / MOM unemployment,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+SG,Claims,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,N/A
+SG,Rates,MAS domestic rates / SORA,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+SG,PMI,SIPMM Singapore Manufacturing PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only
+HK,Inflation,HKMA / C&SD CPI,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+HK,Unemployment,HKMA unemployment,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+HK,Claims,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,N/A
+HK,Rates,HKMA interest rates,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+HK,PMI,S&P Global Hong Kong SAR PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only
+CN,Inflation,NBS China CPI,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+CN,Unemployment,NBS surveyed unemployment,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+CN,Claims,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,N/A
+CN,Rates,PBC / CFETS Loan Prime Rate,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+CN,PMI,NBS Manufacturing PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only
+MY,Inflation,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+MY,Unemployment,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+MY,Claims,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,N/A
+MY,Rates,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+MY,PMI,S&P Global Malaysia Manufacturing PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only
+JP,Inflation,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+JP,Unemployment,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+JP,Claims,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,N/A
+JP,Rates,Awaiting official mapping,External fetcher → official/calendar check → manual_input_template exception,Fallback only
+JP,PMI,au Jibun Bank Japan Manufacturing PMI,External fetcher → official/calendar check → manual_input_template exception,Exception only

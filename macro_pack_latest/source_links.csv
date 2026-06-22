@@ -1,0 +1,20 @@
+﻿market,indicator,source_name,url,manual_role
+US,Inflation,FRED CPIAUCSL,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL,fallback/check only
+US,Unemployment,FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE,fallback/check only
+US,Claims,FRED ICSA,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA,fallback/check only
+US,Rates,FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,fallback/check only
+US,PMI,FRED NAPM / ISM Manufacturing PMI,https://fred.stlouisfed.org/graph/fredgraph.csv?id=NAPM,fallback/check only
+SG,Inflation,SingStat CPI table,https://tablebuilder.singstat.gov.sg/,official check if adapter fails
+SG,Unemployment,SingStat / MOM unemployment,https://tablebuilder.singstat.gov.sg/,official check if adapter fails
+SG,Rates,MAS domestic rates / SORA,https://eservices.mas.gov.sg/statistics/,official check if adapter fails
+SG,PMI,SIPMM Singapore Manufacturing PMI,https://sipmm.edu.sg/resources/singapore-pmi/,official check if calendar source fails
+HK,Inflation,HKMA / C&SD CPI,https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics,validation check
+HK,Unemployment,HKMA unemployment,https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics,fallback/check only
+HK,Rates,HKMA interest rates,https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/,official check if adapter fails
+HK,PMI,S&P Global Hong Kong SAR PMI,https://tradingeconomics.com/hong-kong/manufacturing-pmi,calendar fallback
+CN,Inflation,NBS China CPI,https://www.stats.gov.cn/english/PressRelease/,validation mode
+CN,Unemployment,NBS surveyed unemployment,https://www.stats.gov.cn/english/PressRelease/,validation mode
+CN,Rates,PBC / CFETS Loan Prime Rate,https://www.chinamoney.com.cn/english/,validation mode
+CN,PMI,NBS Manufacturing PMI,https://www.stats.gov.cn/english/PressRelease/,official source
+MY,PMI,S&P Global Malaysia Manufacturing PMI,https://www.pmi.spglobal.com/,official/calendar check
+JP,PMI,au Jibun Bank Japan Manufacturing PMI,https://www.pmi.spglobal.com/,official/calendar check

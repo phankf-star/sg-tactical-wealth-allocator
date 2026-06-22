@@ -1,0 +1,26 @@
+﻿market,indicator,reason,suggested_action
+US,Inflation,FRED CPI adapter returned no usable value,Review latest official value
+US,Unemployment,FRED UNRATE adapter returned no usable value,Review latest official value
+US,Claims,FRED ICSA adapter returned no usable value,Review latest official value
+US,Rates,FRED DGS10 adapter returned no usable value,Review latest official value
+US,PMI,Live PMI source failed; seed fallback used,Review PMI before relying on generated pack
+SG,Inflation,SG Inflation external adapter not yet promoted,Add official adapter or fill manual_input_template
+SG,Unemployment,SG Unemployment external adapter not yet promoted,Add official adapter or fill manual_input_template
+SG,Rates,SG Rates external adapter not yet promoted,Add official adapter or fill manual_input_template
+SG,PMI,Seed fallback used,Review PMI before relying on generated pack
+HK,Inflation,HK Inflation external adapter not yet promoted,Add official adapter or fill manual_input_template
+HK,Unemployment,HK Unemployment external adapter not yet promoted,Add official adapter or fill manual_input_template
+HK,Rates,HK Rates external adapter not yet promoted,Add official adapter or fill manual_input_template
+HK,PMI,Seed fallback used,Review PMI before relying on generated pack
+CN,Inflation,CN Inflation external adapter not yet promoted,Add official adapter or fill manual_input_template
+CN,Unemployment,CN Unemployment external adapter not yet promoted,Add official adapter or fill manual_input_template
+CN,Rates,CN Rates external adapter not yet promoted,Add official adapter or fill manual_input_template
+CN,PMI,Seed fallback used,Review PMI before relying on generated pack
+MY,Inflation,MY Inflation external adapter not yet promoted,Add official adapter or fill manual_input_template
+MY,Unemployment,MY Unemployment external adapter not yet promoted,Add official adapter or fill manual_input_template
+MY,Rates,MY Rates external adapter not yet promoted,Add official adapter or fill manual_input_template
+MY,PMI,Seed fallback used,Review PMI before relying on generated pack
+JP,Inflation,JP Inflation external adapter not yet promoted,Add official adapter or fill manual_input_template
+JP,Unemployment,JP Unemployment external adapter not yet promoted,Add official adapter or fill manual_input_template
+JP,Rates,JP Rates external adapter not yet promoted,Add official adapter or fill manual_input_template
+JP,PMI,Seed fallback used,Review PMI before relying on generated pack

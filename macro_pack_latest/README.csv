@@ -1,0 +1,6 @@
+﻿field,value
+pack_month,2026-06
+generated_at,2026-06-22 13:14:04
+generator_version,Global20Engine v38 external fetcher draft
+source_policy,External scheduled fetcher → committed macro_pack_latest files → Streamlit display/read layer
+design_note,Streamlit should not be responsible for primary macro/performance fetching.

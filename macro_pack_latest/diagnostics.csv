@@ -1,0 +1,11 @@
+﻿market,indicator,source_name,status,value,reason,endpoint,generated_at
+US,Inflation,FRED CPIAUCSL,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
+US,Unemployment,FRED UNRATE,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
+US,Claims,FRED ICSA,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
+US,Rates,FRED DGS10,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
+US,PMI,FRED NAPM,failed,,HTTP Error 404: Not Found,FRED CSV,2026-06-22 13:14:04
+SG,PMI,SIPMM Singapore Manufacturing PMI,seed,51.0,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
+HK,PMI,S&P Global Hong Kong SAR PMI,seed,50.4,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
+CN,PMI,NBS Manufacturing PMI,seed,50.0,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
+MY,PMI,S&P Global Malaysia Manufacturing PMI,seed,49.9,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
+JP,PMI,au Jibun Bank Japan Manufacturing PMI,seed,50.4,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04

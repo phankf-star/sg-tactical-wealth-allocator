@@ -1,0 +1,12 @@
+﻿market,indicator,date,value,unit,source,source_type,notes
+US,PMI,2026-06-01,54.0,index,ISM Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+SG,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
+SG,PMI,2026-06-01,51.0,index,SIPMM Singapore Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+HK,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
+HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+CN,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
+CN,PMI,2026-06-01,50.0,index,NBS Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+MY,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
+MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+JP,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
+JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
