@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38 — external macro-pack read-layer integration from v37f on 2026-06-22
+# Global20Engine v38q — quick fix: external repo macro pack as active source on 2026-06-22
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -347,7 +347,7 @@ def fetch_fred_pmi(series_id='NAPM'):
         return pd.DataFrame()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v38 macro-pack helpers: external repo pack + defensive sources + CSV ZIP fallback download
+# v38q macro-pack helpers: external repo pack read priority + fallback generator
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=21600)
 def fetch_fred_data_page_series(series_id):
@@ -734,8 +734,9 @@ def _normalise_macro_upload(df):
 def load_external_macro_pack_from_repo():
     """Load GitHub Actions generated macro pack from repo.
 
-    v38 design: Streamlit reads this stable artefact first, instead of
-    performing primary data fetching during dashboard render.
+    Quick-fix behaviour: only rows with numeric value are considered usable.
+    Rows such as non-US Claims N/A remain in the source CSV but are not used
+    as numeric dashboard values.
     """
     try:
         if EXTERNAL_MACRO_PACK_FILE.exists():
@@ -762,17 +763,18 @@ def load_macro_overrides_from_disk():
 def get_uploaded_macro_value(market,indicator):
     frames=[]
 
-    # v38 source priority: external GitHub Actions pack is the default stable source.
+    # v38q quick-fix source priority:
+    # 1) External GitHub Actions pack as default stable source
+    # 2) Saved owner override
+    # 3) Current session owner upload as explicit override
     external=load_external_macro_pack_from_repo()
     if isinstance(external,pd.DataFrame) and not external.empty:
         e=external.copy(); e['_source_priority']=10; e['_source_layer']='External repo pack'; frames.append(e)
 
-    # Saved owner overrides remain available for controlled correction/persistence.
     disk=load_macro_overrides_from_disk()
     if isinstance(disk,pd.DataFrame) and not disk.empty:
         d=disk.copy(); d['_source_priority']=20; d['_source_layer']='Saved override'; frames.append(d)
 
-    # Session upload has highest priority because it is the most explicit current owner action.
     if 'macro_upload_df' in st.session_state and isinstance(st.session_state.macro_upload_df,pd.DataFrame) and not st.session_state.macro_upload_df.empty:
         u=st.session_state.macro_upload_df.copy(); u['_source_priority']=30; u['_source_layer']='Session upload'; frames.append(u)
 
@@ -791,7 +793,14 @@ def get_uploaded_macro_value(market,indicator):
     sub['_date_sort']=pd.to_datetime(sub['date'],errors='coerce')
     sub=sub.sort_values(['_date_sort','_source_priority','date'],na_position='first')
     r=sub.iloc[-1]
-    return {'value':float(r['value']),'date':str(r.get('date','')),'unit':str(r.get('unit','')),'source':str(r.get('source','External repo pack')),'source_type':str(r.get('source_type','External repo pack')),'source_layer':str(r.get('_source_layer',''))}
+    return {
+        'value':float(r['value']),
+        'date':str(r.get('date','')),
+        'unit':str(r.get('unit','')),
+        'source':str(r.get('source','External repo pack')),
+        'source_type':str(r.get('source_type','External repo pack')),
+        'source_layer':str(r.get('_source_layer',''))
+    }
 
 def _uploaded_result(uploaded):
     unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
@@ -864,7 +873,7 @@ def resolve_macro_value(market,indicator):
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v38 — Web Monthly Macro Pack Generator with external repo pack read priority
+# v38q — External Repo Macro Pack Reader with fallback generator
 # ─────────────────────────────────────────────────────────────────────────────
 MACRO_PACK_REQUIRED_COLUMNS=['market','indicator','date','value','unit','source','source_type','notes']
 MARKET_ALIAS_TO_PLATFORM={'US':['S&P 500','Nasdaq','DJIA'],'SG':['STI'],'HK':['HSI'],'CN':['A-Share'],'MY':['KLSE'],'JP':['Nikkei 225'],'GLOBAL':['Gold','Bitcoin']}
@@ -954,7 +963,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38 app-integrated macro pack generator'},{'field':'source_policy','value':'External GitHub Actions pack → session upload → saved overrides → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38q quick-fix macro pack reader'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -997,28 +1006,30 @@ def render_macro_adapter_diagnostics_sidebar():
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
-        st.caption('v38 source priority: external GitHub Actions pack → session upload → saved overrides → live adapters → awaiting/N/A. Streamlit is now the display/decision layer; scheduled fetching lives outside Streamlit.')
+        st.caption('v38q source priority: external GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A. The old in-app generator is fallback/download only and will not auto-override the external pack.')
         external_preview=load_external_macro_pack_from_repo()
         if isinstance(external_preview,pd.DataFrame) and not external_preview.empty:
-            st.success(f'External repo macro pack loaded: {len(external_preview)} row(s) from macro_pack_latest/macro_data.csv.')
+            st.success(f'Active external repo macro pack loaded: {len(external_preview)} usable value row(s) from macro_pack_latest/macro_data.csv.')
+            st.caption('Rows with blank/N/A numeric value, such as non-US Claims N/A rows, are intentionally excluded from the usable-value preview.')
             st.dataframe(external_preview.tail(12),use_container_width=True,hide_index=True)
         else:
-            st.caption('No external repo macro pack detected yet. Run the GitHub Actions macro-pack workflow or use upload/generate fallback below.')
-        pack_month=st.text_input('Pack month',value=pd.Timestamp.today().strftime('%Y-%m'),key='macro_pack_month_input')
+            st.warning('No usable external repo macro pack detected. Check macro_pack_latest/macro_data.csv in GitHub or use owner upload fallback.')
+        pack_month=st.text_input('Fallback pack month',value=pd.Timestamp.today().strftime('%Y-%m'),key='macro_pack_month_input')
         selected_aliases=st.multiselect('Markets in generated pack',['US','SG','HK','CN','MY','JP'],default=['US','SG','HK','CN','MY','JP'],key='macro_pack_aliases_select')
-        if st.button('Generate Monthly Macro Pack',use_container_width=True,key='generate_macro_pack_button'):
+        if st.button('Generate fallback macro pack preview only',use_container_width=True,key='generate_macro_pack_button'):
             try:
                 pack=build_monthly_macro_pack(pack_month,selected_aliases)
                 st.session_state.generated_macro_pack=pack
                 st.session_state.generated_macro_pack_bytes=macro_pack_to_excel_bytes(pack)
                 st.session_state.generated_macro_pack_csv_zip_bytes=macro_pack_to_csv_zip_bytes(pack)
-                st.session_state.macro_upload_df=_normalise_macro_upload(pack['macro_data'])
-                st.success(f"Macro pack generated and applied for this session: {len(pack['macro_data'])} accepted row(s), {len(pack['manual_required'])} manual-required row(s).")
+                # v38q quick fix: do not auto-apply fallback generator over external repo pack
+                # Use the upload fallback or owner save button if you explicitly want to override external pack.
+                st.success(f"Fallback macro pack generated for preview/download only: {len(pack['macro_data'])} accepted row(s), {len(pack['manual_required'])} manual-required row(s). It did not override the active external repo pack.")
             except Exception as e:
                 st.warning(f'Could not generate macro pack: {e}')
         pack=st.session_state.get('generated_macro_pack')
         if isinstance(pack,dict):
-            st.caption('Generated pack preview — accepted macro_data rows:')
+            st.caption('Fallback macro pack preview — accepted macro_data rows:')
             st.dataframe(pack.get('macro_data',pd.DataFrame()).tail(12),use_container_width=True,hide_index=True)
             if not pack.get('manual_required',pd.DataFrame()).empty:
                 st.caption('Manual-required exceptions:')
@@ -1039,7 +1050,7 @@ def render_macro_data_manager_sidebar():
         if uploaded is not None:
             try:
                 raw=read_macro_pack_upload(uploaded); parsed=_normalise_macro_upload(raw); st.session_state.macro_upload_df=parsed
-                st.success(f'{len(parsed)} macro row(s) loaded and applied for this session.'); st.dataframe(parsed.tail(12),use_container_width=True,hide_index=True)
+                st.success(f'{len(parsed)} macro row(s) loaded as explicit session override.'); st.dataframe(parsed.tail(12),use_container_width=True,hide_index=True)
                 if is_platform_owner() and st.button('Save uploaded macro overrides',use_container_width=True,key='save_macro_overrides_button'):
                     parsed.to_csv(MACRO_OVERRIDE_FILE,index=False); load_macro_overrides_from_disk.clear(); st.success('Macro overrides saved to macro_overrides.csv.')
             except Exception as e: st.warning(f'Could not read macro file: {e}')
