@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v37g — full working update from v37f on 2026-06-22
+# Global20Engine v37h — full macro-pack workflow update from v37f on 2026-06-22
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -347,7 +347,7 @@ def fetch_fred_pmi(series_id='NAPM'):
         return pd.DataFrame()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37g macro-pack helpers: defensive sources + CSV ZIP fallback download
+# v37h macro-pack helpers: defensive sources + CSV ZIP fallback download
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=21600)
 def fetch_fred_data_page_series(series_id):
@@ -415,7 +415,8 @@ def fetch_yahoo_us_10y():
         if df is None or df.empty:
             _diag(adapter,'yfinance ^TNX',False,0,'no data','','Yahoo returned empty history')
             return None,'N/A'
-        val=safe_float(df.Close.iloc[-1])/10.0
+        raw_val=safe_float(df.Close.iloc[-1])
+        val=raw_val/10.0 if raw_val>20 else raw_val
         dt=pd.Timestamp(df.index[-1]).strftime('%d %b %Y')
         _diag(adapter,'yfinance ^TNX',True,len(df),'price series',f'{dt}={val:.2f}','')
         return val,dt
@@ -527,7 +528,8 @@ def _test_yahoo_tnx():
     try:
         df=hist('^TNX','2025-06-01')
         if df is None or df.empty: return _diag_row('Yahoo ^TNX','yfinance ^TNX',False,0,'no data','','Yahoo empty history')
-        v=safe_float(df.Close.iloc[-1])/10.0
+        raw=safe_float(df.Close.iloc[-1])
+        v=raw/10.0 if raw>20 else raw
         return _diag_row('Yahoo ^TNX','yfinance ^TNX',True,len(df),'price series',f'{df.index[-1].date()}={v:.2f}','')
     except Exception as e:
         return _diag_row('Yahoo ^TNX','yfinance ^TNX',False,0,'fetch error','',str(e))
@@ -811,7 +813,7 @@ def resolve_macro_value(market,indicator):
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37g — Web Monthly Macro Pack Generator with Excel-or-CSV download
+# v37h — Web Monthly Macro Pack Generator with Excel-or-CSV download
 # ─────────────────────────────────────────────────────────────────────────────
 MACRO_PACK_REQUIRED_COLUMNS=['market','indicator','date','value','unit','source','source_type','notes']
 MARKET_ALIAS_TO_PLATFORM={'US':['S&P 500','Nasdaq','DJIA'],'SG':['STI'],'HK':['HSI'],'CN':['A-Share'],'MY':['KLSE'],'JP':['Nikkei 225'],'GLOBAL':['Gold','Bitcoin']}
@@ -825,6 +827,61 @@ PMI_SOURCE_CHAINS={
 'MY':[('S&P Global Malaysia PMI release','Official / Pack','html','https://www.pmi.spglobal.com/Public/Home/PressRelease/46f012a13a274bf5b4db5bc6f3bca946',[r'dropped to\s*([0-9]+(?:\.[0-9]+)?)']),('Trading Economics Malaysia PMI','Calendar / Pack','html','https://tradingeconomics.com/malaysia/manufacturing-pmi',[r'decreased to\s*([0-9]+(?:\.[0-9]+)?)'])],
 'JP':[('Trading Economics Japan PMI','Calendar / Pack','html','https://tradingeconomics.com/japan/manufacturing-pmi',[r'confirmed at\s*([0-9]+(?:\.[0-9]+)?)',r'decreased to\s*([0-9]+(?:\.[0-9]+)?)'])]
 }
+
+# v37h: consolidated official/manual source links included in every generated macro pack.
+# Purpose: avoid remembering many monthly links; the generated Excel/CSV ZIP carries the source map.
+MACRO_SOURCE_LINKS = [
+    {'market':'US','indicator':'Inflation','source_name':'FRED CPIAUCSL','url':'https://fred.stlouisfed.org/series/CPIAUCSL','manual_role':'fallback/check only'},
+    {'market':'US','indicator':'Unemployment','source_name':'FRED UNRATE','url':'https://fred.stlouisfed.org/series/UNRATE','manual_role':'fallback/check only'},
+    {'market':'US','indicator':'Claims','source_name':'FRED ICSA','url':'https://fred.stlouisfed.org/series/ICSA','manual_role':'fallback/check only'},
+    {'market':'US','indicator':'Rates','source_name':'FRED DGS10','url':'https://fred.stlouisfed.org/series/DGS10','manual_role':'fallback/check only'},
+    {'market':'US','indicator':'PMI','source_name':'ISM Manufacturing PMI / FRED NAPM','url':'https://fred.stlouisfed.org/series/NAPM','manual_role':'fallback/check only'},
+    {'market':'SG','indicator':'Inflation','source_name':'SingStat CPI table','url':'https://tablebuilder.singstat.gov.sg/','manual_role':'official check if adapter fails'},
+    {'market':'SG','indicator':'Unemployment','source_name':'SingStat / MOM unemployment','url':'https://tablebuilder.singstat.gov.sg/','manual_role':'official check if adapter fails'},
+    {'market':'SG','indicator':'Rates','source_name':'MAS domestic rates / SORA','url':'https://eservices.mas.gov.sg/statistics/','manual_role':'official check if adapter fails'},
+    {'market':'SG','indicator':'PMI','source_name':'SIPMM Singapore Manufacturing PMI','url':'https://sipmm.edu.sg/resources/singapore-pmi/','manual_role':'official check if calendar source fails'},
+    {'market':'HK','indicator':'Inflation','source_name':'HKMA / C&SD CPI','url':'https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics','manual_role':'validation check'},
+    {'market':'HK','indicator':'Unemployment','source_name':'HKMA unemployment','url':'https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics','manual_role':'fallback/check only'},
+    {'market':'HK','indicator':'Rates','source_name':'HKMA interest rates','url':'https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/','manual_role':'official check if adapter fails'},
+    {'market':'HK','indicator':'PMI','source_name':'S&P Global Hong Kong SAR PMI','url':'https://tradingeconomics.com/hong-kong/manufacturing-pmi','manual_role':'calendar fallback'},
+    {'market':'CN','indicator':'Inflation','source_name':'NBS China CPI','url':'https://www.stats.gov.cn/english/PressRelease/','manual_role':'validation mode'},
+    {'market':'CN','indicator':'Unemployment','source_name':'NBS surveyed unemployment','url':'https://www.stats.gov.cn/english/PressRelease/','manual_role':'validation mode'},
+    {'market':'CN','indicator':'Rates','source_name':'PBC / CFETS Loan Prime Rate','url':'https://www.chinamoney.com.cn/english/','manual_role':'validation mode'},
+    {'market':'CN','indicator':'PMI','source_name':'NBS Manufacturing PMI','url':'https://www.stats.gov.cn/english/PressRelease/','manual_role':'official source'},
+    {'market':'MY','indicator':'PMI','source_name':'S&P Global Malaysia Manufacturing PMI','url':'https://www.pmi.spglobal.com/','manual_role':'official/calendar check'},
+    {'market':'JP','indicator':'PMI','source_name':'au Jibun Bank Japan Manufacturing PMI','url':'https://www.pmi.spglobal.com/','manual_role':'official/calendar check'},
+]
+
+def build_macro_source_links_df(include_aliases=None):
+    include_aliases = include_aliases or ['US','SG','HK','CN','MY','JP']
+    df = pd.DataFrame(MACRO_SOURCE_LINKS)
+    if df.empty:
+        return pd.DataFrame(columns=['market','indicator','source_name','url','manual_role'])
+    return df[df['market'].isin(include_aliases)].copy().reset_index(drop=True)
+
+def build_manual_input_template(manual_df, pack_month):
+    cols = ['market','indicator','date','value','unit','source','source_type','notes']
+    if manual_df is None or manual_df.empty:
+        return pd.DataFrame(columns=cols)
+    rows = []
+    default_date = _month_start_from_pack_month(pack_month)
+    for _, r in manual_df.iterrows():
+        ind = str(r.get('indicator',''))
+        unit = '%' if ind in ['Inflation','Unemployment','Rates'] else 'k' if ind == 'Claims' else 'index' if ind == 'PMI' else ''
+        rows.append({'market': r.get('market',''), 'indicator': ind, 'date': default_date, 'value': '', 'unit': unit, 'source': 'Owner-reviewed official value', 'source_type': 'Owner-uploaded', 'notes': str(r.get('reason','')) + ' | ' + str(r.get('suggested_action',''))})
+    return pd.DataFrame(rows, columns=cols)
+
+def build_macro_source_catalogue_df(include_aliases=None):
+    include_aliases = include_aliases or ['US','SG','HK','CN','MY','JP']
+    rows = []
+    for alias in include_aliases:
+        platform = MARKET_ALIAS_TO_PLATFORM.get(alias, [alias])[0]
+        registry = MACRO_SOURCE_REGISTRY.get(platform, {})
+        for indicator in ['Inflation','Unemployment','Claims','Rates','PMI']:
+            src = registry.get('Jobs' if indicator == 'Unemployment' else indicator, registry.get(indicator, 'Awaiting official mapping'))
+            manual_allowed = 'Exception only' if indicator == 'PMI' else ('N/A' if indicator == 'Claims' and alias != 'US' else 'Fallback only')
+            rows.append({'market':alias,'indicator':indicator,'primary_source':src,'fallback_policy':'Primary adapter → alternate official/calendar source → owner-upload exception','manual_allowed':manual_allowed})
+    return pd.DataFrame(rows)
 
 def _month_start_from_pack_month(pack_month):
     try: return pd.Timestamp(str(pack_month)+'-01').strftime('%Y-%m-%d')
@@ -868,6 +925,8 @@ def fetch_pmi_for_pack(alias,pack_month):
             val=_extract_num(txt,patterns) if txt else None
             reason='' if val is not None else (err or 'No configured pattern matched')
         ok,msg=_valid_macro_value('PMI',val) if val is not None else (False,reason)
+        if ok and default is not None and alias in ['SG','HK','CN','MY','JP'] and abs(float(val)-float(default)) > 3.0:
+            ok=False; msg=f'Calendar PMI {val:.1f} differs materially from reviewed fallback seed {default:.1f}; requires owner review'
         attempts.append(_diag_pack(alias,'PMI',rank,name,stype,'accepted' if ok else 'failed',val,date,'' if ok else msg,url or ''))
         if ok:
             return _macro_row(alias,'PMI',date,val,'index',label,stype,f'Auto-generated; retrieval channel: {name}'),attempts,None
@@ -901,7 +960,22 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v37g web macro pack generator'},{'field':'source_policy','value':'Generated/applied pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    manual_df=pd.DataFrame(manual)
+    macro_df=pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS)
+    diag_df=pd.DataFrame(diag)
+    source_links_df=build_macro_source_links_df(include_aliases)
+    manual_template_df=build_manual_input_template(manual_df,pack_month)
+    source_catalogue_df=build_macro_source_catalogue_df(include_aliases)
+    readme_df=pd.DataFrame([
+        {'field':'pack_month','value':pack_month},
+        {'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},
+        {'field':'generator_version','value':'Global20Engine v37h web macro pack generator'},
+        {'field':'source_policy','value':'Generated/applied pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A'},
+        {'field':'persistence_policy','value':'Generated pack applies immediately to the current Streamlit session. Save as active CSV in Owner Mode to persist after refresh/redeploy.'},
+        {'field':'source_links_policy','value':'source_links sheet consolidates official/calendar links so the owner does not need to remember monthly URLs.'},
+        {'field':'manual_template_policy','value':'manual_input_template sheet contains only exception rows requiring owner-reviewed values.'},
+    ])
+    return {'macro_data':macro_df,'diagnostics':diag_df,'manual_required':manual_df,'manual_input_template':manual_template_df,'source_links':source_links_df,'README':readme_df,'source_catalogue':source_catalogue_df}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -944,7 +1018,7 @@ def render_macro_adapter_diagnostics_sidebar():
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
-        st.caption('v37g source priority: generated/applied monthly pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A. Generated packs apply immediately for this session; use Owner Mode save if you want the generated macro_data to persist after refresh.')
+        st.caption('v37h source priority: generated/applied monthly pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A. Generated packs apply immediately for this session; use Owner Mode save if you want the generated macro_data to persist after refresh.')
         pack_month=st.text_input('Pack month',value=pd.Timestamp.today().strftime('%Y-%m'),key='macro_pack_month_input')
         selected_aliases=st.multiselect('Markets in generated pack',['US','SG','HK','CN','MY','JP'],default=['US','SG','HK','CN','MY','JP'],key='macro_pack_aliases_select')
         if st.button('Generate Monthly Macro Pack',use_container_width=True,key='generate_macro_pack_button'):
@@ -965,6 +1039,12 @@ def render_macro_data_manager_sidebar():
             if not pack.get('manual_required',pd.DataFrame()).empty:
                 st.caption('Manual-required exceptions:')
                 st.dataframe(pack.get('manual_required'),use_container_width=True,hide_index=True)
+            if 'manual_input_template' in pack and not pack.get('manual_input_template',pd.DataFrame()).empty:
+                st.caption('Owner upload template for unresolved exceptions:')
+                st.dataframe(pack.get('manual_input_template'),use_container_width=True,hide_index=True)
+            if 'source_links' in pack and not pack.get('source_links',pd.DataFrame()).empty:
+                st.caption('Consolidated source links included in Excel/CSV ZIP:')
+                st.dataframe(pack.get('source_links'),use_container_width=True,hide_index=True)
             excel_bytes=st.session_state.get('generated_macro_pack_bytes')
             zip_bytes=st.session_state.get('generated_macro_pack_csv_zip_bytes')
             if excel_bytes:
