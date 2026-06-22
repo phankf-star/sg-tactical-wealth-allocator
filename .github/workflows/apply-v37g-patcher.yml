@@ -35,4 +35,3 @@ jobs:
           git add sg_tactical_wealth_allocator_v37g.py sg_tactical_wealth_allocator_v37f_backup.py
           git commit -m "Generate v37g patched app file" || echo "No changes to commit"
           git push
-
