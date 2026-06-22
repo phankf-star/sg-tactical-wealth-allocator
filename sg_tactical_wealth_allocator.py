@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v37f — patched from v37b on 2026-06-22
+# Global20Engine v37g — full working update from v37f on 2026-06-22
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -347,7 +347,7 @@ def fetch_fred_pmi(series_id='NAPM'):
         return pd.DataFrame()
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37f macro-pack helpers: defensive sources + CSV ZIP fallback download
+# v37g macro-pack helpers: defensive sources + CSV ZIP fallback download
 # ─────────────────────────────────────────────────────────────────────────────
 @st.cache_data(ttl=21600)
 def fetch_fred_data_page_series(series_id):
@@ -550,7 +550,6 @@ def run_macro_adapter_diagnostics_uncached():
     return rows
 
 @st.cache_data(ttl=21600)
-@st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
     url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
     adapter=f'FRED {series_id}'
@@ -572,7 +571,6 @@ def fetch_fred_series(series_id):
         return df
     return fetch_dbnomics_fred_mirror(series_id)
 
-@st.cache_data(ttl=21600)
 @st.cache_data(ttl=21600)
 def us_macro_dashboard_data():
     cpi=fetch_fred_series('CPIAUCSL'); unrate=fetch_fred_series('UNRATE'); claims=fetch_fred_series('ICSA')
@@ -813,12 +811,12 @@ def resolve_macro_value(market,indicator):
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 
 # ─────────────────────────────────────────────────────────────────────────────
-# v37f — Web Monthly Macro Pack Generator with Excel-or-CSV download
+# v37g — Web Monthly Macro Pack Generator with Excel-or-CSV download
 # ─────────────────────────────────────────────────────────────────────────────
 MACRO_PACK_REQUIRED_COLUMNS=['market','indicator','date','value','unit','source','source_type','notes']
 MARKET_ALIAS_TO_PLATFORM={'US':['S&P 500','Nasdaq','DJIA'],'SG':['STI'],'HK':['HSI'],'CN':['A-Share'],'MY':['KLSE'],'JP':['Nikkei 225'],'GLOBAL':['Gold','Bitcoin']}
 PLATFORM_TO_UPLOAD_ALIAS={v:k for k,vals in MARKET_ALIAS_TO_PLATFORM.items() for v in vals}
-PMI_DEFAULTS={'US':('ISM Manufacturing PMI',54.0),'SG':('SIPMM Singapore Manufacturing PMI',51.0),'HK':('S&P Global Hong Kong SAR PMI',50.4),'CN':('NBS Manufacturing PMI',50.0),'MY':('S&P Global Malaysia Manufacturing PMI',49.9),'JP':('au Jibun Bank Japan Manufacturing PMI',54.5)}
+PMI_DEFAULTS={'US':('ISM Manufacturing PMI',54.0),'SG':('SIPMM Singapore Manufacturing PMI',51.0),'HK':('S&P Global Hong Kong SAR PMI',50.4),'CN':('NBS Manufacturing PMI',50.0),'MY':('S&P Global Malaysia Manufacturing PMI',49.9),'JP':('au Jibun Bank Japan Manufacturing PMI',50.4)}
 PMI_SOURCE_CHAINS={
 'US':[('FRED NAPM / ISM PMI','Official / Pack','fred_pmi',None,[])],
 'SG':[('Investing.com Singapore PMI calendar','Calendar / Pack','html','https://www.investing.com/economic-calendar/singaporean-pmi-792',[r'Actual\s*([0-9]+(?:\.[0-9]+)?)']),('MQL5 Singapore PMI calendar','Calendar / Pack','html','https://www.mql5.com/en/economic-calendar/singapore/sippm-manufacturing-pmi',[r'May\s+2026\s+([0-9]+(?:\.[0-9]+)?)'])],
@@ -903,7 +901,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v37f web macro pack generator'},{'field':'source_policy','value':'Generated/applied pack overrides uploaded/saved/live adapters'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v37g web macro pack generator'},{'field':'source_policy','value':'Generated/applied pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -946,7 +944,7 @@ def render_macro_adapter_diagnostics_sidebar():
 
 def render_macro_data_manager_sidebar():
     with st.expander('📥 Macro Data Manager',expanded=False):
-        st.caption('v37f source priority: generated/applied monthly pack → uploaded Excel pack → saved overrides → live adapters → awaiting/N/A.')
+        st.caption('v37g source priority: generated/applied monthly pack → uploaded Excel/CSV pack → saved overrides → live adapters → awaiting/N/A. Generated packs apply immediately for this session; use Owner Mode save if you want the generated macro_data to persist after refresh.')
         pack_month=st.text_input('Pack month',value=pd.Timestamp.today().strftime('%Y-%m'),key='macro_pack_month_input')
         selected_aliases=st.multiselect('Markets in generated pack',['US','SG','HK','CN','MY','JP'],default=['US','SG','HK','CN','MY','JP'],key='macro_pack_aliases_select')
         if st.button('Generate Monthly Macro Pack',use_container_width=True,key='generate_macro_pack_button'):
@@ -962,6 +960,7 @@ def render_macro_data_manager_sidebar():
         pack=st.session_state.get('generated_macro_pack')
         if isinstance(pack,dict):
             st.caption('Generated pack preview — accepted macro_data rows:')
+            st.caption('Persistence note: generated values remain active during this Streamlit session. To keep them after refresh/redeploy, unlock Owner Mode and save generated macro_data as active CSV, or download the Excel/CSV pack.')
             st.dataframe(pack.get('macro_data',pd.DataFrame()).tail(12),use_container_width=True,hide_index=True)
             if not pack.get('manual_required',pd.DataFrame()).empty:
                 st.caption('Manual-required exceptions:')
@@ -2458,4 +2457,3 @@ def run_render_loop():
     st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
 
 run_render_loop()
-
