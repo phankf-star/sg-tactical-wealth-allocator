@@ -1,3 +1,13 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Global20Engine v37c — patched from v37b on 2026-06-22
+# Macro adapter changes only:
+#   • NEW: fetch_dbnomics_fred_mirror, fetch_yahoo_us_10y
+#   • MOD: fetch_fred_series cascades to DBnomics on FRED failure
+#   • MOD: us_macro_dashboard_data prefers Yahoo ^TNX for US 10Y
+#   • MOD: resolve_macro_value US rates branch shows dynamic source
+#   • MOD: diagnostics include DBnomics + Yahoo tests
+# UI / scoring / valuation / crash analytics: unchanged from v37b.
+# ─────────────────────────────────────────────────────────────────────────────
 
 import math
 import time
@@ -338,6 +348,58 @@ def fetch_fred_pmi(series_id='NAPM'):
     except Exception:
         return pd.DataFrame()
 
+# ─────────────────────────────────────────────────────────────────────────────
+# v37c PATCH 1 — NEW fallback fetchers
+# ─────────────────────────────────────────────────────────────────────────────
+@st.cache_data(ttl=21600)
+def fetch_dbnomics_fred_mirror(series_id):
+    """Fallback adapter: fetch FRED series via DBnomics REST API (no API key required).
+    Returns same DataFrame shape as fetch_fred_series: index=DATE, column='Value'."""
+    url = f'https://api.db.nomics.world/v22/series/FRED/{series_id}?observations=1'
+    adapter = f'DBnomics FRED/{series_id}'
+    txt, err, row = _request_text(url, adapter, capture_global=True)
+    if not txt:
+        return pd.DataFrame()
+    try:
+        payload = json.loads(txt)
+        docs = payload.get('series', {}).get('docs', [])
+        if not docs:
+            _diag(adapter, url, True, 0, 'no docs', '', 'DBnomics returned empty docs list')
+            return pd.DataFrame()
+        doc = docs[0]
+        periods = doc.get('period', []) or []
+        values = doc.get('value', []) or []
+        if not periods or not values:
+            _diag(adapter, url, True, 0, 'empty observations', '', 'DBnomics returned no observations')
+            return pd.DataFrame()
+        df = pd.DataFrame({'Value': values}, index=pd.to_datetime(periods, errors='coerce'))
+        df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
+        df = df.dropna()
+        latest = '' if df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+        _diag(adapter, url, True, len(df), 'mirror parsed', latest, '' if not df.empty else 'No numeric values after parse')
+        return df
+    except Exception as e:
+        _diag(adapter, url, True, 0, 'parser error', '', f'DBnomics JSON parse error: {e}')
+        return pd.DataFrame()
+
+@st.cache_data(ttl=3600)
+def fetch_yahoo_us_10y():
+    """Live US 10Y Treasury yield from Yahoo Finance.
+    ^TNX returns yield * 10, so divide by 10 to get the actual percentage."""
+    adapter = 'Yahoo ^TNX'
+    try:
+        df = hist('^TNX', '2025-01-01')
+        if df is None or df.empty:
+            _diag(adapter, 'yfinance ^TNX', False, 0, 'no data', '', 'Yahoo returned empty history')
+            return None, 'N/A'
+        latest_val = safe_float(df.Close.iloc[-1]) / 10.0
+        latest_date = pd.Timestamp(df.index[-1]).strftime('%d %b %Y')
+        _diag(adapter, 'yfinance ^TNX', True, len(df), 'price series', f'{latest_date}={latest_val:.2f}', '')
+        return latest_val, latest_date
+    except Exception as e:
+        _diag(adapter, 'yfinance ^TNX', False, 0, 'fetch error', '', f'Yahoo ^TNX error: {e}')
+        return None, 'N/A'
+
 
 
 # ------------------------- Macro adapter diagnostics and defensive source fetch -------------------------
@@ -346,7 +408,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'FRED DGS10'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'Nasdaq':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'DJIA':{'Inflation':'FRED CPIAUCSL (+ DBnomics fallback)','Jobs':'FRED UNRATE (+ DBnomics fallback)','Claims':'FRED ICSA (+ DBnomics fallback)','Rates':'Yahoo ^TNX (+ FRED DGS10 fallback)'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS PMI validation mode','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -439,10 +501,46 @@ def _test_hkma_economic_statistics():
         return _diag_row(adapter,url,True,len(records),'records',sample,'' if records else 'JSON ok but no records')
     except Exception as e: return _diag_row(adapter,url,True,0,'json parser error','',f'JSON parse error: {e}')
 
+def _test_dbnomics_fred(series_id):
+    url = f'https://api.db.nomics.world/v22/series/FRED/{series_id}?observations=1'
+    adapter = f'DBnomics FRED/{series_id}'
+    txt, err, row = _request_text(url, adapter, capture_global=False)
+    if not txt:
+        return row
+    try:
+        payload = json.loads(txt)
+        docs = payload.get('series', {}).get('docs', [])
+        if not docs:
+            return _diag_row(adapter, url, True, 0, 'no docs', '', 'DBnomics returned empty docs')
+        doc = docs[0]
+        periods = doc.get('period', []) or []
+        values = doc.get('value', []) or []
+        latest = '' if not periods else f'{periods[-1]}={values[-1] if values else "N/A"}'
+        return _diag_row(adapter, url, True, len(periods), 'mirror series', latest, '' if periods else 'No observations returned')
+    except Exception as e:
+        return _diag_row(adapter, url, True, 0, 'json parser error', '', f'JSON parse error: {e}')
+
+def _test_yahoo_tnx():
+    adapter = 'Yahoo ^TNX'
+    try:
+        df = hist('^TNX', '2025-06-01')
+        if df is None or df.empty:
+            return _diag_row(adapter, 'yfinance ^TNX', False, 0, 'no data', '', 'Yahoo empty history')
+        v = safe_float(df.Close.iloc[-1]) / 10.0
+        return _diag_row(adapter, 'yfinance ^TNX', True, len(df), 'price series', f'{df.index[-1].date()}={v:.2f}', '')
+    except Exception as e:
+        return _diag_row(adapter, 'yfinance ^TNX', False, 0, 'fetch error', '', f'Yahoo error: {e}')
+
 def run_macro_adapter_diagnostics_uncached():
-    rows=[]
+    rows = []
+    # Direct FRED tests
     for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
         rows.append(_test_fred_series(sid))
+    # v37c: DBnomics FRED-mirror fallback tests
+    for sid in ['CPIAUCSL','UNRATE','ICSA','DGS10']:
+        rows.append(_test_dbnomics_fred(sid))
+    # v37c: Yahoo US 10Y preferred source test
+    rows.append(_test_yahoo_tnx())
     for rid in ['d_bdaff844e3ef89d39fceb962ff8f0791','d_b816a930bca0eb19fdf20fcbfcdd4c39','d_5fe5a4bb4a1ecc4d8a56a095832e2b24']:
         rows.append(_test_datagovsg_resource(rid))
     for tid in ['M213751','M182342']:
@@ -452,44 +550,77 @@ def run_macro_adapter_diagnostics_uncached():
     return rows
 
 @st.cache_data(ttl=21600)
+@st.cache_data(ttl=21600)
 def fetch_fred_series(series_id):
-    url=f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
-    adapter=f'FRED {series_id}'
-    txt,err,row=_request_text(url,adapter,capture_global=True)
-    if not txt: return pd.DataFrame()
-    try:
-        df=pd.read_csv(io.StringIO(txt),parse_dates=['DATE'])
-        if df.empty or series_id not in df.columns:
-            _diag(adapter,url,True,0,'series column not matched','',f'Columns returned: {list(df.columns)[:8]}')
-            return pd.DataFrame()
-        df=df.rename(columns={series_id:'Value'}).set_index('DATE')
-        df['Value']=pd.to_numeric(df['Value'],errors='coerce')
-        df=df.dropna()
-        latest='' if df.empty else f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
-        _diag(adapter,url,True,len(df),'series column matched',latest,'' if not df.empty else 'CSV parsed but no numeric values')
-        return df
-    except Exception as e:
-        _diag(adapter,url,True,0,'parser error','',f'CSV parse error: {e}')
-        return pd.DataFrame()
+    """Primary: FRED direct CSV. Fallback: DBnomics FRED mirror (no API key needed)."""
+    url = f'https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}'
+    adapter = f'FRED {series_id}'
+    txt, err, row = _request_text(url, adapter, capture_global=True)
+    if txt:
+        try:
+            df = pd.read_csv(io.StringIO(txt), parse_dates=['DATE'])
+            if not df.empty and series_id in df.columns:
+                df = df.rename(columns={series_id: 'Value'}).set_index('DATE')
+                df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
+                df = df.dropna()
+                if not df.empty:
+                    latest = f"{df.index[-1].date()}={df['Value'].iloc[-1]}"
+                    _diag(adapter, url, True, len(df), 'series column matched', latest, '')
+                    return df
+                else:
+                    _diag(adapter, url, True, 0, 'series column matched', '', 'CSV parsed but no numeric values; trying DBnomics fallback')
+            else:
+                _diag(adapter, url, True, 0, 'series column not matched', '', f'Columns: {list(df.columns)[:8]}; trying DBnomics fallback')
+        except Exception as e:
+            _diag(adapter, url, True, 0, 'parser error', '', f'CSV parse error: {e}; trying DBnomics fallback')
+    return fetch_dbnomics_fred_mirror(series_id)
 
 @st.cache_data(ttl=21600)
+@st.cache_data(ttl=21600)
 def us_macro_dashboard_data():
-    cpi=fetch_fred_series('CPIAUCSL'); unrate=fetch_fred_series('UNRATE'); claims=fetch_fred_series('ICSA'); dgs10=fetch_fred_series('DGS10')
-    out={'inflation_yoy':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','claims_k':None,'claims_date':'N/A','dgs10':None,'dgs10_date':'N/A'}
+    """US macro bundle. CPI/UNRATE/ICSA via FRED→DBnomics cascade.
+    US 10Y prefers Yahoo ^TNX (real-time); falls back to FRED DGS10."""
+    cpi = fetch_fred_series('CPIAUCSL')
+    unrate = fetch_fred_series('UNRATE')
+    claims = fetch_fred_series('ICSA')
+    yahoo_10y_val, yahoo_10y_date = fetch_yahoo_us_10y()
+    out = {'inflation_yoy': None, 'inflation_date': 'N/A',
+           'jobs_rate': None, 'jobs_date': 'N/A',
+           'claims_k': None, 'claims_date': 'N/A',
+           'dgs10': None, 'dgs10_date': 'N/A', 'dgs10_source': 'N/A'}
     try:
-        if len(cpi)>=13:
-            latest=float(cpi['Value'].iloc[-1]); prior=float(cpi['Value'].iloc[-13])
-            if prior: out['inflation_yoy']=((latest/prior)-1)*100; out['inflation_date']=pd.Timestamp(cpi.index[-1]).strftime('%b %Y')
-    except Exception: pass
+        if len(cpi) >= 13:
+            latest = float(cpi['Value'].iloc[-1]); prior = float(cpi['Value'].iloc[-13])
+            if prior:
+                out['inflation_yoy'] = ((latest/prior)-1)*100
+                out['inflation_date'] = pd.Timestamp(cpi.index[-1]).strftime('%b %Y')
+    except Exception:
+        pass
     try:
-        if not unrate.empty: out['jobs_rate']=float(unrate['Value'].iloc[-1]); out['jobs_date']=pd.Timestamp(unrate.index[-1]).strftime('%b %Y')
-    except Exception: pass
+        if not unrate.empty:
+            out['jobs_rate'] = float(unrate['Value'].iloc[-1])
+            out['jobs_date'] = pd.Timestamp(unrate.index[-1]).strftime('%b %Y')
+    except Exception:
+        pass
     try:
-        if not claims.empty: out['claims_k']=float(claims['Value'].iloc[-1])/1000.0; out['claims_date']=pd.Timestamp(claims.index[-1]).strftime('%d %b %Y')
-    except Exception: pass
-    try:
-        if not dgs10.empty: out['dgs10']=float(dgs10['Value'].iloc[-1]); out['dgs10_date']=pd.Timestamp(dgs10.index[-1]).strftime('%d %b %Y')
-    except Exception: pass
+        if not claims.empty:
+            out['claims_k'] = float(claims['Value'].iloc[-1]) / 1000.0
+            out['claims_date'] = pd.Timestamp(claims.index[-1]).strftime('%d %b %Y')
+    except Exception:
+        pass
+    if yahoo_10y_val is not None:
+        out['dgs10'] = yahoo_10y_val
+        out['dgs10_date'] = yahoo_10y_date
+        out['dgs10_source'] = 'Yahoo ^TNX'
+    else:
+        dgs10 = fetch_fred_series('DGS10')
+        try:
+            if not dgs10.empty:
+                out['dgs10'] = float(dgs10['Value'].iloc[-1])
+                out['dgs10_date'] = pd.Timestamp(dgs10.index[-1]).strftime('%d %b %Y')
+                out['dgs10_source'] = 'FRED DGS10'
+        except Exception:
+            pass
     return out
 
 @st.cache_data(ttl=21600)
@@ -664,51 +795,69 @@ def macro_tooltip_text(display_name, market):
     return 'Macro data source priority: official API/table, owner-upload fallback, then diagnostic awaiting state.'
 
 def resolve_macro_value(market,indicator):
-    if indicator=='Claims' and market not in US_MARKETS: return _source_result(None,'N/A','Not applicable for this market','N/A')
+    if indicator=='Claims' and market not in US_MARKETS:
+        return _source_result(None,'N/A','Not applicable for this market','N/A')
     if indicator=='Rates':
         uploaded=get_uploaded_macro_value(market,'Rates')
-        if uploaded is not None: return _uploaded_result(uploaded)
+        if uploaded is not None:
+            return _uploaded_result(uploaded)
         if market in US_MARKETS or market in USD_PROXY_MARKETS:
             data=us_macro_dashboard_data()
-            if data.get('dgs10') is not None: return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · FRED DGS10 · {data['dgs10_date']}",'Official API',data['dgs10_date'])
-            return _awaiting_live('FRED DGS10', MACRO_DIAGNOSTICS.get('FRED DGS10',{}).get('Reason','FRED DGS10 returned no usable value'))
+            if data.get('dgs10') is not None:
+                src_label = data.get('dgs10_source','FRED DGS10')
+                return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · {src_label} · {data['dgs10_date']}",'Official API',data['dgs10_date'])
+            return _awaiting_live('Yahoo ^TNX / FRED DGS10', MACRO_DIAGNOSTICS.get('Yahoo ^TNX',{}).get('Reason','Both Yahoo ^TNX and FRED DGS10 returned no usable value'))
         if market=='STI':
             data=singapore_macro_dashboard_data()
-            if data.get('sg_rate') is not None: return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
+            if data.get('sg_rate') is not None:
+                return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
             return _awaiting_live('MAS/SingStat SORA or domestic rates')
-        if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
-        if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
+        if market=='HSI':
+            return _awaiting_live('HKMA HIBOR / base-rate related data')
+        if market=='A-Share':
+            return _awaiting_validation('CFETS/PBC 1Y LPR')
         return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get('Rates','Local rates adapter'),'Awaiting')
     if market in US_MARKETS:
         data=us_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · FRED UNRATE · {data['jobs_date']}",'Official API',data['jobs_date'])
-        if indicator=='Claims' and data.get('claims_k') is not None: return _source_result(data['claims_k'],f"{data['claims_k']:.0f}k",f"Official API · FRED ICSA · {data['claims_date']}",'Official API',data['claims_date'])
+        if indicator=='Inflation' and data.get('inflation_yoy') is not None:
+            return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
+        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None:
+            return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · FRED UNRATE · {data['jobs_date']}",'Official API',data['jobs_date'])
+        if indicator=='Claims' and data.get('claims_k') is not None:
+            return _source_result(data['claims_k'],f"{data['claims_k']:.0f}k",f"Official API · FRED ICSA · {data['claims_date']}",'Official API',data['claims_date'])
         uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
+        if uploaded is not None:
+            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'FRED'))
     if market=='STI' and indicator in ['Inflation','Jobs','Unemployment']:
         data=singapore_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · SingStat CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · SingStat/MOM unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
+        if indicator=='Inflation' and data.get('inflation_yoy') is not None:
+            return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · SingStat CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
+        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None:
+            return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · SingStat/MOM unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
         uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
+        if uploaded is not None:
+            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'SingStat official adapter'), data.get('diagnostic','Live fetch unavailable or row parser returned no usable value.'))
     if market=='HSI' and indicator in ['Inflation','Jobs','Unemployment']:
         data=hkma_macro_dashboard_data()
         if indicator=='Inflation' and data.get('inflation_value') is not None:
             src='Official API' if data.get('inflation_status')!='Needs validation' else 'Needs validation'
             return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
-        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
+        if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None:
+            return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
         uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
+        if uploaded is not None:
+            return _uploaded_result(uploaded)
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'HK official adapter'))
     if market=='A-Share' and indicator in ['Inflation','Jobs','Unemployment','PMI']:
         uploaded=get_uploaded_macro_value(market,indicator)
-        if uploaded is not None: return _uploaded_result(uploaded)
+        if uploaded is not None:
+            return _uploaded_result(uploaded)
         return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'NBS official adapter'))
     uploaded=get_uploaded_macro_value(market,indicator)
-    if uploaded is not None: return _uploaded_result(uploaded)
+    if uploaded is not None:
+        return _uploaded_result(uploaded)
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
 
 def render_macro_adapter_diagnostics_sidebar():
