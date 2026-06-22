@@ -3,6 +3,9 @@ name: Apply v37g patcher
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-v37g-patcher.yml"
 
 permissions:
   contents: write
