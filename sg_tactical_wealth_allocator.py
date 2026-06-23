@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38q — quick fix: external repo macro pack as active source on 2026-06-22
+# Global20Engine v38r — clean macro remarks: simple dashboard badges, source details in tooltip
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -829,6 +829,51 @@ def macro_tooltip_text(display_name, market):
     if display_name in ['US 10Y Yield','SG Rates','HK Rates','China Rates','USD Rates Proxy','Rates']: return rate_basis_text(market)+' Source priority: official API/table, owner-upload fallback, then live-fetch diagnostic.'
     return 'Macro data source priority: official API/table, owner-upload fallback, then diagnostic awaiting state.'
 
+
+def clean_macro_badge(source_type):
+    """Executive-facing source badge.
+    Keep ingestion method such as Power Query / Pack / Adapter in tooltip, not on-card.
+    """
+    s=str(source_type or '').strip()
+    sl=s.lower()
+    if s in ['N/A','']:
+        return 'N/A' if s=='N/A' else 'Awaiting'
+    if 'pending deployment' in sl:
+        return 'Pending deployment'
+    if 'official' in sl:
+        return 'Official'
+    if 'seed' in sl:
+        return 'Seed'
+    if 'owner' in sl or 'upload' in sl or 'manual' in sl:
+        return 'Manual'
+    if 'validation' in sl:
+        return 'Needs validation'
+    if 'await' in sl or 'live fetch' in sl:
+        return 'Awaiting'
+    return s
+
+def macro_visible_sub(display_name, status_text, source_type, date_text=''):
+    """One clean line below the value.
+    Source/query/provider details stay in tooltip; the card shows only date or simple state.
+    """
+    if date_text and str(date_text).strip() and str(date_text).strip()!='N/A':
+        return str(date_text).strip()
+    s=str(status_text or '').strip()
+    if '·' in s:
+        parts=[x.strip() for x in s.split('·') if x.strip()]
+        if parts:
+            last=parts[-1]
+            if last and last.lower() not in ['official api','official / pack','official / power query','owner-uploaded','seed / pack']:
+                return last
+            return ''
+    badge=clean_macro_badge(source_type)
+    if s == badge or s.lower() in ['official api','official / pack','official / power query','seed / pack','owner-uploaded']:
+        return ''
+    return s
+
+def pending_deployment_result(source_label='Pending deployment', diagnostic='Adapter pending deployment.'):
+    return _source_result(None,'Pending deployment',source_label,'Pending deployment',diagnostic=diagnostic)
+
 def resolve_macro_value(market,indicator):
     if indicator=='Claims' and market not in US_MARKETS:
         return _source_result(None,'N/A','Not applicable for this market','N/A')
@@ -845,9 +890,7 @@ def resolve_macro_value(market,indicator):
                 return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · {src} · {data['dgs10_date']}",'Official API',data['dgs10_date'])
             return _awaiting_live('Yahoo ^TNX / FRED DGS10')
         if market=='STI':
-            data=singapore_macro_dashboard_data()
-            if data.get('sg_rate') is not None: return _source_result(data['sg_rate'],f"{data['sg_rate']:.2f}%",f"Official API · MAS/SingStat rates · {data['sg_rate_date']}",'Official API',data['sg_rate_date'])
-            return _awaiting_live('MAS/SingStat SORA or domestic rates')
+            return pending_deployment_result('SG rates source pending deployment', 'SG Rates adapter pending deployment.')
         if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
         if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
     if market in US_MARKETS:
@@ -963,7 +1006,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38q quick-fix macro pack reader'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38r clean macro remarks build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -1914,11 +1957,13 @@ def render_executive():
     pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
     pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
     pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
-    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('value') is not None else 'Manual/Default'
+    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('value') is not None else 'Seed'
     rate_label=rate_card_label(index_label)
     cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
-    def _source_class(src): return 'source-official' if src=='Official API' else 'source-upload' if src=='Owner-uploaded' else 'source-na' if src=='N/A' else 'source-validation' if src=='Needs validation' else 'source-awaiting'
-    macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source',src),('Status',s),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(s)} <span class="source-pill {_source_class(src)}">{hesc(src)}</span></div></div>''' for n,v,s,src,diag in cards])
+    def _source_class(src):
+        badge=clean_macro_badge(src)
+        return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
+    macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source / Query',s),('Dashboard Badge',clean_macro_badge(src)),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(macro_visible_sub(n,s,src))} <span class="source-pill {_source_class(src)}">{hesc(clean_macro_badge(src))}</span></div></div>''' for n,v,s,src,diag in cards])
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
     st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger)}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Alignment Check {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
 
