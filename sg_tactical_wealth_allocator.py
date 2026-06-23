@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38r — clean macro remarks: simple dashboard badges, source details in tooltip
+# Global20Engine v38s — official APAC macro adapters; dashboard remarks kept in tooltip
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -434,7 +434,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS/SingStat SORA or domestic rates','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA HIBOR/Base Rate','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS open search.json SORA / domestic rates','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ Time-Series API overnight call rate','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -716,6 +716,266 @@ def hkma_macro_dashboard_data():
     except Exception as e: _diag(adapter,url,True,0,'parser error','',f'HKMA parser error: {e}')
     return out
 
+
+# ─────────────────────────────────────────────────────────────────────────────
+# v38s official APAC macro adapters — remarks/details are returned in sub/diagnostic
+# and rendered inside card tooltips; dashboard badges remain short via clean_macro_badge().
+# ─────────────────────────────────────────────────────────────────────────────
+def _json_records_from_payload(payload):
+    """Best-effort extraction for common official API JSON shapes."""
+    if isinstance(payload, list):
+        return payload
+    if not isinstance(payload, dict):
+        return []
+    for path in [
+        ('result','records'), ('result','data'), ('data',), ('records',),
+        ('series','docs'), ('docs',), ('observations',), ('value',)
+    ]:
+        cur = payload
+        ok = True
+        for key in path:
+            if isinstance(cur, dict) and key in cur:
+                cur = cur[key]
+            else:
+                ok = False; break
+        if ok and isinstance(cur, list):
+            return cur
+    return []
+
+def _latest_numeric_from_records(records, date_keys=None, value_keys=None, name_filter=None, avoid_filter=None):
+    date_keys = date_keys or ['date','Date','end_of_day','end_of_month','effective_date','year_dt','timestamp','period','TIME_PERIOD']
+    value_keys = value_keys or ['value','Value','rate','Rate','opr','OPR','sora','SORA','comp_sora_1m','hibor_1m','ir_1m','obs_value','OBS_VALUE']
+    name_filter = [x.lower() for x in (name_filter or [])]
+    avoid_filter = [x.lower() for x in (avoid_filter or [])]
+    rows=[]
+    for r in records or []:
+        if not isinstance(r, dict):
+            continue
+        label=' '.join(str(v) for v in r.values() if isinstance(v,(str,int,float)))[:500].lower()
+        if name_filter and not all(t in label for t in name_filter):
+            continue
+        if avoid_filter and any(t in label for t in avoid_filter):
+            continue
+        dt_raw=''
+        for dk in date_keys:
+            if dk in r and str(r.get(dk,'')).strip():
+                dt_raw=str(r.get(dk)); break
+        dt=pd.to_datetime(dt_raw, errors='coerce') if dt_raw else pd.NaT
+        for vk in value_keys:
+            if vk in r:
+                val=_clean_number(r.get(vk))
+                if val is not None:
+                    rows.append((dt, dt_raw or 'Latest', val, vk, r))
+                    break
+    if not rows:
+        return None
+    rows=sorted(rows, key=lambda x: (pd.Timestamp.min if pd.isna(x[0]) else x[0]))
+    return rows[-1]
+
+@st.cache_data(ttl=21600)
+def fetch_mas_sora_rate():
+    """Singapore rates: MAS open search.json Domestic Interest Rates feed."""
+    adapter='MAS search.json SORA'
+    url=('https://eservices.mas.gov.sg/api/action/datastore/search.json?'
+         'resource_id=9a0bf149-308c-4bd2-832d-76c8e6cb47ed&limit=100&'
+         'fields=end_of_day,sora,comp_sora_1m,comp_sora_3m,comp_sora_6m,sora_index&sort=end_of_day%20desc')
+    txt,err,row=_request_text(url,adapter,capture_global=True)
+    if not txt:
+        return None,'N/A','MAS open search.json unavailable',err
+    try:
+        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
+        for key,label in [('sora','SORA'),('comp_sora_1m','1M compounded SORA'),('comp_sora_3m','3M compounded SORA')]:
+            got=_latest_numeric_from_records(records, date_keys=['end_of_day','timestamp'], value_keys=[key])
+            if got:
+                dt,dt_raw,val,vk,rr=got
+                date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                _diag(adapter,url,True,len(records),label,f'{date_txt}={val}','')
+                return val,date_txt,label,''
+        _diag(adapter,url,True,len(records),'records parsed but SORA fields not found','','No sora / compounded SORA numeric value')
+        return None,'N/A','MAS SORA fields not found','No SORA numeric value'
+    except Exception as e:
+        _diag(adapter,url,True,0,'parser error','',str(e)); return None,'N/A','MAS parser error',str(e)
+
+@st.cache_data(ttl=21600)
+def fetch_bnm_opr_rate():
+    adapter='BNM OpenAPI OPR'
+    urls=['https://api.bnm.gov.my/public/opr','https://api.bnm.gov.my/public/opr?year='+str(pd.Timestamp.today().year)]
+    last=''
+    for url in urls:
+        txt,err,row=_request_text(url,adapter,capture_global=True)
+        if not txt:
+            last=err; continue
+        try:
+            payload=json.loads(txt); records=_json_records_from_payload(payload)
+            got=_latest_numeric_from_records(records, date_keys=['date','effective_date','Date'], value_keys=['rate','opr','OPR','value'])
+            if got:
+                dt,dt_raw,val,vk,rr=got
+                date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                _diag(adapter,url,True,len(records),'OPR',f'{date_txt}={val}','')
+                return val,date_txt,'BNM OpenAPI Overnight Policy Rate (OPR)',''
+            last='No recognised OPR value in response'
+        except Exception as e:
+            last=str(e)
+    _diag(adapter,' | '.join(urls),False,0,'OPR not parsed','',last)
+    return None,'N/A','BNM OpenAPI OPR',last
+
+@st.cache_data(ttl=21600)
+def fetch_opendosm_unemployment_rate():
+    adapter='OpenDOSM lfs_month unemployment'
+    url='https://api.data.gov.my/opendosm?id=lfs_month&limit=5000'
+    txt,err,row=_request_text(url,adapter,capture_global=True)
+    if not txt:
+        return None,'N/A','OpenDOSM lfs_month',err
+    try:
+        payload=json.loads(txt); records=_json_records_from_payload(payload)
+        got=_latest_numeric_from_records(records, date_keys=['date','Date'], value_keys=['u_rate','unemployment_rate','Unemployment Rate'])
+        if got:
+            dt,dt_raw,val,vk,rr=got
+            date_txt=pd.Timestamp(dt).strftime('%b %Y') if pd.notna(dt) else str(dt_raw)
+            _diag(adapter,url,True,len(records),'u_rate',f'{date_txt}={val}','')
+            return val,date_txt,'OpenDOSM Monthly Principal Labour Force Statistics',''
+        _diag(adapter,url,True,len(records),'u_rate not found','','No u_rate value')
+        return None,'N/A','OpenDOSM lfs_month','No u_rate value'
+    except Exception as e:
+        _diag(adapter,url,True,0,'parser error','',str(e)); return None,'N/A','OpenDOSM parser error',str(e)
+
+def _parse_dbnomics_doc(doc):
+    periods=doc.get('period') or doc.get('periods') or []
+    values=doc.get('value') or doc.get('values') or []
+    if isinstance(values, dict):
+        periods=list(values.keys()); values=list(values.values())
+    if not periods or not values:
+        return pd.DataFrame()
+    df=pd.DataFrame({'Value':values}, index=pd.to_datetime(periods, errors='coerce'))
+    df['Value']=pd.to_numeric(df['Value'], errors='coerce')
+    return df.dropna().sort_index()
+
+@st.cache_data(ttl=21600)
+def fetch_dbnomics_series_generic(provider, dataset, code):
+    adapter=f'DBnomics {provider}/{dataset}/{code}'
+    url=f'https://api.db.nomics.world/v22/series/{provider}/{dataset}/{urllib.parse.quote(str(code), safe="")}?observations=1'
+    txt,err,row=_request_text(url,adapter,capture_global=True)
+    if not txt:
+        return pd.DataFrame(), '', err
+    try:
+        payload=json.loads(txt)
+        docs=payload.get('series',{}).get('docs',[]) if isinstance(payload.get('series'),dict) else []
+        doc=docs[0] if docs else payload
+        df=_parse_dbnomics_doc(doc)
+        name=doc.get('name') or doc.get('Name') or str(code)
+        _diag(adapter,url,not df.empty,len(df),'series observations',f'{df.index[-1].date()}={df.Value.iloc[-1]}' if not df.empty else '', '' if not df.empty else 'No observations parsed')
+        return df,name,'' if not df.empty else 'No observations parsed'
+    except Exception as e:
+        _diag(adapter,url,True,0,'parser error','',str(e)); return pd.DataFrame(), '', str(e)
+
+@st.cache_data(ttl=21600)
+def fetch_dbnomics_dataset_docs(provider, dataset):
+    adapter=f'DBnomics {provider}/{dataset} catalogue'
+    urls=[f'https://api.db.nomics.world/v22/series/{provider}/{dataset}?observations=1', f'https://api.db.nomics.world/v22/datasets/{provider}/{dataset}']
+    for url in urls:
+        txt,err,row=_request_text(url,adapter,capture_global=True)
+        if not txt:
+            continue
+        try:
+            payload=json.loads(txt)
+            docs=payload.get('series',{}).get('docs',[]) if isinstance(payload.get('series'),dict) else payload.get('docs',[])
+            if docs:
+                _diag(adapter,url,True,len(docs),'catalogue docs',f'{len(docs)} series','')
+                return docs
+        except Exception:
+            pass
+    return []
+
+@st.cache_data(ttl=21600)
+def fetch_japan_cpi_yoy_dbnomics():
+    df,name,err=fetch_dbnomics_series_generic('STATJP','CPIm','001')
+    if df is None or df.empty or len(df)<13:
+        return None,'N/A','DBnomics STATJP/CPIm 001',err or 'Insufficient CPI observations'
+    latest=float(df.Value.iloc[-1]); prior=float(df.Value.iloc[-13])
+    if not prior:
+        return None,'N/A','DBnomics STATJP/CPIm 001','Prior-year CPI is zero'
+    yoy=((latest/prior)-1)*100
+    date_txt=pd.Timestamp(df.index[-1]).strftime('%b %Y')
+    return yoy,date_txt,'DBnomics STATJP/CPIm CPI All items YoY',''
+
+@st.cache_data(ttl=21600)
+def fetch_japan_unemployment_dbnomics():
+    docs=fetch_dbnomics_dataset_docs('STATJP','MIm')
+    candidates=[]
+    for d in docs:
+        label=' '.join(str(d.get(k,'')) for k in ['name','Name','series_name','title','code','series_code']).lower()
+        if 'unemployment rate' in label and ('total' in label or 'both' in label or 'sex' not in label):
+            code=d.get('code') or d.get('series_code') or d.get('seriesCode') or d.get('id')
+            if code: candidates.append(code)
+    candidates += ['M.U_RATE', 'U_RATE', '001009', '009']
+    seen=[]
+    for code in candidates:
+        if code in seen: continue
+        seen.append(code)
+        df,name,err=fetch_dbnomics_series_generic('STATJP','MIm',code)
+        if df is not None and not df.empty:
+            val=float(df.Value.iloc[-1]); date_txt=pd.Timestamp(df.index[-1]).strftime('%b %Y')
+            return val,date_txt,f'DBnomics STATJP/MIm unemployment rate ({code})',''
+    return None,'N/A','DBnomics STATJP/MIm unemployment rate','No matching unemployment series parsed'
+
+@st.cache_data(ttl=21600)
+def fetch_boj_overnight_call_rate():
+    adapter='BOJ Time-Series API FM01 overnight call rate'
+    start=(pd.Timestamp.today()-pd.DateOffset(months=18)).strftime('%Y%m')
+    url=f'https://www.stat-search.boj.or.jp/api/v1/getDataCode?db=FM01&code=STRDCLUCON&format=json&lang=en&startDate={start}'
+    txt,err,row=_request_text(url,adapter,capture_global=True)
+    if not txt:
+        return None,'N/A','BOJ Time-Series API FM01 STRDCLUCON',err
+    try:
+        payload=json.loads(txt)
+        # recursively look for observations containing value/date
+        records=[]
+        def walk(x):
+            if isinstance(x, dict):
+                if any(k in x for k in ['value','Value','OBS_VALUE','obs_value']) and any(k in x for k in ['date','Date','time','period','TIME_PERIOD']):
+                    records.append(x)
+                for v in x.values(): walk(v)
+            elif isinstance(x, list):
+                for v in x: walk(v)
+        walk(payload)
+        got=_latest_numeric_from_records(records, date_keys=['date','Date','time','period','TIME_PERIOD'], value_keys=['value','Value','OBS_VALUE','obs_value'])
+        if got:
+            dt,dt_raw,val,vk,rr=got
+            date_txt=pd.Timestamp(dt).strftime('%b %Y') if pd.notna(dt) else str(dt_raw)
+            _diag(adapter,url,True,len(records),'STRDCLUCON',f'{date_txt}={val}','')
+            return val,date_txt,'BOJ Time-Series API Uncollateralized Overnight Call Rate',''
+        _diag(adapter,url,True,len(records),'records scanned but not parsed','','No value/date record found')
+        return None,'N/A','BOJ Time-Series API FM01 STRDCLUCON','No value/date record found'
+    except Exception as e:
+        _diag(adapter,url,True,0,'parser error','',str(e)); return None,'N/A','BOJ parser error',str(e)
+
+@st.cache_data(ttl=21600)
+def fetch_hkma_hibor_rate():
+    adapter='HKMA Open API HIBOR'
+    # Try known API docs first; if HKMA changes path names, diagnostics will show failure and dashboard remains clean.
+    candidate_urls=[
+        'https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?pagesize=1000&sortby=end_of_day&sortorder=desc',
+        'https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-endperiod?pagesize=1000&sortby=end_of_month&sortorder=desc'
+    ]
+    last=''
+    for url in candidate_urls:
+        txt,err,row=_request_text(url,adapter,capture_global=True)
+        if not txt:
+            last=err; continue
+        try:
+            payload=json.loads(txt); records=payload.get('result',{}).get('records') or payload.get('result',{}).get('data') or []
+            got=_latest_numeric_from_records(records, date_keys=['end_of_day','end_of_month','date'], value_keys=['hibor_1m','ir_1m','one_month','1m','overnight','ir_overnight','value'])
+            if got:
+                dt,dt_raw,val,vk,rr=got
+                date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                _diag(adapter,url,True,len(records),vk,f'{date_txt}={val}','')
+                return val,date_txt,f'HKMA Open API HIBOR / HKD rates ({vk})',''
+            last='No HIBOR/HKD rate value recognised'
+        except Exception as e:
+            last=str(e)
+    _diag(adapter,' | '.join(candidate_urls),False,0,'HKMA HIBOR not parsed','',last)
+    return None,'N/A','HKMA Open API HIBOR / HKD rates',last
+
 @st.cache_data(ttl=21600)
 def nbs_validation_dashboard_data():
     _diag('NBS validation mode','data.stats.gov.cn / CFETS/PBC mapping',False,0,'validation mode','','NBS endpoint not promoted to production adapter in this file')
@@ -822,9 +1082,13 @@ def rate_basis_text(market):
     if market=='HSI': return 'Basis: Hong Kong-dollar interest-rate environment. Preferred basis: HKMA HIBOR, base rate or discount-window related rates.'
     if market=='A-Share': return 'Basis: China lending-rate benchmark. Preferred basis: CFETS/PBC 1-year Loan Prime Rate, validation mode.'
     if market in USD_PROXY_MARKETS: return 'Basis: US 10-year Treasury yield used as global USD rates / discount-rate proxy.'
+    if market=='KLSE':
+        return 'Basis: Malaysia policy-rate input. Preferred source: BNM OpenAPI Overnight Policy Rate (OPR).'
+    if market=='Nikkei 225':
+        return 'Basis: Japan overnight money-market rate. Preferred source: BOJ Time-Series Data Search API.'
     return 'Basis: selected market interest-rate input where mapped.'
 def macro_tooltip_text(display_name, market):
-    if display_name=='Unemployment': return 'Basis: official unemployment-rate series, not employment level. US uses FRED UNRATE; Singapore uses SingStat/MOM unemployment where available; Hong Kong uses HKMA unemployment; China remains NBS validation mode.'
+    if display_name=='Unemployment': return 'Basis: official unemployment-rate series, not employment level. US uses FRED UNRATE; Singapore uses SingStat/MOM unemployment where available; Hong Kong uses HKMA unemployment; Malaysia uses OpenDOSM lfs_month u_rate; Japan uses DBnomics STATJP/MIm; China remains NBS validation mode.'
     if display_name=='Claims': return 'Basis: US Initial Jobless Claims / Initial Claims. US markets use FRED ICSA as a labour-stress indicator. Non-US markets show N/A by default unless a comparable official claims series is deliberately mapped.'
     if display_name in ['US 10Y Yield','SG Rates','HK Rates','China Rates','USD Rates Proxy','Rates']: return rate_basis_text(market)+' Source priority: official API/table, owner-upload fallback, then live-fetch diagnostic.'
     return 'Macro data source priority: official API/table, owner-upload fallback, then diagnostic awaiting state.'
@@ -890,9 +1154,27 @@ def resolve_macro_value(market,indicator):
                 return _source_result(data['dgs10'],f"{data['dgs10']:.2f}%",f"Official API · {src} · {data['dgs10_date']}",'Official API',data['dgs10_date'])
             return _awaiting_live('Yahoo ^TNX / FRED DGS10')
         if market=='STI':
-            return pending_deployment_result('SG rates source pending deployment', 'SG Rates adapter pending deployment.')
-        if market=='HSI': return _awaiting_live('HKMA HIBOR / base-rate related data')
-        if market=='A-Share': return _awaiting_validation('CFETS/PBC 1Y LPR')
+            val,dt,src,err=fetch_mas_sora_rate()
+            if val is not None:
+                return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+            return _awaiting_live('MAS open search.json SORA / domestic rates', err or 'MAS SORA adapter returned no usable value')
+        if market=='HSI':
+            val,dt,src,err=fetch_hkma_hibor_rate()
+            if val is not None:
+                return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+            return _awaiting_live('HKMA Open API HIBOR / HKD rates', err or 'HKMA rates adapter returned no usable value')
+        if market=='A-Share':
+            return _awaiting_validation('CFETS/PBC 1Y LPR')
+        if market=='KLSE':
+            val,dt,src,err=fetch_bnm_opr_rate()
+            if val is not None:
+                return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+            return _awaiting_live('BNM OpenAPI Overnight Policy Rate (OPR)', err or 'BNM OPR adapter returned no usable value')
+        if market=='Nikkei 225':
+            val,dt,src,err=fetch_boj_overnight_call_rate()
+            if val is not None:
+                return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+            return _awaiting_live('BOJ Time-Series API overnight call rate', err or 'BOJ rates adapter returned no usable value')
     if market in US_MARKETS:
         data=us_macro_dashboard_data()
         if indicator=='Inflation' and data.get('inflation_yoy') is not None: return _source_result(data['inflation_yoy'],f"{data['inflation_yoy']:.1f}%",f"Official API · FRED CPI YoY · {data['inflation_date']}",'Official API',data['inflation_date'])
@@ -911,6 +1193,21 @@ def resolve_macro_value(market,indicator):
             return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
         if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'HK official adapter'))
+    if market=='KLSE' and indicator in ['Jobs','Unemployment']:
+        val,dt,src,err=fetch_opendosm_unemployment_rate()
+        if val is not None:
+            return _source_result(val,f'{val:.1f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+        return _awaiting_live('OpenDOSM lfs_month unemployment rate', err or 'OpenDOSM unemployment adapter returned no usable value')
+    if market=='Nikkei 225' and indicator=='Inflation':
+        val,dt,src,err=fetch_japan_cpi_yoy_dbnomics()
+        if val is not None:
+            return _source_result(val,f'{val:.1f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+        return _awaiting_live('DBnomics STATJP/CPIm CPI YoY', err or 'Japan CPI adapter returned no usable value')
+    if market=='Nikkei 225' and indicator in ['Jobs','Unemployment']:
+        val,dt,src,err=fetch_japan_unemployment_dbnomics()
+        if val is not None:
+            return _source_result(val,f'{val:.1f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+        return _awaiting_live('DBnomics STATJP/MIm unemployment rate', err or 'Japan unemployment adapter returned no usable value')
     if market=='A-Share' and indicator in ['Inflation','Jobs','Unemployment']:
         return _awaiting_validation(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'NBS official adapter'))
     return _source_result(None,'Awaiting mapping',MACRO_SOURCE_REGISTRY.get(market,{}).get(indicator,'Awaiting official API mapping'),'Awaiting')
@@ -1006,7 +1303,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38r clean macro remarks build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38s official APAC macro adapters build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
