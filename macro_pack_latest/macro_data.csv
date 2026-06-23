@@ -4,6 +4,8 @@ US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemploym
 US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands.
 US,Rates,2026-06-18,4.46,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate.
 US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
+SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Power Query,Singapore CPI inflation. Static reviewed row pending full SingStat re-integration.
+SG,Unemployment,2026-03-01,2,%,MOM / SingStat unemployment,Official / Power Query,Singapore overall unemployment rate for Mar-26 / 1Q 2026.
 SG,Rates,,,%,Pending deployment,Pending deployment,SG rates live adapter pending deployment.
 HK,Rates,,,%,HKMA HIBOR daily figures,Awaiting,"HK rates to be connected through live HKMA API adapter, not Power Query."
 MY,Inflation,2026-05-01,2.009,%,OpenDOSM headline CPI cpi_2d,Official / Power Query,Malaysia headline CPI YoY computed from OpenDOSM monthly CPI overall index.
