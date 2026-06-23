@@ -1,14 +1,14 @@
 market,indicator,date,value,unit,source,source_type,notes
-US,Inflation,2026-05-01,4.27,%,FRED CPIAUCSL YoY,Official / Power Query,Computed as latest CPI divided by CPI 12 months earlier minus 1
-US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemployment rate
-US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands
-US,Rates,2026-06-18,4.46,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate
-US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / FRED NAPM unavailable,Seed / Power Query Pack,FRED NAPM no longer publicly downloadable; reviewed seed value
-SG,Inflation,2026-05-01,1.818,%,SingStat M213751 monthly CPI YoY,Official / Power Query,Computed YoY from SingStat monthly CPI All Items
-SG,Unemployment,2026-03-01,2,%,SingStat M182342 overall unemployment rate,Official / Power Query,Latest quarterly overall unemployment rate from SingStat
-HK,Inflation,2026-04-01,1.725,%,HKMA monthly statistical bulletin composite CPI YoY,Official / Power Query,Computed YoY from HKMA monthly composite CPI
-SG,PMI,2026-06-01,51,index,SIPMM Singapore Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
-HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed / Power Query Pack,Seed fallback; review before active use
-CN,PMI,2026-06-01,50,index,NBS Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
-MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
-JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
+US,Inflation,2026-05-01,4.27,%,FRED CPIAUCSL YoY,Official / Power Query,Computed as latest CPI divided by CPI 12 months earlier minus 1.
+US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemployment rate.
+US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands.
+US,Rates,2026-06-18,4.46,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate.
+US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
+SG,Rates,,,%,Pending deployment,Pending deployment,SG rates live adapter pending deployment.
+HK,Rates,,,%,HKMA HIBOR daily figures,Awaiting,"HK rates to be connected through live HKMA API adapter, not Power Query."
+MY,Inflation,2026-05-01,2.009,%,OpenDOSM headline CPI cpi_2d,Official / Power Query,Malaysia headline CPI YoY computed from OpenDOSM monthly CPI overall index.
+SG,PMI,2026-06-01,51,index,SIPMM Singapore Manufacturing PMI,Seed,Seed fallback; review before active use.
+HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed,Seed fallback; review before active use.
+CN,PMI,2026-06-01,50,index,NBS Manufacturing PMI,Seed,Seed fallback; review before active use.
+MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed,Seed fallback; review before active use.
+JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed,Seed fallback; review before active use.
