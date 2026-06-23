@@ -1,12 +1,16 @@
-﻿market,indicator,date,value,unit,source,source_type,notes
-US,PMI,2026-06-01,54.0,index,ISM Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
-SG,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
-SG,PMI,2026-06-01,51.0,index,SIPMM Singapore Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
-HK,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
-HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed / External Pack,Seed fallback; review before saving as active pack
-CN,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
-CN,PMI,2026-06-01,50.0,index,NBS Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
-MY,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
-MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
-JP,Claims,N/A,,,Not applicable,N/A,Claims is US-only in current model
-JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed / External Pack,Seed fallback; review before saving as active pack
+market,indicator,date,value,unit,source,source_type,notes
+US,Inflation,2026-05-01,4.27,%,FRED CPIAUCSL YoY,Official / Power Query,Computed as latest CPI divided by CPI 12 months earlier minus 1
+US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemployment rate
+US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands
+US,Rates,2026-06-18,4.46,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate
+US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / FRED NAPM unavailable,Seed / Power Query Pack,FRED NAPM series no longer publicly downloadable; using reviewed seed value until alternate source is promoted
+SG,Inflation,2024,2.389511236,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,"Annual CPI inflation; lagged, not monthly market-timing signal"
+MY,Inflation,2024,1.834100204,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
+JP,Inflation,2024,2.738536816,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
+CN,Inflation,2024,0.218128938,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
+HK,Inflation,2024,1.729721191,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
+SG,PMI,2026-06-01,51,index,SIPMM Singapore Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
+HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed / Power Query Pack,Seed fallback; review before active use
+CN,PMI,2026-06-01,50,index,NBS Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
+MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
+JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
