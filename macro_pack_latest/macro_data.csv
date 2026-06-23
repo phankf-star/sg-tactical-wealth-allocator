@@ -3,12 +3,9 @@ US,Inflation,2026-05-01,4.27,%,FRED CPIAUCSL YoY,Official / Power Query,Computed
 US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemployment rate
 US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands
 US,Rates,2026-06-18,4.46,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate
-US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / FRED NAPM unavailable,Seed / Power Query Pack,FRED NAPM series no longer publicly downloadable; using reviewed seed value until alternate source is promoted
-SG,Inflation,2024,2.389511236,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,"Annual CPI inflation; lagged, not monthly market-timing signal"
-MY,Inflation,2024,1.834100204,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
-JP,Inflation,2024,2.738536816,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
-CN,Inflation,2024,0.218128938,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
-HK,Inflation,2024,1.729721191,%,World Bank FP.CPI.TOTL.ZG / IMF IFS,Annual fallback / Power Query,Annual CPI inflation fallback
+US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / FRED NAPM unavailable,Seed / Power Query Pack,FRED NAPM no longer publicly downloadable; reviewed seed value
+SG,Inflation,2026-05-01,1.818,%,SingStat M213751 monthly CPI YoY,Official / Power Query,Computed YoY from SingStat monthly CPI All Items
+HK,Inflation,2026-04-01,1.725,%,HKMA monthly statistical bulletin composite CPI YoY,Official / Power Query,Computed YoY from HKMA monthly composite CPI
 SG,PMI,2026-06-01,51,index,SIPMM Singapore Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
 HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed / Power Query Pack,Seed fallback; review before active use
 CN,PMI,2026-06-01,50,index,NBS Manufacturing PMI,Seed / Power Query Pack,Seed fallback; review before active use
