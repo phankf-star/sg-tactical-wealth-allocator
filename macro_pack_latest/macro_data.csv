@@ -12,3 +12,4 @@ HK,PMI,1/6/2026,50.4,index,S&P Global Hong Kong SAR PMI,Seed,Seed fallback; revi
 CN,PMI,1/6/2026,50,index,NBS Manufacturing PMI,Seed,Seed fallback; review before active use.
 MY,PMI,1/6/2026,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed,Seed fallback; review before active use.
 JP,PMI,1/6/2026,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed,Seed fallback; review before active use.
+HK,Inflation,1/5/2026,2,%,C&SD Table 510-60001 Composite CPI YoY,Official / Manual Pack,Composite CPI year-on-year % change for May 2026.
