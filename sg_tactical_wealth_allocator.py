@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38t — robust official APAC interest-rate adapters; remarks stay in tooltip
+# Global20Engine v38u — SG MAS SORA, JP BOJ FM01, HK C&SD CPI fixes; remarks stay in tooltip
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -434,7 +434,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS open search.json SORA / domestic rates','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'HKMA/C&SD CPI YoY','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ Time-Series API overnight call rate','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS open search.json SORA / domestic rates','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'C&SD Table 510-60001 Composite CPI YoY / HKMA fallback','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ Time-Series API overnight call rate','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -693,6 +693,84 @@ def singapore_macro_dashboard_data():
     except Exception: pass
     return out
 
+
+def _flatten_json_dicts(obj):
+    rows=[]
+    if isinstance(obj,dict):
+        rows.append(obj)
+        for v in obj.values(): rows.extend(_flatten_json_dicts(v))
+    elif isinstance(obj,list):
+        for v in obj: rows.extend(_flatten_json_dicts(v))
+    return rows
+
+@st.cache_data(ttl=21600)
+def fetch_hk_csd_cpi_yoy_51060001():
+    """HK inflation adapter: C&SD Table 510-60001 Composite CPI YoY.
+
+    The C&SD table states that the year-on-year change in Composite CPI is
+    generally used to reflect overall consumer price inflation. This adapter
+    therefore prefers the Composite CPI year-on-year % change field, not the
+    CPI index level, and keeps source detail in tooltip/audit metadata.
+    """
+    adapter='C&SD Table 510-60001 CPI YoY'
+    url='https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1'
+    txt,err,row=_request_text_custom(url,adapter,capture_global=True)
+    if not txt:
+        return None,'N/A','C&SD Table 510-60001 Composite CPI YoY',err
+    try:
+        payload=json.loads(txt)
+        rows=[]
+        for r in _flatten_json_dicts(payload):
+            label=' '.join(str(v) for v in r.values() if isinstance(v,(str,int,float))).lower()
+            key_label=' '.join(str(k) for k in r.keys()).lower()
+            combined=label+' '+key_label
+            if 'composite' not in combined or 'consumer price' not in combined:
+                continue
+            if not any(t in combined for t in ['year-on-year','year on year','yoy','按年']):
+                continue
+            if any(t in combined for t in ['month-to-month','month on month','mom','按月']):
+                continue
+            dt_raw=''; year=None; month=None
+            for yk in ['year','Year','YEAR']:
+                if yk in r: year=_clean_number(r.get(yk))
+            for mk in ['month','Month','MONTH']:
+                if mk in r: month=r.get(mk)
+            for dk in ['period','Period','time','TIME_PERIOD','date','Date']:
+                if dk in r and str(r.get(dk,'')).strip(): dt_raw=str(r.get(dk)); break
+            dt=pd.to_datetime(dt_raw,errors='coerce') if dt_raw else pd.NaT
+            if pd.isna(dt) and year:
+                mnum=MONTH_MAP.get(str(month)[:3].title(), None) if month is not None else None
+                if mnum is None: mnum=_clean_number(month)
+                if mnum: dt=pd.Timestamp(int(year),int(mnum),1); dt_raw=dt.strftime('%Y-%m')
+            for vk in ['value','Value','figure','Figure','obs_value','OBS_VALUE','data','Data']:
+                if vk in r:
+                    val=_clean_number(r.get(vk))
+                    if val is not None and -10 <= val <= 20:
+                        rows.append((dt,dt_raw or 'Latest',val,vk)); break
+        if rows:
+            rows=sorted(rows,key=lambda x:(pd.Timestamp.min if pd.isna(x[0]) else x[0]))
+            dt,dt_raw,val,vk=rows[-1]
+            date_txt=pd.Timestamp(dt).strftime('%b %Y') if pd.notna(dt) else str(dt_raw)
+            _diag(adapter,url,True,len(rows),f'Composite CPI YoY field ({vk})',f'{date_txt}={val}','')
+            return val,date_txt,'C&SD Table 510-60001 Composite CPI YoY',''
+    except Exception:
+        pass
+    try:
+        clean=re.sub(r'\s+',' ',txt)
+        rows=[]
+        for m in re.finditer(r'((?:20\d{2})\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{1,2})\s+)(\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)\s+',clean,re.I):
+            prefix=m.group(1).split(); year=int(prefix[0]); mon=prefix[1]
+            mnum=MONTH_MAP.get(mon[:3].title(), None) or int(mon)
+            dt=pd.Timestamp(year,mnum,1); val=float(m.group(3)); rows.append((dt,val))
+        if rows:
+            dt,val=sorted(rows,key=lambda x:x[0])[-1]
+            date_txt=dt.strftime('%b %Y')
+            _diag(adapter,url,True,len(rows),'Composite CPI YoY text fallback',f'{date_txt}={val}','')
+            return val,date_txt,'C&SD Table 510-60001 Composite CPI YoY',''
+    except Exception as e:
+        return None,'N/A','C&SD Table 510-60001 Composite CPI YoY',str(e)
+    return None,'N/A','C&SD Table 510-60001 Composite CPI YoY','No Composite CPI YoY value parsed'
+
 @st.cache_data(ttl=21600)
 def hkma_macro_dashboard_data():
     out={'inflation_value':None,'inflation_date':'N/A','jobs_rate':None,'jobs_date':'N/A','hk_rate':None,'hk_rate_date':'N/A','inflation_status':'Official API'}
@@ -779,25 +857,42 @@ def _parse_date_value_pairs_from_text(txt):
 
 @st.cache_data(ttl=21600)
 def fetch_mas_sora_rate():
-    adapter='MAS search.json SORA'; base='https://eservices.mas.gov.sg/api/action/datastore/search.json'
-    url=base+'?'+urllib.parse.urlencode({'resource_id':'9a0bf149-308c-4bd2-832d-76c8e6cb47ed','limit':'5000'})
-    txt,err,row=_request_text_custom(url,adapter,capture_global=True)
-    if not txt: return None,'N/A','MAS open search.json SORA / domestic rates',err
-    try:
-        payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
-        for key,label in [('sora','SORA'),('SORA','SORA'),('comp_sora_1m','1M compounded SORA'),('comp_sora_3m','3M compounded SORA')]:
-            got=_latest_numeric_from_records(records,date_keys=['end_of_day','timestamp','date'],value_keys=[key])
+    """Primary SG rates adapter: MAS SORA.
+
+    v38u fix: prefer the official MAS search.json SORA dataset and the exact
+    overnight SORA field before compounded SORA fields. Provider / endpoint
+    detail is returned in sub/diagnostic only, so the dashboard card remains
+    clean while the tooltip preserves the audit trail.
+    """
+    adapter='MAS search.json SORA'
+    base='https://eservices.mas.gov.sg/api/action/datastore/search.json'
+    candidate_resource_ids=['9a0bf149-308c-4bd2-832d-76c8e6cb47ed']
+    last=''
+    for rid in candidate_resource_ids:
+        url=base+'?'+urllib.parse.urlencode({'resource_id':rid,'limit':'5000'})
+        txt,err,row=_request_text_custom(url,adapter,capture_global=True)
+        if not txt:
+            last=err; continue
+        try:
+            payload=json.loads(txt); records=payload.get('result',{}).get('records',[])
+            if not records:
+                last='MAS JSON reached but no records returned'; continue
+            field_priority=[('sora','SORA'),('SORA','SORA'),('SORA_RATE','SORA'),('sora_rate','SORA'),('comp_sora_1m','1M compounded SORA'),('comp_sora_3m','3M compounded SORA')]
+            for key,label in field_priority:
+                got=_latest_numeric_from_records(records,date_keys=['end_of_day','timestamp','date','Date'],value_keys=[key],avoid_filter=['volume'])
+                if got:
+                    dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                    _diag(adapter,url,True,len(records),f'primary rates field matched: {label}',f'{date_txt}={val}','')
+                    return val,date_txt,f'MAS open search.json {label}',''
+            got=_latest_numeric_from_records(records,date_keys=['end_of_day','timestamp','date','Date'],name_filter=['sora'],avoid_filter=['volume','aggregate'],value_keys=['value','Value','rate','Rate','sora','SORA','sora_rate','comp_sora_1m'])
             if got:
                 dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
-                _diag(adapter,url,True,len(records),label,f'{date_txt}={val}','')
-                return val,date_txt,f'MAS open search.json {label}',''
-        got=_latest_numeric_from_records(records,date_keys=['end_of_day','timestamp','date'],name_filter=['sora'],avoid_filter=['volume'],value_keys=['value','rate','sora','SORA','comp_sora_1m'])
-        if got:
-            dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
-            return val,date_txt,f'MAS open search.json SORA ({vk})',''
-        return None,'N/A','MAS open search.json SORA / domestic rates','No SORA numeric value parsed'
-    except Exception as e:
-        _diag(adapter,url,True,0,'parser error','',str(e)); return None,'N/A','MAS parser error',str(e)
+                _diag(adapter,url,True,len(records),f'SORA schema fallback ({vk})',f'{date_txt}={val}','')
+                return val,date_txt,f'MAS open search.json SORA ({vk})',''
+            last='No SORA numeric value parsed from MAS records'
+        except Exception as e:
+            last=str(e); _diag(adapter,url,True,0,'parser error','',str(e))
+    return None,'N/A','MAS open search.json SORA / domestic rates',last or 'MAS SORA adapter returned no usable value'
 
 @st.cache_data(ttl=21600)
 def fetch_bnm_opr_rate():
@@ -894,16 +989,48 @@ def fetch_japan_unemployment_dbnomics():
 
 @st.cache_data(ttl=21600)
 def fetch_boj_overnight_call_rate():
-    adapter='BOJ Time-Series API FM01 overnight call rate'; start=(pd.Timestamp.today()-pd.DateOffset(months=18)).strftime('%Y%m'); last=''
-    for code in ['STRDCLUCON','STRDCLUCON@D']:
+    """JP rates adapter: BOJ FM01 uncollateralized overnight call rate.
+
+    v38u fix: keep FM01 as the primary database, try the known overnight-call
+    data-code variants, and parse both JSON and CSV responses defensively.
+    Provider details are returned for tooltip/audit only.
+    """
+    adapter='BOJ Time-Series API FM01 overnight call rate'
+    start=(pd.Timestamp.today()-pd.DateOffset(months=18)).strftime('%Y%m')
+    last=''
+    codes=['STRDCLUCON','STRDCLUCON@D','FM01.STRDCLUCON','FM01.STRDCLUCON@D']
+    for code in codes:
         for fmt in ['json','csv']:
-            url=f'https://www.stat-search.boj.or.jp/api/v1/getDataCode?format={fmt}&lang=en&db=FM01&startDate={start}&code={urllib.parse.quote(code)}'
+            url=f'https://www.stat-search.boj.or.jp/api/v1/getDataCode?format={fmt}&lang=en&db=FM01&startDate={start}&code={urllib.parse.quote(code, safe="")}'
             txt,err,row=_request_text_custom(url,adapter,capture_global=True,extra_headers={'Accept-Encoding':'identity'})
-            if not txt: last=err; continue
+            if not txt:
+                last=err; continue
             if fmt=='csv':
+                try:
+                    df=pd.read_csv(io.StringIO(txt))
+                    df.columns=[str(c).strip() for c in df.columns]
+                    date_cols=[c for c in df.columns if c.lower() in ['date','time','period','time_period'] or 'date' in c.lower()]
+                    value_cols=[c for c in df.columns if c not in date_cols]
+                    rows=[]
+                    for _,r in df.iterrows():
+                        dt_raw=str(r[date_cols[0]]) if date_cols else ''
+                        dt=pd.to_datetime(dt_raw,errors='coerce') if dt_raw else pd.NaT
+                        for vc in value_cols:
+                            val=_clean_number(r.get(vc))
+                            if val is not None:
+                                rows.append((dt,dt_raw,val)); break
+                    if rows:
+                        rows=sorted(rows,key=lambda x:(pd.Timestamp.min if pd.isna(x[0]) else x[0]))
+                        dt,dt_raw,val=rows[-1]; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                        _diag(adapter,url,True,len(rows),'FM01 CSV value parsed',f'{date_txt}={val}','')
+                        return val,date_txt,f'BOJ Time-Series API FM01 Uncollateralized Overnight Call Rate ({code})',''
+                except Exception:
+                    pass
                 rows=_parse_date_value_pairs_from_text(txt)
                 if rows:
-                    dt,dt_raw,val=rows[-1]; return val,pd.Timestamp(dt).strftime('%d %b %Y'),f'BOJ Time-Series API Uncollateralized Overnight Call Rate ({code})',''
+                    dt,dt_raw,val=rows[-1]; date_txt=pd.Timestamp(dt).strftime('%d %b %Y')
+                    _diag(adapter,url,True,len(rows),'FM01 CSV text fallback',f'{date_txt}={val}','')
+                    return val,date_txt,f'BOJ Time-Series API FM01 Uncollateralized Overnight Call Rate ({code})',''
                 last='CSV returned but no date/value rows parsed'; continue
             try:
                 payload=json.loads(txt); records=[]
@@ -913,12 +1040,16 @@ def fetch_boj_overnight_call_rate():
                         for v in x.values(): walk(v)
                     elif isinstance(x,list):
                         for v in x: walk(v)
-                walk(payload); got=_latest_numeric_from_records(records,date_keys=['date','Date','time','period','TIME_PERIOD'],value_keys=['value','Value','OBS_VALUE','obs_value'])
+                walk(payload)
+                got=_latest_numeric_from_records(records,date_keys=['date','Date','time','period','TIME_PERIOD'],value_keys=['value','Value','OBS_VALUE','obs_value'])
                 if got:
-                    dt,dt_raw,val,vk,rr=got; return val,pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw),f'BOJ Time-Series API Uncollateralized Overnight Call Rate ({code})',''
+                    dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
+                    _diag(adapter,url,True,len(records),'FM01 JSON value parsed',f'{date_txt}={val}','')
+                    return val,date_txt,f'BOJ Time-Series API FM01 Uncollateralized Overnight Call Rate ({code})',''
                 last='JSON returned but no value/date record parsed'
-            except Exception as e: last=str(e)
-    return None,'N/A','BOJ Time-Series API overnight call rate',last or 'BOJ rates adapter returned no usable value'
+            except Exception as e:
+                last=str(e)
+    return None,'N/A','BOJ Time-Series API FM01 overnight call rate',last or 'BOJ rates adapter returned no usable value'
 
 @st.cache_data(ttl=21600)
 def fetch_hkma_hibor_rate():
@@ -1147,9 +1278,13 @@ def resolve_macro_value(market,indicator):
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'SingStat official adapter'),data.get('diagnostic','Live fetch unavailable or row parser returned no usable value.'))
     if market=='HSI' and indicator in ['Inflation','Jobs','Unemployment']:
         data=hkma_macro_dashboard_data()
-        if indicator=='Inflation' and data.get('inflation_value') is not None:
-            src='Official API' if data.get('inflation_status')!='Needs validation' else 'Needs validation'
-            return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src} · HKMA CPI YoY · {data['inflation_date']}",src,data['inflation_date'])
+        if indicator=='Inflation':
+            val,dt,src,err=fetch_hk_csd_cpi_yoy_51060001()
+            if val is not None:
+                return _source_result(val,f'{val:.1f}%',f'Official API · {src} · {dt}','Official API',dt,err)
+            if data.get('inflation_value') is not None:
+                src2='Official API' if data.get('inflation_status')!='Needs validation' else 'Needs validation'
+                return _source_result(data['inflation_value'],f"{data['inflation_value']:.1f}%",f"{src2} · HKMA CPI YoY fallback · {data['inflation_date']}",src2,data['inflation_date'])
         if indicator in ['Jobs','Unemployment'] and data.get('jobs_rate') is not None: return _source_result(data['jobs_rate'],f"{data['jobs_rate']:.1f}%",f"Official API · HKMA unemployment · {data['jobs_date']}",'Official API',data['jobs_date'])
         return _awaiting_live(MACRO_SOURCE_REGISTRY.get(market,{}).get('Jobs' if indicator=='Unemployment' else indicator,'HK official adapter'))
     if market=='KLSE' and indicator in ['Jobs','Unemployment']:
@@ -1259,7 +1394,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38t robust APAC rate adapters build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38u APAC official adapter fixes build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
