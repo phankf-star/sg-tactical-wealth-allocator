@@ -593,4 +593,3 @@ def build_macro_pack():
 if __name__ == "__main__":
     result = build_macro_pack()
     print(json.dumps(result, indent=2))
-``
