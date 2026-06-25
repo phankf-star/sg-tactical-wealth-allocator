@@ -1,89 +1,208 @@
 
-import json
-import urllib.request
 import pandas as pd
-import io
+from pathlib import Path
 
-def request_text(url, timeout=25):
-    headers = {
-        "User-Agent": "Global20Engine/1.0",
-        "Accept": "application/json,text/csv,text/plain,*/*",
-        "Accept-Encoding": "identity",
-    }
-    req = urllib.request.Request(url, headers=headers)
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
-        return resp.read().decode("utf-8-sig", errors="replace")
+PACK_DIR = Path("macro_pack_latest")
+macro_path = PACK_DIR / "macro_data.csv"
+diag_path = PACK_DIR / "diagnostics.csv"
+manual_path = PACK_DIR / "manual_required.csv"
 
-def parse_my_inflation_df(df, source):
-    df = df.copy()
-    df.columns = [str(c).strip().lower() for c in df.columns]
+TARGETS = [
+    ("HK", "Unemployment"),
+    ("HSI", "Unemployment"),
+    ("JP", "Inflation"),
+    ("JP", "Unemployment"),
+    ("Nikkei 225", "Inflation"),
+    ("Nikkei 225", "Unemployment"),
+]
 
-    if "date" not in df.columns:
-        raise ValueError(f"{source}: missing date column")
+EXPECTED = {
+    ("HK", "Unemployment"): {
+        "expected_value": 3.7,
+        "expected_date_hint": "2026-05",
+        "reason": "Hong Kong C&SD unemployment rate for 3/2026-5/2026 should be 3.7%",
+    },
+    ("JP", "Inflation"): {
+        "expected_value": 1.5,
+        "expected_date_hint": "2026-05",
+        "reason": "Latest checked Japan inflation was 1.5% for May 2026",
+    },
+    ("JP", "Unemployment"): {
+        "expected_value": 2.5,
+        "expected_date_hint": "2026-04",
+        "reason": "Japan unemployment was 2.5% in April 2026; 2.7% was March",
+    },
+}
 
-    if "inflation_yoy" not in df.columns:
-        raise ValueError(f"{source}: missing inflation_yoy column")
+def load_csv(path):
+    if not path.exists():
+        print(f"MISSING: {path}")
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df.columns = [str(c).strip() for c in df.columns]
+    return df
 
-    if "division" in df.columns:
-        df = df[df["division"].astype(str).str.lower().str.strip().eq("overall")].copy()
-
-    df["date"] = pd.to_datetime(df["date"], errors="coerce")
-    df["inflation_yoy"] = pd.to_numeric(df["inflation_yoy"], errors="coerce")
-    df = df.dropna(subset=["date", "inflation_yoy"]).sort_values("date")
+def show_target_rows(df):
+    print("\n==============================")
+    print("TARGET ROW CHECK")
+    print("==============================")
 
     if df.empty:
-        raise ValueError(f"{source}: no usable overall inflation rows")
+        print("macro_data.csv is empty or missing")
+        return
 
-    latest = df.iloc[-1]
-    return {
-        "source": source,
-        "date": latest["date"].strftime("%Y-%m-%d"),
-        "month_label": latest["date"].strftime("%b %Y"),
-        "inflation_yoy": float(latest["inflation_yoy"]),
-    }
+    needed_cols = {"market", "indicator", "date", "value", "unit", "source", "source_type"}
+    missing = needed_cols - set(df.columns)
+    if missing:
+        print("macro_data.csv missing columns:", sorted(missing))
+        print("Columns found:", list(df.columns))
+        return
 
-def test_opendosm_my_inflation():
-    tests = []
+    for market, indicator in TARGETS:
+        sub = df[
+            df["market"].astype(str).str.strip().eq(market)
+            & df["indicator"].astype(str).str.strip().eq(indicator)
+        ].copy()
 
-    # API candidates
-    for dataset_id in ["cpi_2d_inflation", "cpi_headline_inflation"]:
-        url = f"https://api.data.gov.my/opendosm?id={dataset_id}&limit=50000"
-        try:
-            txt = request_text(url)
-            payload = json.loads(txt)
+        print(f"\n--- {market} / {indicator} ---")
 
-            if isinstance(payload, list):
-                records = payload
-            elif isinstance(payload, dict):
-                records = (
-                    payload.get("data")
-                    or payload.get("records")
-                    or payload.get("result", {}).get("records")
-                    or []
-                )
-            else:
-                records = []
+        if sub.empty:
+            print("NOT FOUND")
+            continue
 
-            if records:
-                result = parse_my_inflation_df(pd.DataFrame(records), f"OpenDOSM API {dataset_id}")
-                tests.append(("PASS", url, result))
-            else:
-                tests.append(("FAIL", url, "No records returned"))
-        except Exception as e:
-            tests.append(("FAIL", url, str(e)))
+        print(sub.to_string(index=False))
 
-    # Official CSV fallback
-    csv_url = "https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv"
-    try:
-        txt = request_text(csv_url)
-        df = pd.read_csv(io.StringIO(txt))
-        result = parse_my_inflation_df(df, "OpenDOSM storage CSV cpi_2d_inflation")
-        tests.append(("PASS", csv_url, result))
-    except Exception as e:
-        tests.append(("FAIL", csv_url, str(e)))
+        key = (market, indicator)
+        if key in EXPECTED:
+            exp = EXPECTED[key]
+            print("EXPECTED:", exp)
 
-    return tests
+def show_duplicates(df):
+    print("\n==============================")
+    print("DUPLICATE MARKET/INDICATOR CHECK")
+    print("==============================")
+
+    if df.empty or not {"market", "indicator"}.issubset(df.columns):
+        return
+
+    counts = (
+        df.groupby(["market", "indicator"])
+        .size()
+        .reset_index(name="count")
+        .sort_values(["count", "market", "indicator"], ascending=[False, True, True])
+    )
+
+    dup = counts[counts["count"] > 1]
+
+    if dup.empty:
+        print("No duplicate market/indicator rows.")
+    else:
+        print("DUPLICATES FOUND:")
+        print(dup.to_string(index=False))
+
+def show_diag(diag):
+    print("\n==============================")
+    print("DIAGNOSTICS CHECK")
+    print("==============================")
+
+    if diag.empty:
+        print("diagnostics.csv is empty or missing")
+        return
+
+    cols = [c for c in ["market", "indicator", "source", "status", "value", "reason", "endpoint"] if c in diag.columns]
+    if not cols:
+        print("Diagnostics columns not recognised:", list(diag.columns))
+        return
+
+    targets = diag[
+        diag.get("indicator", "").astype(str).isin(["Inflation", "Unemployment"])
+        & diag.get("market", "").astype(str).isin(["HK", "HSI", "JP", "Nikkei 225"])
+    ].copy()
+
+    if targets.empty:
+        print("No HK/JP inflation/unemployment diagnostics found.")
+    else:
+        print(targets[cols].to_string(index=False))
+
+def show_manual(manual):
+    print("\n==============================")
+    print("MANUAL REQUIRED CHECK")
+    print("==============================")
+
+    if manual.empty:
+        print("manual_required.csv is empty or missing")
+        return
+
+    cols = [c for c in ["market", "indicator", "reason"] if c in manual.columns]
+    if not cols:
+        print("Manual columns not recognised:", list(manual.columns))
+        return
+
+    targets = manual[
+        manual.get("indicator", "").astype(str).isin(["Inflation", "Unemployment"])
+        & manual.get("market", "").astype(str).isin(["HK", "HSI", "JP", "Nikkei 225"])
+    ].copy()
+
+    if targets.empty:
+        print("No HK/JP inflation/unemployment manual-required rows found.")
+    else:
+        print(targets[cols].to_string(index=False))
+
+def infer_likely_issue(df):
+    print("\n==============================")
+    print("LIKELY ISSUE INFERENCE")
+    print("==============================")
+
+    if df.empty:
+        print("Likely issue: macro pack not generated or macro_data.csv missing.")
+        return
+
+    def exists(m, i):
+        return not df[
+            df["market"].astype(str).str.strip().eq(m)
+            & df["indicator"].astype(str).str.strip().eq(i)
+        ].empty
+
+    hk_unemp = exists("HK", "Unemployment")
+    hsi_unemp = exists("HSI", "Unemployment")
+    jp_inf = exists("JP", "Inflation")
+    nikkei_inf = exists("Nikkei 225", "Inflation")
+    jp_unemp = exists("JP", "Unemployment")
+    nikkei_unemp = exists("Nikkei 225", "Unemployment")
+
+    if not hk_unemp and not hsi_unemp:
+        print("HK/HSI unemployment row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
+    elif hk_unemp and not hsi_unemp:
+        print("HK unemployment exists as market=HK. If HSI dashboard still wrong, check base app mapping HSI -> HK.")
+    elif hsi_unemp:
+        print("HSI unemployment exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
+
+    if not jp_inf and not nikkei_inf:
+        print("JP/Nikkei inflation row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
+    elif jp_inf and not nikkei_inf:
+        print("JP inflation exists as market=JP. If Nikkei dashboard still wrong, check base app mapping Nikkei 225 -> JP.")
+    elif nikkei_inf:
+        print("Nikkei inflation exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
+
+    if not jp_unemp and not nikkei_unemp:
+        print("JP/Nikkei unemployment row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
+    elif jp_unemp and not nikkei_unemp:
+        print("JP unemployment exists as market=JP. If Nikkei dashboard still wrong, check base app mapping Nikkei 225 -> JP.")
+    elif nikkei_unemp:
+        print("Nikkei unemployment exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
 
 if __name__ == "__main__":
-    for status, url, result in test_opendosm_my_inflation():
-        print(status, url, result)
+    macro = load_csv(macro_path)
+    diag = load_csv(diag_path)
+    manual = load_csv(manual_path)
+
+    print("macro_data path:", macro_path)
+    print("macro_data rows:", len(macro))
+    print("diagnostics rows:", len(diag))
+    print("manual rows:", len(manual))
+
+    show_target_rows(macro)
+    show_duplicates(macro)
+    show_diag(diag)
+    show_manual(manual)
+    infer_likely_issue(macro)
