@@ -46,7 +46,6 @@ jobs:
           echo "---- diagnostics.csv ----"
           cat macro_pack_latest/diagnostics.csv || true
 
-
       - name: Commit generated macro pack
         run: |
           git config user.name "github-actions[bot]"
@@ -68,5 +67,3 @@ jobs:
 
           git commit -m "Update Global20Engine macro pack"
           git push origin HEAD:main
-``
-
