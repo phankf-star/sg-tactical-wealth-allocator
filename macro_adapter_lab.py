@@ -1,6 +1,6 @@
 
 # macro_rate_diagnostics_lab.py
-# Global20Engine Rate Diagnostics Lab v5 - SG MAS HTML scrape probe + MAS/TE/JP tests
+# Global20Engine Rate Diagnostics Lab v6 - SG MAS HTML GET/POST probe + TE + JP
 
 import csv
 import io
@@ -15,7 +15,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Global20Engine Rate Diagnostics Lab", layout="wide")
 
-USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/5.0"
+USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/6.0"
 TIMEOUT = 30
 
 MAS_RESOURCE_ID = "9a0bf149-308c-4bd2-832d-76c8e6cb47ed"
@@ -66,238 +66,253 @@ def parse_date_any(x):
     return pd.to_datetime(s, errors="coerce")
 
 
-def classify_non_json(text):
+def classify_html(text):
     t = (text or "").lower()
     if "maintenance" in t or "service is currently unavailable" in t:
         return "HTML maintenance/unavailable page"
     if "domestic interest rates" in t and "sora" in t:
-        return "MAS Domestic Interest Rates form page"
+        return "MAS Domestic Interest Rates form/result page"
     if "doctype html" in t or "<html" in t:
-        return "HTML page, not JSON"
+        return "HTML page"
     if not text:
         return "empty response"
-    return "non-JSON response"
+    return "non-JSON/text response"
+
+
+def attr_dict(tag):
+    attrs = {}
+    for a in re.finditer(r"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(['\"])(.*?)\2", tag, flags=re.S):
+        attrs[a.group(1).lower()] = a.group(3)
+    return attrs
+
+
+def strip_tags(x):
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", str(x))).strip()
+
+
+def extract_input_fields(html):
+    inputs = []
+    for m in re.finditer(r"<input\b[^>]*>", html, flags=re.I | re.S):
+        tag = m.group(0)
+        attrs = attr_dict(tag)
+        # label/nearby text: useful for checkbox mapping
+        after = html[m.end():m.end()+500]
+        before = html[max(0, m.start()-250):m.start()]
+        label_text = ""
+        lab_for = attrs.get("id", "")
+        if lab_for:
+            lm = re.search(r"<label\b[^>]*for\s*=\s*(['\"])" + re.escape(lab_for) + r"\1[^>]*>(.*?)</label>", html, flags=re.I | re.S)
+            if lm:
+                label_text = strip_tags(lm.group(2))
+        if not label_text:
+            lm = re.search(r"<label\b[^>]*>(.*?)</label>", after, flags=re.I | re.S)
+            label_text = strip_tags(lm.group(1)) if lm else strip_tags((before + " " + after)[:250])
+        inputs.append({
+            "type": attrs.get("type", ""),
+            "id": attrs.get("id", ""),
+            "name": attrs.get("name", ""),
+            "value": attrs.get("value", ""),
+            "checked": "checked" in tag.lower(),
+            "label_text": label_text[:300],
+            "tag_sample": tag[:300],
+        })
+    return pd.DataFrame(inputs)
+
+
+def extract_selects_full(html):
+    rows = []
+    for m in re.finditer(r"<select\b[^>]*>(.*?)</select>", html, flags=re.I | re.S):
+        full = m.group(0)
+        start = re.search(r"<select\b[^>]*>", full, flags=re.I | re.S).group(0)
+        attrs = attr_dict(start)
+        options = []
+        selected_value = ""
+        for om in re.finditer(r"<option\b([^>]*)>(.*?)</option>", m.group(1), flags=re.I | re.S):
+            oattrs = attr_dict("<option " + om.group(1) + ">")
+            txt = strip_tags(om.group(2))
+            val = oattrs.get("value", txt)
+            selected = "selected" in om.group(1).lower()
+            if selected:
+                selected_value = val
+            options.append({"value": val, "text": txt, "selected": selected})
+        rows.append({"name": attrs.get("name", ""), "id": attrs.get("id", ""), "selected_value": selected_value, "options": options, "options_count": len(options), "options_sample": str(options[:15])})
+    return pd.DataFrame(rows)
+
+
+def read_html_tables(html):
+    summaries, previews = [], []
+    try:
+        tables = pd.read_html(io.StringIO(html)) if html else []
+        for i, t in enumerate(tables):
+            contains_sora = t.astype(str).apply(lambda col: col.str.contains("SORA|sora|Compounded", regex=True, na=False)).any().any()
+            summaries.append({"table_index": i, "rows": len(t), "cols": len(t.columns), "columns": ", ".join(map(str, t.columns))[:500], "contains_sora": contains_sora})
+            tt = t.copy(); tt["__table_index"] = i; previews.append(tt.head(50))
+    except Exception as e:
+        summaries.append({"table_index": "error", "rows": 0, "cols": 0, "columns": "", "contains_sora": False, "error": repr(e)})
+    return pd.DataFrame(summaries), pd.concat(previews, ignore_index=True) if previews else pd.DataFrame()
+
+
+def extract_sora_result_candidates(tables_df):
+    if tables_df is None or tables_df.empty:
+        return pd.DataFrame()
+    # Very cautious: expose rows containing SORA or likely date+numeric fields. Do not auto-promote yet.
+    out = tables_df.copy()
+    mask = out.astype(str).apply(lambda col: col.str.contains("SORA|sora|Compounded|2026|2025", regex=True, na=False)).any(axis=1)
+    return out[mask].copy() if mask.any() else pd.DataFrame()
+
+
+def build_post_payload(html, start_year="2026", start_month="Jan", end_year="2026", end_month="Jun"):
+    inputs = extract_input_fields(html)
+    selects = extract_selects_full(html)
+    payload = {}
+    notes = []
+
+    # Preserve all hidden values and default text values.
+    for _, r in inputs.iterrows():
+        name = str(r.get("name", ""))
+        if not name:
+            continue
+        typ = str(r.get("type", "")).lower()
+        val = str(r.get("value", ""))
+        if typ in {"hidden", "text"}:
+            payload[name] = val
+
+    # Select values: infer by option text/name.
+    for _, r in selects.iterrows():
+        name = str(r.get("name", ""))
+        if not name:
+            continue
+        opts = r.get("options", [])
+        lower = (name + " " + str(r.get("id", ""))).lower()
+        target_text = None
+        if "start" in lower and "year" in lower:
+            target_text = start_year
+        elif "end" in lower and "year" in lower:
+            target_text = end_year
+        elif "start" in lower and "month" in lower:
+            target_text = start_month
+        elif "end" in lower and "month" in lower:
+            target_text = end_month
+        val = str(r.get("selected_value", ""))
+        if target_text:
+            for opt in opts:
+                if str(opt.get("text", "")).lower().startswith(str(target_text).lower()) or str(opt.get("value", "")).lower().startswith(str(target_text).lower()):
+                    val = str(opt.get("value", "")); break
+        if val:
+            payload[name] = val
+
+    # Check all SORA-related checkboxes only.
+    sora_checks = []
+    for _, r in inputs.iterrows():
+        typ = str(r.get("type", "")).lower()
+        name = str(r.get("name", ""))
+        label = str(r.get("label_text", ""))
+        value = str(r.get("value", "on")) or "on"
+        if typ == "checkbox" and name and re.search(r"\bSORA\b|Compounded SORA|SORA Index", label, flags=re.I):
+            payload[name] = value
+            sora_checks.append({"name": name, "value": value, "label_text": label})
+    notes.append(f"SORA checkbox count={len(sora_checks)}")
+
+    # Click DISPLAY or DOWNLOAD button if obvious. Prefer DISPLAY.
+    buttons = inputs[inputs["type"].astype(str).str.lower().isin(["submit", "button"])] if not inputs.empty and "type" in inputs else pd.DataFrame()
+    chosen_button = None
+    for _, r in buttons.iterrows():
+        name = str(r.get("name", "")); val = str(r.get("value", "")); label = str(r.get("label_text", ""))
+        if name and re.search(r"display", val + " " + label, flags=re.I):
+            chosen_button = (name, val or "DISPLAY"); break
+    if chosen_button is None:
+        for _, r in buttons.iterrows():
+            name = str(r.get("name", "")); val = str(r.get("value", "")); label = str(r.get("label_text", ""))
+            if name and re.search(r"download", val + " " + label, flags=re.I):
+                chosen_button = (name, val or "DOWNLOAD"); break
+    if chosen_button:
+        payload[chosen_button[0]] = chosen_button[1]
+        notes.append(f"button={chosen_button}")
+    else:
+        notes.append("no obvious display/download button found")
+
+    return payload, pd.DataFrame(sora_checks), "; ".join(notes)
+
+
+def run_mas_html_probe(start_year="2026", start_month="Jan", end_year="2026", end_month="Jun", do_post=False):
+    get_r = request_text(MAS_DIR_URL, "MAS Domestic Interest Rates HTML GET", accept="text/html,*/*")
+    get_diag = {k: v for k, v in get_r.items() if k != "text"}
+    get_diag["classification"] = classify_html(get_r["text"])
+    html = get_r["text"] if get_r["ok"] else ""
+    get_tables, get_previews = read_html_tables(html)
+    inputs = extract_input_fields(html)
+    selects = extract_selects_full(html)
+
+    clues = []
+    clue_patterns = [r"__doPostBack\([^)]*\)", r"WebResource\.axd[^'\"]+", r"ScriptResource\.axd[^'\"]+", r"[A-Za-z0-9_./-]+\.ashx[^'\"]*", r"[A-Za-z0-9_./-]+\.aspx[^'\"]*", r"SORA", r"comp_sora_1m|comp_sora_3m|comp_sora_6m|sora_index"]
+    for pat in clue_patterns:
+        matches = re.findall(pat, html, flags=re.I)
+        clues.append({"pattern": pat, "matches_count": len(matches), "sample": str(matches[:20])[:1000]})
+
+    post_diag = pd.DataFrame()
+    post_tables = pd.DataFrame()
+    post_previews = pd.DataFrame()
+    payload_df = pd.DataFrame()
+    sora_checks_df = pd.DataFrame()
+    post_sample = pd.DataFrame()
+    post_candidates = pd.DataFrame()
+    payload_notes = ""
+
+    if do_post and html:
+        payload, sora_checks_df, payload_notes = build_post_payload(html, start_year, start_month, end_year, end_month)
+        payload_df = pd.DataFrame([{"key": k, "value_sample": (str(v)[:120] if not k.upper().startswith("__VIEWSTATE") else "<VIEWSTATE hidden>")} for k, v in payload.items()])
+        encoded = urllib.parse.urlencode(payload).encode("utf-8")
+        post_r = request_text(MAS_DIR_URL, "MAS Domestic Interest Rates HTML POST", accept="text/html,*/*", data=encoded, method="POST", headers_extra={"Content-Type": "application/x-www-form-urlencoded", "Referer": MAS_DIR_URL})
+        pdg = {k: v for k, v in post_r.items() if k != "text"}; pdg["classification"] = classify_html(post_r["text"]); pdg["payload_notes"] = payload_notes
+        post_diag = pd.DataFrame([pdg])
+        post_tables, post_previews = read_html_tables(post_r["text"] if post_r["ok"] else "")
+        post_candidates = extract_sora_result_candidates(post_previews)
+        post_sample = pd.DataFrame([{"url": MAS_DIR_URL, "sample": (post_r["text"][:5000] if post_r["ok"] else "")}])
+
+    return {
+        "get_diag": pd.DataFrame([get_diag]),
+        "get_tables": get_tables,
+        "get_previews": get_previews,
+        "inputs": inputs,
+        "selects": selects.drop(columns=["options"], errors="ignore"),
+        "clues": pd.DataFrame(clues),
+        "get_sample": pd.DataFrame([{"url": MAS_DIR_URL, "sample": html[:5000]}]),
+        "post_diag": post_diag,
+        "post_tables": post_tables,
+        "post_previews": post_previews,
+        "payload": payload_df,
+        "sora_checks": sora_checks_df,
+        "post_sample": post_sample,
+        "post_candidates": post_candidates,
+        "payload_notes": payload_notes,
+    }
 
 
 # ---------------- MAS JSON route diagnostic ----------------
-def parse_mas_records(payload, source_label, source_url):
-    recs = payload.get("result", {}).get("records", [])
-    df = pd.DataFrame(recs)
-    if df.empty:
-        return df, pd.DataFrame(), "JSON returned but result.records empty"
-    date_cols = [c for c in df.columns if str(c).lower() in {"end_of_day", "date", "timestamp"} or "date" in str(c).lower()]
-    value_priority = ["sora", "SORA", "sora_rate", "SORA_RATE", "comp_sora_1m", "comp_sora_3m", "comp_sora_6m"]
-    candidate_rows = []
-    for vc in value_priority:
-        if vc not in df.columns:
-            continue
-        dc = date_cols[0] if date_cols else None
-        tmp = df[[dc, vc]].copy() if dc else df[[vc]].copy()
-        tmp["date"] = tmp[dc].apply(parse_date_any) if dc else pd.NaT
-        tmp["value"] = tmp[vc].map(clean_number)
-        tmp["field"] = vc
-        tmp["route"] = source_label
-        tmp["source_url"] = source_url
-        tmp = tmp.dropna(subset=["value"])
-        if not tmp.empty:
-            candidate_rows.append(tmp[["date", "value", "field", "route", "source_url"]])
-    candidates = pd.concat(candidate_rows, ignore_index=True) if candidate_rows else pd.DataFrame()
-    return df, candidates, "ok" if not candidates.empty else "records returned but no SORA numeric field parsed"
-
-
-def run_mas_deep():
+def run_mas_route_diag():
     diagnostics, samples, parsed_all, records_previews = [], [], [], []
     for route in MAS_URLS:
         label, url = route["label"], route["url"]
         r = request_text(url, label, accept="application/json,text/html,*/*")
         d = {k: v for k, v in r.items() if k != "text"}
         d["route_label"] = label
-        d["classification"] = ""
         if not r["ok"]:
             d["parse_result"] = "request failed"
         elif "json" not in r.get("content_type", "").lower():
-            d["classification"] = classify_non_json(r["text"])
+            d["classification"] = classify_html(r["text"])
             d["parse_result"] = "not JSON"
         else:
-            try:
-                payload = json.loads(r["text"])
-                recs_df, candidates, msg = parse_mas_records(payload, label, url)
-                d["parse_result"] = msg
-                d["records"] = len(recs_df)
-                d["columns"] = ", ".join(map(str, recs_df.columns)) if not recs_df.empty else ""
-                if not recs_df.empty:
-                    rp = recs_df.head(30).copy(); rp["route_label"] = label; records_previews.append(rp)
-                if not candidates.empty:
-                    parsed_all.append(candidates)
-            except Exception as e:
-                d["parse_result"] = f"JSON parse error: {e!r}"
-        diagnostics.append(d)
-        samples.append({"route_label": label, "url": url, "sample": r["text"][:3000]})
-    parsed = pd.concat(parsed_all, ignore_index=True) if parsed_all else pd.DataFrame()
-    records_preview = pd.concat(records_previews, ignore_index=True) if records_previews else pd.DataFrame()
-    return pd.DataFrame(diagnostics), pd.DataFrame(samples), records_preview, parsed
-
-
-# ---------------- MAS HTML scrape probe ----------------
-def extract_input_fields(html):
-    # Lightweight regex extractor. Purpose: diagnostics only, not a full HTML parser.
-    inputs = []
-    for m in re.finditer(r"<input\b[^>]*>", html, flags=re.I | re.S):
-        tag = m.group(0)
-        attrs = {}
-        for a in re.finditer(r"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(['\"])(.*?)\2", tag, flags=re.S):
-            attrs[a.group(1)] = a.group(3)
-        inputs.append(attrs)
-    return pd.DataFrame(inputs)
-
-
-def extract_selects(html):
-    selects = []
-    for m in re.finditer(r"<select\b[^>]*>(.*?)</select>", html, flags=re.I | re.S):
-        tag_start = re.search(r"<select\b[^>]*>", m.group(0), flags=re.I | re.S).group(0)
-        name = ""
-        idv = ""
-        nm = re.search(r"name\s*=\s*(['\"])(.*?)\1", tag_start, flags=re.I | re.S)
-        im = re.search(r"id\s*=\s*(['\"])(.*?)\1", tag_start, flags=re.I | re.S)
-        if nm: name = nm.group(2)
-        if im: idv = im.group(2)
-        opts = []
-        for om in re.finditer(r"<option\b[^>]*value\s*=\s*(['\"])(.*?)\1[^>]*>(.*?)</option>", m.group(1), flags=re.I | re.S):
-            opts.append({"value": om.group(2), "text": re.sub(r"<[^>]+>", "", om.group(3)).strip()})
-        selects.append({"name": name, "id": idv, "options_count": len(opts), "options_sample": str(opts[:10])})
-    return pd.DataFrame(selects)
-
-
-def run_mas_html_probe():
-    r = request_text(MAS_DIR_URL, "MAS Domestic Interest Rates HTML page", accept="text/html,*/*")
-    diag = {k: v for k, v in r.items() if k != "text"}
-    diag["classification"] = classify_non_json(r["text"])
-    html = r["text"] if r["ok"] else ""
-
-    table_summaries = []
-    parsed_tables = []
-    try:
-        tables = pd.read_html(io.StringIO(html)) if html else []
-        for i, t in enumerate(tables):
-            table_summaries.append({"table_index": i, "rows": len(t), "cols": len(t.columns), "columns": ", ".join(map(str, t.columns))[:500], "contains_sora": t.astype(str).apply(lambda col: col.str.contains("SORA|sora|Compounded", regex=True, na=False)).any().any()})
-            tt = t.copy(); tt["__table_index"] = i; parsed_tables.append(tt.head(50))
-    except Exception as e:
-        table_summaries.append({"table_index": "error", "rows": 0, "cols": 0, "columns": "", "contains_sora": False, "error": repr(e)})
-
-    inputs = extract_input_fields(html)
-    selects = extract_selects(html)
-    # Regex clues: hidden AJAX endpoints, __doPostBack, download/display buttons, SORA checkboxes.
-    clue_patterns = [
-        r"__doPostBack\([^)]*\)",
-        r"WebResource\.axd[^'\"]+",
-        r"ScriptResource\.axd[^'\"]+",
-        r"[A-Za-z0-9_./-]+\.ashx[^'\"]*",
-        r"[A-Za-z0-9_./-]+\.aspx[^'\"]*",
-        r"SORA",
-        r"comp_sora_1m|comp_sora_3m|comp_sora_6m|sora_index",
-    ]
-    clues = []
-    for pat in clue_patterns:
-        matches = re.findall(pat, html, flags=re.I)
-        clues.append({"pattern": pat, "matches_count": len(matches), "sample": str(matches[:20])[:1000]})
-
-    result_row = None
-    candidate_rows = []
-    # If read_html sees actual data tables with dates and numeric SORA, promote only if robust.
-    for t in parsed_tables:
-        text_cols = [c for c in t.columns if t[c].astype(str).str.contains("SORA|sora|Compounded", regex=True, na=False).any()]
-        if text_cols:
-            candidate_rows.append(t)
-    candidates = pd.concat(candidate_rows, ignore_index=True) if candidate_rows else pd.DataFrame()
-
-    return pd.DataFrame([diag]), pd.DataFrame(table_summaries), pd.concat(parsed_tables, ignore_index=True) if parsed_tables else pd.DataFrame(), inputs, selects, pd.DataFrame(clues), pd.DataFrame([{"url": MAS_DIR_URL, "sample": html[:5000]}]), candidates, result_row
-
-
-# ---------------- Trading Economics fallback diagnostics ----------------
-def parse_te_payload(text):
-    try:
-        payload = json.loads(text)
-    except Exception as e:
-        return pd.DataFrame(), f"JSON parse error: {e!r}"
-    if isinstance(payload, dict):
-        return pd.DataFrame([payload]), "JSON dict response"
-    if isinstance(payload, list):
-        return pd.DataFrame(payload), "JSON list response"
-    return pd.DataFrame(), f"unexpected JSON type {type(payload).__name__}"
-
-
-def extract_te_candidates(df, route_label, url):
-    if df is None or df.empty:
-        return pd.DataFrame()
-    out = df.copy()
-    date_col = next((c for c in out.columns if str(c).lower() in {"datetime", "date", "latestvaluedate"} or "date" in str(c).lower()), None)
-    value_col = next((c for c in out.columns if str(c).lower() in {"value", "close", "latestvalue"}), None)
-    cat_col = next((c for c in out.columns if str(c).lower() in {"category", "indicator", "name"}), None)
-    if not value_col:
-        return pd.DataFrame()
-    out["date"] = out[date_col].apply(parse_date_any) if date_col else pd.NaT
-    out["value"] = out[value_col].map(clean_number)
-    out["category_text"] = out[cat_col].astype(str) if cat_col else ""
-    out["route"] = route_label
-    out["source_url"] = url
-    out = out.dropna(subset=["value"])
-    if not out.empty:
-        out["sora_match"] = out["category_text"].str.lower().str.contains("sora|singapore overnight rate average|compounded sora", regex=True, na=False)
-        cols = [c for c in ["date", "value", "category_text", "sora_match", "route", "source_url", "Country", "Category", "Frequency", "HistoricalDataSymbol", "LastUpdate"] if c in out.columns]
-        return out[cols]
-    return pd.DataFrame()
-
-
-def run_te_deep(te_key_secret):
-    diagnostics, samples, records, candidates_all = [], [], [], []
-    cred = (te_key_secret or "").strip()
-    if not cred:
-        return None, pd.DataFrame([{"route_label": "Trading Economics", "parse_result": "missing key:secret input"}]), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-    routes = []
-    for indicator in TE_INDICATOR_CANDIDATES:
-        enc = urllib.parse.quote(indicator, safe="")
-        routes.append({"label": f"TE historical Singapore / {indicator}", "url": f"https://api.tradingeconomics.com/historical/country/singapore/indicator/{enc}?" + urllib.parse.urlencode({"c": cred, "f": "json"})})
-        routes.append({"label": f"TE snapshot Singapore / {indicator}", "url": f"https://api.tradingeconomics.com/country/singapore/indicator/{enc}?" + urllib.parse.urlencode({"c": cred, "f": "json"})})
-    for route in routes:
-        label, url = route["label"], route["url"]
-        display_url = url.replace(cred, "***")
-        r = request_text(url, label, accept="application/json,text/html,*/*")
-        d = {k: v for k, v in r.items() if k not in {"text", "url"}}
-        d["url"] = display_url; d["route_label"] = label
-        if not r["ok"]:
-            d["parse_result"] = "request failed"
-        elif "json" not in r.get("content_type", "").lower():
-            d["classification"] = classify_non_json(r["text"]); d["parse_result"] = "not JSON"
-        else:
-            df, msg = parse_te_payload(r["text"])
-            d["parse_result"] = msg; d["records"] = len(df); d["columns"] = ", ".join(map(str, df.columns)) if not df.empty else ""
-            if not df.empty:
-                tmp = df.head(30).copy(); tmp["route_label"] = label; records.append(tmp)
-                cand = extract_te_candidates(df, label, display_url)
-                if not cand.empty: candidates_all.append(cand)
-        diagnostics.append(d); samples.append({"route_label": label, "url": display_url, "sample": r["text"][:1500].replace(cred, "***")})
-    rec_df = pd.concat(records, ignore_index=True) if records else pd.DataFrame()
-    cand_df = pd.concat(candidates_all, ignore_index=True) if candidates_all else pd.DataFrame()
-    result_row = None
-    if not cand_df.empty and "sora_match" in cand_df.columns:
-        exact = cand_df[cand_df["sora_match"].eq(True)]
-        if not exact.empty:
-            exact = exact.dropna(subset=["date"]).sort_values("date") if "date" in exact.columns else exact
-            latest = exact.iloc[-1]
-            result_row = {"market": "SG", "indicator": "Rates", "date": latest["date"].strftime("%Y-%m-%d") if pd.notna(latest.get("date")) else "Latest", "value": float(latest["value"]), "unit": "%", "source": "Trading Economics SORA candidate", "source_type": "Fallback / API Lab", "notes": f"Only acceptable if category is explicit SORA/Compounded SORA. category={latest.get('category_text','')}"}
-    return result_row, pd.DataFrame(diagnostics), pd.DataFrame(samples), rec_df, cand_df
+            d["parse_result"] = "JSON route returned; parser not expanded in this view"
+        diagnostics.append(d); samples.append({"route_label": label, "url": url, "sample": r["text"][:3000]})
+    return pd.DataFrame(diagnostics), pd.DataFrame(samples)
 
 
 # ---------------- JP BOJ confirmation ----------------
 def parse_boj_csv(text, target_code="STRDCLUCON"):
     recs = []
     for i, row in enumerate(csv.reader(io.StringIO(text))):
-        if not row or row[0] != target_code:
-            continue
-        date_idx = None
-        for j, cell in enumerate(row):
-            if re.fullmatch(r"\d{8}", str(cell).strip()):
-                date_idx = j; break
+        if not row or row[0] != target_code: continue
+        date_idx = next((j for j, cell in enumerate(row) if re.fullmatch(r"\d{8}", str(cell).strip())), None)
         if date_idx is None: continue
         date = parse_date_any(row[date_idx])
         value = None
@@ -323,71 +338,64 @@ def run_boj_confirm():
 
 
 st.title("Global20Engine Rate Diagnostics Lab")
-st.caption("SG MAS route test + SG MAS HTML scrape probe + Trading Economics fallback test + JP BOJ confirmation.")
+st.caption("SG MAS route test + SG MAS HTML GET/POST probe + JP BOJ confirmation.")
 
 with st.sidebar:
-    st.header("Trading Economics credential")
-    st.caption("Enter as key:secret. Not saved by this app.")
-    te_credential = st.text_input("TE key:secret", value="", type="password")
+    st.header("MAS HTML POST settings")
+    sy = st.text_input("Start year", "2026")
+    sm = st.text_input("Start month", "Jan")
+    ey = st.text_input("End year", "2026")
+    em = st.text_input("End month", "Jun")
+    do_post = st.checkbox("Attempt controlled ASP.NET POST", value=True)
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 with c1:
     run_sg = st.button("Run SG MAS route diagnostic", use_container_width=True)
 with c2:
-    run_html = st.button("Run SG MAS HTML scrape probe", use_container_width=True)
+    run_html = st.button("Run SG MAS HTML GET/POST probe", use_container_width=True)
 with c3:
-    run_te = st.button("Run SG Trading Economics test", use_container_width=True)
-with c4:
     run_jp = st.button("Confirm JP BOJ parser", use_container_width=True)
 
 if run_sg:
     st.header("SG MAS route diagnostic")
-    diag, samples, records_preview, parsed = run_mas_deep()
+    diag, samples = run_mas_route_diag()
     st.subheader("Endpoint diagnostics")
     st.dataframe(diag, use_container_width=True)
-    st.subheader("MAS records preview, if any JSON route worked")
-    st.dataframe(records_preview, use_container_width=True)
-    st.subheader("Parsed SORA candidate rows")
-    st.dataframe(parsed.tail(100), use_container_width=True)
     with st.expander("Raw MAS response samples", expanded=True):
         st.dataframe(samples, use_container_width=True)
 
 if run_html:
-    st.header("SG MAS HTML scrape probe")
-    diag, table_summaries, parsed_tables, inputs, selects, clues, sample, candidates, result_row = run_mas_html_probe()
-    st.subheader("HTML endpoint diagnostics")
-    st.dataframe(diag, use_container_width=True)
-    st.subheader("pandas.read_html table summaries")
-    st.dataframe(table_summaries, use_container_width=True)
-    st.subheader("Parsed HTML table previews")
-    st.dataframe(parsed_tables, use_container_width=True)
+    st.header("SG MAS HTML GET/POST probe")
+    res = run_mas_html_probe(sy, sm, ey, em, do_post)
+    st.subheader("GET endpoint diagnostics")
+    st.dataframe(res["get_diag"], use_container_width=True)
+    st.subheader("GET pandas.read_html table summaries")
+    st.dataframe(res["get_tables"], use_container_width=True)
     st.subheader("Input fields discovered")
-    st.dataframe(inputs, use_container_width=True)
+    st.dataframe(res["inputs"], use_container_width=True)
     st.subheader("Select fields discovered")
-    st.dataframe(selects, use_container_width=True)
+    st.dataframe(res["selects"], use_container_width=True)
     st.subheader("HTML clue scan")
-    st.dataframe(clues, use_container_width=True)
-    st.subheader("Candidate SORA tables/text rows")
-    st.dataframe(candidates, use_container_width=True)
-    with st.expander("Raw MAS HTML first 5,000 characters", expanded=False):
-        st.dataframe(sample, use_container_width=True)
+    st.dataframe(res["clues"], use_container_width=True)
+    with st.expander("Raw GET HTML first 5,000 characters", expanded=False):
+        st.dataframe(res["get_sample"], use_container_width=True)
 
-if run_te:
-    st.header("SG Trading Economics fallback diagnostic")
-    row, diag, samples, records, candidates = run_te_deep(te_credential)
-    if row:
-        st.success("Trading Economics returned an explicit SORA/Compounded SORA candidate.")
-        st.dataframe(pd.DataFrame([row]), use_container_width=True)
-    else:
-        st.warning("No explicit SORA/Compounded SORA candidate was promoted. Inspect returned categories before using as fallback.")
-    st.subheader("TE endpoint diagnostics")
-    st.dataframe(diag, use_container_width=True)
-    st.subheader("TE records preview")
-    st.dataframe(records, use_container_width=True)
-    st.subheader("TE numeric candidates")
-    st.dataframe(candidates, use_container_width=True)
-    with st.expander("Raw TE response samples", expanded=False):
-        st.dataframe(samples, use_container_width=True)
+    if do_post:
+        st.subheader("POST payload summary")
+        st.write(res["payload_notes"])
+        st.dataframe(res["payload"], use_container_width=True)
+        st.subheader("SORA checkboxes selected for POST")
+        st.dataframe(res["sora_checks"], use_container_width=True)
+        st.subheader("POST endpoint diagnostics")
+        st.dataframe(res["post_diag"], use_container_width=True)
+        st.subheader("POST pandas.read_html table summaries")
+        st.dataframe(res["post_tables"], use_container_width=True)
+        st.subheader("POST parsed table previews")
+        st.dataframe(res["post_previews"], use_container_width=True)
+        st.subheader("POST candidate SORA result rows")
+        st.dataframe(res["post_candidates"], use_container_width=True)
+        with st.expander("Raw POST HTML first 5,000 characters", expanded=False):
+            st.dataframe(res["post_sample"], use_container_width=True)
 
 if run_jp:
     st.header("JP BOJ parser confirmation")
@@ -407,7 +415,6 @@ if run_jp:
 st.markdown("""
 ### Source-governance interpretation
 - MAS remains the official primary SG source.
-- MAS HTML scrape is only a controlled official-page fallback probe, not production until a clean date/value row is proven.
-- Trading Economics is tested only as fallback/sanity-check.
-- Promote Trading Economics only if the returned category is explicitly SORA / Singapore Overnight Rate Average / Compounded SORA.
+- MAS HTML POST probe is a controlled official-page fallback test, not production until clean date/value rows are proven.
+- No login, no CAPTCHA bypass, no broad crawling, one official MAS page only.
 """)
