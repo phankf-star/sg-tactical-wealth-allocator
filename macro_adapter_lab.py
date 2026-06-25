@@ -1,6 +1,6 @@
 
 # macro_rate_diagnostics_lab.py
-# Global20Engine Rate Diagnostics Lab v4 - SG MAS + Trading Economics fallback test + JP BOJ confirmation
+# Global20Engine Rate Diagnostics Lab v5 - SG MAS HTML scrape probe + MAS/TE/JP tests
 
 import csv
 import io
@@ -15,32 +15,28 @@ import streamlit as st
 
 st.set_page_config(page_title="Global20Engine Rate Diagnostics Lab", layout="wide")
 
-USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/4.0"
+USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/5.0"
 TIMEOUT = 30
 
 MAS_RESOURCE_ID = "9a0bf149-308c-4bd2-832d-76c8e6cb47ed"
+MAS_DIR_URL = "https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx"
 
 MAS_URLS = [
     {"label": "MAS generic eservices route", "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json?" + urllib.parse.urlencode({"resource_id": MAS_RESOURCE_ID, "limit": "5000"})},
     {"label": "MAS GitHub open-source exact route - comp_sora_1m", "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json?" + urllib.parse.urlencode({"resource_id": MAS_RESOURCE_ID, "limit": "100", "fields": "end_of_day,comp_sora_1m", "sort": "end_of_day desc"})},
     {"label": "MAS GitHub open-source broad SORA fields", "url": "https://eservices.mas.gov.sg/api/action/datastore/search.json?" + urllib.parse.urlencode({"resource_id": MAS_RESOURCE_ID, "limit": "100", "fields": "end_of_day,sora,sora_index,comp_sora_1m,comp_sora_3m,comp_sora_6m", "sort": "end_of_day desc"})},
-    {"label": "MAS secure datastore route", "url": "https://secure.mas.gov.sg/api/action/datastore/search.json?" + urllib.parse.urlencode({"resource_id": MAS_RESOURCE_ID, "limit": "5000"})},
-    {"label": "MAS secure API description page", "url": "https://secure.mas.gov.sg/api/APIDescPage.aspx?" + urllib.parse.urlencode({"resource_id": MAS_RESOURCE_ID})},
 ]
 
-TE_INDICATOR_CANDIDATES = [
-    "sora",
-    "singapore overnight rate average",
-    "compounded sora",
-    "interest rate",
-    "interbank rate",
-]
+TE_INDICATOR_CANDIDATES = ["sora", "singapore overnight rate average", "compounded sora", "interest rate", "interbank rate"]
 
 
-def request_text(url, label, accept="*/*"):
+def request_text(url, label, accept="*/*", data=None, method=None, headers_extra=None):
     started = datetime.utcnow().isoformat(timespec="seconds") + "Z"
     try:
-        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": "identity"})
+        headers = {"User-Agent": USER_AGENT, "Accept": accept, "Accept-Encoding": "identity"}
+        if headers_extra:
+            headers.update(headers_extra)
+        req = urllib.request.Request(url, data=data, headers=headers, method=method)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             raw = resp.read()
             return {"label": label, "ok": True, "status": getattr(resp, "status", ""), "content_type": resp.headers.get("Content-Type", ""), "bytes": len(raw), "started_utc": started, "url": url, "text": raw.decode("utf-8", errors="replace"), "error": ""}
@@ -74,6 +70,8 @@ def classify_non_json(text):
     t = (text or "").lower()
     if "maintenance" in t or "service is currently unavailable" in t:
         return "HTML maintenance/unavailable page"
+    if "domestic interest rates" in t and "sora" in t:
+        return "MAS Domestic Interest Rates form page"
     if "doctype html" in t or "<html" in t:
         return "HTML page, not JSON"
     if not text:
@@ -81,13 +79,12 @@ def classify_non_json(text):
     return "non-JSON response"
 
 
-# ---------------- SG MAS official-route diagnostics ----------------
+# ---------------- MAS JSON route diagnostic ----------------
 def parse_mas_records(payload, source_label, source_url):
     recs = payload.get("result", {}).get("records", [])
     df = pd.DataFrame(recs)
     if df.empty:
         return df, pd.DataFrame(), "JSON returned but result.records empty"
-
     date_cols = [c for c in df.columns if str(c).lower() in {"end_of_day", "date", "timestamp"} or "date" in str(c).lower()]
     value_priority = ["sora", "SORA", "sora_rate", "SORA_RATE", "comp_sora_1m", "comp_sora_3m", "comp_sora_6m"]
     candidate_rows = []
@@ -138,12 +135,82 @@ def run_mas_deep():
         samples.append({"route_label": label, "url": url, "sample": r["text"][:3000]})
     parsed = pd.concat(parsed_all, ignore_index=True) if parsed_all else pd.DataFrame()
     records_preview = pd.concat(records_previews, ignore_index=True) if records_previews else pd.DataFrame()
+    return pd.DataFrame(diagnostics), pd.DataFrame(samples), records_preview, parsed
+
+
+# ---------------- MAS HTML scrape probe ----------------
+def extract_input_fields(html):
+    # Lightweight regex extractor. Purpose: diagnostics only, not a full HTML parser.
+    inputs = []
+    for m in re.finditer(r"<input\b[^>]*>", html, flags=re.I | re.S):
+        tag = m.group(0)
+        attrs = {}
+        for a in re.finditer(r"([a-zA-Z_:][-a-zA-Z0-9_:.]*)\s*=\s*(['\"])(.*?)\2", tag, flags=re.S):
+            attrs[a.group(1)] = a.group(3)
+        inputs.append(attrs)
+    return pd.DataFrame(inputs)
+
+
+def extract_selects(html):
+    selects = []
+    for m in re.finditer(r"<select\b[^>]*>(.*?)</select>", html, flags=re.I | re.S):
+        tag_start = re.search(r"<select\b[^>]*>", m.group(0), flags=re.I | re.S).group(0)
+        name = ""
+        idv = ""
+        nm = re.search(r"name\s*=\s*(['\"])(.*?)\1", tag_start, flags=re.I | re.S)
+        im = re.search(r"id\s*=\s*(['\"])(.*?)\1", tag_start, flags=re.I | re.S)
+        if nm: name = nm.group(2)
+        if im: idv = im.group(2)
+        opts = []
+        for om in re.finditer(r"<option\b[^>]*value\s*=\s*(['\"])(.*?)\1[^>]*>(.*?)</option>", m.group(1), flags=re.I | re.S):
+            opts.append({"value": om.group(2), "text": re.sub(r"<[^>]+>", "", om.group(3)).strip()})
+        selects.append({"name": name, "id": idv, "options_count": len(opts), "options_sample": str(opts[:10])})
+    return pd.DataFrame(selects)
+
+
+def run_mas_html_probe():
+    r = request_text(MAS_DIR_URL, "MAS Domestic Interest Rates HTML page", accept="text/html,*/*")
+    diag = {k: v for k, v in r.items() if k != "text"}
+    diag["classification"] = classify_non_json(r["text"])
+    html = r["text"] if r["ok"] else ""
+
+    table_summaries = []
+    parsed_tables = []
+    try:
+        tables = pd.read_html(io.StringIO(html)) if html else []
+        for i, t in enumerate(tables):
+            table_summaries.append({"table_index": i, "rows": len(t), "cols": len(t.columns), "columns": ", ".join(map(str, t.columns))[:500], "contains_sora": t.astype(str).apply(lambda col: col.str.contains("SORA|sora|Compounded", regex=True, na=False)).any().any()})
+            tt = t.copy(); tt["__table_index"] = i; parsed_tables.append(tt.head(50))
+    except Exception as e:
+        table_summaries.append({"table_index": "error", "rows": 0, "cols": 0, "columns": "", "contains_sora": False, "error": repr(e)})
+
+    inputs = extract_input_fields(html)
+    selects = extract_selects(html)
+    # Regex clues: hidden AJAX endpoints, __doPostBack, download/display buttons, SORA checkboxes.
+    clue_patterns = [
+        r"__doPostBack\([^)]*\)",
+        r"WebResource\.axd[^'\"]+",
+        r"ScriptResource\.axd[^'\"]+",
+        r"[A-Za-z0-9_./-]+\.ashx[^'\"]*",
+        r"[A-Za-z0-9_./-]+\.aspx[^'\"]*",
+        r"SORA",
+        r"comp_sora_1m|comp_sora_3m|comp_sora_6m|sora_index",
+    ]
+    clues = []
+    for pat in clue_patterns:
+        matches = re.findall(pat, html, flags=re.I)
+        clues.append({"pattern": pat, "matches_count": len(matches), "sample": str(matches[:20])[:1000]})
+
     result_row = None
-    if not parsed.empty:
-        parsed = parsed.dropna(subset=["date"]).sort_values("date")
-        latest = parsed.iloc[-1]
-        result_row = {"market": "SG", "indicator": "Rates", "date": latest["date"].strftime("%Y-%m-%d"), "value": float(latest["value"]), "unit": "%", "source": f"MAS Domestic Interest Rates {latest['field']}", "source_type": "Official / API Lab", "notes": f"Parsed from route={latest['route']}; resource_id={MAS_RESOURCE_ID}; field={latest['field']}."}
-    return result_row, pd.DataFrame(diagnostics), pd.DataFrame(samples), records_preview, parsed
+    candidate_rows = []
+    # If read_html sees actual data tables with dates and numeric SORA, promote only if robust.
+    for t in parsed_tables:
+        text_cols = [c for c in t.columns if t[c].astype(str).str.contains("SORA|sora|Compounded", regex=True, na=False).any()]
+        if text_cols:
+            candidate_rows.append(t)
+    candidates = pd.concat(candidate_rows, ignore_index=True) if candidate_rows else pd.DataFrame()
+
+    return pd.DataFrame([diag]), pd.DataFrame(table_summaries), pd.concat(parsed_tables, ignore_index=True) if parsed_tables else pd.DataFrame(), inputs, selects, pd.DataFrame(clues), pd.DataFrame([{"url": MAS_DIR_URL, "sample": html[:5000]}]), candidates, result_row
 
 
 # ---------------- Trading Economics fallback diagnostics ----------------
@@ -153,8 +220,6 @@ def parse_te_payload(text):
     except Exception as e:
         return pd.DataFrame(), f"JSON parse error: {e!r}"
     if isinstance(payload, dict):
-        if "message" in {str(k).lower() for k in payload.keys()}:
-            return pd.DataFrame([payload]), "JSON dict response; inspect message"
         return pd.DataFrame([payload]), "JSON dict response"
     if isinstance(payload, list):
         return pd.DataFrame(payload), "JSON list response"
@@ -165,8 +230,6 @@ def extract_te_candidates(df, route_label, url):
     if df is None or df.empty:
         return pd.DataFrame()
     out = df.copy()
-    # Standard TE indicator historical fields include Country, Category, DateTime, Value, Frequency, HistoricalDataSymbol, LastUpdate.
-    # Some endpoints use Close instead of Value.
     date_col = next((c for c in out.columns if str(c).lower() in {"datetime", "date", "latestvaluedate"} or "date" in str(c).lower()), None)
     value_col = next((c for c in out.columns if str(c).lower() in {"value", "close", "latestvalue"}), None)
     cat_col = next((c for c in out.columns if str(c).lower() in {"category", "indicator", "name"}), None)
@@ -178,7 +241,6 @@ def extract_te_candidates(df, route_label, url):
     out["route"] = route_label
     out["source_url"] = url
     out = out.dropna(subset=["value"])
-    # Do not force exact SORA here; expose all returned candidates, and mark exactness.
     if not out.empty:
         out["sora_match"] = out["category_text"].str.lower().str.contains("sora|singapore overnight rate average|compounded sora", regex=True, na=False)
         cols = [c for c in ["date", "value", "category_text", "sora_match", "route", "source_url", "Country", "Category", "Frequency", "HistoricalDataSymbol", "LastUpdate"] if c in out.columns]
@@ -191,51 +253,37 @@ def run_te_deep(te_key_secret):
     cred = (te_key_secret or "").strip()
     if not cred:
         return None, pd.DataFrame([{"route_label": "Trading Economics", "parse_result": "missing key:secret input"}]), pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
-
-    # Endpoint patterns supported by TE docs: historical/country/{country}/indicator/{indicator}?c={key}&f=json
-    # Also test snapshot country/indicator route because it is useful for latest values.
     routes = []
     for indicator in TE_INDICATOR_CANDIDATES:
         enc = urllib.parse.quote(indicator, safe="")
         routes.append({"label": f"TE historical Singapore / {indicator}", "url": f"https://api.tradingeconomics.com/historical/country/singapore/indicator/{enc}?" + urllib.parse.urlencode({"c": cred, "f": "json"})})
         routes.append({"label": f"TE snapshot Singapore / {indicator}", "url": f"https://api.tradingeconomics.com/country/singapore/indicator/{enc}?" + urllib.parse.urlencode({"c": cred, "f": "json"})})
-
     for route in routes:
         label, url = route["label"], route["url"]
-        # Hide credential in displayed URL/sample table.
         display_url = url.replace(cred, "***")
         r = request_text(url, label, accept="application/json,text/html,*/*")
         d = {k: v for k, v in r.items() if k not in {"text", "url"}}
-        d["url"] = display_url
-        d["route_label"] = label
+        d["url"] = display_url; d["route_label"] = label
         if not r["ok"]:
             d["parse_result"] = "request failed"
         elif "json" not in r.get("content_type", "").lower():
-            d["classification"] = classify_non_json(r["text"])
-            d["parse_result"] = "not JSON"
+            d["classification"] = classify_non_json(r["text"]); d["parse_result"] = "not JSON"
         else:
             df, msg = parse_te_payload(r["text"])
-            d["parse_result"] = msg
-            d["records"] = len(df)
-            d["columns"] = ", ".join(map(str, df.columns)) if not df.empty else ""
+            d["parse_result"] = msg; d["records"] = len(df); d["columns"] = ", ".join(map(str, df.columns)) if not df.empty else ""
             if not df.empty:
                 tmp = df.head(30).copy(); tmp["route_label"] = label; records.append(tmp)
                 cand = extract_te_candidates(df, label, display_url)
-                if not cand.empty:
-                    candidates_all.append(cand)
-        diagnostics.append(d)
-        samples.append({"route_label": label, "url": display_url, "sample": r["text"][:1500].replace(cred, "***")})
-
+                if not cand.empty: candidates_all.append(cand)
+        diagnostics.append(d); samples.append({"route_label": label, "url": display_url, "sample": r["text"][:1500].replace(cred, "***")})
     rec_df = pd.concat(records, ignore_index=True) if records else pd.DataFrame()
     cand_df = pd.concat(candidates_all, ignore_index=True) if candidates_all else pd.DataFrame()
     result_row = None
-    if not cand_df.empty:
-        # Prefer exact SORA matches. If none, do not auto-promote generic interest rate.
-        exact = cand_df[cand_df.get("sora_match", False).eq(True)] if "sora_match" in cand_df.columns else pd.DataFrame()
-        chosen_pool = exact if not exact.empty else pd.DataFrame()
-        if not chosen_pool.empty:
-            chosen_pool = chosen_pool.dropna(subset=["date"]).sort_values("date") if "date" in chosen_pool.columns else chosen_pool
-            latest = chosen_pool.iloc[-1]
+    if not cand_df.empty and "sora_match" in cand_df.columns:
+        exact = cand_df[cand_df["sora_match"].eq(True)]
+        if not exact.empty:
+            exact = exact.dropna(subset=["date"]).sort_values("date") if "date" in exact.columns else exact
+            latest = exact.iloc[-1]
             result_row = {"market": "SG", "indicator": "Rates", "date": latest["date"].strftime("%Y-%m-%d") if pd.notna(latest.get("date")) else "Latest", "value": float(latest["value"]), "unit": "%", "source": "Trading Economics SORA candidate", "source_type": "Fallback / API Lab", "notes": f"Only acceptable if category is explicit SORA/Compounded SORA. category={latest.get('category_text','')}"}
     return result_row, pd.DataFrame(diagnostics), pd.DataFrame(samples), rec_df, cand_df
 
@@ -250,14 +298,12 @@ def parse_boj_csv(text, target_code="STRDCLUCON"):
         for j, cell in enumerate(row):
             if re.fullmatch(r"\d{8}", str(cell).strip()):
                 date_idx = j; break
-        if date_idx is None:
-            continue
+        if date_idx is None: continue
         date = parse_date_any(row[date_idx])
         value = None
         for k in range(date_idx + 1, len(row)):
             n = clean_number(row[k])
-            if n is not None:
-                value = n; break
+            if n is not None: value = n; break
         if pd.notna(date) and value is not None:
             recs.append({"line_no": i, "code": target_code, "date": date, "value": value, "raw": ",".join(row[:min(len(row), date_idx + 5)])})
     return pd.DataFrame(recs)
@@ -277,29 +323,26 @@ def run_boj_confirm():
 
 
 st.title("Global20Engine Rate Diagnostics Lab")
-st.caption("SG MAS route test + Trading Economics fallback test + JP BOJ confirmation.")
+st.caption("SG MAS route test + SG MAS HTML scrape probe + Trading Economics fallback test + JP BOJ confirmation.")
 
 with st.sidebar:
     st.header("Trading Economics credential")
     st.caption("Enter as key:secret. Not saved by this app.")
     te_credential = st.text_input("TE key:secret", value="", type="password")
 
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
     run_sg = st.button("Run SG MAS route diagnostic", use_container_width=True)
 with c2:
-    run_te = st.button("Run SG Trading Economics test", use_container_width=True)
+    run_html = st.button("Run SG MAS HTML scrape probe", use_container_width=True)
 with c3:
+    run_te = st.button("Run SG Trading Economics test", use_container_width=True)
+with c4:
     run_jp = st.button("Confirm JP BOJ parser", use_container_width=True)
 
 if run_sg:
     st.header("SG MAS route diagnostic")
-    row, diag, samples, records_preview, parsed = run_mas_deep()
-    if row:
-        st.success("SG SORA parsed successfully from one of the MAS routes.")
-        st.dataframe(pd.DataFrame([row]), use_container_width=True)
-    else:
-        st.error("SG SORA still not parsed from MAS routes.")
+    diag, samples, records_preview, parsed = run_mas_deep()
     st.subheader("Endpoint diagnostics")
     st.dataframe(diag, use_container_width=True)
     st.subheader("MAS records preview, if any JSON route worked")
@@ -308,6 +351,26 @@ if run_sg:
     st.dataframe(parsed.tail(100), use_container_width=True)
     with st.expander("Raw MAS response samples", expanded=True):
         st.dataframe(samples, use_container_width=True)
+
+if run_html:
+    st.header("SG MAS HTML scrape probe")
+    diag, table_summaries, parsed_tables, inputs, selects, clues, sample, candidates, result_row = run_mas_html_probe()
+    st.subheader("HTML endpoint diagnostics")
+    st.dataframe(diag, use_container_width=True)
+    st.subheader("pandas.read_html table summaries")
+    st.dataframe(table_summaries, use_container_width=True)
+    st.subheader("Parsed HTML table previews")
+    st.dataframe(parsed_tables, use_container_width=True)
+    st.subheader("Input fields discovered")
+    st.dataframe(inputs, use_container_width=True)
+    st.subheader("Select fields discovered")
+    st.dataframe(selects, use_container_width=True)
+    st.subheader("HTML clue scan")
+    st.dataframe(clues, use_container_width=True)
+    st.subheader("Candidate SORA tables/text rows")
+    st.dataframe(candidates, use_container_width=True)
+    with st.expander("Raw MAS HTML first 5,000 characters", expanded=False):
+        st.dataframe(sample, use_container_width=True)
 
 if run_te:
     st.header("SG Trading Economics fallback diagnostic")
@@ -344,7 +407,7 @@ if run_jp:
 st.markdown("""
 ### Source-governance interpretation
 - MAS remains the official primary SG source.
+- MAS HTML scrape is only a controlled official-page fallback probe, not production until a clean date/value row is proven.
 - Trading Economics is tested only as fallback/sanity-check.
 - Promote Trading Economics only if the returned category is explicitly SORA / Singapore Overnight Rate Average / Compounded SORA.
-- If Trading Economics only returns generic `Interest Rate`, treat it as proxy, not as the SG SORA card source.
 """)
