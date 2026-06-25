@@ -38,6 +38,10 @@ jobs:
         run: |
           python g20_macro_fetcher.py
 
+      - name: Lab check macro pack
+        run: |
+          python Lab_check_macro_pack.py
+
       - name: Show generated files
         run: |
           find macro_pack_latest -maxdepth 1 -type f -print
