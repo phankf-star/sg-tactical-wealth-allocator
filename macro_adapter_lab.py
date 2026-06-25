@@ -1,7 +1,8 @@
 
 # macro_rate_diagnostics_lab.py
-# Global20Engine Rate Diagnostics Lab v1 - SG MAS + JP BOJ deep diagnostics
+# Global20Engine Rate Diagnostics Lab v2 - SG MAS + JP BOJ deep diagnostics
 
+import csv
 import io
 import json
 import re
@@ -14,7 +15,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Global20Engine Rate Diagnostics Lab", layout="wide")
 
-USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/1.0"
+USER_AGENT = "Mozilla/5.0 Global20Engine-RateDiagnosticsLab/2.0"
 TIMEOUT = 30
 
 MAS_RESOURCE_ID = "9a0bf149-308c-4bd2-832d-76c8e6cb47ed"
@@ -26,8 +27,9 @@ MAS_URLS = [
 
 BOJ_BASE = "https://www.stat-search.boj.or.jp/api/v1"
 BOJ_FM01_CODES = [
-    "STRDCLUCON", "STRDCLUCON@D", "FM01.STRDCLUCON", "FM01.STRDCLUCON@D",
-    "STRDCLACD", "STRDCLACD@D", "STRDCLUCONA", "STRDCLUCONA@D",
+    "STRDCLUCON",   # confirmed by metadata: Call Rate, Uncollateralized Overnight, Average (Daily)
+    "STRDCLUCONH",  # highest daily, for diagnostics only
+    "STRDCLUCONL",  # lowest daily, for diagnostics only
 ]
 
 
@@ -55,7 +57,7 @@ def request_text(url, label, accept="*/*"):
 def clean_number(x):
     if x is None:
         return None
-    s = str(x).strip()
+    s = str(x).strip().strip('"').strip("'")
     if not s or s.upper() in {"N.A.", "N/A", "NA", "NULL", "NONE", "-", "--", "."}:
         return None
     s = re.sub(r"\[[^\]]*\]", "", s).replace("+", "").replace("%", "").replace(",", "").replace("−", "-").replace("–", "-")
@@ -66,7 +68,7 @@ def clean_number(x):
 
 
 def parse_date_any(x):
-    s = str(x).strip()
+    s = str(x).strip().strip('"').strip("'")
     if re.fullmatch(r"\d{8}", s):
         return pd.to_datetime(f"{s[:4]}-{s[4:6]}-{s[6:8]}", errors="coerce")
     if re.fullmatch(r"\d{6}", s):
@@ -89,13 +91,25 @@ def flatten_json(obj, path="$"):
     return out
 
 
+# ---------------- SG MAS ----------------
+def classify_mas_html(text):
+    t = (text or "").lower()
+    if "maintenance" in t or "service is currently unavailable" in t:
+        return "HTML maintenance/unavailable page"
+    if "doctype html" in t or "<html" in t:
+        return "HTML page, not JSON"
+    return "non-JSON response"
+
+
 def run_mas_deep():
     rows = []
     samples = []
     parsed = []
     for url in MAS_URLS:
         r = request_text(url, "MAS endpoint", accept="application/json,text/html,*/*")
-        rows.append({k: v for k, v in r.items() if k != "text"})
+        d = {k: v for k, v in r.items() if k != "text"}
+        d["classification"] = classify_mas_html(r["text"]) if r["ok"] and "json" not in r.get("content_type", "").lower() else ""
+        rows.append(d)
         samples.append({"url": url, "sample": r["text"][:3000]})
         if r["ok"] and "json" in r.get("content_type", "").lower():
             try:
@@ -119,6 +133,7 @@ def run_mas_deep():
     return pd.DataFrame(rows), pd.DataFrame(samples), parsed_df
 
 
+# ---------------- JP BOJ ----------------
 def json_schema(text):
     try:
         payload = json.loads(text)
@@ -131,15 +146,49 @@ def extract_boj_candidates_from_json(payload):
     candidates = []
     def walk(x, path="$"):
         if isinstance(x, dict):
-            # capture all dicts with scalar fields for inspection
             scalars = {k: v for k, v in x.items() if not isinstance(v, (dict, list))}
             if len(scalars) >= 2:
                 row = dict(scalars); row["__path"] = path; candidates.append(row)
-            for k, v in x.items(): walk(v, f"{path}.{k}")
+            for k, v in x.items():
+                walk(v, f"{path}.{k}")
         elif isinstance(x, list):
-            for i, v in enumerate(x[:10000]): walk(v, f"{path}[{i}]")
+            for i, v in enumerate(x[:10000]):
+                walk(v, f"{path}[{i}]")
     walk(payload)
     return pd.DataFrame(candidates)
+
+
+def parse_boj_csv(text, target_code="STRDCLUCON"):
+    """BOJ CSV observed layout:
+    STATUS,200,...
+    PARAMETER,STARTDATE,YYYYMM
+    SERIES_CODE,...,TIME_PERIOD,VALUE...
+    STRDCLUCON,"Call Rate...",...,20241201,<value>...
+    The date is the first 8-digit field after metadata columns; value is the first numeric field after that date.
+    """
+    recs = []
+    for i, row in enumerate(csv.reader(io.StringIO(text))):
+        if not row or row[0] != target_code:
+            continue
+        date_idx = None
+        for j, cell in enumerate(row):
+            if re.fullmatch(r"\d{8}", str(cell).strip()):
+                date_idx = j
+                break
+        if date_idx is None:
+            continue
+        date = parse_date_any(row[date_idx])
+        value = None
+        value_col_idx = None
+        for k in range(date_idx + 1, len(row)):
+            n = clean_number(row[k])
+            if n is not None:
+                value = n
+                value_col_idx = k
+                break
+        if pd.notna(date) and value is not None:
+            recs.append({"line_no": i, "code": target_code, "date": date, "value": value, "value_col_idx": value_col_idx, "raw": ",".join(row[:min(len(row), date_idx+5)])})
+    return pd.DataFrame(recs)
 
 
 def run_boj_deep():
@@ -147,8 +196,8 @@ def run_boj_deep():
     samples = []
     schemas = []
     candidates = []
-    parsed = []
-    # metadata first
+    parsed_all = []
+
     meta_url = f"{BOJ_BASE}/getMetadata?" + urllib.parse.urlencode({"format": "json", "lang": "en", "db": "FM01"})
     rmeta = request_text(meta_url, "BOJ FM01 metadata", accept="application/json,*/*")
     diag.append({k: v for k, v in rmeta.items() if k != "text"})
@@ -161,16 +210,19 @@ def run_boj_deep():
             cdf = extract_boj_candidates_from_json(payload)
             cdf["source"] = "metadata"
             candidates.append(cdf)
-    # data code candidates
+
     start = (pd.Timestamp.today() - pd.DateOffset(months=18)).strftime("%Y%m")
     for code in BOJ_FM01_CODES:
         for fmt in ["json", "csv"]:
             url = f"{BOJ_BASE}/getDataCode?" + urllib.parse.urlencode({"format": fmt, "lang": "en", "db": "FM01", "startDate": start, "code": code})
             r = request_text(url, f"BOJ FM01 {code} {fmt}", accept="application/json,text/csv,*/*")
             d = {k: v for k, v in r.items() if k != "text"}; d["code"] = code; d["format"] = fmt
-            diag.append(d)
-            samples.append({"label": "data", "code": code, "format": fmt, "sample": r["text"][:3000]})
-            if r["ok"] and fmt == "json":
+            if r["ok"] and fmt == "csv":
+                parsed = parse_boj_csv(r["text"], target_code=code)
+                d["parsed_rows"] = len(parsed)
+                if not parsed.empty:
+                    parsed_all.append(parsed)
+            elif r["ok"] and fmt == "json":
                 sdf, payload = json_schema(r["text"])
                 sdf["source"] = f"data {code} json"
                 schemas.append(sdf)
@@ -178,16 +230,17 @@ def run_boj_deep():
                     cdf = extract_boj_candidates_from_json(payload)
                     cdf["source"] = f"data {code} json"
                     candidates.append(cdf)
-            elif r["ok"] and fmt == "csv":
-                # BOJ CSV may include metadata lines before observation table; show lines and attempt loose parsing
-                lines = r["text"].splitlines()
-                for i, line in enumerate(lines[:50]):
-                    parts = [p.strip() for p in line.split(",")]
-                    nums = [clean_number(p) for p in parts]
-                    dates = [parse_date_any(p) for p in parts]
-                    if any(pd.notna(dte) for dte in dates) and any(n is not None for n in nums):
-                        parsed.append({"code": code, "line_no": i, "line": line[:500]})
-    return (pd.DataFrame(diag), pd.DataFrame(samples), pd.concat(schemas, ignore_index=True) if schemas else pd.DataFrame(), pd.concat(candidates, ignore_index=True) if candidates else pd.DataFrame(), pd.DataFrame(parsed))
+            diag.append(d)
+            samples.append({"label": "data", "code": code, "format": fmt, "sample": r["text"][:3000]})
+
+    parsed_df = pd.concat(parsed_all, ignore_index=True) if parsed_all else pd.DataFrame()
+    result_row = None
+    if not parsed_df.empty:
+        parsed_df = parsed_df.sort_values("date")
+        latest = parsed_df[parsed_df["code"].eq("STRDCLUCON")].sort_values("date").iloc[-1]
+        result_row = {"market":"JP","indicator":"Rates","date":latest["date"].strftime("%Y-%m-%d"),"value":float(latest["value"]),"unit":"%","source":"BOJ FM01 Uncollateralized Overnight Call Rate Average Daily (STRDCLUCON)","source_type":"Official / API Lab","notes":"Parsed from BOJ getDataCode CSV; code=STRDCLUCON; first numeric value after daily date."}
+
+    return result_row, pd.DataFrame(diag), pd.DataFrame(samples), pd.concat(schemas, ignore_index=True) if schemas else pd.DataFrame(), pd.concat(candidates, ignore_index=True) if candidates else pd.DataFrame(), parsed_df
 
 
 st.title("Global20Engine Rate Diagnostics Lab")
@@ -211,20 +264,25 @@ if run_sg:
 
 if run_jp:
     st.header("JP BOJ deep diagnostic")
-    diag, samples, schemas, candidates, parsed_lines = run_boj_deep()
+    result_row, diag, samples, schemas, candidates, parsed = run_boj_deep()
+    if result_row:
+        st.success("JP BOJ FM01 parsed successfully.")
+        st.dataframe(pd.DataFrame([result_row]), use_container_width=True)
+    else:
+        st.error("JP BOJ FM01 still not parsed.")
     st.subheader("Endpoint diagnostics")
     st.dataframe(diag, use_container_width=True)
+    st.subheader("Parsed BOJ CSV observations")
+    st.dataframe(parsed.tail(100), use_container_width=True)
     st.subheader("JSON schema preview")
     st.dataframe(schemas.head(1000), use_container_width=True)
     st.subheader("Candidate scalar rows from BOJ JSON")
     st.dataframe(candidates.head(1000), use_container_width=True)
-    st.subheader("Loose parsed CSV lines")
-    st.dataframe(parsed_lines, use_container_width=True)
-    with st.expander("Raw BOJ response samples", expanded=True):
+    with st.expander("Raw BOJ response samples", expanded=False):
         st.dataframe(samples, use_container_width=True)
 
 st.markdown("""
-### How to use this output
-- For SG, if endpoint diagnostics show `text/html`, inspect raw MAS response. A live adapter cannot parse SORA until a JSON endpoint returns records.
-- For JP, inspect metadata/candidate rows to identify the exact BOJ FM01 series code and response field names.
+### Read this result
+- SG: if MAS returns `text/html`, the MAS endpoint is not serving JSON to the app environment.
+- JP: code `STRDCLUCON` is the BOJ metadata-confirmed average daily uncollateralised overnight call rate.
 """)
