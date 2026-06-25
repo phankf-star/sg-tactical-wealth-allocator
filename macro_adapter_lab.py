@@ -1,7 +1,7 @@
 
 # macro_adapter_lab.py
-# Global20Engine Macro Adapter Lab v2
-# Purpose: test macro/rate data ideas in isolation before touching the full base app.
+# Global20Engine Macro Adapter Lab v3
+# Purpose: inspect official macro APIs and prove parser logic before production updates.
 
 import json
 import re
@@ -13,7 +13,7 @@ import streamlit as st
 
 st.set_page_config(page_title="Global20Engine Macro Adapter Lab", layout="wide", initial_sidebar_state="expanded")
 
-USER_AGENT = "Mozilla/5.0 Global20Engine-MacroAdapterLab/2.0"
+USER_AGENT = "Mozilla/5.0 Global20Engine-MacroAdapterLab/3.0"
 TIMEOUT = 30
 APAC_RATE_KEYS = {("SG", "RATES"), ("MY", "RATES"), ("HK", "RATES"), ("JP", "RATES")}
 STANDARD_COLS = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
@@ -31,13 +31,28 @@ def request_text(url, label="request", headers=None):
             ctype = resp.headers.get("Content-Type", "")
             status = getattr(resp, "status", "")
         return {
-            "label": label, "ok": True, "status": status, "content_type": ctype,
-            "bytes": len(raw), "started_utc": started, "url": url,
-            "text": raw.decode("utf-8", errors="replace"), "error": ""
+            "label": label,
+            "ok": True,
+            "status": status,
+            "content_type": ctype,
+            "bytes": len(raw),
+            "started_utc": started,
+            "url": url,
+            "text": raw.decode("utf-8", errors="replace"),
+            "error": "",
         }
     except Exception as e:
-        return {"label": label, "ok": False, "status": "", "content_type": "", "bytes": 0,
-                "started_utc": started, "url": url, "text": "", "error": repr(e)}
+        return {
+            "label": label,
+            "ok": False,
+            "status": "",
+            "content_type": "",
+            "bytes": 0,
+            "started_utc": started,
+            "url": url,
+            "text": "",
+            "error": repr(e),
+        }
 
 
 def clean_number(x):
@@ -54,16 +69,15 @@ def clean_number(x):
         return None
 
 
-def month_to_num(x):
-    if x is None:
-        return None
-    s = str(x).strip()
-    if not s:
-        return None
-    if s.isdigit():
-        n = int(s)
-        return n if 1 <= n <= 12 else None
-    return {"Jan":1,"Feb":2,"Mar":3,"Apr":4,"May":5,"Jun":6,"Jul":7,"Aug":8,"Sep":9,"Oct":10,"Nov":11,"Dec":12}.get(s[:3].title())
+def period_to_date(period):
+    s = str(period).strip()
+    if re.fullmatch(r"20\d{4}", s) or re.fullmatch(r"19\d{4}", s):
+        y = int(s[:4]); m = int(s[4:6])
+        if 1 <= m <= 12:
+            return pd.Timestamp(y, m, 1)
+    if re.fullmatch(r"20\d{2}", s) or re.fullmatch(r"19\d{2}", s):
+        return pd.Timestamp(int(s), 1, 1)
+    return pd.NaT
 
 
 def flatten_json(obj, path="$"):
@@ -74,93 +88,144 @@ def flatten_json(obj, path="$"):
             rows.extend(flatten_json(v, f"{path}.{k}"))
     elif isinstance(obj, list):
         rows.append({"path": path, "type": "list", "keys": [], "value": obj})
-        for i, v in enumerate(obj[:5000]):
+        for i, v in enumerate(obj[:10000]):
             rows.extend(flatten_json(v, f"{path}[{i}]"))
     else:
         rows.append({"path": path, "type": type(obj).__name__, "keys": [], "value": obj})
     return rows
 
 
-def schema_preview_from_json_text(text, max_rows=300):
+def schema_preview_from_json_text(text, max_rows=500):
     try:
         payload = json.loads(text)
     except Exception as e:
         return pd.DataFrame([{"error": repr(e)}]), None
-    flat = flatten_json(payload)
     recs = []
-    for item in flat[:max_rows]:
+    for item in flatten_json(payload)[:max_rows]:
         v = item["value"]
         recs.append({
             "path": item["path"],
             "type": item["type"],
-            "keys": ", ".join(map(str, item["keys"][:20])) if item["keys"] else "",
-            "sample": str(v)[:500].replace("\n", " ")
+            "keys": ", ".join(map(str, item["keys"][:30])) if item["keys"] else "",
+            "sample": str(v)[:600].replace("\n", " "),
         })
     return pd.DataFrame(recs), payload
 
 
-def extract_any_csd_table_rows(payload):
-    """Return table-like rows from common C&SD JSON structures.
-    This is intentionally exploratory: it exposes rows for diagnostics even before final parser is locked.
-    """
-    table_rows = []
-    flat = flatten_json(payload)
-    for item in flat:
+def extract_dataset(payload):
+    if isinstance(payload, dict) and isinstance(payload.get("dataSet"), list):
+        return pd.DataFrame(payload["dataSet"])
+    return pd.DataFrame()
+
+
+def extract_code_dictionaries(payload):
+    """Find likely metadata/code-description dictionaries so we can map sv codes to labels."""
+    rows = []
+    for item in flatten_json(payload):
         v = item["value"]
         if isinstance(v, dict):
-            # dictionaries with many scalar values are potential data rows
-            scalars = {k: val for k, val in v.items() if not isinstance(val, (dict, list))}
-            if len(scalars) >= 3:
-                row = dict(scalars)
-                row["__path"] = item["path"]
-                table_rows.append(row)
-        elif isinstance(v, list) and v and all(not isinstance(x, (dict, list)) for x in v[:20]):
-            # list of scalar cells is potential table row
-            row = {f"col_{i}": val for i, val in enumerate(v[:30])}
-            row["__path"] = item["path"]
-            table_rows.append(row)
-    if not table_rows:
+            keys = {str(k).lower(): k for k in v.keys()}
+            code_key = None
+            desc_key = None
+            for cand in ["code", "id", "name", "sv", "value"]:
+                if cand in keys:
+                    code_key = keys[cand]
+                    break
+            for cand in ["description", "desc", "label", "title", "name", "value"]:
+                if cand in keys and keys[cand] != code_key:
+                    desc_key = keys[cand]
+                    break
+            if code_key is not None and desc_key is not None:
+                rows.append({"path": item["path"], "code": v.get(code_key), "description": v.get(desc_key), "keys": ", ".join(map(str, v.keys()))})
+    if not rows:
+        return pd.DataFrame(columns=["path", "code", "description", "keys"])
+    return pd.DataFrame(rows).drop_duplicates()
+
+
+def make_sv_summary(ds):
+    if ds.empty or "sv" not in ds.columns:
         return pd.DataFrame()
-    return pd.DataFrame(table_rows)
+    df = ds.copy()
+    if "period" in df.columns:
+        df["period_date"] = df["period"].apply(period_to_date)
+    value_candidates = []
+    for c in df.columns:
+        if c in {"period_date"}:
+            continue
+        # treat any column with at least some numeric values as candidate value column
+        nums = df[c].map(clean_number)
+        if nums.notna().sum() > 0:
+            value_candidates.append(c)
+            df[f"__num_{c}"] = nums
+    rows = []
+    for sv, g in df.groupby("sv", dropna=False):
+        latest_period = g["period"].iloc[-1] if "period" in g.columns and len(g) else ""
+        latest_date = None
+        if "period_date" in g.columns and g["period_date"].notna().any():
+            latest_date = g["period_date"].max()
+        row = {"sv": sv, "rows": len(g), "latest_period": latest_period, "latest_date": latest_date.strftime("%Y-%m-%d") if pd.notna(latest_date) else ""}
+        for c in value_candidates:
+            gg = g.copy()
+            if "period_date" in gg.columns:
+                gg = gg.sort_values("period_date")
+            val = gg[f"__num_{c}"].dropna()
+            row[f"latest_numeric_{c}"] = val.iloc[-1] if len(val) else None
+        rows.append(row)
+    return pd.DataFrame(rows)
 
 
-def parse_hk_from_any_rows(df):
-    if df is None or df.empty:
-        return None, pd.DataFrame()
+def pick_hk_inflation_from_dataset(ds, sv_summary, dictionaries):
+    """Best effort parser for C&SD Table 510-60001.
+    Prefer a series whose metadata says Composite CPI + YoY; otherwise expose candidate rows, do not guess silently.
+    """
+    if ds.empty or "sv" not in ds.columns or "period" not in ds.columns:
+        return None, pd.DataFrame(), "missing sv/period columns"
+
+    # Build sv -> description map from metadata if available.
+    desc_map = {}
+    if dictionaries is not None and not dictionaries.empty:
+        for _, r in dictionaries.iterrows():
+            code = str(r.get("code", ""))
+            desc = str(r.get("description", ""))
+            if code and code != "None" and desc and desc != "None":
+                desc_map[code] = desc
+
+    value_cols = []
+    for c in ds.columns:
+        nums = ds[c].map(clean_number)
+        if nums.notna().sum() > 10 and c not in {"period"}:
+            value_cols.append(c)
+
+    candidate_svs = []
+    for sv in ds["sv"].dropna().astype(str).unique():
+        desc = desc_map.get(sv, "")
+        text = f"{sv} {desc}".lower()
+        if ("composite" in text or "綜合" in text or "cc" in sv.lower()) and any(t in text for t in ["year-on-year", "year on year", "yoy", "按年", "yr-on-yr"]):
+            candidate_svs.append((sv, desc, "metadata match"))
+
+    # If metadata did not reveal it, produce safe candidates but do not hard-pick unless user can inspect.
+    if not candidate_svs:
+        # Use latest values by sv as diagnostic candidates. Do not return final row.
+        cand = sv_summary.copy() if sv_summary is not None else pd.DataFrame()
+        return None, cand, "no Composite CPI YoY series identified from metadata"
+
     records = []
-    # Strategy A: row contains Year/Month and value columns with labels
-    for _, r in df.iterrows():
-        vals = [str(x).strip() for x in r.tolist() if pd.notna(x)]
-        joined = " ".join(vals).lower()
-        # Scan sequentially for Year Month Index YoY pattern within row values
-        for i in range(len(vals)-3):
-            y = clean_number(vals[i])
-            m = month_to_num(vals[i+1])
-            idx = clean_number(vals[i+2])
-            yoy = clean_number(vals[i+3])
-            if y and 2000 <= y <= 2100 and m and idx and 50 <= idx <= 200 and yoy is not None and -10 <= yoy <= 20:
-                records.append({"date": pd.Timestamp(int(y), int(m), 1), "value": yoy, "basis": "row sequential Year-Month-Index-YoY", "raw": " | ".join(vals[:25])})
-        # Strategy B: any dict with explicit year/month and composite/yoy/value naming
-        keys = {str(k).lower(): k for k in r.index}
-        year = None; month = None
-        for k_lower, k in keys.items():
-            if k_lower in {"year", "yr"} or k_lower.endswith("year"):
-                year = clean_number(r[k])
-            if k_lower in {"month", "mth"} or k_lower.endswith("month"):
-                month = month_to_num(r[k])
-        if year and month:
-            for k_lower, k in keys.items():
-                if any(t in k_lower for t in ["year-on-year", "year on year", "yoy", "按年"]):
-                    val = clean_number(r[k])
-                    if val is not None and -10 <= val <= 20:
-                        records.append({"date": pd.Timestamp(int(year), int(month), 1), "value": val, "basis": f"explicit key {k}", "raw": str(dict(r))[:500]})
-    out = pd.DataFrame(records)
-    if out.empty:
-        return None, out
-    out = out.dropna(subset=["date"]).sort_values("date")
-    if out.empty:
-        return None, pd.DataFrame(records)
-    latest = out.iloc[-1]
+    for sv, desc, basis in candidate_svs:
+        g = ds[ds["sv"].astype(str) == sv].copy()
+        g["period_date"] = g["period"].apply(period_to_date)
+        for c in value_cols:
+            g["value_num"] = g[c].map(clean_number)
+            valid = g[g["period_date"].notna() & g["value_num"].notna()].copy()
+            valid = valid[(valid["value_num"] > -10) & (valid["value_num"] < 20)]
+            if not valid.empty:
+                valid = valid.sort_values("period_date")
+                latest = valid.iloc[-1]
+                records.append({"sv": sv, "description": desc, "basis": basis, "value_col": c, "date": latest["period_date"], "value": latest["value_num"]})
+    parsed = pd.DataFrame(records)
+    if parsed.empty:
+        return None, parsed, "metadata series found but no numeric latest value parsed"
+    parsed = parsed.sort_values("date")
+    latest = parsed.iloc[-1]
     row = {
         "market": "HK",
         "indicator": "Inflation",
@@ -169,9 +234,9 @@ def parse_hk_from_any_rows(df):
         "unit": "%",
         "source": "C&SD Table 510-60001 Composite CPI YoY",
         "source_type": "Official / API Lab",
-        "notes": f"Parsed in Macro Adapter Lab; basis={latest.get('basis','')}",
+        "notes": f"Parsed via sv={latest['sv']}; {latest.get('description','')}; value_col={latest['value_col']}",
     }
-    return row, out
+    return row, parsed, "ok"
 
 
 def hk_csd_51060001_json_explore():
@@ -179,38 +244,20 @@ def hk_csd_51060001_json_explore():
     r = request_text(url, "HK C&SD 510-60001 JSON API", headers={"Accept": "application/json,text/plain,*/*"})
     debug = {k: v for k, v in r.items() if k != "text"}
     if not r["ok"]:
-        return None, debug, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), ""
-    schema_df, payload = schema_preview_from_json_text(r["text"], max_rows=500)
+        return None, debug, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), ""
+    schema_df, payload = schema_preview_from_json_text(r["text"], max_rows=800)
     if payload is None:
         debug["result"] = "json load failed"
-        return None, debug, schema_df, pd.DataFrame(), pd.DataFrame(), r["text"][:5000]
-    rows_df = extract_any_csd_table_rows(payload)
-    row, parsed_df = parse_hk_from_any_rows(rows_df)
-    debug["result"] = "ok" if row else "no HK CPI row parsed"
-    debug["candidate_table_rows"] = len(rows_df)
-    debug["parsed_candidate_rows"] = len(parsed_df)
-    return row, debug, schema_df, rows_df, parsed_df, r["text"][:5000]
-
-
-def hk_csd_51060001_web_text():
-    url = "https://www.censtatd.gov.hk/en/web_table.html?id=510-60001&full_series=1"
-    r = request_text(url, "HK C&SD 510-60001 web table", headers={"Accept": "text/html,*/*"})
-    debug = {k: v for k, v in r.items() if k != "text"}
-    text = re.sub(r"<[^>]+>", " ", r.get("text", ""))
-    text = re.sub(r"\s+", " ", text)
-    recs = []
-    pat = re.compile(r"(20\d{2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{1,2})\s+(\d+(?:\.\d+)?)\s+([+\-−–]?\d+(?:\.\d+)?)", re.I)
-    for m in pat.finditer(text):
-        y = int(m.group(1)); mn = month_to_num(m.group(2)); val = clean_number(m.group(4))
-        if mn and val is not None and -10 <= val <= 20:
-            recs.append({"date": pd.Timestamp(y, mn, 1), "value": val, "raw": m.group(0)})
-    df = pd.DataFrame(recs)
-    debug["result"] = "ok" if not df.empty else "no web text rows parsed"
-    if df.empty:
-        return None, debug, df, text[:5000]
-    df = df.sort_values("date")
-    latest = df.iloc[-1]
-    return {"market":"HK","indicator":"Inflation","date":latest["date"].strftime("%Y-%m-%d"),"value":float(latest["value"]),"unit":"%","source":"C&SD Table 510-60001 Composite CPI YoY","source_type":"Official / Web Lab","notes":"Parsed from web text in Macro Adapter Lab."}, debug, df, text[:5000]
+        return None, debug, schema_df, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), r["text"][:5000]
+    ds = extract_dataset(payload)
+    dictionaries = extract_code_dictionaries(payload)
+    sv_summary = make_sv_summary(ds)
+    row, parsed_df, parse_result = pick_hk_inflation_from_dataset(ds, sv_summary, dictionaries)
+    debug["result"] = parse_result
+    debug["dataset_rows"] = len(ds)
+    debug["dataset_cols"] = ", ".join(map(str, ds.columns)) if not ds.empty else ""
+    debug["sv_count"] = ds["sv"].nunique() if not ds.empty and "sv" in ds.columns else 0
+    return row, debug, schema_df, ds, dictionaries, sv_summary, parsed_df, r["text"][:5000]
 
 
 def clean_macro_pack(df):
@@ -246,31 +293,30 @@ with st.sidebar:
 last_row = None
 if run_hk:
     st.subheader("HK Inflation dynamic fetch result")
-    row1, debug1, schema_df, rows_df, parsed_df, raw_json_preview = hk_csd_51060001_json_explore()
-    row2, debug2, web_df, raw_web_preview = hk_csd_51060001_web_text()
-    last_row = row1 or row2
-    if last_row:
+    row, debug, schema_df, ds, dictionaries, sv_summary, parsed_df, raw_preview = hk_csd_51060001_json_explore()
+    last_row = row
+    if row:
         st.success("HK Inflation parsed successfully.")
-        st.dataframe(pd.DataFrame([last_row]), use_container_width=True)
+        st.dataframe(pd.DataFrame([row]), use_container_width=True)
     else:
-        st.error("HK Inflation was not parsed by current attempts. Inspect schema/candidate rows below.")
+        st.error("HK Inflation was not parsed automatically. Inspect sv summary and dictionaries below.")
 
     st.subheader("Attempt diagnostics")
-    st.dataframe(pd.DataFrame([debug1, debug2]), use_container_width=True)
+    st.dataframe(pd.DataFrame([debug]), use_container_width=True)
 
+    with st.expander("Dataset columns and first 100 rows", expanded=True):
+        st.dataframe(ds.head(100), use_container_width=True)
+    with st.expander("SV summary - most important table", expanded=True):
+        st.write("This groups the C&SD dataSet by `sv`. We need to identify which `sv` means Composite CPI YoY.")
+        st.dataframe(sv_summary, use_container_width=True)
+    with st.expander("Code dictionaries / metadata", expanded=True):
+        st.dataframe(dictionaries.head(500), use_container_width=True)
+    with st.expander("Parsed candidate rows", expanded=True):
+        st.dataframe(parsed_df.head(500), use_container_width=True)
     with st.expander("JSON schema preview", expanded=False):
         st.dataframe(schema_df, use_container_width=True)
-    with st.expander("JSON candidate table rows", expanded=True):
-        st.write("Rows extracted from JSON structures that look table-like.")
-        st.dataframe(rows_df.head(200), use_container_width=True)
-    with st.expander("Parsed candidate rows", expanded=True):
-        st.dataframe(parsed_df.head(200), use_container_width=True)
     with st.expander("Raw JSON first 5,000 characters", expanded=False):
-        st.code(raw_json_preview[:5000])
-    with st.expander("Web text parsed rows", expanded=False):
-        st.dataframe(web_df.head(200), use_container_width=True)
-    with st.expander("Raw web text first 5,000 characters", expanded=False):
-        st.code(raw_web_preview[:5000])
+        st.code(raw_preview)
 
 if uploaded is not None:
     st.subheader("Macro pack cleaner preview")
@@ -279,9 +325,7 @@ if uploaded is not None:
     st.dataframe(original, use_container_width=True)
     cleaned = clean_macro_pack(original)
     if last_row is None:
-        row1, *_ = hk_csd_51060001_json_explore()
-        row2, *_ = hk_csd_51060001_web_text()
-        last_row = row1 or row2
+        last_row, *_ = hk_csd_51060001_json_explore()
     final = append_or_update_hk_inflation(cleaned, last_row)
     st.write("Cleaned rows", len(final))
     st.dataframe(final, use_container_width=True)
@@ -289,7 +333,7 @@ if uploaded is not None:
 
 st.markdown("""
 ### Recommended workflow
-1. Test a source here first.
-2. Inspect diagnostics/schema until the parsed row is correct.
-3. Only then copy the proven adapter logic into the full Global20Engine app or Power Query workbook.
+1. Identify the correct `sv` code for Composite CPI YoY in **SV summary** or **Code dictionaries**.
+2. Lock that `sv` code in this lab.
+3. Only then copy the proven adapter logic into the full Global20Engine app or macro fetcher.
 """)
