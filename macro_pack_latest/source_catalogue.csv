@@ -1,13 +1,14 @@
-market,indicator,source,endpoint_or_url,frequency,role,notes
-SG,Rates,MAS SORA,MAS open search/API route in Streamlit live adapter,Daily,Live API only,Decision 1; excluded from active macro_data.csv.
-MY,Rates,BNM OPR,BNM OpenAPI live adapter,Policy/daily availability,Live API only,Decision 2; excluded from active macro_data.csv.
-HK,Rates,HKMA HIBOR / HKD rates,HKMA Open API live adapter,Daily,Live API only,Decision 3; excluded from active macro_data.csv.
-JP,Rates,BOJ FM01 overnight call rate,BOJ Time-Series API live adapter,Daily,Live API only,Decision 4; excluded from active macro_data.csv.
-MY,Unemployment,OpenDOSM u_rate,OpenDOSM API live adapter,Monthly,Live API exception,Decision 5; live API due unreliable monthly pack route.
-JP,Unemployment,DBnomics / STATJP,DBnomics API live adapter,Monthly,Live API exception,Decision 6; live API due unreliable monthly pack route.
-JP,Inflation,DBnomics / STATJP CPI,DBnomics API live adapter,Monthly,Live API exception,Decision 7; live API due unreliable monthly pack route.
-HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1,Monthly,Macro pack official API,sv=CC_CM_1920; period=YYYYMM; value=figure.
-US,Inflation,FRED CPIAUCSL YoY,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL,Monthly,Macro pack official API,Computed YoY from CPI index.
-US,Unemployment,FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE,Monthly,Macro pack official API,Latest value.
-US,Claims,FRED ICSA,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA,Weekly,Macro pack official API,Converted to thousands.
-US,Rates,FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,Daily,Macro pack official API,US 10-year Treasury constant maturity.
+﻿market,indicator,source,source_type,endpoint,notes
+US,Inflation,FRED CPIAUCSL YoY,Official / API,https://fred.stlouisfed.org/series/CPIAUCSL,Computed YoY from CPI index
+US,Unemployment,FRED UNRATE,Official / API,https://fred.stlouisfed.org/series/UNRATE,US unemployment rate
+US,Claims,FRED ICSA,Official / API,https://fred.stlouisfed.org/series/ICSA,US initial claims
+US,Rates,FRED DGS10,Official / API,https://fred.stlouisfed.org/series/DGS10,US 10-year Treasury
+SG,Inflation,SingStat CPI,Official / Reviewed,,Reviewed static row pending full integration
+SG,Unemployment,MOM / SingStat unemployment,Official / Reviewed,,Reviewed static row
+SG,Rates,SG SORA live redistributor only,Live app only,,Excluded from macro pack
+HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,Official / Reviewed,,Reviewed/live integration dependent
+MY,Inflation,OpenDOSM storage CSV cpi_2d_inflation,Official CSV,https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv,Filter division=overall; use inflation_yoy
+MY,Unemployment,OpenDOSM unemployment,Official / API,https://api.data.gov.my/opendosm,Tolerant helper; manual if unavailable
+MY,Rates,BNM OPR,Live app only,,Excluded from macro pack if live policy applies
+JP,Rates,BOJ FM01 STRDCLUCON CSV,Live app only,,Excluded from macro pack
+PMI,PMI,Seed rows,Seed,,Review before active use
