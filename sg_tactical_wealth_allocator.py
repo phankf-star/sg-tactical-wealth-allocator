@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38y — SG SORA live hard-fix with MAS API + redistributor fallback; JP BOJ FM01 STRDCLUCON CSV; remarks stay in tooltip
+# Global20Engine v38z — SG SORA live redistributor-only fix; JP BOJ FM01 STRDCLUCON CSV; remarks stay in tooltip
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38y APAC Live Adapter Fix', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38z APAC Live Adapter Fix', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -434,7 +434,7 @@ US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
 MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
-MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'MAS Domestic Interest Rates API SORA + redistributor fallback','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'C&SD Table 510-60001 Composite CPI YoY / HKMA fallback','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ FM01 STRDCLUCON CSV parser','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
+MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'SG SORA live redistributor only; MAS legacy endpoints retired','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'C&SD Table 510-60001 Composite CPI YoY / HKMA fallback','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ FM01 STRDCLUCON CSV parser','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -842,8 +842,8 @@ def _parse_date_value_pairs_from_text(txt):
 
 
 def _parse_sg_sora_from_redistributor_html(txt, source_name):
-    """Parse SORA from public live pages that explicitly republish MAS SORA values.
-    This is a live fallback only; official MAS datastore/API remains primary.
+    """Parse dated SORA values from public live pages that republish MAS SORA.
+    Do not parse undated summary/change values; require an explicit date near the number.
     """
     if not txt:
         return None
@@ -851,53 +851,24 @@ def _parse_sg_sora_from_redistributor_html(txt, source_name):
     clean=re.sub(r'<[^>]+>',' ',clean)
     clean=re.sub(r'\s+',' ',clean).strip()
     candidates=[]
-    # Pattern used by pages that show table rows such as "Mon, 22 Jun 2026 1.0471% ..."
     months='Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec'
     for m in re.finditer(r'(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\s*)?(\d{1,2}\s+(?:'+months+r')\s+20\d{2})\s+(-?\d+(?:\.\d+)?)\s*%', clean, flags=re.I):
         dt=pd.to_datetime(m.group(1),errors='coerce'); val=_clean_number(m.group(2))
-        if pd.notna(dt) and val is not None and -2 <= val <= 25:
+        if pd.notna(dt) and val is not None and 0.05 <= val <= 25:
             candidates.append((pd.Timestamp(dt),val,source_name))
-    # Pattern used by MacroMicro / TradingEconomics style pages: "2026-06-24 1.05 %".
     for m in re.finditer(r'(20\d{2}[-/]\d{1,2}[-/]\d{1,2})\s+(-?\d+(?:\.\d+)?)\s*%', clean, flags=re.I):
         dt=pd.to_datetime(m.group(1),errors='coerce'); val=_clean_number(m.group(2))
-        if pd.notna(dt) and val is not None and -2 <= val <= 25:
+        if pd.notna(dt) and val is not None and 0.05 <= val <= 25:
             candidates.append((pd.Timestamp(dt),val,source_name))
-    # Pattern used by summary text: "SORA 1.0471%" or "SORA ... 1.0471%".
-    for m in re.finditer(r'\bSORA\b(?!\s*(?:Index|Calculation|Transactions|Trend|is|represents|for|based|published|comes|has|and|rates|serves))[^%]{0,80}?(-?\d+(?:\.\d+)?)\s*%', clean, flags=re.I):
-        val=_clean_number(m.group(1))
-        if val is not None and -2 <= val <= 25:
-            # Use explicit nearby date if present; otherwise latest today as fallback display date.
-            window=clean[max(0,m.start()-120):min(len(clean),m.end()+120)]
-            dm=re.search(r'(20\d{2}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}\s+(?:'+months+r')\s+20\d{2})',window,flags=re.I)
-            dt=pd.to_datetime(dm.group(1),errors='coerce') if dm else pd.Timestamp.today().normalize()
-            if pd.notna(dt):
-                candidates.append((pd.Timestamp(dt),val,source_name))
+    for m in re.finditer(r'\bSORA\b\s+(-?\d+(?:\.\d+)?)\s*%\s+As of\s+(\d{1,2}\s+(?:'+months+r')\s+20\d{2})', clean, flags=re.I):
+        val=_clean_number(m.group(1)); dt=pd.to_datetime(m.group(2),errors='coerce')
+        if pd.notna(dt) and val is not None and 0.05 <= val <= 25:
+            candidates.append((pd.Timestamp(dt),val,source_name))
     if not candidates:
         return None
-    # Prefer the latest dated value; if same date, prefer the more precise number.
-    candidates=sorted(candidates,key=lambda x:(x[0], len(str(x[1]))))
+    candidates=sorted(candidates,key=lambda x:(x[0], x[1]))
     dt,val,src=candidates[-1]
     return val,dt.strftime('%d %b %Y'),src,len(candidates)
-
-def _fetch_sg_sora_redistributor_fallback():
-    """Live non-pack fallback for SG SORA when MAS endpoint is unreachable from Streamlit hosting."""
-    sources=[
-        ('StraitsData MAS SORA redistributor','https://straitsdata.com/finance/mas'),
-        ('MacroMicro MAS SORA redistributor','https://en.macromicro.me/series/6324/singapore-overnight-rate-average-sora'),
-        ('TradingEconomics MAS SORA redistributor','https://tradingeconomics.com/singapore/interest-rate'),
-    ]
-    last=''
-    for adapter,url in sources:
-        txt,err,row=_request_text_custom(url,adapter,capture_global=True,extra_headers={'Accept':'text/html,application/xhtml+xml,text/plain,*/*','Accept-Encoding':'identity'})
-        if not txt:
-            last=err; continue
-        parsed=_parse_sg_sora_from_redistributor_html(txt,adapter)
-        if parsed:
-            val,dt,src,n=parsed
-            _diag(adapter,url,True,n,'SORA redistributor HTML parsed',f'{dt}={val}','MAS official endpoint did not return a parseable value in this runtime.')
-            return val,dt,src,'MAS official endpoint did not return a parseable value; live redistributor fallback used.'
-        last=f'{adapter} reached but no SORA value parsed'
-    return None,'N/A','SG SORA redistributor fallback',last
 
 def _parse_boj_fm01_strdclucon_csv(txt):
     """Parse BOJ FM01 STRDCLUCON CSV, including metadata rows above the data area."""
@@ -930,43 +901,30 @@ def _parse_boj_fm01_strdclucon_csv(txt):
 
 @st.cache_data(ttl=21600)
 def fetch_mas_sora_rate():
-    """SG Rates live adapter: official MAS Domestic Interest Rates API first, live redistributor fallback second.
+    """SG Rates live adapter: redistributor-only path.
 
-    v38y fix: if MAS datastore/API or MAS HTML is blocked by hosting/runtime, do not leave the dashboard at Awaiting;
-    use a live public SORA redistributor page that states MAS as its source, and label the source transparently.
+    v38z decision: remove legacy MAS secure/eservices datastore/API endpoints from the active fetch path because diagnostics show those routes are not reliable in this runtime.
+    The live path uses public SORA pages that explicitly republish MAS SORA values. Source transparency is retained in the tooltip/diagnostics.
     """
-    adapter='MAS Domestic Interest Rates API SORA'
-    base='https://eservices.mas.gov.sg/api/action/datastore/search.json'
-    last=''
-    # Official MAS datastore: constrained, sorted, exact fields.
-    query_variants=[
-        {'resource_id':'9a0bf149-308c-4bd2-832d-76c8e6cb47ed','limit':'100','fields':'end_of_day,timestamp,sora,sora_index,comp_sora_1m,comp_sora_3m,comp_sora_6m','sort':'end_of_day desc'},
-        {'resource_id':'9a0bf149-308c-4bd2-832d-76c8e6cb47ed','limit':'100','sort':'end_of_day desc'},
-        {'resource_id':'9a0bf149-308c-4bd2-832d-76c8e6cb47ed','limit':'100','sort':'end_of_day%5Cdesc'},
+    adapter='SG SORA live redistributor only'
+    sources=[
+        ('MacroMicro MAS SORA redistributor','https://en.macromicro.me/series/6324/singapore-overnight-rate-average-sora'),
+        ('TradingEconomics MAS SORA redistributor','https://tradingeconomics.com/singapore/interest-rate'),
+        ('StraitsData MAS SORA redistributor','https://straitsdata.com/finance/mas'),
+        ('Cashew SG SORA redistributor','https://www.cashew.sg/interest-rates/sora'),
     ]
-    for params in query_variants:
-        url=base+'?'+urllib.parse.urlencode(params,quote_via=urllib.parse.quote)
-        txt,err,row=_request_text_custom(url,adapter,capture_global=True,extra_headers={'Accept':'application/json,text/plain,*/*','Accept-Encoding':'identity'})
+    last=''
+    for src_name,url in sources:
+        txt,err,row=_request_text_custom(url,src_name,capture_global=True,extra_headers={'Accept':'text/html,application/xhtml+xml,text/plain,*/*','Accept-Encoding':'identity'})
         if not txt:
             last=err; continue
-        try:
-            payload=json.loads(txt); records=payload.get('result',{}).get('records',[]) if isinstance(payload,dict) else []
-            if not records:
-                last='MAS datastore reached but returned no records'; continue
-            for key,label in [('sora','SORA'),('SORA','SORA'),('sora_rate','SORA'),('SORA_RATE','SORA'),('comp_sora_1m','1M compounded SORA'),('comp_sora_3m','3M compounded SORA'),('comp_sora_6m','6M compounded SORA')]:
-                got=_latest_numeric_from_records(records,date_keys=['end_of_day','timestamp','date','Date'],value_keys=[key],avoid_filter=['volume','aggregate'])
-                if got:
-                    dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
-                    _diag(adapter,url,True,len(records),f'MAS datastore field: {label}',f'{date_txt}={val}','')
-                    return val,date_txt,f'MAS Domestic Interest Rates API {label}',''
-            last='MAS datastore reached but no SORA numeric field parsed'
-        except Exception as e:
-            last=f'MAS datastore parser error: {e}'; _diag(adapter,url,True,0,'MAS datastore parser error','',str(e))
-    # Live redistributor fallback: avoids hard Awaiting when MAS endpoint is inaccessible from Streamlit Cloud/GitHub runtime.
-    val,dt,src,err=_fetch_sg_sora_redistributor_fallback()
-    if val is not None:
-        return val,dt,src,err
-    return None,'N/A','MAS Domestic Interest Rates API SORA',last or err or 'MAS SG rates adapter returned no usable value'
+        parsed=_parse_sg_sora_from_redistributor_html(txt,src_name)
+        if parsed:
+            val,dt,src,n=parsed
+            _diag(adapter,url,True,n,'Dated SG SORA value parsed',f'{dt}={val}',f'Legacy MAS secure/eservices datastore endpoints removed from active fetch path. Source: {src_name}')
+            return val,dt,src,'Legacy MAS secure/eservices datastore endpoints removed from active fetch path; live redistributor source used.'
+        last=f'{src_name} reached but no dated SORA value parsed'
+    return None,'N/A','SG SORA live redistributor only',last or 'No redistributor returned a dated SG SORA value'
 
 @st.cache_data(ttl=21600)
 def fetch_bnm_opr_rate():
@@ -1200,7 +1158,7 @@ def rate_card_label(market):
     return 'Rates'
 def rate_basis_text(market):
     if market in US_MARKETS: return 'Basis: US 10-year Treasury constant maturity yield. Preferred source: FRED DGS10.'
-    if market=='STI': return 'Basis: Singapore-dollar interest-rate environment. Preferred basis: MAS Domestic Interest Rates SORA; redistributor fallback only if MAS endpoint does not return parseable data.'
+    if market=='STI': return 'Basis: Singapore-dollar interest-rate environment. Preferred basis: SG SORA live redistributor pages that explicitly cite MAS SORA; legacy MAS secure/eservices datastore endpoints removed from active fetch path.'
     if market=='HSI': return 'Basis: Hong Kong-dollar interest-rate environment. Preferred basis: HKMA HIBOR, base rate or discount-window related rates.'
     if market=='A-Share': return 'Basis: China lending-rate benchmark. Preferred basis: CFETS/PBC 1-year Loan Prime Rate, validation mode.'
     if market in USD_PROXY_MARKETS: return 'Basis: US 10-year Treasury yield used as global USD rates / discount-rate proxy.'
@@ -1279,8 +1237,8 @@ def resolve_macro_value(market,indicator):
             return _awaiting_live('Yahoo ^TNX / FRED DGS10')
         if market=='STI':
             val,dt,src,err=fetch_mas_sora_rate()
-            if val is not None: return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
-            return _awaiting_live('MAS Domestic Interest Rates API SORA + redistributor fallback', err or 'MAS SG rates adapter returned no usable value')
+            if val is not None: return _source_result(val,f'{val:.2f}%',f'Live source · {src} · {dt}','Live source',dt,err)
+            return _awaiting_live('MAS open search.json SORA / domestic rates', err or 'MAS SORA adapter returned no usable value')
         if market=='HSI':
             val,dt,src,err=fetch_hkma_hibor_rate()
             if val is not None: return _source_result(val,f'{val:.2f}%',f'Official API · {src} · {dt}','Official API',dt,err)
@@ -1421,7 +1379,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38y SG SORA live hard-fix + JP BOJ CSV build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38z SG SORA redistributor-only + JP BOJ CSV build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
