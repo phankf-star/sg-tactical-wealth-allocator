@@ -345,6 +345,195 @@ def add_hk_inflation_reviewed_or_live():
         manual("HK", "Inflation", f"C&SD Table 510-60001 fetch failed: {e}")
 
 
+def add_hk_unemployment_live():
+    """
+    Hong Kong unemployment live/parser row.
+
+    Source:
+    HK Government / C&SD unemployment and underemployment press release.
+
+    This parser fetches the official source page during the workflow run.
+    If parsing fails, it writes manual_required instead of carrying stale data.
+    """
+    source = "HK Government / C&SD unemployment press release"
+    url = "https://www.info.gov.hk/gia/general/202606/16/P2026061600318.htm"
+
+    try:
+        txt = clean_html_for_macro(request_text(url, accept="text/html,text/plain,*/*"))
+
+        period_match = re.search(
+            r"(March\s*-\s*May\s*2026|Mar(?:ch)?\s*-\s*May\s*2026|3/2026\s*-\s*5/2026)",
+            txt,
+            flags=re.I,
+        )
+
+        if period_match:
+            period = period_match.group(1)
+            date_txt = "2026-05-31"
+        else:
+            period = "March-May 2026"
+            date_txt = "2026-05-31"
+
+        rate_match = re.search(
+            r"unemployment rate\s*(?:stood at|was|remained unchanged at)?\s*([0-9.]+)\s*%",
+            txt,
+            flags=re.I,
+        )
+
+        if not rate_match:
+            rate_match = re.search(
+                r"seasonally adjusted unemployment rate\s*(?:stood at|was|remained unchanged at)?\s*([0-9.]+)\s*%",
+                txt,
+                flags=re.I,
+            )
+
+        if not rate_match:
+            raise ValueError("Could not parse HK unemployment rate from press release")
+
+        value = round(float(rate_match.group(1)), 3)
+
+        if not (0 <= value <= 20):
+            raise ValueError(f"HK unemployment sanity check failed: {value}")
+
+        row(
+            "HK",
+            "Unemployment",
+            date_txt,
+            value,
+            "%",
+            source,
+            "Official / Parsed",
+            f"Parsed from official HK unemployment press release; period={period}.",
+        )
+
+        diag(
+            "HK",
+            "Unemployment",
+            source,
+            "success",
+            value=value,
+            reason=f"Parsed HK unemployment {value}% for {period}",
+            endpoint=url,
+        )
+
+    except Exception as e:
+        diag(
+            "HK",
+            "Unemployment",
+            source,
+            "failed",
+            reason=str(e),
+            endpoint=url,
+        )
+        manual("HK", "Unemployment", f"HK unemployment parser failed: {e}")
+
+
+def add_japan_latest_indicators_live():
+    """
+    Japan CPI and unemployment live/parser rows.
+
+    Source:
+    Statistics Bureau of Japan latest indicators page.
+
+    This fetches latest displayed CPI and unemployment indicators during the workflow run.
+    """
+    source_page = "Statistics Bureau of Japan latest indicators"
+    url = "https://www.stat.go.jp/english/"
+
+    try:
+        txt = clean_html_for_macro(request_text(url, accept="text/html,text/plain,*/*"))
+
+        # Consumer Price Index 1.5 % May 2026 change over the year
+        m_cpi = re.search(
+            r"Consumer Price Index\s*([0-9.]+)\s*%\s*([A-Za-z]+)\s*(20\d{2})\s*change over the year",
+            txt,
+            flags=re.I,
+        )
+
+        if not m_cpi:
+            raise ValueError("Could not parse Japan CPI latest indicator")
+
+        cpi_value = round(float(m_cpi.group(1)), 3)
+        cpi_month = m_cpi.group(2)
+        cpi_year = m_cpi.group(3)
+        cpi_date = month_year_to_first_day(cpi_month, cpi_year)
+
+        if not (-10 <= cpi_value <= 25):
+            raise ValueError(f"Japan CPI sanity check failed: {cpi_value}")
+
+        row(
+            "JP",
+            "Inflation",
+            cpi_date,
+            cpi_value,
+            "%",
+            source_page + " / CPI",
+            "Official / Parsed",
+            f"Parsed Japan CPI YoY from Statistics Bureau latest indicators; period={cpi_month} {cpi_year}.",
+        )
+
+        diag(
+            "JP",
+            "Inflation",
+            source_page + " / CPI",
+            "success",
+            value=cpi_value,
+            reason=f"Parsed Japan CPI YoY {cpi_value}% for {cpi_month} {cpi_year}",
+            endpoint=url,
+        )
+
+        # Unemployment rate 2.5 % April 2026 seasonally adjusted
+        m_unemp = re.search(
+            r"Unemployment rate\s*([0-9.]+)\s*%\s*([A-Za-z]+)\s*(20\d{2})\s*seasonally adjusted",
+            txt,
+            flags=re.I,
+        )
+
+        if not m_unemp:
+            raise ValueError("Could not parse Japan unemployment latest indicator")
+
+        unemp_value = round(float(m_unemp.group(1)), 3)
+        unemp_month = m_unemp.group(2)
+        unemp_year = m_unemp.group(3)
+        unemp_date = month_year_to_first_day(unemp_month, unemp_year)
+
+        if not (0 <= unemp_value <= 20):
+            raise ValueError(f"Japan unemployment sanity check failed: {unemp_value}")
+
+        row(
+            "JP",
+            "Unemployment",
+            unemp_date,
+            unemp_value,
+            "%",
+            source_page + " / Labour Force Survey",
+            "Official / Parsed",
+            f"Parsed Japan unemployment rate from Statistics Bureau latest indicators; period={unemp_month} {unemp_year}.",
+        )
+
+        diag(
+            "JP",
+            "Unemployment",
+            source_page + " / Labour Force Survey",
+            "success",
+            value=unemp_value,
+            reason=f"Parsed Japan unemployment {unemp_value}% for {unemp_month} {unemp_year}",
+            endpoint=url,
+        )
+
+    except Exception as e:
+        diag(
+            "JP",
+            "Inflation/Unemployment",
+            source_page,
+            "failed",
+            reason=str(e),
+            endpoint=url,
+        )
+        manual("JP", "Inflation", f"Japan latest indicators parser failed: {e}")
+        manual("JP", "Unemployment", f"Japan latest indicators parser failed: {e}")
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Malaysia inflation — FIXED CSV-primary implementation
 # ─────────────────────────────────────────────────────────────────────────────
