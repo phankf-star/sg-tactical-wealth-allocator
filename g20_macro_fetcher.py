@@ -1,272 +1,429 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-Global20Engine external macro/performance fetcher
-Version: v38 external-fetch draft
+g20_macro_fetcher.py
+Global20Engine monthly macro-pack generator.
 
-Purpose
--------
-Run outside Streamlit so the Streamlit app becomes a display/decision layer only.
-Recommended runtime: GitHub Actions monthly/scheduled/manual run.
+Policy locked 2026-06-25:
+- APAC Rates are live-API decisions and must NOT be exported as active macro_data rows:
+  SG Rates, MY Rates, HK Rates, JP Rates.
+- HK Inflation is monthly CPI data and is dynamically fetched from C&SD Table 510-60001.
+- HK Inflation parser proven in macro_adapter_lab.py:
+  sv = CC_CM_1920, period = YYYYMM, value = figure.
 
-Outputs
--------
+Outputs written to macro_pack_latest/:
 - macro_data.csv
 - diagnostics.csv
 - manual_required.csv
-- manual_input_template.csv
-- source_links.csv
 - source_catalogue.csv
+- source_links.csv
 - README.csv
+- macro_pack.xlsx, if openpyxl is available
 - macro_pack_csv_bundle.zip
-- macro_pack.xlsx if openpyxl is available
-
-Notes
------
-This script intentionally uses Python standard library + pandas only.
-It prioritises official CSV/API-style sources where practical, and records every failure
-in diagnostics/manual_required instead of silently failing inside Streamlit.
 """
 
 from __future__ import annotations
 
+import csv
 import io
 import json
 import math
+import os
+import re
+import sys
+import time
 import zipfile
+import urllib.parse
 import urllib.request
-from pathlib import Path
 from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 
-OUT = Path("macro_pack_latest")
-OUT.mkdir(exist_ok=True)
+OUT_DIR = Path("macro_pack_latest")
+OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-PACK_MONTH = datetime.now().strftime("%Y-%m")
-GEN_AT = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+GEN_AT = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+USER_AGENT = "Global20Engine-MacroFetcher/2026.06.25"
+TIMEOUT = 30
 
-SOURCE_LINKS = [
-    {"market":"US","indicator":"Inflation","source_name":"FRED CPIAUCSL","url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL","manual_role":"fallback/check only"},
-    {"market":"US","indicator":"Unemployment","source_name":"FRED UNRATE","url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE","manual_role":"fallback/check only"},
-    {"market":"US","indicator":"Claims","source_name":"FRED ICSA","url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA","manual_role":"fallback/check only"},
-    {"market":"US","indicator":"Rates","source_name":"FRED DGS10","url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10","manual_role":"fallback/check only"},
-    {"market":"US","indicator":"PMI","source_name":"FRED NAPM / ISM Manufacturing PMI","url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=NAPM","manual_role":"fallback/check only"},
-    {"market":"SG","indicator":"Inflation","source_name":"SingStat CPI table","url":"https://tablebuilder.singstat.gov.sg/","manual_role":"official check if adapter fails"},
-    {"market":"SG","indicator":"Unemployment","source_name":"SingStat / MOM unemployment","url":"https://tablebuilder.singstat.gov.sg/","manual_role":"official check if adapter fails"},
-    {"market":"SG","indicator":"Rates","source_name":"MAS domestic rates / SORA","url":"https://eservices.mas.gov.sg/statistics/","manual_role":"official check if adapter fails"},
-    {"market":"SG","indicator":"PMI","source_name":"SIPMM Singapore Manufacturing PMI","url":"https://sipmm.edu.sg/resources/singapore-pmi/","manual_role":"official check if calendar source fails"},
-    {"market":"HK","indicator":"Inflation","source_name":"HKMA / C&SD CPI","url":"https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics","manual_role":"validation check"},
-    {"market":"HK","indicator":"Unemployment","source_name":"HKMA unemployment","url":"https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/financial/economic-statistics","manual_role":"fallback/check only"},
-    {"market":"HK","indicator":"Rates","source_name":"HKMA interest rates","url":"https://www.hkma.gov.hk/eng/data-publications-and-research/data-and-statistics/","manual_role":"official check if adapter fails"},
-    {"market":"HK","indicator":"PMI","source_name":"S&P Global Hong Kong SAR PMI","url":"https://tradingeconomics.com/hong-kong/manufacturing-pmi","manual_role":"calendar fallback"},
-    {"market":"CN","indicator":"Inflation","source_name":"NBS China CPI","url":"https://www.stats.gov.cn/english/PressRelease/","manual_role":"validation mode"},
-    {"market":"CN","indicator":"Unemployment","source_name":"NBS surveyed unemployment","url":"https://www.stats.gov.cn/english/PressRelease/","manual_role":"validation mode"},
-    {"market":"CN","indicator":"Rates","source_name":"PBC / CFETS Loan Prime Rate","url":"https://www.chinamoney.com.cn/english/","manual_role":"validation mode"},
-    {"market":"CN","indicator":"PMI","source_name":"NBS Manufacturing PMI","url":"https://www.stats.gov.cn/english/PressRelease/","manual_role":"official source"},
-    {"market":"MY","indicator":"PMI","source_name":"S&P Global Malaysia Manufacturing PMI","url":"https://www.pmi.spglobal.com/","manual_role":"official/calendar check"},
-    {"market":"JP","indicator":"PMI","source_name":"au Jibun Bank Japan Manufacturing PMI","url":"https://www.pmi.spglobal.com/","manual_role":"official/calendar check"},
-]
+STANDARD_COLS = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
+DIAG_COLS = ["market", "indicator", "source_name", "status", "value", "reason", "endpoint", "generated_at"]
+MANUAL_COLS = ["market", "indicator", "reason", "suggested_action"]
 
-PMI_SEEDS = {
-    "US": ("ISM Manufacturing PMI", 54.0),
-    "SG": ("SIPMM Singapore Manufacturing PMI", 51.0),
-    "HK": ("S&P Global Hong Kong SAR PMI", 50.4),
-    "CN": ("NBS Manufacturing PMI", 50.0),
-    "MY": ("S&P Global Malaysia Manufacturing PMI", 49.9),
-    "JP": ("au Jibun Bank Japan Manufacturing PMI", 50.4),
-}
+# Live-first source policy. These must not appear as active rows in macro_data.csv.
+APAC_LIVE_RATE_KEYS = {("SG", "Rates"), ("MY", "Rates"), ("HK", "Rates"), ("JP", "Rates")}
 
-DIAG = []
-MANUAL = []
-ROWS = []
+# Confirmed in Macro Adapter Lab from C&SD Table 510-60001 API.
+HK_CSD_CPI_URL = "https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1"
+HK_COMPOSITE_CPI_YOY_SV = "CC_CM_1920"
+
+ROWS: list[dict] = []
+DIAG: list[dict] = []
+MANUAL: list[dict] = []
 
 
-def diag(market, indicator, source_name, status, value="", reason="", endpoint=""):
-    DIAG.append({
-        "market": market,
-        "indicator": indicator,
-        "source_name": source_name,
-        "status": status,
-        "value": value,
-        "reason": reason,
-        "endpoint": endpoint,
-        "generated_at": GEN_AT,
-    })
+def request_text(url: str, *, accept: str = "*/*") -> str:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": USER_AGENT,
+            "Accept": accept,
+        },
+    )
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        raw = resp.read()
+    return raw.decode("utf-8", errors="replace")
 
 
-def manual(market, indicator, reason, suggested_action="Review latest official value"):
-    MANUAL.append({
-        "market": market,
-        "indicator": indicator,
-        "reason": reason,
-        "suggested_action": suggested_action,
-    })
-
-
-def row(market, indicator, date, value, unit, source, source_type, notes=""):
-    ROWS.append({
-        "market": market,
-        "indicator": indicator,
-        "date": date,
-        "value": value,
-        "unit": unit,
-        "source": source,
-        "source_type": source_type,
-        "notes": notes,
-    })
-
-
-def fetch_fred(series_id: str) -> pd.DataFrame:
-    url = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
-    with urllib.request.urlopen(url, timeout=30) as resp:
-        body = resp.read().decode("utf-8-sig", errors="replace")
-    df = pd.read_csv(io.StringIO(body), parse_dates=["DATE"])
-    if series_id not in df.columns:
-        raise ValueError(f"{series_id} column not found")
-    df = df.rename(columns={series_id: "value"}).dropna()
-    df["value"] = pd.to_numeric(df["value"], errors="coerce")
-    return df.dropna()
-
-
-def latest_fred(series_id: str):
-    df = fetch_fred(series_id)
-    last = df.iloc[-1]
-    return pd.Timestamp(last["DATE"]).strftime("%Y-%m-%d"), float(last["value"])
-
-
-def add_us_rows():
-    # Inflation YoY from CPIAUCSL
+def clean_number(x):
+    if x is None:
+        return None
+    s = str(x).strip()
+    if not s or s.upper() in {"N.A.", "NA", "N/A", "NULL", "NONE", "-", "--", "."}:
+        return None
+    s = re.sub(r"\[[^\]]*\]", "", s)
+    s = s.replace("+", "").replace("%", "").replace(",", "").replace("−", "-").replace("–", "-")
     try:
-        df = fetch_fred("CPIAUCSL")
-        latest = float(df["value"].iloc[-1]); prior = float(df["value"].iloc[-13])
-        yoy = (latest / prior - 1) * 100
-        dt = pd.Timestamp(df["DATE"].iloc[-1]).strftime("%Y-%m-%d")
-        row("US", "Inflation", dt, round(yoy, 3), "%", "FRED CPIAUCSL YoY", "Official / External Pack", "Generated outside Streamlit")
-        diag("US", "Inflation", "FRED CPIAUCSL", "accepted", round(yoy, 3), endpoint="FRED CSV")
-    except Exception as e:
-        diag("US", "Inflation", "FRED CPIAUCSL", "failed", reason=str(e), endpoint="FRED CSV")
-        manual("US", "Inflation", "FRED CPI adapter returned no usable value")
+        v = float(s.strip())
+        if math.isnan(v) or math.isinf(v):
+            return None
+        return v
+    except Exception:
+        return None
 
-    for indicator, series, unit, source in [
-        ("Unemployment", "UNRATE", "%", "FRED UNRATE"),
-        ("Claims", "ICSA", "k", "FRED ICSA"),
-        ("Rates", "DGS10", "%", "FRED DGS10"),
-    ]:
-        try:
-            dt, val = latest_fred(series)
-            if indicator == "Claims":
-                val = val / 1000.0
-            row("US", indicator, dt, round(val, 3), unit, source, "Official / External Pack", "Generated outside Streamlit")
-            diag("US", indicator, source, "accepted", round(val, 3), endpoint="FRED CSV")
-        except Exception as e:
-            diag("US", indicator, source, "failed", reason=str(e), endpoint="FRED CSV")
-            manual("US", indicator, f"{source} adapter returned no usable value")
 
-    # PMI: try FRED NAPM; if not available, seed with explicit review note
+def period_yyyymm_to_date(period: str) -> pd.Timestamp:
+    s = str(period).strip()
+    if not re.fullmatch(r"\d{6}", s):
+        return pd.NaT
+    y = int(s[:4])
+    m = int(s[4:6])
+    if not (1 <= m <= 12):
+        return pd.NaT
+    return pd.Timestamp(y, m, 1)
+
+
+def diag(market: str, indicator: str, source_name: str, status: str, value="", reason="", endpoint=""):
+    DIAG.append(
+        {
+            "market": market,
+            "indicator": indicator,
+            "source_name": source_name,
+            "status": status,
+            "value": value,
+            "reason": reason,
+            "endpoint": endpoint,
+            "generated_at": GEN_AT,
+        }
+    )
+
+
+def manual(market: str, indicator: str, reason: str, suggested_action: str = "Review latest official value"):
+    MANUAL.append(
+        {
+            "market": market,
+            "indicator": indicator,
+            "reason": reason,
+            "suggested_action": suggested_action,
+        }
+    )
+
+
+def row(market: str, indicator: str, date: str, value, unit: str, source: str, source_type: str, notes: str = ""):
+    ROWS.append(
+        {
+            "market": market,
+            "indicator": indicator,
+            "date": date,
+            "value": value,
+            "unit": unit,
+            "source": source,
+            "source_type": source_type,
+            "notes": notes,
+        }
+    )
+
+
+# ---------------------------------------------------------------------
+# Official source fetchers
+# ---------------------------------------------------------------------
+
+def fetch_fred_raw(series_id: str) -> pd.DataFrame:
+    url = "https://fred.stlouisfed.org/graph/fredgraph.csv?" + urllib.parse.urlencode({"id": series_id})
+    txt = request_text(url, accept="text/csv,*/*")
+    df = pd.read_csv(io.StringIO(txt))
+    # FRED usually returns DATE,<SERIES>; make this tolerant.
+    cols_lower = {c.lower(): c for c in df.columns}
+    date_col = cols_lower.get("date") or df.columns[0]
+    value_col = series_id if series_id in df.columns else [c for c in df.columns if c != date_col][0]
+    out = df[[date_col, value_col]].copy()
+    out.columns = ["date", "value"]
+    out["date"] = pd.to_datetime(out["date"], errors="coerce")
+    out["value"] = pd.to_numeric(out["value"], errors="coerce")
+    out = out.dropna(subset=["date", "value"]).sort_values("date")
+    if out.empty:
+        raise ValueError(f"FRED {series_id} returned no usable rows")
+    return out
+
+
+def add_fred_latest(series_id: str, market: str, indicator: str, unit: str, source: str, notes: str = ""):
+    endpoint = f"https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
     try:
-        dt, val = latest_fred("NAPM")
-        row("US", "PMI", dt, round(val, 1), "index", "FRED NAPM / ISM Manufacturing PMI", "Official / External Pack", "Generated outside Streamlit")
-        diag("US", "PMI", "FRED NAPM", "accepted", round(val, 1), endpoint="FRED CSV")
+        df = fetch_fred_raw(series_id)
+        latest = df.iloc[-1]
+        value = float(latest["value"])
+        date = latest["date"].strftime("%Y-%m-%d")
+        if indicator == "Claims":
+            value = round(value / 1000.0, 3)
+        row(market, indicator, date, value, unit, source, "Official / API", notes)
+        diag(market, indicator, source, "success", value=value, reason=f"{date} = {value}{unit}", endpoint=endpoint)
     except Exception as e:
-        name, val = PMI_SEEDS["US"]
-        dt = f"{PACK_MONTH}-01"
-        row("US", "PMI", dt, val, "index", name, "Seed / External Pack", "Seed fallback; review before saving as active pack")
-        diag("US", "PMI", "FRED NAPM", "failed", reason=str(e), endpoint="FRED CSV")
-        manual("US", "PMI", "Live PMI source failed; seed fallback used", "Review PMI before relying on generated pack")
+        diag(market, indicator, source, "failed", reason=str(e), endpoint=endpoint)
+        manual(market, indicator, f"{source} fetch failed: {e}")
 
 
-def add_seed_pmi_and_claims_na(market: str):
-    if market != "US":
-        row(market, "Claims", "N/A", "", "", "Not applicable", "N/A", "Claims is US-only in current model")
-    if market in PMI_SEEDS:
-        name, val = PMI_SEEDS[market]
-        row(market, "PMI", f"{PACK_MONTH}-01", val, "index", name, "Seed / External Pack", "Seed fallback; review before saving as active pack")
-        diag(market, "PMI", name, "seed", val, reason="External fetcher uses reviewed seed unless official adapter is added")
-        manual(market, "PMI", "Seed fallback used", "Review PMI before relying on generated pack")
+def add_us_cpi_yoy():
+    endpoint = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL"
+    try:
+        df = fetch_fred_raw("CPIAUCSL")
+        latest = df.iloc[-1]
+        prior_date = latest["date"] - pd.DateOffset(months=12)
+        prior_candidates = df[df["date"] <= prior_date].sort_values("date")
+        if prior_candidates.empty:
+            raise ValueError("No CPI row at least 12 months before latest")
+        prior = prior_candidates.iloc[-1]
+        yoy = (float(latest["value"]) / float(prior["value"]) - 1.0) * 100.0
+        value = round(yoy, 3)
+        date = latest["date"].strftime("%Y-%m-%d")
+        row("US", "Inflation", date, value, "%", "FRED CPIAUCSL YoY", "Official / API", "Computed from latest CPI index versus CPI about 12 months earlier.")
+        diag("US", "Inflation", "FRED CPIAUCSL YoY", "success", value=f"{value}%", reason=f"{date} = {value}%", endpoint=endpoint)
+    except Exception as e:
+        diag("US", "Inflation", "FRED CPIAUCSL YoY", "failed", reason=str(e), endpoint=endpoint)
+        manual("US", "Inflation", f"FRED CPIAUCSL YoY failed: {e}")
 
 
-def add_non_us_placeholders(market: str):
-    for indicator in ["Inflation", "Unemployment", "Rates"]:
-        manual(market, indicator, f"{market} {indicator} external adapter not yet promoted", "Add official adapter or fill manual_input_template")
-    add_seed_pmi_and_claims_na(market)
+def fetch_hk_csd_composite_cpi_yoy() -> dict:
+    """
+    Fetch HK Composite CPI YoY from C&SD Table 510-60001.
 
-
-def build_outputs():
-    add_us_rows()
-    for market in ["SG", "HK", "CN", "MY", "JP"]:
-        add_non_us_placeholders(market)
-
-    macro_data = pd.DataFrame(ROWS)
-    diagnostics = pd.DataFrame(DIAG)
-    manual_required = pd.DataFrame(MANUAL)
-    source_links = pd.DataFrame(SOURCE_LINKS)
-
-    source_catalogue = []
-    for m in ["US", "SG", "HK", "CN", "MY", "JP"]:
-        for ind in ["Inflation", "Unemployment", "Claims", "Rates", "PMI"]:
-            match = source_links[(source_links["market"] == m) & (source_links["indicator"] == ind)]
-            src = match["source_name"].iloc[0] if not match.empty else "Awaiting official mapping"
-            source_catalogue.append({
-                "market": m,
-                "indicator": ind,
-                "primary_source": src,
-                "fallback_policy": "External fetcher → official/calendar check → manual_input_template exception",
-                "manual_allowed": "Exception only" if ind == "PMI" else ("N/A" if ind == "Claims" and m != "US" else "Fallback only"),
-            })
-    source_catalogue = pd.DataFrame(source_catalogue)
-
-    manual_input_template = pd.DataFrame(columns=["market","indicator","date","value","unit","source","source_type","notes"])
-    if not manual_required.empty:
-        temp_rows = []
-        for _, r in manual_required.iterrows():
-            ind = r["indicator"]
-            unit = "%" if ind in ["Inflation", "Unemployment", "Rates"] else "k" if ind == "Claims" else "index" if ind == "PMI" else ""
-            temp_rows.append({
-                "market": r["market"],
-                "indicator": ind,
-                "date": f"{PACK_MONTH}-01",
-                "value": "",
-                "unit": unit,
-                "source": "Owner-reviewed official value",
-                "source_type": "Owner-uploaded",
-                "notes": f"{r['reason']} | {r['suggested_action']}",
-            })
-        manual_input_template = pd.DataFrame(temp_rows)
-
-    readme = pd.DataFrame([
-        {"field": "pack_month", "value": PACK_MONTH},
-        {"field": "generated_at", "value": GEN_AT},
-        {"field": "generator_version", "value": "Global20Engine v38 external fetcher draft"},
-        {"field": "source_policy", "value": "External scheduled fetcher → committed macro_pack_latest files → Streamlit display/read layer"},
-        {"field": "design_note", "value": "Streamlit should not be responsible for primary macro/performance fetching."},
-    ])
-
-    outputs = {
-        "macro_data": macro_data,
-        "diagnostics": diagnostics,
-        "manual_required": manual_required,
-        "manual_input_template": manual_input_template,
-        "source_links": source_links,
-        "source_catalogue": source_catalogue,
-        "README": readme,
+    Confirmed in Macro Adapter Lab:
+    - sv = CC_CM_1920 is Composite CPI YoY.
+    - period is YYYYMM.
+    - figure is the YoY percentage value.
+    """
+    payload = json.loads(request_text(HK_CSD_CPI_URL, accept="application/json,text/plain,*/*"))
+    data = payload.get("dataSet", [])
+    df = pd.DataFrame(data)
+    if df.empty:
+        raise ValueError("C&SD Table 510-60001 returned empty dataSet")
+    required = {"period", "sv", "figure"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(f"C&SD Table 510-60001 missing required columns: {sorted(missing)}")
+    target = df[df["sv"].astype(str).str.strip().eq(HK_COMPOSITE_CPI_YOY_SV)].copy()
+    if target.empty:
+        raise ValueError(f"C&SD Table 510-60001 target sv not found: {HK_COMPOSITE_CPI_YOY_SV}")
+    target["date"] = target["period"].apply(period_yyyymm_to_date)
+    target["value"] = target["figure"].map(clean_number)
+    target = target.dropna(subset=["date", "value"])
+    target = target[(target["value"] > -10) & (target["value"] < 20)]
+    if target.empty:
+        raise ValueError("C&SD Table 510-60001 target sv had no valid numeric figure")
+    latest = target.sort_values("date").iloc[-1]
+    return {
+        "market": "HK",
+        "indicator": "Inflation",
+        "date": latest["date"].strftime("%Y-%m-%d"),
+        "value": float(latest["value"]),
+        "unit": "%",
+        "source": "C&SD Table 510-60001 Composite CPI YoY",
+        "source_type": "Official / API",
+        "notes": f"Fetched from C&SD Table 510-60001 JSON API; sv={HK_COMPOSITE_CPI_YOY_SV}; period={latest['period']}; figure column.",
     }
 
-    for name, df in outputs.items():
-        df.to_csv(OUT / f"{name}.csv", index=False, encoding="utf-8-sig")
+
+def add_hk_inflation():
+    try:
+        hk = fetch_hk_csd_composite_cpi_yoy()
+        row(hk["market"], hk["indicator"], hk["date"], hk["value"], hk["unit"], hk["source"], hk["source_type"], hk["notes"])
+        diag("HK", "Inflation", "C&SD Table 510-60001 Composite CPI YoY", "success", value=f"{hk['value']}%", reason=f"Fetched dynamically for {hk['date']}", endpoint=HK_CSD_CPI_URL)
+    except Exception as e:
+        diag("HK", "Inflation", "C&SD Table 510-60001 Composite CPI YoY", "failed", reason=str(e), endpoint=HK_CSD_CPI_URL)
+        manual("HK", "Inflation", f"C&SD Table 510-60001 fetch failed: {e}", "Review C&SD Table 510-60001 Composite CPI YoY manually")
+
+
+# Optional / regional helpers. These are deliberately tolerant. If a source fails, diagnostics/manual rows capture it.
+def add_opendosm_malaysia_cpi():
+    url = "https://api.data.gov.my/data-catalogue?id=cpi_2d&limit=5000"
+    try:
+        txt = request_text(url, accept="application/json,text/plain,*/*")
+        payload = json.loads(txt)
+        df = pd.DataFrame(payload)
+        if df.empty:
+            raise ValueError("OpenDOSM CPI returned empty payload")
+        # Common OpenDOSM fields can vary. Search for date, overall/headline index and YoY-like value.
+        date_col = next((c for c in df.columns if c.lower() in {"date", "period"}), None)
+        yoy_col = next((c for c in df.columns if "yoy" in c.lower() or "inflation" in c.lower()), None)
+        if date_col and yoy_col:
+            df["_date"] = pd.to_datetime(df[date_col], errors="coerce")
+            df["_value"] = pd.to_numeric(df[yoy_col], errors="coerce")
+            got = df.dropna(subset=["_date", "_value"]).sort_values("_date")
+            got = got[(got["_value"] > -10) & (got["_value"] < 20)]
+            if not got.empty:
+                latest = got.iloc[-1]
+                row("MY", "Inflation", latest["_date"].strftime("%Y-%m-%d"), round(float(latest["_value"]), 3), "%", "OpenDOSM headline CPI cpi_2d", "Official / API", "Malaysia headline CPI YoY from OpenDOSM where available.")
+                diag("MY", "Inflation", "OpenDOSM headline CPI cpi_2d", "success", value=round(float(latest["_value"]), 3), reason=f"{latest['_date'].strftime('%Y-%m-%d')}", endpoint=url)
+                return
+        raise ValueError(f"Could not identify usable date/yoy columns in OpenDOSM response; columns={list(df.columns)[:20]}")
+    except Exception as e:
+        diag("MY", "Inflation", "OpenDOSM headline CPI cpi_2d", "failed", reason=str(e), endpoint=url)
+        manual("MY", "Inflation", f"OpenDOSM CPI fetch failed: {e}")
+
+
+# ---------------------------------------------------------------------
+# Static reviewed rows / seed rows retained from the current workbook policy
+# ---------------------------------------------------------------------
+
+def add_static_reviewed_rows():
+    # These rows preserve the currently reviewed monthly pack values where official dynamic source is not yet migrated.
+    row("SG", "Inflation", "2026-05-01", 1.8, "%", "SingStat CPI", "Official / Reviewed", "Reviewed static row pending full SingStat macro-pack integration.")
+    diag("SG", "Inflation", "SingStat CPI", "reviewed_static", value="1.8%", reason="Reviewed row retained", endpoint="")
+
+    row("SG", "Unemployment", "2026-03-01", 2.0, "%", "MOM / SingStat unemployment", "Official / Reviewed", "Singapore overall unemployment rate for Mar-26 / 1Q 2026; reviewed static row.")
+    diag("SG", "Unemployment", "MOM / SingStat unemployment", "reviewed_static", value="2.0%", reason="Reviewed row retained", endpoint="")
+
+
+def add_pmi_seeds():
+    seeds = [
+        ("US", "PMI", "2026-06-01", 54.0, "index", "ISM Manufacturing PMI / seed fallback", "Seed", "Seed fallback; review before active use."),
+        ("SG", "PMI", "2026-06-01", 51.0, "index", "SIPMM Singapore Manufacturing PMI", "Seed", "Seed fallback; review before active use."),
+        ("HK", "PMI", "2026-06-01", 50.4, "index", "S&P Global Hong Kong SAR PMI", "Seed", "Seed fallback; review before active use."),
+        ("CN", "PMI", "2026-06-01", 50.0, "index", "NBS Manufacturing PMI", "Seed", "Seed fallback; review before active use."),
+        ("MY", "PMI", "2026-06-01", 49.9, "index", "S&P Global Malaysia Manufacturing PMI", "Seed", "Seed fallback; review before active use."),
+        ("JP", "PMI", "2026-06-01", 50.4, "index", "au Jibun Bank Japan Manufacturing PMI", "Seed", "Seed fallback; review before active use."),
+    ]
+    for args in seeds:
+        row(*args)
+        diag(args[0], args[1], args[5], "seed", value=args[3], reason=args[7], endpoint="")
+
+
+# ---------------------------------------------------------------------
+# Final policy guards and export
+# ---------------------------------------------------------------------
+
+def remove_apac_live_rate_rows(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+    mask = df.apply(
+        lambda r: (
+            str(r.get("market", "")).strip().upper(),
+            str(r.get("indicator", "")).strip().title(),
+        ) in APAC_LIVE_RATE_KEYS,
+        axis=1,
+    )
+    return df.loc[~mask].copy()
+
+
+def standardise_macro_df(df: pd.DataFrame) -> pd.DataFrame:
+    if df is None or df.empty:
+        return pd.DataFrame(columns=STANDARD_COLS)
+    out = df.copy()
+    for c in STANDARD_COLS:
+        if c not in out.columns:
+            out[c] = ""
+    out = out[STANDARD_COLS + [c for c in out.columns if c not in STANDARD_COLS]]
+    out["value"] = pd.to_numeric(out["value"], errors="coerce")
+    out = out.dropna(subset=["value"])
+    return out
+
+
+def source_catalogue_df() -> pd.DataFrame:
+    rows = [
+        {"market":"SG","indicator":"Rates","source":"MAS SORA","endpoint_or_url":"MAS open search/API route in Streamlit live adapter","frequency":"Daily","role":"Live API only","notes":"Decision 1; excluded from active macro_data.csv."},
+        {"market":"MY","indicator":"Rates","source":"BNM OPR","endpoint_or_url":"BNM OpenAPI live adapter","frequency":"Policy/daily availability","role":"Live API only","notes":"Decision 2; excluded from active macro_data.csv."},
+        {"market":"HK","indicator":"Rates","source":"HKMA HIBOR / HKD rates","endpoint_or_url":"HKMA Open API live adapter","frequency":"Daily","role":"Live API only","notes":"Decision 3; excluded from active macro_data.csv."},
+        {"market":"JP","indicator":"Rates","source":"BOJ FM01 overnight call rate","endpoint_or_url":"BOJ Time-Series API live adapter","frequency":"Daily","role":"Live API only","notes":"Decision 4; excluded from active macro_data.csv."},
+        {"market":"MY","indicator":"Unemployment","source":"OpenDOSM u_rate","endpoint_or_url":"OpenDOSM API live adapter","frequency":"Monthly","role":"Live API exception","notes":"Decision 5; live API due unreliable monthly pack route."},
+        {"market":"JP","indicator":"Unemployment","source":"DBnomics / STATJP","endpoint_or_url":"DBnomics API live adapter","frequency":"Monthly","role":"Live API exception","notes":"Decision 6; live API due unreliable monthly pack route."},
+        {"market":"JP","indicator":"Inflation","source":"DBnomics / STATJP CPI","endpoint_or_url":"DBnomics API live adapter","frequency":"Monthly","role":"Live API exception","notes":"Decision 7; live API due unreliable monthly pack route."},
+        {"market":"HK","indicator":"Inflation","source":"C&SD Table 510-60001 Composite CPI YoY","endpoint_or_url":HK_CSD_CPI_URL,"frequency":"Monthly","role":"Macro pack official API","notes":"sv=CC_CM_1920; period=YYYYMM; value=figure."},
+        {"market":"US","indicator":"Inflation","source":"FRED CPIAUCSL YoY","endpoint_or_url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL","frequency":"Monthly","role":"Macro pack official API","notes":"Computed YoY from CPI index."},
+        {"market":"US","indicator":"Unemployment","source":"FRED UNRATE","endpoint_or_url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE","frequency":"Monthly","role":"Macro pack official API","notes":"Latest value."},
+        {"market":"US","indicator":"Claims","source":"FRED ICSA","endpoint_or_url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA","frequency":"Weekly","role":"Macro pack official API","notes":"Converted to thousands."},
+        {"market":"US","indicator":"Rates","source":"FRED DGS10","endpoint_or_url":"https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10","frequency":"Daily","role":"Macro pack official API","notes":"US 10-year Treasury constant maturity."},
+    ]
+    return pd.DataFrame(rows)
+
+
+def source_links_df() -> pd.DataFrame:
+    return source_catalogue_df()[["market", "indicator", "source", "endpoint_or_url", "role", "notes"]]
+
+
+def readme_df() -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {"item":"generated_at", "detail":GEN_AT},
+            {"item":"policy", "detail":"APAC Rates SG/MY/HK/JP are live API only and removed from active macro_data.csv."},
+            {"item":"hk_inflation", "detail":"HK Inflation fetched dynamically from C&SD Table 510-60001 JSON API using sv=CC_CM_1920."},
+            {"item":"decisions_5_7", "detail":"MY unemployment, JP unemployment, JP inflation remain live API exceptions due unreliable monthly macro pack route."},
+        ]
+    )
+
+
+def write_outputs(macro_df: pd.DataFrame):
+    macro_df = standardise_macro_df(remove_apac_live_rate_rows(macro_df))
+    diag_df = pd.DataFrame(DIAG, columns=DIAG_COLS)
+    manual_df = pd.DataFrame(MANUAL, columns=MANUAL_COLS)
+    catalogue_df = source_catalogue_df()
+    links_df = source_links_df()
+    readme = readme_df()
+
+    macro_df.to_csv(OUT_DIR / "macro_data.csv", index=False)
+    diag_df.to_csv(OUT_DIR / "diagnostics.csv", index=False)
+    manual_df.to_csv(OUT_DIR / "manual_required.csv", index=False)
+    catalogue_df.to_csv(OUT_DIR / "source_catalogue.csv", index=False)
+    links_df.to_csv(OUT_DIR / "source_links.csv", index=False)
+    readme.to_csv(OUT_DIR / "README.csv", index=False)
+
+    with zipfile.ZipFile(OUT_DIR / "macro_pack_csv_bundle.zip", "w", compression=zipfile.ZIP_DEFLATED) as z:
+        for name in ["macro_data.csv", "diagnostics.csv", "manual_required.csv", "source_catalogue.csv", "source_links.csv", "README.csv"]:
+            z.write(OUT_DIR / name, arcname=name)
 
     try:
-        with pd.ExcelWriter(OUT / "macro_pack.xlsx", engine="openpyxl") as writer:
-            for name, df in outputs.items():
-                df.to_excel(writer, sheet_name=name[:31], index=False)
+        with pd.ExcelWriter(OUT_DIR / "macro_pack.xlsx", engine="openpyxl") as writer:
+            macro_df.to_excel(writer, sheet_name="macro_data", index=False)
+            diag_df.to_excel(writer, sheet_name="diagnostics", index=False)
+            manual_df.to_excel(writer, sheet_name="manual_required", index=False)
+            catalogue_df.to_excel(writer, sheet_name="source_catalogue", index=False)
+            links_df.to_excel(writer, sheet_name="source_links", index=False)
+            readme.to_excel(writer, sheet_name="README", index=False)
     except Exception as e:
-        diag("PACK", "Excel", "openpyxl", "failed", reason=str(e))
+        diag("PACK", "Excel", "openpyxl", "failed", reason=str(e), endpoint="")
+        pd.DataFrame(DIAG, columns=DIAG_COLS).to_csv(OUT_DIR / "diagnostics.csv", index=False)
 
-    with zipfile.ZipFile(OUT / "macro_pack_csv_bundle.zip", "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        for name in outputs:
-            zf.write(OUT / f"{name}.csv", arcname=f"{name}.csv")
+    print(f"Generated {OUT_DIR / 'macro_data.csv'} with {len(macro_df)} rows")
+    print(f"Generated {OUT_DIR / 'diagnostics.csv'} with {len(DIAG)} rows")
+    if len(manual_df):
+        print(f"Manual review items: {len(manual_df)}")
 
-    print(f"Generated external macro pack in {OUT.resolve()}")
+
+def build_pack():
+    # US official sources.
+    add_us_cpi_yoy()
+    add_fred_latest("UNRATE", "US", "Unemployment", "%", "FRED UNRATE", "US unemployment rate.")
+    add_fred_latest("ICSA", "US", "Claims", "k", "FRED ICSA", "US initial claims; converted to thousands.")
+    add_fred_latest("DGS10", "US", "Rates", "%", "FRED DGS10", "US 10-year Treasury constant maturity rate.")
+
+    # APAC / monthly sources.
+    add_static_reviewed_rows()
+    add_opendosm_malaysia_cpi()
+    add_hk_inflation()
+    add_pmi_seeds()
+
+    write_outputs(pd.DataFrame(ROWS))
 
 
 if __name__ == "__main__":
-    build_outputs()
+    build_pack()
