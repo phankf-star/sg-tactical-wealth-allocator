@@ -174,69 +174,98 @@ def make_sv_summary(ds):
     return pd.DataFrame(rows)
 
 
+
+TARGET_HK_COMPOSITE_CPI_YOY_SV = "CC_CM_1920"
+
+
 def pick_hk_inflation_from_dataset(ds, sv_summary, dictionaries):
-    """Best effort parser for C&SD Table 510-60001.
-    Prefer a series whose metadata says Composite CPI + YoY; otherwise expose candidate rows, do not guess silently.
+    """
+    Locked parser for HK C&SD Table 510-60001 Composite CPI YoY.
+
+    Lab diagnostics identified:
+    - A_CM_1920  = CPI(A) YoY
+    - B_CM_1920  = CPI(B) YoY
+    - CC_CM_1920 = Composite CPI YoY
+    - C_CM_1920  = CPI(C) YoY
+
+    The API stores:
+    - period as YYYYMM
+    - value in the `figure` column
     """
     if ds.empty or "sv" not in ds.columns or "period" not in ds.columns:
         return None, pd.DataFrame(), "missing sv/period columns"
 
-    # Build sv -> description map from metadata if available.
-    desc_map = {}
-    if dictionaries is not None and not dictionaries.empty:
-        for _, r in dictionaries.iterrows():
-            code = str(r.get("code", ""))
-            desc = str(r.get("description", ""))
-            if code and code != "None" and desc and desc != "None":
-                desc_map[code] = desc
+    target = ds[
+        ds["sv"].astype(str).str.strip().eq(TARGET_HK_COMPOSITE_CPI_YOY_SV)
+    ].copy()
 
-    value_cols = []
-    for c in ds.columns:
-        nums = ds[c].map(clean_number)
-        if nums.notna().sum() > 10 and c not in {"period"}:
-            value_cols.append(c)
+    if target.empty:
+        preview = sv_summary.copy() if sv_summary is not None else pd.DataFrame()
+        return None, preview, f"target sv not found: {TARGET_HK_COMPOSITE_CPI_YOY_SV}"
 
-    candidate_svs = []
-    for sv in ds["sv"].dropna().astype(str).unique():
-        desc = desc_map.get(sv, "")
-        text = f"{sv} {desc}".lower()
-        if ("composite" in text or "綜合" in text or "cc" in sv.lower()) and any(t in text for t in ["year-on-year", "year on year", "yoy", "按年", "yr-on-yr"]):
-            candidate_svs.append((sv, desc, "metadata match"))
+    target["period_date"] = target["period"].apply(period_to_date)
 
-    # If metadata did not reveal it, produce safe candidates but do not hard-pick unless user can inspect.
-    if not candidate_svs:
-        # Use latest values by sv as diagnostic candidates. Do not return final row.
-        cand = sv_summary.copy() if sv_summary is not None else pd.DataFrame()
-        return None, cand, "no Composite CPI YoY series identified from metadata"
+    if "figure" not in target.columns:
+        preview_cols = [
+            c for c in ["freq", "period", "sv", "svDesc", "figure", "sd_value"]
+            if c in target.columns
+        ]
+        return None, target[preview_cols].tail(30), "figure column not found"
 
-    records = []
-    for sv, desc, basis in candidate_svs:
-        g = ds[ds["sv"].astype(str) == sv].copy()
-        g["period_date"] = g["period"].apply(period_to_date)
-        for c in value_cols:
-            g["value_num"] = g[c].map(clean_number)
-            valid = g[g["period_date"].notna() & g["value_num"].notna()].copy()
-            valid = valid[(valid["value_num"] > -10) & (valid["value_num"] < 20)]
-            if not valid.empty:
-                valid = valid.sort_values("period_date")
-                latest = valid.iloc[-1]
-                records.append({"sv": sv, "description": desc, "basis": basis, "value_col": c, "date": latest["period_date"], "value": latest["value_num"]})
-    parsed = pd.DataFrame(records)
-    if parsed.empty:
-        return None, parsed, "metadata series found but no numeric latest value parsed"
-    parsed = parsed.sort_values("date")
-    latest = parsed.iloc[-1]
+    target["value_num"] = target["figure"].map(clean_number)
+
+    valid = target[
+        target["period_date"].notna()
+        & target["value_num"].notna()
+    ].copy()
+
+    valid = valid[
+        (valid["value_num"] > -10)
+        & (valid["value_num"] < 20)
+    ]
+
+    if valid.empty:
+        preview_cols = [
+            c for c in ["freq", "period", "sv", "svDesc", "figure", "sd_value"]
+            if c in target.columns
+        ]
+        return None, target[preview_cols].tail(30), "target sv found but no valid numeric figure"
+
+    valid = valid.sort_values("period_date")
+    latest = valid.iloc[-1]
+
+    parsed = valid[
+        [
+            c for c in [
+                "freq",
+                "period",
+                "period_date",
+                "sv",
+                "svDesc",
+                "figure",
+                "value_num",
+            ]
+            if c in valid.columns
+        ]
+    ].tail(50).copy()
+
     row = {
         "market": "HK",
         "indicator": "Inflation",
-        "date": latest["date"].strftime("%Y-%m-%d"),
-        "value": float(latest["value"]),
+        "date": latest["period_date"].strftime("%Y-%m-%d"),
+        "value": float(latest["value_num"]),
         "unit": "%",
         "source": "C&SD Table 510-60001 Composite CPI YoY",
         "source_type": "Official / API Lab",
-        "notes": f"Parsed via sv={latest['sv']}; {latest.get('description','')}; value_col={latest['value_col']}",
+        "notes": (
+            f"Parsed from C&SD API dataSet using "
+            f"sv={TARGET_HK_COMPOSITE_CPI_YOY_SV}; "
+            f"period={latest['period']}; figure column."
+        ),
     }
+
     return row, parsed, "ok"
+
 
 
 def hk_csd_51060001_json_explore():
