@@ -1,7 +1,7 @@
 ﻿market,indicator,date,value,unit,source,source_type,notes
 US,Inflation,2026-05-01,4.167,%,FRED CPIAUCSL YoY,Official / API,Computed from latest CPI index versus CPI about 12 months earlier.
 US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / API,US unemployment rate.
-US,Claims,2026-06-13,226.0,k,FRED ICSA,Official / API,US initial claims; converted to thousands.
+US,Claims,2026-06-20,215.0,k,FRED ICSA,Official / API,US initial claims; converted to thousands.
 US,Rates,2026-06-23,4.5,%,FRED DGS10,Official / API,US 10-year Treasury constant maturity rate.
 SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Reviewed,Reviewed static row pending full SingStat macro-pack integration.
 SG,Unemployment,2026-03-01,2.0,%,MOM / SingStat unemployment,Official / Reviewed,Singapore overall unemployment rate for Mar-26 / 1Q 2026; reviewed row.

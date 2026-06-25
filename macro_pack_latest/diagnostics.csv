@@ -1,17 +1,17 @@
 ﻿run_utc,market,indicator,source,status,value,reason,endpoint
-2026-06-25T08:37:38Z,US,Inflation,FRED CPIAUCSL YoY,success,4.167,Computed CPI YoY from FRED CPIAUCSL,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL
-2026-06-25T08:37:38Z,US,Unemployment,FRED UNRATE,success,4.3,Fetched FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE
-2026-06-25T08:37:39Z,US,Claims,FRED ICSA,success,226.0,Fetched FRED ICSA and converted to thousands,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA
-2026-06-25T08:37:39Z,US,Rates,FRED DGS10,success,4.5,Fetched FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10
-2026-06-25T08:37:39Z,SG,Inflation,SingStat CPI,reviewed,1.8,Reviewed static row,
-2026-06-25T08:37:39Z,SG,Unemployment,MOM / SingStat unemployment,reviewed,2.0,Reviewed static row,
-2026-06-25T08:37:39Z,HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,reviewed,2.0,Reviewed row,
-2026-06-25T08:37:40Z,MY,Inflation,OpenDOSM storage CSV cpi_2d_inflation,success,2.0,Latest division=overall inflation_yoy = 2.0 for 2026-05-01,https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv
-2026-06-25T08:37:41Z,MY,Unemployment,OpenDOSM unemployment,failed,,"Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']",https://api.data.gov.my/opendosm?id=lfs_month&limit=50000
-2026-06-25T08:37:41Z,MY,Rates,BNM OPR,skipped,,"Policy: Malaysia rates handled by live adapter, not monthly macro pack.",
-2026-06-25T08:37:41Z,US,PMI,ISM Manufacturing PMI / seed fallback,seed,54.0,Seed fallback row,
-2026-06-25T08:37:41Z,SG,PMI,SIPMM Singapore Manufacturing PMI,seed,51.0,Seed fallback row,
-2026-06-25T08:37:41Z,HK,PMI,S&P Global Hong Kong SAR PMI,seed,50.4,Seed fallback row,
-2026-06-25T08:37:41Z,CN,PMI,NBS Manufacturing PMI,seed,50.0,Seed fallback row,
-2026-06-25T08:37:41Z,MY,PMI,S&P Global Malaysia Manufacturing PMI,seed,49.9,Seed fallback row,
-2026-06-25T08:37:41Z,JP,PMI,au Jibun Bank Japan Manufacturing PMI,seed,50.4,Seed fallback row,
+2026-06-25T14:13:04Z,US,Inflation,FRED CPIAUCSL YoY,success,4.167,Computed CPI YoY from FRED CPIAUCSL,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL
+2026-06-25T14:13:05Z,US,Unemployment,FRED UNRATE,success,4.3,Fetched FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE
+2026-06-25T14:13:05Z,US,Claims,FRED ICSA,success,215.0,Fetched FRED ICSA and converted to thousands,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA
+2026-06-25T14:13:05Z,US,Rates,FRED DGS10,success,4.5,Fetched FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10
+2026-06-25T14:13:05Z,SG,Inflation,SingStat CPI,reviewed,1.8,Reviewed static row,
+2026-06-25T14:13:05Z,SG,Unemployment,MOM / SingStat unemployment,reviewed,2.0,Reviewed static row,
+2026-06-25T14:13:05Z,HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,reviewed,2.0,Reviewed row,
+2026-06-25T14:13:06Z,MY,Inflation,OpenDOSM storage CSV cpi_2d_inflation,success,2.0,Latest division=overall inflation_yoy = 2.0 for 2026-05-01,https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv
+2026-06-25T14:13:07Z,MY,Unemployment,OpenDOSM unemployment,failed,,"Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']",https://api.data.gov.my/opendosm?id=lfs_month&limit=50000
+2026-06-25T14:13:07Z,MY,Rates,BNM OPR,skipped,,"Policy: Malaysia rates handled by live adapter, not monthly macro pack.",
+2026-06-25T14:13:07Z,US,PMI,ISM Manufacturing PMI / seed fallback,seed,54.0,Seed fallback row,
+2026-06-25T14:13:07Z,SG,PMI,SIPMM Singapore Manufacturing PMI,seed,51.0,Seed fallback row,
+2026-06-25T14:13:07Z,HK,PMI,S&P Global Hong Kong SAR PMI,seed,50.4,Seed fallback row,
+2026-06-25T14:13:07Z,CN,PMI,NBS Manufacturing PMI,seed,50.0,Seed fallback row,
+2026-06-25T14:13:07Z,MY,PMI,S&P Global Malaysia Manufacturing PMI,seed,49.9,Seed fallback row,
+2026-06-25T14:13:07Z,JP,PMI,au Jibun Bank Japan Manufacturing PMI,seed,50.4,Seed fallback row,
