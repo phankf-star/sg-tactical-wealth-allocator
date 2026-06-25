@@ -1,10 +1,12 @@
 
 # macro_adapter_lab.py
-# Global20Engine Macro Adapter Lab v3
-# Purpose: inspect official macro APIs and prove parser logic before production updates.
+# Global20Engine Macro Adapter Lab v5 - HK CPI + SG/JP Rates diagnostics
 
+import csv
+import io
 import json
 import re
+import urllib.parse
 import urllib.request
 from datetime import datetime
 
@@ -13,14 +15,27 @@ import streamlit as st
 
 st.set_page_config(page_title="Global20Engine Macro Adapter Lab", layout="wide", initial_sidebar_state="expanded")
 
-USER_AGENT = "Mozilla/5.0 Global20Engine-MacroAdapterLab/3.0"
+USER_AGENT = "Mozilla/5.0 Global20Engine-MacroAdapterLab/5.0"
 TIMEOUT = 30
-APAC_RATE_KEYS = {("SG", "RATES"), ("MY", "RATES"), ("HK", "RATES"), ("JP", "RATES")}
+
 STANDARD_COLS = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
+APAC_RATE_KEYS = {("SG", "RATES"), ("MY", "RATES"), ("HK", "RATES"), ("JP", "RATES")}
+
+HK_CSD_CPI_URL = "https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1"
+HK_COMPOSITE_CPI_YOY_SV = "CC_CM_1920"
+
+MAS_SORA_RESOURCE_ID = "9a0bf149-308c-4bd2-832d-76c8e6cb47ed"
+MAS_SORA_URL = "https://eservices.mas.gov.sg/api/action/datastore/search.json?" + urllib.parse.urlencode({"resource_id": MAS_SORA_RESOURCE_ID, "limit": "5000"})
+
+BOJ_API_BASE = "https://www.stat-search.boj.or.jp/api/v1"
+BOJ_FM01_CODES = [
+    "STRDCLUCON", "STRDCLUCON@D", "FM01.STRDCLUCON", "FM01.STRDCLUCON@D",
+    "STRDCLACD", "STRDCLACD@D", "STRDCLUCONA", "STRDCLUCONA@D",
+]
 
 
 def request_text(url, label="request", headers=None):
-    h = {"User-Agent": USER_AGENT, "Accept": "*/*"}
+    h = {"User-Agent": USER_AGENT, "Accept": "*/*", "Accept-Encoding": "identity"}
     if headers:
         h.update(headers)
     started = datetime.utcnow().isoformat(timespec="seconds") + "Z"
@@ -28,265 +43,192 @@ def request_text(url, label="request", headers=None):
         req = urllib.request.Request(url, headers=h)
         with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
             raw = resp.read()
-            ctype = resp.headers.get("Content-Type", "")
-            status = getattr(resp, "status", "")
-        return {
-            "label": label,
-            "ok": True,
-            "status": status,
-            "content_type": ctype,
-            "bytes": len(raw),
-            "started_utc": started,
-            "url": url,
-            "text": raw.decode("utf-8", errors="replace"),
-            "error": "",
-        }
+            return {
+                "label": label,
+                "ok": True,
+                "status": getattr(resp, "status", ""),
+                "content_type": resp.headers.get("Content-Type", ""),
+                "bytes": len(raw),
+                "started_utc": started,
+                "url": url,
+                "text": raw.decode("utf-8", errors="replace"),
+                "error": "",
+            }
     except Exception as e:
-        return {
-            "label": label,
-            "ok": False,
-            "status": "",
-            "content_type": "",
-            "bytes": 0,
-            "started_utc": started,
-            "url": url,
-            "text": "",
-            "error": repr(e),
-        }
+        return {"label": label, "ok": False, "status": "", "content_type": "", "bytes": 0, "started_utc": started, "url": url, "text": "", "error": repr(e)}
 
 
 def clean_number(x):
     if x is None:
         return None
     s = str(x).strip()
-    if not s or s.upper() in {"N.A.", "NA", "N/A", "NULL", "NONE", "-", "--"}:
+    if not s or s.upper() in {"N.A.", "NA", "N/A", "NULL", "NONE", "-", "--", "."}:
         return None
     s = re.sub(r"\[[^\]]*\]", "", s)
     s = s.replace("+", "").replace("%", "").replace(",", "").replace("−", "-").replace("–", "-")
     try:
-        return float(s.strip())
+        v = float(s.strip())
+        return v
     except Exception:
         return None
 
 
-def period_to_date(period):
-    s = str(period).strip()
-    if re.fullmatch(r"20\d{4}", s) or re.fullmatch(r"19\d{4}", s):
-        y = int(s[:4]); m = int(s[4:6])
-        if 1 <= m <= 12:
-            return pd.Timestamp(y, m, 1)
-    if re.fullmatch(r"20\d{2}", s) or re.fullmatch(r"19\d{2}", s):
-        return pd.Timestamp(int(s), 1, 1)
-    return pd.NaT
+def parse_date_any(x):
+    s = str(x).strip()
+    if re.fullmatch(r"\d{8}", s):
+        return pd.to_datetime(f"{s[:4]}-{s[4:6]}-{s[6:8]}", errors="coerce")
+    if re.fullmatch(r"\d{6}", s):
+        return pd.to_datetime(f"{s[:4]}-{s[4:6]}-01", errors="coerce")
+    return pd.to_datetime(s, errors="coerce")
 
 
-def flatten_json(obj, path="$"):
-    rows = []
-    if isinstance(obj, dict):
-        rows.append({"path": path, "type": "dict", "keys": list(obj.keys()), "value": obj})
-        for k, v in obj.items():
-            rows.extend(flatten_json(v, f"{path}.{k}"))
-    elif isinstance(obj, list):
-        rows.append({"path": path, "type": "list", "keys": [], "value": obj})
-        for i, v in enumerate(obj[:10000]):
-            rows.extend(flatten_json(v, f"{path}[{i}]"))
-    else:
-        rows.append({"path": path, "type": type(obj).__name__, "keys": [], "value": obj})
-    return rows
-
-
-def schema_preview_from_json_text(text, max_rows=500):
-    try:
-        payload = json.loads(text)
-    except Exception as e:
-        return pd.DataFrame([{"error": repr(e)}]), None
-    recs = []
-    for item in flatten_json(payload)[:max_rows]:
-        v = item["value"]
-        recs.append({
-            "path": item["path"],
-            "type": item["type"],
-            "keys": ", ".join(map(str, item["keys"][:30])) if item["keys"] else "",
-            "sample": str(v)[:600].replace("\n", " "),
-        })
-    return pd.DataFrame(recs), payload
-
-
-def extract_dataset(payload):
-    if isinstance(payload, dict) and isinstance(payload.get("dataSet"), list):
-        return pd.DataFrame(payload["dataSet"])
-    return pd.DataFrame()
-
-
-def extract_code_dictionaries(payload):
-    """Find likely metadata/code-description dictionaries so we can map sv codes to labels."""
-    rows = []
-    for item in flatten_json(payload):
-        v = item["value"]
-        if isinstance(v, dict):
-            keys = {str(k).lower(): k for k in v.keys()}
-            code_key = None
-            desc_key = None
-            for cand in ["code", "id", "name", "sv", "value"]:
-                if cand in keys:
-                    code_key = keys[cand]
-                    break
-            for cand in ["description", "desc", "label", "title", "name", "value"]:
-                if cand in keys and keys[cand] != code_key:
-                    desc_key = keys[cand]
-                    break
-            if code_key is not None and desc_key is not None:
-                rows.append({"path": item["path"], "code": v.get(code_key), "description": v.get(desc_key), "keys": ", ".join(map(str, v.keys()))})
-    if not rows:
-        return pd.DataFrame(columns=["path", "code", "description", "keys"])
-    return pd.DataFrame(rows).drop_duplicates()
-
-
-def make_sv_summary(ds):
-    if ds.empty or "sv" not in ds.columns:
-        return pd.DataFrame()
-    df = ds.copy()
-    if "period" in df.columns:
-        df["period_date"] = df["period"].apply(period_to_date)
-    value_candidates = []
-    for c in df.columns:
-        if c in {"period_date"}:
-            continue
-        # treat any column with at least some numeric values as candidate value column
-        nums = df[c].map(clean_number)
-        if nums.notna().sum() > 0:
-            value_candidates.append(c)
-            df[f"__num_{c}"] = nums
-    rows = []
-    for sv, g in df.groupby("sv", dropna=False):
-        latest_period = g["period"].iloc[-1] if "period" in g.columns and len(g) else ""
-        latest_date = None
-        if "period_date" in g.columns and g["period_date"].notna().any():
-            latest_date = g["period_date"].max()
-        row = {"sv": sv, "rows": len(g), "latest_period": latest_period, "latest_date": latest_date.strftime("%Y-%m-%d") if pd.notna(latest_date) else ""}
-        for c in value_candidates:
-            gg = g.copy()
-            if "period_date" in gg.columns:
-                gg = gg.sort_values("period_date")
-            val = gg[f"__num_{c}"].dropna()
-            row[f"latest_numeric_{c}"] = val.iloc[-1] if len(val) else None
-        rows.append(row)
-    return pd.DataFrame(rows)
-
-
-
-TARGET_HK_COMPOSITE_CPI_YOY_SV = "CC_CM_1920"
-
-
-def pick_hk_inflation_from_dataset(ds, sv_summary, dictionaries):
-    """
-    Locked parser for HK C&SD Table 510-60001 Composite CPI YoY.
-
-    Lab diagnostics identified:
-    - A_CM_1920  = CPI(A) YoY
-    - B_CM_1920  = CPI(B) YoY
-    - CC_CM_1920 = Composite CPI YoY
-    - C_CM_1920  = CPI(C) YoY
-
-    The API stores:
-    - period as YYYYMM
-    - value in the `figure` column
-    """
-    if ds.empty or "sv" not in ds.columns or "period" not in ds.columns:
-        return None, pd.DataFrame(), "missing sv/period columns"
-
-    target = ds[
-        ds["sv"].astype(str).str.strip().eq(TARGET_HK_COMPOSITE_CPI_YOY_SV)
-    ].copy()
-
-    if target.empty:
-        preview = sv_summary.copy() if sv_summary is not None else pd.DataFrame()
-        return None, preview, f"target sv not found: {TARGET_HK_COMPOSITE_CPI_YOY_SV}"
-
-    target["period_date"] = target["period"].apply(period_to_date)
-
-    if "figure" not in target.columns:
-        preview_cols = [
-            c for c in ["freq", "period", "sv", "svDesc", "figure", "sd_value"]
-            if c in target.columns
-        ]
-        return None, target[preview_cols].tail(30), "figure column not found"
-
-    target["value_num"] = target["figure"].map(clean_number)
-
-    valid = target[
-        target["period_date"].notna()
-        & target["value_num"].notna()
-    ].copy()
-
-    valid = valid[
-        (valid["value_num"] > -10)
-        & (valid["value_num"] < 20)
-    ]
-
-    if valid.empty:
-        preview_cols = [
-            c for c in ["freq", "period", "sv", "svDesc", "figure", "sd_value"]
-            if c in target.columns
-        ]
-        return None, target[preview_cols].tail(30), "target sv found but no valid numeric figure"
-
-    valid = valid.sort_values("period_date")
-    latest = valid.iloc[-1]
-
-    parsed = valid[
-        [
-            c for c in [
-                "freq",
-                "period",
-                "period_date",
-                "sv",
-                "svDesc",
-                "figure",
-                "value_num",
-            ]
-            if c in valid.columns
-        ]
-    ].tail(50).copy()
-
-    row = {
-        "market": "HK",
-        "indicator": "Inflation",
-        "date": latest["period_date"].strftime("%Y-%m-%d"),
-        "value": float(latest["value_num"]),
-        "unit": "%",
-        "source": "C&SD Table 510-60001 Composite CPI YoY",
-        "source_type": "Official / API Lab",
-        "notes": (
-            f"Parsed from C&SD API dataSet using "
-            f"sv={TARGET_HK_COMPOSITE_CPI_YOY_SV}; "
-            f"period={latest['period']}; figure column."
-        ),
-    }
-
-    return row, parsed, "ok"
-
-
-
-def hk_csd_51060001_json_explore():
-    url = "https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1"
-    r = request_text(url, "HK C&SD 510-60001 JSON API", headers={"Accept": "application/json,text/plain,*/*"})
+# -------------------- HK Inflation proven parser --------------------
+def fetch_hk_csd_composite_cpi_yoy():
+    r = request_text(HK_CSD_CPI_URL, "HK C&SD 510-60001 JSON API", headers={"Accept": "application/json,text/plain,*/*"})
     debug = {k: v for k, v in r.items() if k != "text"}
     if not r["ok"]:
-        return None, debug, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), ""
-    schema_df, payload = schema_preview_from_json_text(r["text"], max_rows=800)
-    if payload is None:
-        debug["result"] = "json load failed"
-        return None, debug, schema_df, pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), pd.DataFrame(), r["text"][:5000]
-    ds = extract_dataset(payload)
-    dictionaries = extract_code_dictionaries(payload)
-    sv_summary = make_sv_summary(ds)
-    row, parsed_df, parse_result = pick_hk_inflation_from_dataset(ds, sv_summary, dictionaries)
-    debug["result"] = parse_result
-    debug["dataset_rows"] = len(ds)
-    debug["dataset_cols"] = ", ".join(map(str, ds.columns)) if not ds.empty else ""
-    debug["sv_count"] = ds["sv"].nunique() if not ds.empty and "sv" in ds.columns else 0
-    return row, debug, schema_df, ds, dictionaries, sv_summary, parsed_df, r["text"][:5000]
+        return None, debug, pd.DataFrame()
+    payload = json.loads(r["text"])
+    df = pd.DataFrame(payload.get("dataSet", []))
+    debug["dataset_rows"] = len(df)
+    debug["dataset_cols"] = ", ".join(df.columns) if not df.empty else ""
+    if df.empty or not {"period", "sv", "figure"}.issubset(df.columns):
+        debug["result"] = "missing dataSet/period/sv/figure"
+        return None, debug, df
+    target = df[df["sv"].astype(str).str.strip().eq(HK_COMPOSITE_CPI_YOY_SV)].copy()
+    target["date"] = target["period"].apply(parse_date_any)
+    target["value"] = target["figure"].map(clean_number)
+    valid = target.dropna(subset=["date", "value"])
+    valid = valid[(valid["value"] > -10) & (valid["value"] < 20)].sort_values("date")
+    if valid.empty:
+        debug["result"] = "target sv found but no valid figure"
+        return None, debug, target.tail(50)
+    latest = valid.iloc[-1]
+    row = {"market":"HK","indicator":"Inflation","date":latest["date"].strftime("%Y-%m-%d"),"value":float(latest["value"]),"unit":"%","source":"C&SD Table 510-60001 Composite CPI YoY","source_type":"Official / API Lab","notes":f"sv={HK_COMPOSITE_CPI_YOY_SV}; period={latest['period']}; figure column."}
+    debug["result"] = "ok"
+    return row, debug, valid.tail(50)
+
+
+# -------------------- SG MAS SORA diagnostics --------------------
+def fetch_sg_mas_sora_lab():
+    r = request_text(MAS_SORA_URL, "SG MAS SORA datastore/search.json", headers={"Accept": "application/json,text/plain,*/*"})
+    debug = {k: v for k, v in r.items() if k != "text"}
+    if not r["ok"]:
+        return None, debug, pd.DataFrame(), pd.DataFrame()
+    try:
+        payload = json.loads(r["text"])
+        result = payload.get("result", {})
+        records = result.get("records", [])
+        df = pd.DataFrame(records)
+        debug["records"] = len(df)
+        debug["columns"] = ", ".join(df.columns.astype(str)) if not df.empty else ""
+    except Exception as e:
+        debug["result"] = f"json parse error: {e!r}"
+        return None, debug, pd.DataFrame(), pd.DataFrame()
+
+    if df.empty:
+        debug["result"] = "no records returned"
+        return None, debug, df, pd.DataFrame()
+
+    date_cols = [c for c in df.columns if str(c).lower() in {"end_of_day", "date", "timestamp"} or "date" in str(c).lower()]
+    value_priority = ["sora", "SORA", "sora_rate", "SORA_RATE", "comp_sora_1m", "comp_sora_3m", "comp_sora_6m"]
+    candidate_rows = []
+    for vc in value_priority:
+        if vc not in df.columns:
+            continue
+        dc = date_cols[0] if date_cols else None
+        temp = df[[dc, vc]].copy() if dc else df[[vc]].copy()
+        temp["date"] = temp[dc].apply(parse_date_any) if dc else pd.NaT
+        temp["value"] = temp[vc].map(clean_number)
+        temp["field"] = vc
+        temp = temp.dropna(subset=["value"])
+        if not temp.empty:
+            candidate_rows.append(temp[["date", "value", "field"]].copy())
+    candidates = pd.concat(candidate_rows, ignore_index=True) if candidate_rows else pd.DataFrame()
+    if candidates.empty:
+        debug["result"] = "records returned but no SORA numeric field parsed"
+        return None, debug, df.head(50), candidates
+    candidates = candidates.dropna(subset=["date"]).sort_values("date") if "date" in candidates.columns else candidates
+    latest = candidates.iloc[-1]
+    row = {"market":"SG","indicator":"Rates","date":latest["date"].strftime("%Y-%m-%d") if pd.notna(latest["date"]) else "Latest","value":float(latest["value"]),"unit":"%","source":f"MAS Domestic Interest Rates {latest['field']}","source_type":"Official / API Lab","notes":f"resource_id={MAS_SORA_RESOURCE_ID}; field={latest['field']}"}
+    debug["result"] = "ok"
+    return row, debug, df.head(50), candidates.tail(50)
+
+
+# -------------------- JP BOJ FM01 diagnostics --------------------
+def parse_boj_json_or_csv(text, fmt, code):
+    rows = []
+    if fmt == "json":
+        try:
+            payload = json.loads(text)
+        except Exception as e:
+            return pd.DataFrame(), f"json parse error: {e!r}"
+        # recursively find dicts with date/period/time and value-like fields
+        def walk(x):
+            if isinstance(x, dict):
+                keys = {str(k).lower(): k for k in x.keys()}
+                date_key = next((keys[k] for k in keys if k in {"date", "time", "period", "time_period"} or "date" in k or "period" in k), None)
+                val_key = next((keys[k] for k in keys if k in {"value", "val", "obs_value", "figure"}), None)
+                if date_key and val_key:
+                    rows.append({"date_raw": x.get(date_key), "value_raw": x.get(val_key), "code": code})
+                for v in x.values():
+                    walk(v)
+            elif isinstance(x, list):
+                for v in x:
+                    walk(v)
+        walk(payload)
+        df = pd.DataFrame(rows)
+    else:
+        try:
+            df0 = pd.read_csv(io.StringIO(text))
+        except Exception as e:
+            return pd.DataFrame(), f"csv parse error: {e!r}"
+        date_cols = [c for c in df0.columns if str(c).lower() in {"date", "time", "period", "time_period"} or "date" in str(c).lower() or "period" in str(c).lower()]
+        val_cols = [c for c in df0.columns if c not in date_cols]
+        recs = []
+        for _, r in df0.iterrows():
+            date_raw = r[date_cols[0]] if date_cols else ""
+            for vc in val_cols:
+                val = clean_number(r.get(vc))
+                if val is not None:
+                    recs.append({"date_raw": date_raw, "value_raw": val, "value_col": vc, "code": code})
+                    break
+        df = pd.DataFrame(recs)
+    if df.empty:
+        return df, "no date/value rows parsed"
+    df["date"] = df["date_raw"].apply(parse_date_any)
+    df["value"] = df["value_raw"].map(clean_number)
+    df = df.dropna(subset=["value"])
+    return df, "ok" if not df.empty else "no numeric value parsed"
+
+
+def fetch_jp_boj_fm01_lab():
+    start = (pd.Timestamp.today() - pd.DateOffset(months=18)).strftime("%Y%m")
+    diagnostics = []
+    parsed_all = []
+    raw_samples = []
+    for code in BOJ_FM01_CODES:
+        for fmt in ["json", "csv"]:
+            url = f"{BOJ_API_BASE}/getDataCode?" + urllib.parse.urlencode({"format": fmt, "lang": "en", "db": "FM01", "startDate": start, "code": code})
+            r = request_text(url, f"JP BOJ FM01 {code} {fmt}", headers={"Accept": "application/json,text/csv,*/*"})
+            d = {k: v for k, v in r.items() if k != "text"}
+            d["code"] = code; d["format"] = fmt
+            if r["ok"]:
+                parsed, msg = parse_boj_json_or_csv(r["text"], fmt, code)
+                d["parse_result"] = msg
+                d["parsed_rows"] = len(parsed)
+                if not parsed.empty:
+                    parsed_all.append(parsed)
+                raw_samples.append({"code": code, "format": fmt, "sample": r["text"][:1000]})
+            diagnostics.append(d)
+    diag_df = pd.DataFrame(diagnostics)
+    parsed_df = pd.concat(parsed_all, ignore_index=True) if parsed_all else pd.DataFrame()
+    if parsed_df.empty:
+        return None, diag_df, parsed_df, pd.DataFrame(raw_samples)
+    parsed_df = parsed_df.dropna(subset=["date"]).sort_values("date") if "date" in parsed_df.columns else parsed_df
+    latest = parsed_df.iloc[-1]
+    row = {"market":"JP","indicator":"Rates","date":latest["date"].strftime("%Y-%m-%d") if pd.notna(latest["date"]) else "Latest","value":float(latest["value"]),"unit":"%","source":f"BOJ FM01 Uncollateralized Overnight Call Rate ({latest['code']})","source_type":"Official / API Lab","notes":"Parsed from BOJ Time-Series Data Search API getDataCode."}
+    return row, diag_df, parsed_df.tail(100), pd.DataFrame(raw_samples)
 
 
 def clean_macro_pack(df):
@@ -299,70 +241,74 @@ def clean_macro_pack(df):
     return cleaned[STANDARD_COLS + [c for c in cleaned.columns if c not in STANDARD_COLS]]
 
 
-def append_or_update_hk_inflation(df, row):
-    df = df.copy()
-    for c in STANDARD_COLS:
-        if c not in df.columns:
-            df[c] = ""
-    mask = df["market"].astype(str).str.strip().str.upper().eq("HK") & df["indicator"].astype(str).str.strip().str.upper().eq("INFLATION")
-    df = df.loc[~mask].copy()
-    if row:
-        df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)
-    return df[STANDARD_COLS + [c for c in df.columns if c not in STANDARD_COLS]]
-
-
 st.title("Global20Engine Macro Adapter Lab")
-st.caption("Small isolated tester for macro source ideas before touching the full Global20Engine base file.")
+st.caption("Isolated tester for macro/rate source ideas before production updates.")
 
 with st.sidebar:
     st.header("Test controls")
-    run_hk = st.button("Run HK Inflation dynamic test", use_container_width=True)
+    run_hk = st.button("Run HK Inflation test", use_container_width=True)
+    run_sg = st.button("Run SG MAS SORA test", use_container_width=True)
+    run_jp = st.button("Run JP BOJ FM01 test", use_container_width=True)
+    run_all = st.button("Run all current tests", use_container_width=True)
     uploaded = st.file_uploader("Optional: upload macro_data.csv", type=["csv"])
 
-last_row = None
+if run_all:
+    run_hk = run_sg = run_jp = True
+
 if run_hk:
-    st.subheader("HK Inflation dynamic fetch result")
-    row, debug, schema_df, ds, dictionaries, sv_summary, parsed_df, raw_preview = hk_csd_51060001_json_explore()
-    last_row = row
+    st.header("HK Inflation dynamic fetch result")
+    row, debug, parsed = fetch_hk_csd_composite_cpi_yoy()
     if row:
         st.success("HK Inflation parsed successfully.")
         st.dataframe(pd.DataFrame([row]), use_container_width=True)
     else:
-        st.error("HK Inflation was not parsed automatically. Inspect sv summary and dictionaries below.")
-
-    st.subheader("Attempt diagnostics")
+        st.error("HK Inflation not parsed.")
+    st.subheader("HK diagnostics")
     st.dataframe(pd.DataFrame([debug]), use_container_width=True)
+    st.subheader("HK parsed rows preview")
+    st.dataframe(parsed, use_container_width=True)
 
-    with st.expander("Dataset columns and first 100 rows", expanded=True):
-        st.dataframe(ds.head(100), use_container_width=True)
-    with st.expander("SV summary - most important table", expanded=True):
-        st.write("This groups the C&SD dataSet by `sv`. We need to identify which `sv` means Composite CPI YoY.")
-        st.dataframe(sv_summary, use_container_width=True)
-    with st.expander("Code dictionaries / metadata", expanded=True):
-        st.dataframe(dictionaries.head(500), use_container_width=True)
-    with st.expander("Parsed candidate rows", expanded=True):
-        st.dataframe(parsed_df.head(500), use_container_width=True)
-    with st.expander("JSON schema preview", expanded=False):
-        st.dataframe(schema_df, use_container_width=True)
-    with st.expander("Raw JSON first 5,000 characters", expanded=False):
-        st.code(raw_preview)
+if run_sg:
+    st.header("SG MAS SORA diagnostic result")
+    row, debug, records_preview, candidates = fetch_sg_mas_sora_lab()
+    if row:
+        st.success("SG SORA parsed successfully.")
+        st.dataframe(pd.DataFrame([row]), use_container_width=True)
+    else:
+        st.error("SG SORA not parsed.")
+    st.subheader("SG diagnostics")
+    st.dataframe(pd.DataFrame([debug]), use_container_width=True)
+    st.subheader("MAS records preview")
+    st.dataframe(records_preview, use_container_width=True)
+    st.subheader("SORA parsed candidate rows")
+    st.dataframe(candidates, use_container_width=True)
+
+if run_jp:
+    st.header("JP BOJ FM01 diagnostic result")
+    row, diag_df, parsed_df, raw_df = fetch_jp_boj_fm01_lab()
+    if row:
+        st.success("JP BOJ FM01 parsed successfully.")
+        st.dataframe(pd.DataFrame([row]), use_container_width=True)
+    else:
+        st.error("JP BOJ FM01 not parsed by current candidate codes.")
+    st.subheader("JP diagnostics by code/format")
+    st.dataframe(diag_df, use_container_width=True)
+    st.subheader("JP parsed rows")
+    st.dataframe(parsed_df, use_container_width=True)
+    with st.expander("BOJ raw response samples", expanded=False):
+        st.dataframe(raw_df, use_container_width=True)
 
 if uploaded is not None:
-    st.subheader("Macro pack cleaner preview")
+    st.header("Macro pack cleaner preview")
     original = pd.read_csv(uploaded)
-    st.write("Original rows", len(original))
-    st.dataframe(original, use_container_width=True)
     cleaned = clean_macro_pack(original)
-    if last_row is None:
-        last_row, *_ = hk_csd_51060001_json_explore()
-    final = append_or_update_hk_inflation(cleaned, last_row)
-    st.write("Cleaned rows", len(final))
-    st.dataframe(final, use_container_width=True)
-    st.download_button("Download cleaned macro_data.csv", data=final.to_csv(index=False).encode("utf-8"), file_name="macro_data_cleaned.csv", mime="text/csv", use_container_width=True)
+    st.write("Original rows", len(original), "Cleaned rows", len(cleaned))
+    st.dataframe(cleaned, use_container_width=True)
+    st.download_button("Download cleaned macro_data.csv", data=cleaned.to_csv(index=False).encode("utf-8"), file_name="macro_data_cleaned.csv", mime="text/csv", use_container_width=True)
 
 st.markdown("""
-### Recommended workflow
-1. Identify the correct `sv` code for Composite CPI YoY in **SV summary** or **Code dictionaries**.
-2. Lock that `sv` code in this lab.
-3. Only then copy the proven adapter logic into the full Global20Engine app or macro fetcher.
+### Current source policy
+- HK Inflation: proven dynamic C&SD Table 510-60001 parser using `sv=CC_CM_1920`.
+- SG Rates: diagnose MAS Domestic Interest Rates resource `9a0bf149-308c-4bd2-832d-76c8e6cb47ed`.
+- JP Rates: diagnose BOJ Time-Series Data Search API `FM01` with candidate codes.
 """)
