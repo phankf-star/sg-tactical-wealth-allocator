@@ -1,11 +1,15 @@
-﻿market,indicator,source_name,status,value,reason,endpoint,generated_at
-US,Inflation,FRED CPIAUCSL,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
-US,Unemployment,FRED UNRATE,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
-US,Claims,FRED ICSA,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
-US,Rates,FRED DGS10,failed,,Missing column provided to 'parse_dates': 'DATE',FRED CSV,2026-06-22 13:14:04
-US,PMI,FRED NAPM,failed,,HTTP Error 404: Not Found,FRED CSV,2026-06-22 13:14:04
-SG,PMI,SIPMM Singapore Manufacturing PMI,seed,51.0,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
-HK,PMI,S&P Global Hong Kong SAR PMI,seed,50.4,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
-CN,PMI,NBS Manufacturing PMI,seed,50.0,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
-MY,PMI,S&P Global Malaysia Manufacturing PMI,seed,49.9,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
-JP,PMI,au Jibun Bank Japan Manufacturing PMI,seed,50.4,External fetcher uses reviewed seed unless official adapter is added,,2026-06-22 13:14:04
+market,indicator,source_name,status,value,reason,endpoint,generated_at
+US,Inflation,FRED CPIAUCSL YoY,success,4.167%,2026-05-01 = 4.167%,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL,2026-06-25T02:47:24Z
+US,Unemployment,FRED UNRATE,success,4.3,2026-05-01 = 4.3%,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE,2026-06-25T02:47:24Z
+US,Claims,FRED ICSA,success,226.0,2026-06-13 = 226.0k,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA,2026-06-25T02:47:24Z
+US,Rates,FRED DGS10,success,4.5,2026-06-23 = 4.5%,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,2026-06-25T02:47:24Z
+SG,Inflation,SingStat CPI,reviewed_static,1.8%,Reviewed row retained,,2026-06-25T02:47:24Z
+SG,Unemployment,MOM / SingStat unemployment,reviewed_static,2.0%,Reviewed row retained,,2026-06-25T02:47:24Z
+MY,Inflation,OpenDOSM headline CPI cpi_2d,failed,,HTTP Error 404: Not Found,https://api.data.gov.my/data-catalogue?id=cpi_2d&limit=5000,2026-06-25T02:47:24Z
+HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,success,2.0%,Fetched dynamically for 2026-05-01,https://www.censtatd.gov.hk/api/get.php?id=510-60001&lang=en&full_series=1,2026-06-25T02:47:24Z
+US,PMI,ISM Manufacturing PMI / seed fallback,seed,54.0,Seed fallback; review before active use.,,2026-06-25T02:47:24Z
+SG,PMI,SIPMM Singapore Manufacturing PMI,seed,51.0,Seed fallback; review before active use.,,2026-06-25T02:47:24Z
+HK,PMI,S&P Global Hong Kong SAR PMI,seed,50.4,Seed fallback; review before active use.,,2026-06-25T02:47:24Z
+CN,PMI,NBS Manufacturing PMI,seed,50.0,Seed fallback; review before active use.,,2026-06-25T02:47:24Z
+MY,PMI,S&P Global Malaysia Manufacturing PMI,seed,49.9,Seed fallback; review before active use.,,2026-06-25T02:47:24Z
+JP,PMI,au Jibun Bank Japan Manufacturing PMI,seed,50.4,Seed fallback; review before active use.,,2026-06-25T02:47:24Z

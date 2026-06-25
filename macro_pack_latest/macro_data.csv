@@ -1,14 +1,14 @@
 market,indicator,date,value,unit,source,source_type,notes
-US,Inflation,2026-05-01,4.27,%,FRED CPIAUCSL YoY,Official / Power Query,Computed as latest CPI divided by CPI 12 months earlier minus 1.
-US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / Power Query,US unemployment rate.
-US,Claims,2026-06-13,226,k,FRED ICSA,Official / Power Query,US initial claims; converted to thousands.
-US,Rates,2026-06-22,4.51,%,FRED DGS10,Official / Power Query,US 10-year Treasury constant maturity rate.
-US,PMI,2026-06-01,54,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
-SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Power Query,Singapore CPI inflation. Static reviewed row pending full SingStat re-integration.
-SG,Unemployment,2026-03-01,2,%,MOM / SingStat unemployment,Official / Power Query,Singapore overall unemployment rate for Mar-26 / 1Q 2026.
-MY,Inflation,2026-05-01,2.009,%,OpenDOSM headline CPI cpi_2d,Official / Power Query,Malaysia headline CPI YoY computed from OpenDOSM monthly CPI overall index.
-SG,PMI,2026-06-01,51,index,SIPMM Singapore Manufacturing PMI,Seed,Seed fallback; review before active use.
+US,Inflation,2026-05-01,4.167,%,FRED CPIAUCSL YoY,Official / API,Computed from latest CPI index versus CPI about 12 months earlier.
+US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / API,US unemployment rate.
+US,Claims,2026-06-13,226.0,k,FRED ICSA,Official / API,US initial claims; converted to thousands.
+US,Rates,2026-06-23,4.5,%,FRED DGS10,Official / API,US 10-year Treasury constant maturity rate.
+SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Reviewed,Reviewed static row pending full SingStat macro-pack integration.
+SG,Unemployment,2026-03-01,2.0,%,MOM / SingStat unemployment,Official / Reviewed,Singapore overall unemployment rate for Mar-26 / 1Q 2026; reviewed static row.
+HK,Inflation,2026-05-01,2.0,%,C&SD Table 510-60001 Composite CPI YoY,Official / API,Fetched from C&SD Table 510-60001 JSON API; sv=CC_CM_1920; period=202605; figure column.
+US,PMI,2026-06-01,54.0,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
+SG,PMI,2026-06-01,51.0,index,SIPMM Singapore Manufacturing PMI,Seed,Seed fallback; review before active use.
 HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed,Seed fallback; review before active use.
-CN,PMI,2026-06-01,50,index,NBS Manufacturing PMI,Seed,Seed fallback; review before active use.
+CN,PMI,2026-06-01,50.0,index,NBS Manufacturing PMI,Seed,Seed fallback; review before active use.
 MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed,Seed fallback; review before active use.
 JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed,Seed fallback; review before active use.

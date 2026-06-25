@@ -1,6 +1,5 @@
-﻿field,value
-pack_month,2026-06
-generated_at,2026-06-22 13:14:04
-generator_version,Global20Engine v38 external fetcher draft
-source_policy,External scheduled fetcher → committed macro_pack_latest files → Streamlit display/read layer
-design_note,Streamlit should not be responsible for primary macro/performance fetching.
+item,detail
+generated_at,2026-06-25T02:47:24Z
+policy,APAC Rates SG/MY/HK/JP are live API only and removed from active macro_data.csv.
+hk_inflation,HK Inflation fetched dynamically from C&SD Table 510-60001 JSON API using sv=CC_CM_1920.
+decisions_5_7,"MY unemployment, JP unemployment, JP inflation remain live API exceptions due unreliable monthly macro pack route."
