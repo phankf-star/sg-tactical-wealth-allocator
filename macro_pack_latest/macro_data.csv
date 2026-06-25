@@ -6,7 +6,10 @@ US,Rates,2026-06-23,4.5,%,FRED DGS10,Official / API,US 10-year Treasury constant
 SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Reviewed,Reviewed static row pending full SingStat macro-pack integration.
 SG,Unemployment,2026-03-01,2.0,%,MOM / SingStat unemployment,Official / Reviewed,Singapore overall unemployment rate for Mar-26 / 1Q 2026; reviewed row.
 HK,Inflation,2026-05-01,2.0,%,C&SD Table 510-60001 Composite CPI YoY,Official / Reviewed,Reviewed row. Replace with live C&SD Table 510-60001 fetch when confirmed in macro fetcher runtime.
+HK,Unemployment,2026-05-31,3.7,%,HK Government / C&SD unemployment press release,Official / Parsed,Parsed from official HK unemployment press release; period=March - May 2026.
 MY,Inflation,2026-05-01,2.0,%,OpenDOSM storage CSV cpi_2d_inflation,success,Fetched Malaysia headline CPI inflation YoY from OpenDOSM official CSV; filtered division=overall.
+JP,Inflation,2026-05-01,1.5,%,Statistics Bureau of Japan latest indicators / CPI,Official / Parsed,Parsed Japan CPI YoY from Statistics Bureau latest indicators; period=May 2026.
+JP,Unemployment,2026-04-01,2.5,%,Statistics Bureau of Japan latest indicators / Labour Force Survey,Official / Parsed,Parsed Japan unemployment rate from Statistics Bureau latest indicators; period=April 2026.
 US,PMI,2026-06-01,54.0,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
 SG,PMI,2026-06-01,51.0,index,SIPMM Singapore Manufacturing PMI,Seed,Seed fallback; review before active use.
 HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed,Seed fallback; review before active use.
