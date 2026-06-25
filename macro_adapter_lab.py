@@ -1,208 +1,221 @@
 
-import pandas as pd
-from pathlib import Path
+import re
+import sys
+import json
+import calendar
+import urllib.request
+from datetime import datetime
 
-PACK_DIR = Path("macro_pack_latest")
-macro_path = PACK_DIR / "macro_data.csv"
-diag_path = PACK_DIR / "diagnostics.csv"
-manual_path = PACK_DIR / "manual_required.csv"
 
-TARGETS = [
-    ("HK", "Unemployment"),
-    ("HSI", "Unemployment"),
-    ("JP", "Inflation"),
-    ("JP", "Unemployment"),
-    ("Nikkei 225", "Inflation"),
-    ("Nikkei 225", "Unemployment"),
-]
+def request_text(url, timeout=30):
+    headers = {
+        "User-Agent": "Global20Engine-MacroAdapterLab/1.0",
+        "Accept": "text/html,text/plain,*/*",
+        "Accept-Encoding": "identity",
+    }
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        return resp.read().decode("utf-8", errors="replace")
 
-EXPECTED = {
-    ("HK", "Unemployment"): {
-        "expected_value": 3.7,
-        "expected_date_hint": "2026-05",
-        "reason": "Hong Kong C&SD unemployment rate for 3/2026-5/2026 should be 3.7%",
-    },
-    ("JP", "Inflation"): {
-        "expected_value": 1.5,
-        "expected_date_hint": "2026-05",
-        "reason": "Latest checked Japan inflation was 1.5% for May 2026",
-    },
-    ("JP", "Unemployment"): {
-        "expected_value": 2.5,
-        "expected_date_hint": "2026-04",
-        "reason": "Japan unemployment was 2.5% in April 2026; 2.7% was March",
-    },
-}
 
-def load_csv(path):
-    if not path.exists():
-        print(f"MISSING: {path}")
-        return pd.DataFrame()
-    df = pd.read_csv(path)
-    df.columns = [str(c).strip() for c in df.columns]
-    return df
+def clean_html(txt):
+    txt = re.sub(r"<script[\s\S]*?</script>", " ", txt, flags=re.I)
+    txt = re.sub(r"<style[\s\S]*?</style>", " ", txt, flags=re.I)
+    txt = re.sub(r"<[^>]+>", " ", txt)
+    txt = re.sub(r"&nbsp;|&#160;", " ", txt)
+    txt = re.sub(r"\s+", " ", txt)
+    return txt.strip()
 
-def show_target_rows(df):
-    print("\n==============================")
-    print("TARGET ROW CHECK")
-    print("==============================")
 
-    if df.empty:
-        print("macro_data.csv is empty or missing")
-        return
+def month_name_to_number(month_name):
+    months = {
+        "jan": 1, "january": 1,
+        "feb": 2, "february": 2,
+        "mar": 3, "march": 3,
+        "apr": 4, "april": 4,
+        "may": 5,
+        "jun": 6, "june": 6,
+        "jul": 7, "july": 7,
+        "aug": 8, "august": 8,
+        "sep": 9, "sept": 9, "september": 9,
+        "oct": 10, "october": 10,
+        "nov": 11, "november": 11,
+        "dec": 12, "december": 12,
+    }
+    key = str(month_name).strip().lower()
+    if key not in months:
+        raise ValueError(f"Unknown month name: {month_name}")
+    return months[key]
 
-    needed_cols = {"market", "indicator", "date", "value", "unit", "source", "source_type"}
-    missing = needed_cols - set(df.columns)
-    if missing:
-        print("macro_data.csv missing columns:", sorted(missing))
-        print("Columns found:", list(df.columns))
-        return
 
-    for market, indicator in TARGETS:
-        sub = df[
-            df["market"].astype(str).str.strip().eq(market)
-            & df["indicator"].astype(str).str.strip().eq(indicator)
-        ].copy()
+def month_year_to_first_day(month_name, year):
+    m = month_name_to_number(month_name)
+    return f"{int(year):04d}-{m:02d}-01"
 
-        print(f"\n--- {market} / {indicator} ---")
 
-        if sub.empty:
-            print("NOT FOUND")
-            continue
+def hk_period_to_end_date(period_text):
+    """
+    Convert HK rolling period like '3/2026 - 5/2026' to '2026-05-31'.
+    """
+    m = re.search(r"(\d{1,2})/(\d{4})\s*-\s*(\d{1,2})/(\d{4})", period_text)
+    if not m:
+        raise ValueError(f"Could not parse HK period: {period_text}")
 
-        print(sub.to_string(index=False))
+    end_month = int(m.group(3))
+    end_year = int(m.group(4))
+    last_day = calendar.monthrange(end_year, end_month)[1]
+    return f"{end_year:04d}-{end_month:02d}-{last_day:02d}"
 
-        key = (market, indicator)
-        if key in EXPECTED:
-            exp = EXPECTED[key]
-            print("EXPECTED:", exp)
 
-def show_duplicates(df):
-    print("\n==============================")
-    print("DUPLICATE MARKET/INDICATOR CHECK")
-    print("==============================")
+def lab_hk_unemployment():
+    url = "https://www.censtatd.gov.hk/en/scode200.html"
+    txt = clean_html(request_text(url))
 
-    if df.empty or not {"market", "indicator"}.issubset(df.columns):
-        return
+    # Pull rolling periods visible on C&SD labour overview, e.g.:
+    # 2/2026 - 4/2026 3/2026 - 5/2026
+    periods = re.findall(r"\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{4}", txt)
 
-    counts = (
-        df.groupby(["market", "indicator"])
-        .size()
-        .reset_index(name="count")
-        .sort_values(["count", "market", "indicator"], ascending=[False, True, True])
+    if not periods:
+        raise ValueError("No HK labour rolling periods found on C&SD page")
+
+    latest_period = periods[-1]
+    latest_date = hk_period_to_end_date(latest_period)
+
+    # C&SD overview row currently shows:
+    # Unemployment rate (seasonally adjusted) (%) 3.7 3.7 p
+    m = re.search(
+        r"Unemployment rate\s*\(seasonally adjusted\)\s*\(%\)\s*([0-9.]+)\s+([0-9.]+)",
+        txt,
+        flags=re.I,
     )
 
-    dup = counts[counts["count"] > 1]
+    if not m:
+        raise ValueError("Could not parse HK unemployment rate row")
 
-    if dup.empty:
-        print("No duplicate market/indicator rows.")
-    else:
-        print("DUPLICATES FOUND:")
-        print(dup.to_string(index=False))
+    # The row has previous period then latest period. Use the second value.
+    value = float(m.group(2))
 
-def show_diag(diag):
+    if not (0 <= value <= 20):
+        raise ValueError(f"HK unemployment sanity check failed: {value}")
+
+    return {
+        "market": "HK",
+        "indicator": "Unemployment",
+        "date": latest_date,
+        "value": value,
+        "unit": "%",
+        "source": "C&SD Labour Force, Employment and Unemployment",
+        "source_type": "Official / Parsed",
+        "period": latest_period,
+        "endpoint": url,
+    }
+
+
+def lab_japan_latest_indicators():
+    url = "https://www.stat.go.jp/english/"
+    txt = clean_html(request_text(url))
+
+    # Japan Statistics Bureau latest indicators:
+    # Consumer Price Index 1.5 % May 2026 change over the year
+    m_cpi = re.search(
+        r"Consumer Price Index\s*([0-9.]+)\s*%\s*([A-Za-z]+)\s*(20\d{2})\s*change over the year",
+        txt,
+        flags=re.I,
+    )
+
+    if not m_cpi:
+        raise ValueError("Could not parse Japan CPI latest indicator")
+
+    cpi_value = float(m_cpi.group(1))
+    cpi_month = m_cpi.group(2)
+    cpi_year = m_cpi.group(3)
+    cpi_date = month_year_to_first_day(cpi_month, cpi_year)
+
+    if not (-10 <= cpi_value <= 25):
+        raise ValueError(f"Japan CPI sanity check failed: {cpi_value}")
+
+    # Japan Statistics Bureau latest indicators:
+    # Unemployment rate 2.5 % April 2026 seasonally adjusted
+    m_unemp = re.search(
+        r"Unemployment rate\s*([0-9.]+)\s*%\s*([A-Za-z]+)\s*(20\d{2})\s*seasonally adjusted",
+        txt,
+        flags=re.I,
+    )
+
+    if not m_unemp:
+        raise ValueError("Could not parse Japan unemployment latest indicator")
+
+    unemp_value = float(m_unemp.group(1))
+    unemp_month = m_unemp.group(2)
+    unemp_year = m_unemp.group(3)
+    unemp_date = month_year_to_first_day(unemp_month, unemp_year)
+
+    if not (0 <= unemp_value <= 20):
+        raise ValueError(f"Japan unemployment sanity check failed: {unemp_value}")
+
+    return [
+        {
+            "market": "JP",
+            "indicator": "Inflation",
+            "date": cpi_date,
+            "value": cpi_value,
+            "unit": "%",
+            "source": "Statistics Bureau of Japan CPI latest indicators",
+            "source_type": "Official / Parsed",
+            "period": f"{cpi_month} {cpi_year}",
+            "endpoint": url,
+        },
+        {
+            "market": "JP",
+            "indicator": "Unemployment",
+            "date": unemp_date,
+            "value": unemp_value,
+            "unit": "%",
+            "source": "Statistics Bureau of Japan Labour Force Survey latest indicators",
+            "source_type": "Official / Parsed",
+            "period": f"{unemp_month} {unemp_year}",
+            "endpoint": url,
+        },
+    ]
+
+
+def main():
+    results = []
+    errors = []
+
+    try:
+        hk = lab_hk_unemployment()
+        results.append(hk)
+        print("PASS HK Unemployment")
+        print(json.dumps(hk, indent=2))
+    except Exception as e:
+        errors.append(f"HK unemployment failed: {e}")
+        print("FAIL HK Unemployment:", e)
+
+    try:
+        jp_rows = lab_japan_latest_indicators()
+        for row in jp_rows:
+            results.append(row)
+            print(f"PASS JP {row['indicator']}")
+            print(json.dumps(row, indent=2))
+    except Exception as e:
+        errors.append(f"JP latest indicators failed: {e}")
+        print("FAIL JP latest indicators:", e)
+
     print("\n==============================")
-    print("DIAGNOSTICS CHECK")
+    print("SUMMARY")
     print("==============================")
+    print("rows:", len(results))
+    print("errors:", len(errors))
 
-    if diag.empty:
-        print("diagnostics.csv is empty or missing")
-        return
+    if errors:
+        print("\nERRORS")
+        for err in errors:
+            print("-", err)
+        sys.exit(1)
 
-    cols = [c for c in ["market", "indicator", "source", "status", "value", "reason", "endpoint"] if c in diag.columns]
-    if not cols:
-        print("Diagnostics columns not recognised:", list(diag.columns))
-        return
+    print("\nALL ADAPTER LAB TESTS PASSED")
 
-    targets = diag[
-        diag.get("indicator", "").astype(str).isin(["Inflation", "Unemployment"])
-        & diag.get("market", "").astype(str).isin(["HK", "HSI", "JP", "Nikkei 225"])
-    ].copy()
-
-    if targets.empty:
-        print("No HK/JP inflation/unemployment diagnostics found.")
-    else:
-        print(targets[cols].to_string(index=False))
-
-def show_manual(manual):
-    print("\n==============================")
-    print("MANUAL REQUIRED CHECK")
-    print("==============================")
-
-    if manual.empty:
-        print("manual_required.csv is empty or missing")
-        return
-
-    cols = [c for c in ["market", "indicator", "reason"] if c in manual.columns]
-    if not cols:
-        print("Manual columns not recognised:", list(manual.columns))
-        return
-
-    targets = manual[
-        manual.get("indicator", "").astype(str).isin(["Inflation", "Unemployment"])
-        & manual.get("market", "").astype(str).isin(["HK", "HSI", "JP", "Nikkei 225"])
-    ].copy()
-
-    if targets.empty:
-        print("No HK/JP inflation/unemployment manual-required rows found.")
-    else:
-        print(targets[cols].to_string(index=False))
-
-def infer_likely_issue(df):
-    print("\n==============================")
-    print("LIKELY ISSUE INFERENCE")
-    print("==============================")
-
-    if df.empty:
-        print("Likely issue: macro pack not generated or macro_data.csv missing.")
-        return
-
-    def exists(m, i):
-        return not df[
-            df["market"].astype(str).str.strip().eq(m)
-            & df["indicator"].astype(str).str.strip().eq(i)
-        ].empty
-
-    hk_unemp = exists("HK", "Unemployment")
-    hsi_unemp = exists("HSI", "Unemployment")
-    jp_inf = exists("JP", "Inflation")
-    nikkei_inf = exists("Nikkei 225", "Inflation")
-    jp_unemp = exists("JP", "Unemployment")
-    nikkei_unemp = exists("Nikkei 225", "Unemployment")
-
-    if not hk_unemp and not hsi_unemp:
-        print("HK/HSI unemployment row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
-    elif hk_unemp and not hsi_unemp:
-        print("HK unemployment exists as market=HK. If HSI dashboard still wrong, check base app mapping HSI -> HK.")
-    elif hsi_unemp:
-        print("HSI unemployment exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
-
-    if not jp_inf and not nikkei_inf:
-        print("JP/Nikkei inflation row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
-    elif jp_inf and not nikkei_inf:
-        print("JP inflation exists as market=JP. If Nikkei dashboard still wrong, check base app mapping Nikkei 225 -> JP.")
-    elif nikkei_inf:
-        print("Nikkei inflation exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
-
-    if not jp_unemp and not nikkei_unemp:
-        print("JP/Nikkei unemployment row missing from macro pack. Fix g20_macro_fetcher.py generation/call.")
-    elif jp_unemp and not nikkei_unemp:
-        print("JP unemployment exists as market=JP. If Nikkei dashboard still wrong, check base app mapping Nikkei 225 -> JP.")
-    elif nikkei_unemp:
-        print("Nikkei unemployment exists directly. If dashboard still wrong, check duplicate/source priority/date sorting.")
 
 if __name__ == "__main__":
-    macro = load_csv(macro_path)
-    diag = load_csv(diag_path)
-    manual = load_csv(manual_path)
-
-    print("macro_data path:", macro_path)
-    print("macro_data rows:", len(macro))
-    print("diagnostics rows:", len(diag))
-    print("manual rows:", len(manual))
-
-    show_target_rows(macro)
-    show_duplicates(macro)
-    show_diag(diag)
-    show_manual(manual)
-    infer_likely_issue(macro)
+    main()
