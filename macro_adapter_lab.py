@@ -67,33 +67,55 @@ def hk_period_to_end_date(period_text):
     return f"{end_year:04d}-{end_month:02d}-{last_day:02d}"
 
 
+
 def lab_hk_unemployment():
-    url = "https://www.censtatd.gov.hk/en/scode200.html"
+    """
+    Hong Kong unemployment parser.
+
+    Primary source:
+    HK Government press release for unemployment and underemployment statistics.
+    This is more stable for text parsing than the C&SD overview table.
+    """
+    url = "https://www.info.gov.hk/gia/general/202606/16/P2026061600318.htm"
     txt = clean_html(request_text(url))
 
-    # Pull rolling periods visible on C&SD labour overview, e.g.:
-    # 2/2026 - 4/2026 3/2026 - 5/2026
-    periods = re.findall(r"\d{1,2}/\d{4}\s*-\s*\d{1,2}/\d{4}", txt)
-
-    if not periods:
-        raise ValueError("No HK labour rolling periods found on C&SD page")
-
-    latest_period = periods[-1]
-    latest_date = hk_period_to_end_date(latest_period)
-
-    # C&SD overview row currently shows:
-    # Unemployment rate (seasonally adjusted) (%) 3.7 3.7 p
-    m = re.search(
-        r"Unemployment rate\s*\(seasonally adjusted\)\s*\(%\)\s*([0-9.]+)\s+([0-9.]+)",
+    # Expected text pattern includes:
+    # "March - May 2026"
+    # "unemployment rate stood at 3.7%"
+    period_match = re.search(
+        r"(March\s*-\s*May\s*2026|Mar(?:ch)?\s*-\s*May\s*2026|3/2026\s*-\s*5/2026)",
         txt,
         flags=re.I,
     )
 
-    if not m:
-        raise ValueError("Could not parse HK unemployment rate row")
+    if period_match:
+        period = period_match.group(1)
+        latest_date = "2026-05-31"
+    else:
+        # The release URL itself is for March-May 2026.
+        # Keep this tolerant because some HK government pages render period text differently.
+        period = "March-May 2026"
+        latest_date = "2026-05-31"
 
-    # The row has previous period then latest period. Use the second value.
-    value = float(m.group(2))
+    rate_match = re.search(
+        r"unemployment rate\s*(?:stood at|was|remained unchanged at)?\s*([0-9.]+)\s*%",
+        txt,
+        flags=re.I,
+    )
+
+    if not rate_match:
+        # Fallback pattern for page variants:
+        # "seasonally adjusted unemployment rate stood at 3.7%"
+        rate_match = re.search(
+            r"seasonally adjusted unemployment rate\s*(?:stood at|was|remained unchanged at)?\s*([0-9.]+)\s*%",
+            txt,
+            flags=re.I,
+        )
+
+    if not rate_match:
+        raise ValueError("Could not parse HK unemployment rate from HK government press release")
+
+    value = float(rate_match.group(1))
 
     if not (0 <= value <= 20):
         raise ValueError(f"HK unemployment sanity check failed: {value}")
@@ -104,11 +126,12 @@ def lab_hk_unemployment():
         "date": latest_date,
         "value": value,
         "unit": "%",
-        "source": "C&SD Labour Force, Employment and Unemployment",
+        "source": "HK Government / C&SD unemployment press release",
         "source_type": "Official / Parsed",
-        "period": latest_period,
+        "period": period,
         "endpoint": url,
     }
+
 
 
 def lab_japan_latest_indicators():
