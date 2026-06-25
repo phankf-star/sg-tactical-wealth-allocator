@@ -749,11 +749,15 @@ def build_macro_pack():
 
     # Hong Kong
     add_hk_inflation_reviewed_or_live()
+    add_hk_unemployment_live()
 
     # Malaysia
     add_opendosm_malaysia_cpi()              # IMPORTANT: this is the fixed MY Inflation row
     add_opendosm_malaysia_unemployment()
     add_malaysia_rates_manual_or_reviewed()
+
+    # Japan monthly macro rows
+    add_japan_latest_indicators_live()
 
     # PMI seeds
     add_pmi_seed_rows()
