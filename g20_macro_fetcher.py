@@ -254,31 +254,71 @@ def add_hk_inflation():
 
 
 # Optional / regional helpers. These are deliberately tolerant. If a source fails, diagnostics/manual rows capture it.
+
 def add_opendosm_malaysia_cpi():
-    url = "https://api.data.gov.my/data-catalogue?id=cpi_2d&limit=5000"
+    url = "https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv"
+
     try:
-        txt = request_text(url, accept="application/json,text/plain,*/*")
-        payload = json.loads(txt)
-        df = pd.DataFrame(payload)
+        txt = request_text(url, accept="text/csv,text/plain,*/*")
+        df = pd.read_csv(io.StringIO(txt))
+
         if df.empty:
-            raise ValueError("OpenDOSM CPI returned empty payload")
-        # Common OpenDOSM fields can vary. Search for date, overall/headline index and YoY-like value.
-        date_col = next((c for c in df.columns if c.lower() in {"date", "period"}), None)
-        yoy_col = next((c for c in df.columns if "yoy" in c.lower() or "inflation" in c.lower()), None)
-        if date_col and yoy_col:
-            df["_date"] = pd.to_datetime(df[date_col], errors="coerce")
-            df["_value"] = pd.to_numeric(df[yoy_col], errors="coerce")
-            got = df.dropna(subset=["_date", "_value"]).sort_values("_date")
-            got = got[(got["_value"] > -10) & (got["_value"] < 20)]
-            if not got.empty:
-                latest = got.iloc[-1]
-                row("MY", "Inflation", latest["_date"].strftime("%Y-%m-%d"), round(float(latest["_value"]), 3), "%", "OpenDOSM headline CPI cpi_2d", "Official / API", "Malaysia headline CPI YoY from OpenDOSM where available.")
-                diag("MY", "Inflation", "OpenDOSM headline CPI cpi_2d", "success", value=round(float(latest["_value"]), 3), reason=f"{latest['_date'].strftime('%Y-%m-%d')}", endpoint=url)
-                return
-        raise ValueError(f"Could not identify usable date/yoy columns in OpenDOSM response; columns={list(df.columns)[:20]}")
+            raise ValueError("OpenDOSM CPI inflation CSV returned empty payload")
+
+        df.columns = [str(c).strip().lower() for c in df.columns]
+
+        required = {"date", "division", "inflation_yoy"}
+        missing = required - set(df.columns)
+        if missing:
+            raise ValueError(f"OpenDOSM CPI inflation CSV missing columns: {sorted(missing)}")
+
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df["inflation_yoy"] = pd.to_numeric(df["inflation_yoy"], errors="coerce")
+
+        got = df[df["division"].astype(str).str.lower().str.strip().eq("overall")].copy()
+        got = got.dropna(subset=["date", "inflation_yoy"]).sort_values("date")
+        got = got[(got["inflation_yoy"] > -10) & (got["inflation_yoy"] < 25)]
+
+        if got.empty:
+            raise ValueError("Could not identify usable division=overall inflation_yoy rows from OpenDOSM CSV")
+
+        latest = got.iloc[-1]
+        value = round(float(latest["inflation_yoy"]), 3)
+        date_txt = latest["date"].strftime("%Y-%m-%d")
+
+        row(
+            "MY",
+            "Inflation",
+            date_txt,
+            value,
+            "%",
+            "OpenDOSM storage CSV cpi_2d_inflation",
+            "success",
+            value=value,
+            reason="Fetched Malaysia headline CPI inflation YoY from OpenDOSM official CSV; filtered division=overall",
+        )
+
+        diag(
+            "MY",
+            "Inflation",
+            "OpenDOSM storage CSV cpi_2d_inflation",
+            "success",
+            value=value,
+            reason=f"Latest division=overall inflation_yoy = {value} for {date_txt}",
+            endpoint=url,
+        )
+
     except Exception as e:
-        diag("MY", "Inflation", "OpenDOSM headline CPI cpi_2d", "failed", reason=str(e), endpoint=url)
-        manual("MY", "Inflation", f"OpenDOSM CPI fetch failed: {e}")
+        diag(
+            "MY",
+            "Inflation",
+            "OpenDOSM storage CSV cpi_2d_inflation",
+            "failed",
+            reason=str(e),
+            endpoint=url,
+        )
+        manual("MY", "Inflation", f"OpenDOSM CPI inflation CSV fetch failed: {e}")
+
 
 
 # ---------------------------------------------------------------------
