@@ -209,6 +209,7 @@ def parse_first_float(patterns, txt, label):
     raise ValueError(f"Could not parse {label}")
 
 
+
 def lab_us_pmi():
     """
     US ISM Manufacturing PMI parser.
@@ -219,8 +220,10 @@ def lab_us_pmi():
 
     value = parse_first_float(
         [
-            r"Manufacturing PMI\s*[®A-Za-z\s]*registered\s*([0-9.]+)\s*percent\s*in\s*May",
-            r"May Manufacturing PMI\s*[®A-Za-z\s]*at\s*([0-9.]+)\s*%",
+            r"Manufacturing PMI.*?registered\s*([0-9.]+)\s*percent\s*in\s*May",
+            r"Manufacturing PMI.*?registered\s*([0-9.]+)\s*%",
+            r"May Manufacturing PMI.*?at\s*([0-9.]+)\s*%",
+            r"PMI.*?at\s*([0-9.]+)\s*%",
         ],
         txt,
         "US ISM Manufacturing PMI",
@@ -285,8 +288,10 @@ def lab_hk_pmi():
 
     value = parse_first_float(
         [
-            r"At\s*([0-9.]+)\s*in\s*May,\s*the headline seasonally adjusted S&P Global Hong Kong SAR Purchasing Manager",
-            r"Hong Kong SAR PMI.*?rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+            r"At\s*([0-9.]+)\s*in\s*May.*?S&P Global Hong Kong SAR.*?PMI",
+            r"Hong Kong SAR PMI.*?rose to\s*([0-9.]+)\s*in\s*May",
+            r"PMI.*?was up from\s*48\.6\s*in\s*April.*?At\s*([0-9.]+)\s*in\s*May",
+            r"([0-9.]+)\s*in\s*May.*?headline seasonally adjusted.*?Hong Kong SAR.*?PMI",
         ],
         txt,
         "Hong Kong SAR PMI",
@@ -318,8 +323,10 @@ def lab_my_pmi():
 
     value = parse_first_float(
         [
-            r"Purchasing Managers.? Index.*?dropped to\s*([0-9.]+)\s*in\s*May",
-            r"Malaysia Manufacturing PMI.*?PMI.? dropped to\s*([0-9.]+)\s*in\s*May",
+            r"PMI.*?dropped to\s*([0-9.]+)\s*in\s*May",
+            r"Purchasing Managers.*?Index.*?dropped to\s*([0-9.]+)\s*in\s*May",
+            r"headline reading.*?([0-9.]+).*?May",
+            r"Malaysia Manufacturing PMI.*?falling to\s*([0-9.]+)\s*from",
         ],
         txt,
         "Malaysia Manufacturing PMI",
@@ -344,20 +351,29 @@ def lab_my_pmi():
 def lab_jp_pmi():
     """
     Japan Manufacturing PMI parser.
-    Source: MQL5 economic calendar page attributed to S&P Global / au Jibun Bank.
-    Production policy: use final monthly May 2026 figure first, not mixed flash PMI.
+
+    Source:
+    Trading Economics page attributed to S&P Global Manufacturing PMI.
+
+    Policy for lab:
+    Use latest available parsed figure from source page.
     """
-    url = "https://www.mql5.com/en/economic-calendar/japan/nikkei-manufacturing-pmi"
+    url = "https://tradingeconomics.com/japan/manufacturing-pmi"
     txt = clean_html(request_text(url))
 
-    value = parse_first_float(
-        [
-            r"1\s*Jun\s*2026\s*May\s*2026\s*([0-9.]+)\s*50\.6\s*55\.1",
-            r"Last release.*?Actual\s*([0-9.]+).*?Previous\s*55\.1",
-        ],
+    m = re.search(
+        r"Manufacturing PMI.*?increased to\s*([0-9.]+)\s*(?:points)?\s*in\s*([A-Za-z]+)\s*(20\d{2})",
         txt,
-        "Japan Manufacturing PMI",
+        flags=re.I | re.S,
     )
+
+    if not m:
+        raise ValueError("Could not parse Japan Manufacturing PMI")
+
+    value = float(m.group(1))
+    pmi_month = m.group(2)
+    pmi_year = m.group(3)
+    pmi_date = month_year_to_first_day(pmi_month, pmi_year)
 
     if not (0 <= value <= 100):
         raise ValueError(f"Japan PMI sanity check failed: {value}")
@@ -365,12 +381,12 @@ def lab_jp_pmi():
     return {
         "market": "JP",
         "indicator": "PMI",
-        "date": "2026-05-01",
+        "date": pmi_date,
         "value": value,
         "unit": "index",
-        "source": "S&P Global / au Jibun Bank Japan Manufacturing PMI via MQL5",
+        "source": "S&P Global Japan Manufacturing PMI via Trading Economics",
         "source_type": "Parsed / Secondary",
-        "period": "May 2026",
+        "period": f"{pmi_month} {pmi_year}",
         "endpoint": url,
     }
 
