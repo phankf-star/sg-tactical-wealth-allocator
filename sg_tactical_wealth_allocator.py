@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38z — SG SORA live redistributor-only fix; JP BOJ FM01 STRDCLUCON CSV; remarks stay in tooltip
+# Global20Engine v38aa — KLSE BNM date parser; Macro Risk Score v2; Audit, Methodology & Export governance clean-up
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38z APAC Live Adapter Fix', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38aa Governance Fix', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -255,8 +255,8 @@ BENCHMARK_TICKERS = {
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
-NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit Trail & Export']
-SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit Trail & Export']
+NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
+SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
 CRISIS_EVENTS = [('1987-08-01','1987-12-31','1987 Black Monday'),('2000-03-01','2002-10-31','2000-2002 Dot-com Bust'),('2007-10-01','2009-03-31','2008 Global Financial Crisis'),('2020-02-01','2020-04-30','2020 COVID-19'),('2022-01-01','2022-10-31','2022 Inflation & Rate Hike')]
 
 # ------------------------- helpers -------------------------
@@ -810,7 +810,23 @@ def _json_records_from_payload(payload):
         if ok and isinstance(cur,list): return cur
     return []
 
-def _latest_numeric_from_records(records,date_keys=None,value_keys=None,name_filter=None,avoid_filter=None):
+def _parse_macro_date(dt_raw, dayfirst=False):
+    """Parse macro-source dates with explicit day-first support for sources such as BNM OPR.
+
+    BNM returns dates such as 07/05/2026 in DD/MM/YYYY format.  The base app must
+    treat that as 07 May 2026, not 05 Jul 2026.  ISO and compact YYYYMMDD dates
+    remain parsed normally.
+    """
+    if not dt_raw or not str(dt_raw).strip():
+        return pd.NaT
+    s=str(dt_raw).strip()
+    if re.fullmatch(r'\d{8}', s):
+        return pd.to_datetime(s, format='%Y%m%d', errors='coerce')
+    if dayfirst and re.fullmatch(r'\d{1,2}/\d{1,2}/\d{4}', s):
+        return pd.to_datetime(s, format='%d/%m/%Y', errors='coerce')
+    return pd.to_datetime(s, errors='coerce', dayfirst=dayfirst)
+
+def _latest_numeric_from_records(records,date_keys=None,value_keys=None,name_filter=None,avoid_filter=None,dayfirst=False):
     date_keys=date_keys or ['date','Date','end_of_day','end_of_month','effective_date','year_dt','timestamp','period','TIME_PERIOD','time']
     value_keys=value_keys or ['value','Value','rate','Rate','opr','OPR','sora','SORA','comp_sora_1m','hibor_1m','ir_1m','obs_value','OBS_VALUE']
     name_filter=[x.lower() for x in (name_filter or [])]; avoid_filter=[x.lower() for x in (avoid_filter or [])]
@@ -823,7 +839,7 @@ def _latest_numeric_from_records(records,date_keys=None,value_keys=None,name_fil
         dt_raw=''
         for dk in date_keys:
             if dk in r and str(r.get(dk,'')).strip(): dt_raw=str(r.get(dk)); break
-        dt=pd.to_datetime(dt_raw,errors='coerce') if dt_raw else pd.NaT
+        dt=_parse_macro_date(dt_raw, dayfirst=dayfirst) if dt_raw else pd.NaT
         for vk in value_keys:
             if vk in r:
                 val=_clean_number(r.get(vk))
@@ -831,12 +847,12 @@ def _latest_numeric_from_records(records,date_keys=None,value_keys=None,name_fil
     if not rows: return None
     return sorted(rows,key=lambda x:(pd.Timestamp.min if pd.isna(x[0]) else x[0]))[-1]
 
-def _parse_date_value_pairs_from_text(txt):
+def _parse_date_value_pairs_from_text(txt, dayfirst=False):
     if not txt: return []
     cleaned=re.sub(r'<[^>]+>',' ',txt); cleaned=re.sub(r'\s+',' ',cleaned)
     rows=[]
     for m in re.finditer(r'(\d{4}[-/]\d{1,2}[-/]\d{1,2}|\d{1,2}[/]\d{1,2}[/]\d{4}|\d{8})\s+(-?\d+(?:\.\d+)?)',cleaned):
-        dt=pd.to_datetime(m.group(1),errors='coerce',dayfirst=False); val=_clean_number(m.group(2))
+        dt=_parse_macro_date(m.group(1), dayfirst=dayfirst); val=_clean_number(m.group(2))
         if pd.notna(dt) and val is not None: rows.append((dt,m.group(1),val))
     return sorted(rows,key=lambda x:x[0])
 
@@ -936,7 +952,7 @@ def fetch_bnm_opr_rate():
         if not txt: last=err; continue
         try:
             payload=json.loads(txt); records=_json_records_from_payload(payload)
-            got=_latest_numeric_from_records(records,date_keys=['date','effective_date','Date'],value_keys=['rate','opr','OPR','value'])
+            got=_latest_numeric_from_records(records,date_keys=['date','effective_date','Date'],value_keys=['rate','opr','OPR','value'],dayfirst=True)
             if got:
                 dt,dt_raw,val,vk,rr=got; date_txt=pd.Timestamp(dt).strftime('%d %b %Y') if pd.notna(dt) else str(dt_raw)
                 _diag(adapter,url,True,len(records),'OPR',f'{date_txt}={val}','')
@@ -946,7 +962,7 @@ def fetch_bnm_opr_rate():
     fb_adapter='BNM FMIP OPR fallback'; fb_url='https://financialmarkets.bnm.gov.my/data-download-opr'
     txt,err,row=_request_text_custom(fb_url,fb_adapter,capture_global=True)
     if txt:
-        rows=_parse_date_value_pairs_from_text(txt)
+        rows=_parse_date_value_pairs_from_text(txt, dayfirst=True)
         if rows:
             dt,dt_raw,val=rows[-1]; date_txt=pd.Timestamp(dt).strftime('%d %b %Y')
             _diag(fb_adapter,fb_url,True,len(rows),'OPR table scrape',f'{date_txt}={val}','')
@@ -1379,7 +1395,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38z SG SORA redistributor-only + JP BOJ CSV build'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38aa KLSE date parser + Macro Risk v2 + governance clean-up'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -1774,14 +1790,101 @@ def confidence_score(dd, live_score, trend_below):
 
 def confidence_label(score): return 'High' if score >=70 else 'Medium' if score >=45 else 'Low'
 
+def _bounded_score(value, bands, missing=None):
+    try:
+        v=float(value)
+        if pd.isna(v): return missing
+    except Exception:
+        return missing
+    for limit, score in bands:
+        if v <= limit:
+            return float(score)
+    return float(bands[-1][1])
+
+def _macro_numeric(res):
+    try:
+        if isinstance(res,dict) and res.get('value') is not None:
+            return float(res.get('value'))
+    except Exception:
+        pass
+    return None
+
+def _macro_risk_v2_components(asset_name, pmi_value, vix_value, curve_value):
+    """Macro Risk Score v2.
+
+    Uses applicable macro indicators only and re-normalises weights when an
+    indicator is N/A / awaiting / validation-only. Source quality is deliberately
+    not scored here; source status remains in tooltips and diagnostics.
+    """
+    components=[]
+    def add(name, value, score, weight, source=''):
+        if score is None or pd.isna(score):
+            return
+        components.append({'Indicator':name,'Value':value,'Score':max(0,min(100,float(score))),'Base Weight':float(weight),'Source':source})
+    inflation=resolve_macro_value(asset_name,'Inflation')
+    unemployment=resolve_macro_value(asset_name,'Unemployment')
+    claims=resolve_macro_value(asset_name,'Claims')
+    rates=resolve_macro_value(asset_name,'Rates')
+    pmi_res=resolve_macro_value(asset_name,'PMI')
+    infl_v=_macro_numeric(inflation)
+    unemp_v=_macro_numeric(unemployment)
+    claims_v=_macro_numeric(claims)
+    rates_v=_macro_numeric(rates)
+    pmi_v=_macro_numeric(pmi_res)
+    if pmi_v is None and asset_name not in PMI_NA_MARKETS:
+        try: pmi_v=float(pmi_value)
+        except Exception: pmi_v=None
+    # Inflation: very high inflation and outright deflation both increase macro risk.
+    if infl_v is not None:
+        infl_score = 45 if infl_v < -1 else _bounded_score(infl_v, [(2.5,10),(4.0,35),(6.0,70),(999,100)])
+        add('Inflation', infl_v, infl_score, 0.20, inflation.get('source_type',''))
+    # Labour stress: US uses both unemployment and claims where available; non-US uses unemployment only.
+    labour_scores=[]
+    if unemp_v is not None:
+        labour_scores.append(_bounded_score(unemp_v, [(4.0,15),(6.0,45),(8.0,70),(999,100)]))
+    if claims_v is not None and asset_name in US_MARKETS:
+        labour_scores.append(_bounded_score(claims_v, [(250,20),(350,50),(500,75),(9999,100)]))
+    if labour_scores:
+        add('Labour / Claims', unemp_v if unemp_v is not None else claims_v, sum(labour_scores)/len(labour_scores), 0.20, unemployment.get('source_type',''))
+    if pmi_v is not None and asset_name not in PMI_NA_MARKETS:
+        add('PMI', pmi_v, _bounded_score(pmi_v, [(47,90),(50,70),(52,35),(999,10)]), 0.20, pmi_res.get('source_type',''))
+    if rates_v is not None:
+        add('Rates', rates_v, _bounded_score(rates_v, [(1.5,15),(3.5,35),(5.5,65),(999,85)]), 0.15, rates.get('source_type',''))
+    if curve_value is not None and asset_name not in PMI_NA_MARKETS:
+        try:
+            cv=float(curve_value)
+            curve_score=100 if cv < -0.5 else 75 if cv < 0 else 45 if cv < 0.5 else 25 if cv < 1.0 else 10
+            add('Yield Curve', cv, curve_score, 0.15, 'Market data')
+        except Exception:
+            pass
+    if vix_value is not None and asset_name not in PMI_NA_MARKETS:
+        add('VIX', vix_value, _bounded_score(vix_value, [(15,10),(20,30),(25,55),(35,80),(999,100)]), 0.10, 'Market data')
+    return components
+
 def calc_market_scores_by_asset(asset_name, pmi_value, dd_value, trend_weak, vix_value, curve_value):
-    if asset_name in PMI_NA_MARKETS:
-        vix_s=curve_s=pmi_s=0; dd_s=min(abs(dd_value)*1.5,40); trend_s=20 if trend_weak else 0; total=min(dd_s+trend_s,100)
+    components=_macro_risk_v2_components(asset_name,pmi_value,vix_value,curve_value)
+    if components:
+        total_weight=sum(c['Base Weight'] for c in components)
+        total=sum(c['Score']*c['Base Weight'] for c in components)/total_weight if total_weight else 0
+        for c in components:
+            c['Applied Weight']=c['Base Weight']/total_weight if total_weight else 0
+        # Compatibility outputs for existing UI columns. Drawdown/trend are no longer direct macro-risk penalties.
+        vix_s=next((c['Score'] for c in components if c['Indicator']=='VIX'),0)
+        curve_s=next((c['Score'] for c in components if c['Indicator']=='Yield Curve'),0)
+        pmi_s=next((c['Score'] for c in components if c['Indicator']=='PMI'),0)
+        dd_s=0; trend_s=0
     else:
+        # Defensive fallback if every macro indicator is unavailable.
         vix_s=0 if vix_value is None else min(max((vix_value-15)*2,0),30)
         curve_s=10 if curve_value is None else (20 if curve_value<0 else 10 if curve_value<.5 else 0)
         pmi_s=0 if pmi_value>=52 else 8 if pmi_value>=50 else 16 if pmi_value>=47 else 20
-        dd_s=min(abs(dd_value)*1.2,25); trend_s=15 if trend_weak else 0; total=min(vix_s+curve_s+pmi_s+dd_s+trend_s,100)
+        dd_s=0; trend_s=0
+        total=min(vix_s+curve_s+pmi_s,100)
+        components=[]
+    try:
+        st.session_state['macro_risk_v2_components']=components
+    except Exception:
+        pass
     regime='CRASH RISK' if total>=70 else 'WARNING' if total>=50 else 'WATCH' if total>=30 else 'NORMAL'
     return total,regime,vix_s,curve_s,pmi_s,dd_s,trend_s
 
@@ -2300,7 +2403,7 @@ conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_la
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
 st.title('📉 Global Drawdown Allocation Engine')
-st.caption('v38v APAC Fix · Multi-asset drawdown allocation platform with OOS valuation model, crash-context analytics and audit-ready transparency.')
+st.caption('v38aa · Multi-asset drawdown allocation platform with KLSE date parser fix, Macro Risk Score v2 and audit-ready governance.')
 
 # ------------------------- renderers -------------------------
 def render_executive():
@@ -2531,30 +2634,7 @@ def render_market(expanded=False):
             st.markdown('### Quantitative Valuation Channels')
             render_trend_channel(ud,index_label)
 
-        with st.expander('⚙️ Cycle Signal Settings & PMI Override', expanded=False):
-            p1,p2,p3,p4,p5,p6,p7=st.columns([1.15,1.05,1.45,.75,.75,.8,.55])
-            chosen=p1.selectbox('PMI Proxy Used (Cycle Signal)',PMI_PROXY_OPTIONS,index=PMI_PROXY_OPTIONS.index(current_proxy) if current_proxy in PMI_PROXY_OPTIONS else 0,help='Market-specific PMI used as economic-cycle input.')
-            actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
-            p2.text_input('PMI Region',value=PMI_PROXY_MAP.get(sel,{}).get('region','N/A'))
-            pmi_source_in=p3.text_input('PMI Source',value=st.session_state.get('latest_pmi_source',actual['source']))
-            latest_in=p4.number_input('Latest PMI',0.0,70.0,float(st.session_state.get('latest_pmi_value',actual['value'])),step=.1)
-            month_in=p5.text_input('PMI Month',value=st.session_state.get('latest_pmi_month',actual['month']))
-            with p6:
-                st.markdown('<br>',unsafe_allow_html=True)
-                if st.button('🔄 Update PMI',use_container_width=True):
-                    if sel in PMI_FRED_MARKETS:
-                        fred=fetch_fred_pmi('NAPM')
-                        if not fred.empty:
-                            st.session_state.latest_pmi_value=float(fred.PMI.iloc[-1]); st.session_state.latest_pmi_month=fred.index[-1].strftime('%b %Y'); st.session_state.latest_pmi_source='FRED (ISM Manufacturing PMI)'; st.session_state.pmi_proxy_label='US ISM Manufacturing PMI'; st.session_state.pmi_history['US ISM Manufacturing PMI']={d.strftime('%Y-%m'):float(v) for d,v in fred.tail(12).PMI.items()}; st.toast('✅ ISM PMI fetched from FRED.',icon='🔄')
-                        else: st.toast('❌ Failed to fetch from FRED. Please try again.',icon='⚠️')
-                    elif sel in PMI_NA_MARKETS:
-                        st.session_state.latest_pmi_value=0.0; st.session_state.latest_pmi_month='N/A'; st.session_state.latest_pmi_source='PMI not applicable'; st.session_state.pmi_proxy_label='N/A'; st.toast('ℹ️ PMI is not applicable for this asset class.',icon='ℹ️')
-                    else:
-                        st.session_state.latest_pmi_value=float(latest_in); st.session_state.latest_pmi_month=month_in; st.session_state.latest_pmi_source=pmi_source_in; st.session_state.pmi_proxy_label=chosen; hist_map=DEFAULT_PMI_HISTORY.get(chosen,{}).copy(); hist_map[pd.Timestamp.today().strftime('%Y-%m')]=float(latest_in); st.session_state.pmi_history[chosen]=hist_map; st.toast(f'✅ {chosen} saved: {latest_in:.1f} for {month_in} (manual input)',icon='🔄')
-                    st.rerun()
-            p7.markdown('<br>',unsafe_allow_html=True); p7.toggle('Manual',value=sel not in PMI_FRED_MARKETS and sel not in PMI_NA_MARKETS)
-
-
+        st.caption('Cycle Signal Settings & PMI Override has moved to 📡 Audit, Methodology & Export. Macro-pack PMI is read-only for US, SG, HK, MY and JP; manual override is mainly retained for A-Share / China.')
         with st.expander('🧮 Signal Diagnostics, Trigger Monitor & Score Engine', expanded=False):
             sig,trigger,engine=st.columns([1,1,1.15])
             sig.markdown('#### 📊 Signal Confidence Details')
@@ -2917,14 +2997,40 @@ def render_crash(expanded=False):
         with st.expander('📚 Full Crash Event Universe / Audit Table',expanded=False): st.caption('Complete unfiltered event universe used by the explorer, valuation context layer and simulator. Kept collapsed as the audit trail.'); st.dataframe(full_display,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Full Crash Events CSV',full_display.to_csv(index=False),file_name='crash_events_full_phase2.csv',mime='text/csv')
 
 def render_audit(expanded=False):
-    with st.expander('📡 AUDIT TRAIL & EXPORT',expanded=expanded):
+    with st.expander('📡 AUDIT, METHODOLOGY & EXPORT',expanded=expanded):
         left,right=st.columns([1,1])
         left.markdown('#### 📡 Data Source & Freshness'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Proxy',st.session_state.get('pmi_proxy_label',pmi_label),GREEN)+kv('PMI Value',f'{st.session_state.get("latest_pmi_value",latest_pmi):.1f} · {st.session_state.get("latest_pmi_month","")}',GREEN)+kv('PMI Source',st.session_state.get('latest_pmi_source',pmi_proxy_default['source']),GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
-        right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score is rules-based and not a crash prediction.\n- PMI is monthly, not intraday live data.\n- US PMI is fetched from FRED only when Update PMI is clicked.\n- Non-US PMI uses manual input with pre-filled 12M defaults.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score v2 is a weighted multi-factor macro indicator, not a crash prediction.\n- Applicable indicators are re-weighted when a market has N/A data, for example non-US Claims.\n- Source quality and adapter status are shown in tooltips/diagnostics only; they are not direct risk-score penalties.\n- PMI is monthly, not intraday live data.\n- US, SG, HK, MY and JP PMI should come from the parsed monthly macro pack as read-only dashboard input.\n- Manual PMI override is mainly retained for A-Share / China while China official mapping remains validation-oriented.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
+        st.markdown('#### ⚙️ Cycle Signal Settings & PMI Override')
+        audit_pmi=resolve_macro_value(index_label,'PMI')
+        if index_label=='A-Share':
+            c1,c2,c3,c4=st.columns([1.2,1.0,1.3,.8])
+            chosen=c1.selectbox('PMI Proxy Used (Cycle Signal)',PMI_PROXY_OPTIONS,index=PMI_PROXY_OPTIONS.index(st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])) if st.session_state.get('pmi_proxy_label',pmi_proxy_default['label']) in PMI_PROXY_OPTIONS else 0,key='audit_pmi_proxy_select',help='Manual override is mainly retained for A-Share / China.')
+            latest_in=c2.number_input('Latest PMI',0.0,70.0,float(st.session_state.get('latest_pmi_value',pmi_proxy_default['default'])),step=.1,key='audit_latest_pmi_value')
+            month_in=c3.text_input('PMI Month',value=st.session_state.get('latest_pmi_month',''),key='audit_latest_pmi_month')
+            c4.markdown('<br>',unsafe_allow_html=True)
+            if c4.button('Save PMI',use_container_width=True,key='audit_update_china_pmi_button'):
+                st.session_state.latest_pmi_value=float(latest_in); st.session_state.latest_pmi_month=month_in; st.session_state.latest_pmi_source='Manual A-Share / China PMI override'; st.session_state.pmi_proxy_label=chosen
+                hist_map=DEFAULT_PMI_HISTORY.get(chosen,{}).copy(); hist_map[pd.Timestamp.today().strftime('%Y-%m')]=float(latest_in); st.session_state.pmi_history[chosen]=hist_map
+                st.toast(f'✅ A-Share / China PMI override saved: {latest_in:.1f} for {month_in}',icon='🔄'); st.rerun()
+        else:
+            readonly_value=audit_pmi.get('display','Awaiting pack') if isinstance(audit_pmi,dict) else 'Awaiting pack'
+            readonly_date=audit_pmi.get('date','') if isinstance(audit_pmi,dict) else ''
+            st.info(f'Read-only PMI for {index_label}: {readonly_value} {readonly_date}. Source priority is parsed monthly macro pack → saved/session override → awaiting state. Manual override is mainly retained for A-Share / China.')
+        st.markdown('#### 🧾 Assumptions & Limits — Methodology Guardrails')
+        st.markdown('- This platform is rules-based and designed for decision support.\n- It does not predict crashes, market bottoms, or future returns.\n- Historical event frequency is descriptive only and is not a forecast.\n- Suggested deploy is based only on the selected investible capital / dry powder. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.\n- CPF-OA and SRS inclusion is user-controlled and only applies when selected.\n- Outputs should be reviewed alongside personal liquidity needs, risk tolerance, investment objectives, and professional advice where appropriate.')
+        comp_rows=st.session_state.get('macro_risk_v2_components',[])
+        if comp_rows:
+            st.markdown('#### 🧮 Macro Risk Score v2 Components')
+            comp_df=pd.DataFrame(comp_rows)
+            if 'Applied Weight' in comp_df.columns:
+                comp_df['Applied Weight %']=(comp_df['Applied Weight']*100).round(1)
+            show_cols=[c for c in ['Indicator','Value','Score','Applied Weight %','Source'] if c in comp_df.columns]
+            st.dataframe(comp_df[show_cols],use_container_width=True,hide_index=True)
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Macro Risk Score v2' if sel not in PMI_NA_MARKETS else 'Alternative asset macro-risk subset','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
-RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit Trail & Export':render_audit}
+RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
     render_executive()
@@ -2934,7 +3040,7 @@ def run_render_loop():
                 RENDERERS[section](expanded=True)
             else:
                 RENDERERS[section](expanded=True if active_section == '🧠 Executive Centre' else False)
-            render_assumptions()
+            # Assumptions & Limits moved to Audit, Methodology & Export.
         elif active_section == section:
             RENDERERS[section](expanded=True)
         else:
