@@ -38,13 +38,14 @@ jobs:
         run: |
           python macro_adapter_lab.py
           
-      - name: Lab test rates history 252D
-        run: |
-          python rates_history_lab_test.py
-
+      
       - name: Generate macro pack outside Streamlit
         run: |
           python g20_macro_fetcher.py
+
+      - name: Lab test rates history 252D
+        run: |
+          python rates_history_lab_test.py
 
       - name: Lab check macro pack
         run: |
