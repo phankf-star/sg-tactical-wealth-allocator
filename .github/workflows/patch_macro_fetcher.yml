@@ -1,0 +1,50 @@
+
+name: Patch Macro Fetcher Manual Seed
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas openpyxl requests beautifulsoup4 lxml yfinance
+
+      - name: Run macro fetcher patch
+        run: |
+          python patch_g20_macro_fetcher_manual_seed.py
+
+      - name: Commit patched macro fetcher
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add g20_macro_fetcher.py
+          git add g20_macro_fetcher.py.bak_manual_seed || true
+
+          git status --short
+
+          if git diff --cached --quiet; then
+            echo "No patch changes to commit"
+          else
+            git commit -m "Patch macro fetcher manual seed support"
+            git push
+          fi
