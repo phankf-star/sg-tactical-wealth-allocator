@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38ab — Live Market Trend Monitor; Macro Conditions Snapshot; governance sidebar clean-up
+# Global20Engine v38ac — render_market macro fallback fix; Live Market Trend Monitor
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38ab', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -2475,7 +2475,7 @@ conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_la
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
 st.title('📉 Global Drawdown Allocation Engine')
-st.caption('v38ab · Multi-asset drawdown allocation platform with Live Market & Trend Monitor, Macro Conditions Snapshot and audit-ready governance.')
+st.caption('v38ac · Multi-asset drawdown allocation platform with Live Market & Trend Monitor, Macro Conditions Snapshot and audit-ready governance.')
 
 # ------------------------- renderers -------------------------
 def render_executive():
@@ -2682,14 +2682,17 @@ def render_market(expanded=False):
         pmi_app=sel not in PMI_NA_MARKETS
         latest_display=0.0 if not pmi_app else latest_in
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
+        inflation_res=resolve_macro_value(index_label,'Inflation')
+        unemployment_res=resolve_macro_value(index_label,'Unemployment')
+        rates_res=resolve_macro_value(index_label,'Rates')
 
         # 2. Macro-only trend snapshot. No duplicate index price chart here.
         with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
             st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
             pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
-            inflation_df=macro_trend_df(index_label,'Inflation',inflation).rename(columns={'Value':'Inflation'})
-            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment).rename(columns={'Value':'Unemployment'})
-            rates_df=macro_trend_df(index_label,'Rates',rates).rename(columns={'Value':'Rates'})
+            inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
+            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
+            rates_df=macro_trend_df(index_label,'Rates',rates_res).rename(columns={'Value':'Rates'})
             vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
             tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
             if not tnx_raw.empty and not irx_raw.empty:
