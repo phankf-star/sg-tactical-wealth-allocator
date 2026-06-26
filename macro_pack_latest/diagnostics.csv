@@ -1,19 +1,19 @@
 ﻿run_utc,market,indicator,source,status,value,reason,endpoint
-2026-06-26T07:06:30Z,US,Inflation,FRED CPIAUCSL YoY,success,4.167,Computed CPI YoY from FRED CPIAUCSL,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL
-2026-06-26T07:06:30Z,US,Unemployment,FRED UNRATE,success,4.3,Fetched FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE
-2026-06-26T07:06:30Z,US,Claims,FRED ICSA,success,215.0,Fetched FRED ICSA and converted to thousands,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA
-2026-06-26T07:06:30Z,US,Rates,FRED DGS10,success,4.41,Fetched FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10
-2026-06-26T07:06:30Z,SG,Inflation,SingStat CPI,reviewed,1.8,Reviewed static row,
-2026-06-26T07:06:30Z,SG,Unemployment,MOM / SingStat unemployment,reviewed,2.0,Reviewed static row,
-2026-06-26T07:06:30Z,HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,reviewed,2.0,Reviewed row,
-2026-06-26T07:06:30Z,HK,Unemployment,HK Government / C&SD unemployment press release,success,3.7,Parsed HK unemployment 3.7% for March - May 2026,https://www.info.gov.hk/gia/general/202606/16/P2026061600318.htm
-2026-06-26T07:06:30Z,MY,Inflation,OpenDOSM storage CSV cpi_2d_inflation,success,2.0,Latest division=overall inflation_yoy = 2.0 for 2026-05-01,https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv
-2026-06-26T07:06:32Z,MY,Unemployment,OpenDOSM unemployment,failed,,"Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']",https://api.data.gov.my/opendosm?id=lfs_month&limit=50000
-2026-06-26T07:06:32Z,MY,Rates,BNM OPR,skipped,,"Policy: Malaysia rates handled by live adapter, not monthly macro pack.",
-2026-06-26T07:06:32Z,JP,Inflation,Statistics Bureau of Japan latest indicators / CPI,success,1.5,Parsed Japan CPI YoY 1.5% for May 2026,https://www.stat.go.jp/english/
-2026-06-26T07:06:32Z,JP,Unemployment,Statistics Bureau of Japan latest indicators / Labour Force Survey,success,2.5,Parsed Japan unemployment 2.5% for April 2026,https://www.stat.go.jp/english/
-2026-06-26T07:06:32Z,US,PMI,ISM Manufacturing PMI via PRNewswire release,success,54.0,Parsed PMI 54.0 for May 2026,https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-may-2026-ism-manufacturing-pmi-report-302786165.html
-2026-06-26T07:06:32Z,SG,PMI,SIPMM Singapore Manufacturing PMI via Trading Economics,success,51.0,Parsed PMI 51.0 for May 2026,https://tradingeconomics.com/singapore/manufacturing-pmi
-2026-06-26T07:06:32Z,HK,PMI,S&P Global Hong Kong SAR PMI via Trading Economics,success,50.4,Parsed PMI 50.4 for May 2026,https://tradingeconomics.com/hong-kong/manufacturing-pmi
-2026-06-26T07:06:32Z,MY,PMI,S&P Global Malaysia Manufacturing PMI via Trading Economics,success,49.9,Parsed PMI 49.9 for May 2026,https://tradingeconomics.com/malaysia/manufacturing-pmi
-2026-06-26T07:06:32Z,JP,PMI,S&P Global Japan Manufacturing PMI via Trading Economics,success,54.9,Parsed PMI 54.9 for June 2026,https://tradingeconomics.com/japan/manufacturing-pmi
+2026-06-26T07:32:36Z,US,Inflation,FRED CPIAUCSL YoY,success,4.167,Computed CPI YoY from FRED CPIAUCSL,https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL
+2026-06-26T07:32:36Z,US,Unemployment,FRED UNRATE,success,4.3,Fetched FRED UNRATE,https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE
+2026-06-26T07:32:36Z,US,Claims,FRED ICSA,success,215.0,Fetched FRED ICSA and converted to thousands,https://fred.stlouisfed.org/graph/fredgraph.csv?id=ICSA
+2026-06-26T07:32:36Z,US,Rates,FRED DGS10,success,4.41,Fetched FRED DGS10,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10
+2026-06-26T07:32:36Z,SG,Inflation,SingStat CPI,reviewed,1.8,Reviewed static row,
+2026-06-26T07:32:36Z,SG,Unemployment,MOM / SingStat unemployment,reviewed,2.0,Reviewed static row,
+2026-06-26T07:32:36Z,HK,Inflation,C&SD Table 510-60001 Composite CPI YoY,reviewed,2.0,Reviewed row,
+2026-06-26T07:32:36Z,HK,Unemployment,HK Government / C&SD unemployment press release,success,3.7,Parsed HK unemployment 3.7% for March - May 2026,https://www.info.gov.hk/gia/general/202606/16/P2026061600318.htm
+2026-06-26T07:32:37Z,MY,Inflation,OpenDOSM storage CSV cpi_2d_inflation,success,2.0,Latest division=overall inflation_yoy = 2.0 for 2026-05-01,https://storage.dosm.gov.my/cpi/cpi_2d_inflation.csv
+2026-06-26T07:32:39Z,MY,Unemployment,OpenDOSM unemployment,failed,,"Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']",https://api.data.gov.my/opendosm?id=lfs_month&limit=50000
+2026-06-26T07:32:39Z,MY,Rates,BNM OPR,skipped,,"Policy: Malaysia rates handled by live adapter, not monthly macro pack.",
+2026-06-26T07:32:39Z,JP,Inflation,Statistics Bureau of Japan latest indicators / CPI,success,1.5,Parsed Japan CPI YoY 1.5% for May 2026,https://www.stat.go.jp/english/
+2026-06-26T07:32:39Z,JP,Unemployment,Statistics Bureau of Japan latest indicators / Labour Force Survey,success,2.5,Parsed Japan unemployment 2.5% for April 2026,https://www.stat.go.jp/english/
+2026-06-26T07:32:39Z,US,PMI,ISM Manufacturing PMI via PRNewswire release,success,54.0,Parsed PMI 54.0 for May 2026,https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-may-2026-ism-manufacturing-pmi-report-302786165.html
+2026-06-26T07:32:39Z,SG,PMI,SIPMM Singapore Manufacturing PMI via Trading Economics,success,51.0,Parsed PMI 51.0 for May 2026,https://tradingeconomics.com/singapore/manufacturing-pmi
+2026-06-26T07:32:40Z,HK,PMI,S&P Global Hong Kong SAR PMI via Trading Economics,success,50.4,Parsed PMI 50.4 for May 2026,https://tradingeconomics.com/hong-kong/manufacturing-pmi
+2026-06-26T07:32:40Z,MY,PMI,S&P Global Malaysia Manufacturing PMI via Trading Economics,success,49.9,Parsed PMI 49.9 for May 2026,https://tradingeconomics.com/malaysia/manufacturing-pmi
+2026-06-26T07:32:40Z,JP,PMI,S&P Global Japan Manufacturing PMI via Trading Economics,success,54.9,Parsed PMI 54.9 for June 2026,https://tradingeconomics.com/japan/manufacturing-pmi
