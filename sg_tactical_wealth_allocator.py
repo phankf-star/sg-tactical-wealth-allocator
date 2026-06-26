@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38aa — KLSE BNM date parser; Macro Risk Score v2; Audit, Methodology & Export governance clean-up
+# Global20Engine v38ab — Live Market Trend Monitor; Macro Conditions Snapshot; governance sidebar clean-up
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38aa Governance Fix', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38ab', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -185,7 +185,7 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 }
 
 /* v36z diagnostics-state-fix compact */
-.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:158px}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:21px 0 10px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:flex;justify-content:space-between;color:#64748B;font-size:.78rem;font-weight:700}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
+.xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:188px;display:flex;flex-direction:column;justify-content:center}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:24px 0 14px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(120px,.45fr);gap:18px;color:#64748B;font-size:.78rem;font-weight:800;line-height:1.45}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -255,8 +255,8 @@ BENCHMARK_TICKERS = {
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
-NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
-SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Market Conditions','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
+NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Live Market & Trend Monitor','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
+SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Live Market & Trend Monitor','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
 CRISIS_EVENTS = [('1987-08-01','1987-12-31','1987 Black Monday'),('2000-03-01','2002-10-31','2000-2002 Dot-com Bust'),('2007-10-01','2009-03-31','2008 Global Financial Crisis'),('2020-02-01','2020-04-30','2020 COVID-19'),('2022-01-01','2022-10-31','2022 Inflation & Rate Hike')]
 
 # ------------------------- helpers -------------------------
@@ -813,8 +813,8 @@ def _json_records_from_payload(payload):
 def _parse_macro_date(dt_raw, dayfirst=False):
     """Parse macro-source dates with explicit day-first support for sources such as BNM OPR.
 
-    BNM returns dates such as 07/05/2026 in DD/MM/YYYY format.  The base app must
-    treat that as 07 May 2026, not 05 Jul 2026.  ISO and compact YYYYMMDD dates
+    BNM returns dates such as 07/05/2026 in DD/MM/YYYY format. The base app must
+    treat that as 07 May 2026, not 05 Jul 2026. ISO and compact YYYYMMDD dates
     remain parsed normally.
     """
     if not dt_raw or not str(dt_raw).strip():
@@ -1395,7 +1395,7 @@ def build_monthly_macro_pack(pack_month=None,include_aliases=None):
         row,attempts,man=fetch_pmi_for_pack(alias,pack_month); diag.extend(attempts)
         if row: macro_rows.append(row)
         if man: manual.append(man)
-    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38aa KLSE date parser + Macro Risk v2 + governance clean-up'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
+    return {'macro_data':pd.DataFrame(macro_rows,columns=MACRO_PACK_REQUIRED_COLUMNS),'diagnostics':pd.DataFrame(diag),'manual_required':pd.DataFrame(manual),'README':pd.DataFrame([{'field':'pack_month','value':pack_month},{'field':'generated_at','value':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')},{'field':'generator_version','value':'Global20Engine v38ab market trend monitor + Macro Risk v2 + sidebar governance clean-up'},{'field':'source_policy','value':'External GitHub Actions pack → saved owner override → session upload → live adapters → awaiting/N/A'}]),'source_catalogue':pd.DataFrame([{'market':k,'indicator':'PMI','primary_source':v[0],'fallback_policy':'Primary → secondary/tertiary → seed/manual exception','manual_allowed':'Exception only'} for k,v in PMI_DEFAULTS.items()])}
 
 def macro_pack_to_excel_bytes(pack):
     try:
@@ -1688,6 +1688,92 @@ def compact_next_trigger_label(zone_name):
     }
     return mapping.get(zone_name, 'Review next trigger')
 
+def next_trigger_card_label(zone_name):
+    mapping = {
+        'HOLD / NO DEPLOYMENT': 'INITIAL BUY at -8% drawdown',
+        'INITIAL BUY': 'BUY at -15% drawdown',
+        'BUY': 'STRONG BUY at -25% drawdown',
+        'STRONG BUY': 'CRISIS BUY at -35% drawdown',
+        'CRISIS BUY': 'MAX CRISIS BUY at -50% drawdown',
+        'MAX CRISIS BUY': 'Fully deployed',
+    }
+    return mapping.get(zone_name, 'Review next trigger')
+
+def render_yahoo_style_index_chart(df, market_name, ticker_symbol):
+    if df is None or df.empty:
+        st.info('Index price data unavailable.'); return
+    px=df[['Close']].dropna().copy()
+    px=px.loc[px.index>=px.index.max()-pd.DateOffset(months=12)]
+    if px.empty:
+        st.info('12M index price path unavailable.'); return
+    px['MA200']=df['Close'].rolling(200,min_periods=20).mean().reindex(px.index)
+    cur_dt=px.index[-1]; cur_val=safe_float(px.Close.iloc[-1])
+    high_dt=px.Close.idxmax(); high_val=safe_float(px.loc[high_dt,'Close'])
+    low_dt=px.Close.idxmin(); low_val=safe_float(px.loc[low_dt,'Close'])
+    fig=go.Figure()
+    fig.add_trace(go.Scatter(x=px.index,y=px.Close,name=f'{market_name} price',mode='lines',line=dict(color=BLUE,width=2.4),hovertemplate='%{x|%d %b %Y}<br>Close: %{y:,.0f}<extra></extra>'))
+    fig.add_trace(go.Scatter(x=px.index,y=px.MA200,name='200D MA',mode='lines',line=dict(color=SLATE,width=1.4,dash='dot'),hovertemplate='%{x|%d %b %Y}<br>200D MA: %{y:,.0f}<extra></extra>'))
+    fig.add_trace(go.Scatter(x=[cur_dt],y=[cur_val],mode='markers+text',name='Current',marker=dict(color=RED,size=9),text=['Current'],textposition='top right',hovertemplate='%{x|%d %b %Y}<br>Current: %{y:,.0f}<extra></extra>'))
+    fig.add_trace(go.Scatter(x=[high_dt],y=[high_val],mode='markers+text',name='12M High',marker=dict(color=GREEN,size=9),text=['12M High'],textposition='top center',hovertemplate='%{x|%d %b %Y}<br>12M High: %{y:,.0f}<extra></extra>'))
+    fig.add_trace(go.Scatter(x=[low_dt],y=[low_val],mode='markers+text',name='12M Low',marker=dict(color=ORANGE,size=9),text=['12M Low'],textposition='bottom center',hovertemplate='%{x|%d %b %Y}<br>12M Low: %{y:,.0f}<extra></extra>'))
+    # Drawdown shading from the 12M high to current point.
+    if pd.Timestamp(high_dt) <= pd.Timestamp(cur_dt):
+        fig.add_vrect(x0=high_dt,x1=cur_dt,fillcolor='rgba(239,68,68,.055)',line_width=0,layer='below')
+    # Optional volume if available in the Yahoo frame.
+    if 'Volume' in df.columns:
+        vol=df[['Volume']].reindex(px.index).dropna()
+        if not vol.empty and safe_float(vol.Volume.max(),0)>0:
+            fig.add_trace(go.Bar(x=vol.index,y=vol.Volume,name='Volume',marker_color='rgba(100,116,139,.22)',yaxis='y2',opacity=.45,hovertemplate='%{x|%d %b %Y}<br>Volume: %{y:,.0f}<extra></extra>'))
+            fig.update_layout(yaxis2=dict(overlaying='y',side='right',showgrid=False,visible=False))
+    dd_from_high=((cur_val/high_val)-1)*100 if high_val else 0
+    fig.update_layout(height=420,margin=dict(l=10,r=10,t=54,b=24),title=dict(text=f'<b>{market_name} 12M Price Path</b><br><sup>{ticker_symbol} · Current {cur_val:,.0f} · 12M high {high_val:,.0f} · 12M low {low_val:,.0f} · Drawdown from 12M high {dd_from_high:.1f}%</sup>',font=dict(size=15)),plot_bgcolor='white',paper_bgcolor='white',hovermode='x unified',legend=dict(orientation='h',yanchor='bottom',y=-.2,xanchor='center',x=.5),yaxis_title='Index Level')
+    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+
+def _macro_pack_history(market, indicator):
+    frames=[]
+    try:
+        external=load_external_macro_pack_from_repo()
+        if isinstance(external,pd.DataFrame) and not external.empty: frames.append(external)
+    except Exception: pass
+    try:
+        disk=load_macro_overrides_from_disk()
+        if isinstance(disk,pd.DataFrame) and not disk.empty: frames.append(disk)
+    except Exception: pass
+    try:
+        u=st.session_state.get('macro_upload_df')
+        if isinstance(u,pd.DataFrame) and not u.empty: frames.append(u)
+    except Exception: pass
+    if not frames: return pd.DataFrame()
+    df=pd.concat(frames,ignore_index=True).copy()
+    aliases={market,MARKET_UPLOAD_ALIASES.get(market,market),PLATFORM_TO_UPLOAD_ALIAS.get(market,market)}
+    inds={indicator,'Jobs' if indicator=='Unemployment' else indicator,'Unemployment' if indicator=='Jobs' else indicator}
+    sub=df[df['market'].astype(str).str.upper().isin({str(x).upper() for x in aliases}) & df['indicator'].astype(str).str.lower().isin({str(x).lower() for x in inds})].copy()
+    if sub.empty: return pd.DataFrame()
+    sub['Date']=pd.to_datetime(sub['date'],errors='coerce')
+    sub['Value']=pd.to_numeric(sub['value'],errors='coerce')
+    sub=sub.dropna(subset=['Value']).sort_values('Date')
+    if sub.empty: return pd.DataFrame()
+    return sub[['Date','Value']].set_index('Date')
+
+def macro_trend_df(market, indicator, fallback_result=None):
+    df=_macro_pack_history(market,indicator)
+    if not df.empty:
+        return df.tail(12)
+    if isinstance(fallback_result,dict) and fallback_result.get('value') is not None:
+        dt=pd.to_datetime(fallback_result.get('date',''),errors='coerce')
+        if pd.isna(dt): dt=pd.Timestamp.today().normalize()
+        return pd.DataFrame({'Value':[float(fallback_result.get('value'))]},index=[dt])
+    return pd.DataFrame()
+
+def render_macro_line_chart(df, title, subtitle='', colour=BLUE, y_title='Value'):
+    if df is None or df.empty:
+        st.info(f'{title}: actual trend data unavailable.'); return
+    col=df.columns[0]
+    fig=go.Figure()
+    fig.add_trace(go.Scatter(x=df.index,y=df[col],mode='lines+markers',line=dict(color=colour,width=2),marker=dict(size=6),hovertemplate='%{x|%d %b %Y}<br>%{y:.2f}<extra></extra>'))
+    fig.update_layout(height=250,margin=dict(l=10,r=10,t=52,b=18),title=f'{title}<br><sup>{subtitle}</sup>',plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title=y_title)
+    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
     # from the drawdown module; overvaluation is handled separately by Z-score.
@@ -1818,27 +1904,20 @@ def _macro_risk_v2_components(asset_name, pmi_value, vix_value, curve_value):
     """
     components=[]
     def add(name, value, score, weight, source=''):
-        if score is None or pd.isna(score):
-            return
+        if score is None or pd.isna(score): return
         components.append({'Indicator':name,'Value':value,'Score':max(0,min(100,float(score))),'Base Weight':float(weight),'Source':source})
     inflation=resolve_macro_value(asset_name,'Inflation')
     unemployment=resolve_macro_value(asset_name,'Unemployment')
     claims=resolve_macro_value(asset_name,'Claims')
     rates=resolve_macro_value(asset_name,'Rates')
     pmi_res=resolve_macro_value(asset_name,'PMI')
-    infl_v=_macro_numeric(inflation)
-    unemp_v=_macro_numeric(unemployment)
-    claims_v=_macro_numeric(claims)
-    rates_v=_macro_numeric(rates)
-    pmi_v=_macro_numeric(pmi_res)
+    infl_v=_macro_numeric(inflation); unemp_v=_macro_numeric(unemployment); claims_v=_macro_numeric(claims); rates_v=_macro_numeric(rates); pmi_v=_macro_numeric(pmi_res)
     if pmi_v is None and asset_name not in PMI_NA_MARKETS:
         try: pmi_v=float(pmi_value)
         except Exception: pmi_v=None
-    # Inflation: very high inflation and outright deflation both increase macro risk.
     if infl_v is not None:
         infl_score = 45 if infl_v < -1 else _bounded_score(infl_v, [(2.5,10),(4.0,35),(6.0,70),(999,100)])
         add('Inflation', infl_v, infl_score, 0.20, inflation.get('source_type',''))
-    # Labour stress: US uses both unemployment and claims where available; non-US uses unemployment only.
     labour_scores=[]
     if unemp_v is not None:
         labour_scores.append(_bounded_score(unemp_v, [(4.0,15),(6.0,45),(8.0,70),(999,100)]))
@@ -1868,23 +1947,18 @@ def calc_market_scores_by_asset(asset_name, pmi_value, dd_value, trend_weak, vix
         total=sum(c['Score']*c['Base Weight'] for c in components)/total_weight if total_weight else 0
         for c in components:
             c['Applied Weight']=c['Base Weight']/total_weight if total_weight else 0
-        # Compatibility outputs for existing UI columns. Drawdown/trend are no longer direct macro-risk penalties.
+            c['Contribution']=c['Score']*c['Applied Weight']
         vix_s=next((c['Score'] for c in components if c['Indicator']=='VIX'),0)
         curve_s=next((c['Score'] for c in components if c['Indicator']=='Yield Curve'),0)
         pmi_s=next((c['Score'] for c in components if c['Indicator']=='PMI'),0)
         dd_s=0; trend_s=0
     else:
-        # Defensive fallback if every macro indicator is unavailable.
         vix_s=0 if vix_value is None else min(max((vix_value-15)*2,0),30)
         curve_s=10 if curve_value is None else (20 if curve_value<0 else 10 if curve_value<.5 else 0)
         pmi_s=0 if pmi_value>=52 else 8 if pmi_value>=50 else 16 if pmi_value>=47 else 20
-        dd_s=0; trend_s=0
-        total=min(vix_s+curve_s+pmi_s,100)
-        components=[]
-    try:
-        st.session_state['macro_risk_v2_components']=components
-    except Exception:
-        pass
+        dd_s=0; trend_s=0; total=min(vix_s+curve_s+pmi_s,100); components=[]
+    try: st.session_state['macro_risk_v2_components']=components
+    except Exception: pass
     regime='CRASH RISK' if total>=70 else 'WARNING' if total>=50 else 'WATCH' if total>=30 else 'NORMAL'
     return total,regime,vix_s,curve_s,pmi_s,dd_s,trend_s
 
@@ -2373,9 +2447,7 @@ with st.sidebar:
     emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
     st.markdown('---')
-    render_owner_mode_sidebar()
-    render_macro_data_manager_sidebar()
-    render_macro_adapter_diagnostics_sidebar()
+    # Owner Mode hidden for user testing; macro admin tooling moved to Audit, Methodology & Export.
     if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
@@ -2403,7 +2475,7 @@ conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_la
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
 st.title('📉 Global Drawdown Allocation Engine')
-st.caption('v38aa · Multi-asset drawdown allocation platform with KLSE date parser fix, Macro Risk Score v2 and audit-ready governance.')
+st.caption('v38ab · Multi-asset drawdown allocation platform with Live Market & Trend Monitor, Macro Conditions Snapshot and audit-ready governance.')
 
 # ------------------------- renderers -------------------------
 def render_executive():
@@ -2412,7 +2484,7 @@ def render_executive():
     stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],f'Decision note:<br>{hesc(decision_line)}')
     deploy_tip=tooltip_html('Suggested Deploy',[('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],'Details are shown in the Calculation Basis & Capital Source section below.')
     index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'Latest available close used for drawdown and allocation calculations.')
-    risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model')],'Risk-condition indicator, not a crash prediction.')
+    risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2')],'Risk-condition indicator, not a crash prediction.')
     z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Below -1'),('Normal','-1 to +1'),('Expensive','Above +1')],'Context only; not automatic deployment.')
     macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API/table → owner-upload → diagnostic awaiting state'),('Diagnostics','See Macro Adapter Diagnostics in sidebar'),('Claims','US Initial Jobless Claims; US-only'),('Rates','Market-specific basis shown in each tooltip')],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
     structural_colour=zc if zone!='HOLD / NO DEPLOYMENT' else SLATE; hero_border,hero_bg,hero_soft=hero_colours_for_zone(zone)
@@ -2441,7 +2513,7 @@ def render_executive():
         return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
     macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source / Query',s),('Dashboard Badge',clean_macro_badge(src)),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(macro_visible_sub(n,s,src))} <span class="source-pill {_source_class(src)}">{hesc(clean_macro_badge(src))}</span></div></div>''' for n,v,s,src,diag in cards])
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
-    st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger)}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Alignment Check {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger_card_label(zone))}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Conditions Snapshot {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
 
 def render_suggested(expanded=False):
     suggested_title=f'💰 Calculation Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Calculation Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
@@ -2594,74 +2666,88 @@ def render_trend_channel(df, market_name):
     return tc
 
 def render_market(expanded=False):
-    with st.expander('🌦️ MARKET CONDITIONS & LIVE RISK MONITOR',expanded=expanded):
-        st.markdown('## 🌦️ Market Conditions & Live Risk Monitor')
-        current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
-        actual=LATEST_PMI_ACTUALS.get(current_proxy,LATEST_PMI_ACTUALS['N/A'])
-        top1,top2,top3=st.columns([1.15,.85,1.05])
-        top1.markdown(f'<div class="mock-control-card"><div class="mock-label">Selected Market / Asset</div><div class="mock-value">{index_label}</div><div class="mock-sub">{ticker}</div></div>',unsafe_allow_html=True)
-        top2.markdown(f'<div class="mock-control-card"><div class="mock-label">Funding Profile</div><div class="mock-value">{st.session_state.get("funding_profile","")}</div><div class="mock-sub">Investible capital basis</div></div>',unsafe_allow_html=True)
-        top3.markdown(f'<div class="mock-control-card"><div class="mock-label">Primary: Structural Drawdown</div><div class="mock-value">{dd:.1f}%</div><div class="mock-sub" style="color:#EA580C;font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
+    with st.expander('🌦️ Live Market & Trend Monitor',expanded=expanded):
+        st.markdown('## 🌦️ Live Market & Trend Monitor')
+        st.caption('Diagnostic layer only. The Executive Centre remains the summary / decision view; this section shows the supporting price, macro, valuation, drawdown and trigger evidence.')
 
-        chosen=st.session_state.get('pmi_proxy_label',current_proxy)
+        # 1. Yahoo-style price chart. Visible once the monitor is opened.
+        st.markdown('### 📉 Yahoo-style Index Price Chart')
+        render_yahoo_style_index_chart(ud,index_label,ticker)
+
+        current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
+        chosen=current_proxy
         actual=LATEST_PMI_ACTUALS.get(chosen,LATEST_PMI_ACTUALS['N/A'])
         latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
         month_in=st.session_state.get('latest_pmi_month',actual['month'])
         pmi_app=sel not in PMI_NA_MARKETS
         latest_display=0.0 if not pmi_app else latest_in
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
-        risk_colour=GREEN if local_score<30 else AMBER if local_score<50 else ORANGE if local_score<70 else RED
-        live_model_note='Alternative price model' if sel in PMI_NA_MARKETS else 'Equity macro model (VIX + PMI + Yield Curve)'
-        k1,k2,k3,k4=st.columns([1,1,1,1])
-        k1.markdown(f'<div class="kpi-card"><div class="kpi-title">VIX Live</div><div class="kpi-value">{"N/A" if (vix is None or sel in PMI_NA_MARKETS) else f"{vix:.1f}"}</div><div class="kpi-sub-muted">Volatility regime</div></div>',unsafe_allow_html=True)
-        k2.markdown(f'<div class="kpi-card"><div class="kpi-title">Yield Curve</div><div class="kpi-value">{"N/A" if (curve_spread is None or sel in PMI_NA_MARKETS) else f"{curve_spread:.2f}%"}</div><div class="kpi-sub-muted">10Y minus 13W</div></div>',unsafe_allow_html=True)
-        k3.markdown(f'<div class="kpi-card"><div class="kpi-title">{chosen}</div><div class="kpi-value">{"N/A" if not pmi_app else f"{latest_in:.1f}"}</div><div class="kpi-sub-green">{month_in}</div></div>',unsafe_allow_html=True)
-        k4.markdown(f'<div class="kpi-card"><div class="kpi-title" style="color:{risk_colour};font-weight:900;">LIVE MARKET RISK ALERT:</div><div class="kpi-value">{local_score:.0f} / 100</div><div class="kpi-sub-green" style="font-weight:900;">{local_alert}</div><div class="kpi-sub-muted">{live_model_note}</div></div>',unsafe_allow_html=True)
 
-        st.markdown('---')
-        st.markdown('## Drawdown Basis Comparison')
-        set_label,set_radio=st.columns([0.14,0.86])
-        set_label.markdown('<div style="font-weight:800;color:#475569;font-size:.86rem;padding-top:.35rem;">Secondary Setting</div>',unsafe_allow_html=True)
-        with set_radio:
-            diag_method=st.radio('Choose comparison lens',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,key='secondary_drawdown_diagnostic_market',horizontal=True,label_visibility='collapsed')
-        diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
-        comp1,comp2=st.columns([1,1])
-        comp1.markdown(f'<div class="kpi-card"><div class="kpi-title">Primary: Structural Drawdown — Used for Suggested Deploy</div><div class="kpi-value">{dd:.1f}%</div><div class="kpi-sub-orange" style="font-weight:800;">Peak {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br>Current {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
-        comp2.markdown(f'<div class="kpi-card"><div class="kpi-title">Secondary: {diag_ref} — Diagnostic only</div><div class="kpi-value">{diag_dd:.1f}%</div><div class="kpi-sub-green" style="font-weight:800;">Peak {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br>Current {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div></div>',unsafe_allow_html=True)
-        st.caption('Structural Drawdown drives deployment and risk scoring. The secondary drawdown basis is a comparison indicator only.')
-
-        with st.expander('📈 Quantitative Valuation Channels',expanded=True):
-            st.markdown('### Quantitative Valuation Channels')
-            render_trend_channel(ud,index_label)
-
-        st.caption('Cycle Signal Settings & PMI Override has moved to 📡 Audit, Methodology & Export. Macro-pack PMI is read-only for US, SG, HK, MY and JP; manual override is mainly retained for A-Share / China.')
-        with st.expander('🧮 Signal Diagnostics, Trigger Monitor & Score Engine', expanded=False):
-            sig,trigger,engine=st.columns([1,1,1.15])
-            sig.markdown('#### 📊 Signal Confidence Details')
-            sig.markdown('<div class="light-card">'+kv('Drawdown Signal','Active' if dd<=-8 else 'Inactive',ORANGE if dd<=-8 else SLATE)+kv('Risk Regime',local_alert,RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else AMBER if local_alert=='WATCH' else GREEN)+kv('Technical Trend','Weak' if trend_below else 'Stable',BLUE)+'</div>',unsafe_allow_html=True)
-            is_alt=sel in PMI_NA_MARKETS
-            trig=pd.DataFrame([{'Trigger':'VIX > 25','Status':'N/A' if is_alt else ('Yes' if vix is not None and vix>25 else 'No')},{'Trigger':'Yield curve inverted','Status':'N/A' if is_alt else ('Yes' if curve_spread is not None and curve_spread<0 else 'No')},{'Trigger':f'{chosen} < 50','Status':'N/A' if (is_alt or not pmi_app) else ('Yes' if latest_in<50 else 'No')},{'Trigger':'Structural drawdown < -10%','Status':'Yes' if dd<-10 else 'No'},{'Trigger':'Below 200D MA','Status':'Yes' if trend_below else 'No'}])
-            trigger.markdown('#### 📡 Live Trigger Monitor'); trigger.dataframe(trig,use_container_width=True,hide_index=True)
-            engine.markdown('#### 🧮 Live Risk Score Engine')
-            if is_alt:
-                engine.markdown('<div class="light-card">'+kv('VIX Score','Disabled for alternative assets',SLATE)+kv('Yield Curve Score','Disabled for alternative assets',SLATE)+kv('PMI Score','Not applicable',SLATE)+kv('Drawdown Score',f'{ldd:.0f} / 40',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 20',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
-            else:
-                engine.markdown('<div class="light-card">'+kv('VIX Score',f'{lvix:.0f} / 30',AMBER)+kv('Yield Curve Score',f'{lcurve:.0f} / 20',BLUE)+kv(f'{chosen} Score',f'{lpmi:.0f} / 20',GREEN)+kv('Drawdown Score',f'{ldd:.0f} / 25',ORANGE)+kv('Trend Score',f'{ltrend:.0f} / 15',RED)+kv('Total',f'{local_score:.0f} / 100 → {local_alert}',RED if local_alert=='CRASH RISK' else ORANGE if local_alert=='WARNING' else GREEN)+'</div>',unsafe_allow_html=True)
-
-        with st.expander('📈 12M Trend Snapshot',expanded=False):
+        # 2. Macro-only trend snapshot. No duplicate index price chart here.
+        with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
+            st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
+            pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
+            inflation_df=macro_trend_df(index_label,'Inflation',inflation).rename(columns={'Value':'Inflation'})
+            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment).rename(columns={'Value':'Unemployment'})
+            rates_df=macro_trend_df(index_label,'Rates',rates).rename(columns={'Value':'Rates'})
             vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
             tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
             if not tnx_raw.empty and not irx_raw.empty:
                 aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
-                if not aligned.empty: curve_df=pd.DataFrame({'10Y-13W':aligned.TNX-aligned.IRX},index=aligned.index)
-            pmi_df=get_pmi_df(chosen,latest_in); idx12=ud.loc[ud.index>=ud.index.max()-pd.DateOffset(months=12)][['Close']].rename(columns={'Close':'Index'})
-            top_left,top_right=st.columns(2)
-            with top_left: mini_trend_chart(vix_df,'VIX 12M','Volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
-            with top_right: mini_trend_chart(curve_df,'Yield Curve 12M','10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
-            bottom_left,bottom_right=st.columns(2)
-            with bottom_left:
-                st.info('ℹ️ PMI is not applicable for this asset class (Gold / Bitcoin).') if sel in PMI_NA_MARKETS else mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
-            with bottom_right: mini_trend_chart(idx12,f'{index_label} 12M',f'{ticker} · 12M price path',RED,'rgba(239,68,68,.16)','Index Level')
+                if not aligned.empty: curve_df=pd.DataFrame({'Yield Curve':aligned.TNX-aligned.IRX},index=aligned.index)
+            r1c1,r1c2=st.columns(2)
+            with r1c1:
+                if pmi_app: mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
+                else: st.info('PMI is not applicable for this asset class.')
+            with r1c2: render_macro_line_chart(inflation_df,'Inflation Trend','Parsed macro-pack / latest official value',RED,'%')
+            r2c1,r2c2=st.columns(2)
+            with r2c1: render_macro_line_chart(unemployment_df,'Unemployment Trend','Parsed macro-pack / latest official value',ORANGE,'%')
+            with r2c2: render_macro_line_chart(rates_df,f'{rate_card_label(index_label)} Trend','Parsed macro-pack / latest official value',PURPLE,'%')
+            r3c1,r3c2=st.columns(2)
+            with r3c1: mini_trend_chart(vix_df,'VIX 12M','Global volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
+            with r3c2: mini_trend_chart(curve_df,'Yield Curve 12M','US 10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
+
+        # 3. Valuation channel.
+        with st.expander('📈 Quantitative Valuation Channels',expanded=False):
+            st.markdown('### Quantitative Valuation Channels')
+            render_trend_channel(ud,index_label)
+
+        # 4. Drawdown basis comparison.
+        with st.expander('📉 Drawdown Basis Comparison',expanded=False):
+            st.caption('Primary Structural Drawdown is used for Suggested Deploy. Other drawdown bases are diagnostic only.')
+            set_label,set_radio=st.columns([0.14,0.86])
+            set_label.markdown('<div class="mock-label">Secondary Setting</div>',unsafe_allow_html=True)
+            with set_radio:
+                diag_method=st.radio('Choose comparison lens',['Rolling 252D Peak','2Y Peak','3Y Peak','5Y Peak','All-Time High Peak'],index=0,key='secondary_drawdown_diagnostic_market',horizontal=True,label_visibility='collapsed')
+            diag_close,diag_peak,diag_dd,diag_ref,diag_peak_date,diag_current_date=current_dd_detail(ud,diag_method)
+            comp1,comp2=st.columns([1,1])
+            comp1.markdown(f'<div class="mock-control-card"><div class="mock-label">Primary: Structural Drawdown — Used for Suggested Deploy</div><div class="mock-value">{dd:.1f}%</div><div class="mock-sub"><b>Peak</b> {struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}<br><b>Current</b> {struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}</div></div>',unsafe_allow_html=True)
+            comp2.markdown(f'<div class="mock-control-card"><div class="mock-label">Secondary: {diag_ref} — Diagnostic only</div><div class="mock-value">{diag_dd:.1f}%</div><div class="mock-sub"><b>Peak</b> {diag_peak_date.strftime("%Y-%m-%d")} · {diag_peak:,.0f}<br><b>Current</b> {diag_current_date.strftime("%Y-%m-%d")} · {diag_close:,.0f}</div></div>',unsafe_allow_html=True)
+
+        # 5. Risk score and trigger diagnostics.
+        with st.expander('🧮 Risk Score & Trigger Diagnostics', expanded=False):
+            st.caption('Calculation proof. Macro Risk Score v2 explains the macro score; Deployment Trigger Audit explains allocation triggers separately.')
+            comp_rows=st.session_state.get('macro_risk_v2_components',[])
+            if comp_rows:
+                comp_df=pd.DataFrame(comp_rows)
+                if 'Applied Weight' in comp_df.columns: comp_df['Applied Weight %']=(comp_df['Applied Weight']*100).round(1)
+                if 'Contribution' in comp_df.columns: comp_df['Contribution']=comp_df['Contribution'].round(1)
+                show_cols=[c for c in ['Indicator','Value','Score','Applied Weight %','Contribution','Source'] if c in comp_df.columns]
+                st.markdown('#### Macro Risk Score v2 Components')
+                st.dataframe(comp_df[show_cols],use_container_width=True,hide_index=True)
+                st.caption(f'Macro Risk Score = {local_score:.0f} / 100 → {local_alert}. N/A indicators are excluded and remaining weights are re-normalised.')
+            else:
+                st.info('Macro Risk Score v2 component table unavailable for the current market/data state.')
+            trigger_df=pd.DataFrame([
+                {'Trigger':'Structural drawdown below -8%','Current Status':'Yes' if dd<=-8 else 'No','Used For':'Deployment ladder'},
+                {'Trigger':'Structural drawdown below -15%','Current Status':'Yes' if dd<=-15 else 'No','Used For':'Deployment ladder'},
+                {'Trigger':'Structural drawdown below -25%','Current Status':'Yes' if dd<=-25 else 'No','Used For':'STRONG BUY / deeper deployment'},
+                {'Trigger':'Below 200D MA','Current Status':'Yes' if trend_below else 'No','Used For':'Confidence / technical context'},
+                {'Trigger':'Next trigger','Current Status':next_trigger_card_label(zone),'Used For':'Execution planning'},
+                {'Trigger':'Current action zone','Current Status':zone,'Used For':'Suggested deploy calculation'},
+            ])
+            st.markdown('#### Deployment Trigger Audit')
+            st.dataframe(trigger_df,use_container_width=True,hide_index=True)
 
 def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
@@ -3019,18 +3105,14 @@ def render_audit(expanded=False):
             st.info(f'Read-only PMI for {index_label}: {readonly_value} {readonly_date}. Source priority is parsed monthly macro pack → saved/session override → awaiting state. Manual override is mainly retained for A-Share / China.')
         st.markdown('#### 🧾 Assumptions & Limits — Methodology Guardrails')
         st.markdown('- This platform is rules-based and designed for decision support.\n- It does not predict crashes, market bottoms, or future returns.\n- Historical event frequency is descriptive only and is not a forecast.\n- Suggested deploy is based only on the selected investible capital / dry powder. It is not a buy call, trading instruction, portfolio recommendation, or financial advice.\n- CPF-OA and SRS inclusion is user-controlled and only applies when selected.\n- Outputs should be reviewed alongside personal liquidity needs, risk tolerance, investment objectives, and professional advice where appropriate.')
-        comp_rows=st.session_state.get('macro_risk_v2_components',[])
-        if comp_rows:
-            st.markdown('#### 🧮 Macro Risk Score v2 Components')
-            comp_df=pd.DataFrame(comp_rows)
-            if 'Applied Weight' in comp_df.columns:
-                comp_df['Applied Weight %']=(comp_df['Applied Weight']*100).round(1)
-            show_cols=[c for c in ['Indicator','Value','Score','Applied Weight %','Source'] if c in comp_df.columns]
-            st.dataframe(comp_df[show_cols],use_container_width=True,hide_index=True)
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Macro Risk Score v2' if sel not in PMI_NA_MARKETS else 'Alternative asset macro-risk subset','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        with st.expander('🛠️ Admin & Source Tooling',expanded=False):
+            st.caption('Owner Mode is hidden from the sidebar during user testing. Macro Data Manager and Macro Adapter Diagnostics are retained here as collapsed admin/source-health tooling.')
+            render_macro_data_manager_sidebar()
+            render_macro_adapter_diagnostics_sidebar()
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
-RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Market Conditions':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
+RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Live Market & Trend Monitor':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
     render_executive()
