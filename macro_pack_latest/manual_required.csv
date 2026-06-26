@@ -1,2 +1,2 @@
 ﻿run_utc,market,indicator,reason
-2026-06-26T07:32:39Z,MY,Unemployment,"OpenDOSM unemployment fetch failed: Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']"
+2026-06-26T07:51:30Z,MY,Unemployment,"OpenDOSM unemployment fetch failed: Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']"
