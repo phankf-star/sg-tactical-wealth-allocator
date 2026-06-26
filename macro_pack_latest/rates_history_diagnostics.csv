@@ -1,0 +1,9 @@
+﻿market,adapter,endpoint,status,rows,latest,reason,tested_at
+US,FRED DGS10 daily,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,failed,0,,The read operation timed out,2026-06-26 06:55:11 UTC
+HK,HKMA daily HIBOR,https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?pagesize=1000&sortby=end_of_day&sortorder=desc,accepted,252,2026-05-29=2.60923,,2026-06-26 06:55:14 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr,reached,0,,Parsed candidate policy records,2026-06-26 06:55:15 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2026,reached,3,,Parsed candidate policy records,2026-06-26 06:55:16 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2026,reached,0,,Parsed candidate policy records,2026-06-26 06:55:17 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr | https://api.bnm.gov.my/public/opr/year/2026 | https://api.bnm.gov.my/public/opr?year=2026,failed,0,,No BNM OPR policy points parsed,2026-06-26 06:55:17 UTC
+JP,BOJ FM01 STRDCLUCON daily,https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&startDate=202412&code=STRDCLUCON,accepted,1,2026-06-26=0.977,,2026-06-26 06:55:19 UTC
+SG,SG SORA daily history,redistributor/latest-value path,needs_validation,0,,Current production SG SORA adapter is latest-value redistributor-only; daily 252D history source still needs validation.,2026-06-26 06:55:19 UTC
