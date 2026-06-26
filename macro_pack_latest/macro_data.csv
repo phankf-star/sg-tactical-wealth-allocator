@@ -10,9 +10,8 @@ HK,Unemployment,2026-05-31,3.7,%,HK Government / C&SD unemployment press release
 MY,Inflation,2026-05-01,2.0,%,OpenDOSM storage CSV cpi_2d_inflation,success,Fetched Malaysia headline CPI inflation YoY from OpenDOSM official CSV; filtered division=overall.
 JP,Inflation,2026-05-01,1.5,%,Statistics Bureau of Japan latest indicators / CPI,Official / Parsed,Parsed Japan CPI YoY from Statistics Bureau latest indicators; period=May 2026.
 JP,Unemployment,2026-04-01,2.5,%,Statistics Bureau of Japan latest indicators / Labour Force Survey,Official / Parsed,Parsed Japan unemployment rate from Statistics Bureau latest indicators; period=April 2026.
-US,PMI,2026-06-01,54.0,index,ISM Manufacturing PMI / seed fallback,Seed,Seed fallback; review before active use.
-SG,PMI,2026-06-01,51.0,index,SIPMM Singapore Manufacturing PMI,Seed,Seed fallback; review before active use.
-HK,PMI,2026-06-01,50.4,index,S&P Global Hong Kong SAR PMI,Seed,Seed fallback; review before active use.
-CN,PMI,2026-06-01,50.0,index,NBS Manufacturing PMI,Seed,Seed fallback; review before active use.
-MY,PMI,2026-06-01,49.9,index,S&P Global Malaysia Manufacturing PMI,Seed,Seed fallback; review before active use.
-JP,PMI,2026-06-01,50.4,index,au Jibun Bank Japan Manufacturing PMI,Seed,Seed fallback; review before active use.
+US,PMI,2026-05-01,54.0,index,ISM Manufacturing PMI via PRNewswire release,Parsed / Release,Parsed PMI from source; period=May 2026.
+SG,PMI,2026-05-01,51.0,index,SIPMM Singapore Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
+HK,PMI,2026-05-01,50.4,index,S&P Global Hong Kong SAR PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
+MY,PMI,2026-05-01,49.9,index,S&P Global Malaysia Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
+JP,PMI,2026-06-01,54.9,index,S&P Global Japan Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=June 2026.
