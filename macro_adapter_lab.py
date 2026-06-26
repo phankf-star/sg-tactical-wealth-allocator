@@ -201,6 +201,196 @@ def lab_japan_latest_indicators():
         },
     ]
 
+def parse_first_float(patterns, txt, label):
+    for pat in patterns:
+        m = re.search(pat, txt, flags=re.I)
+        if m:
+            return float(m.group(1))
+    raise ValueError(f"Could not parse {label}")
+
+
+def lab_us_pmi():
+    """
+    US ISM Manufacturing PMI parser.
+    Source: ISM Manufacturing PMI May 2026 report page.
+    """
+    url = "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/may/"
+    txt = clean_html(request_text(url))
+
+    value = parse_first_float(
+        [
+            r"Manufacturing PMI\s*[®A-Za-z\s]*registered\s*([0-9.]+)\s*percent\s*in\s*May",
+            r"May Manufacturing PMI\s*[®A-Za-z\s]*at\s*([0-9.]+)\s*%",
+        ],
+        txt,
+        "US ISM Manufacturing PMI",
+    )
+
+    if not (0 <= value <= 100):
+        raise ValueError(f"US PMI sanity check failed: {value}")
+
+    return {
+        "market": "US",
+        "indicator": "PMI",
+        "date": "2026-05-01",
+        "value": value,
+        "unit": "index",
+        "source": "ISM Manufacturing PMI",
+        "source_type": "Official / Parsed",
+        "period": "May 2026",
+        "endpoint": url,
+    }
+
+
+def lab_sg_pmi():
+    """
+    Singapore Manufacturing PMI parser.
+    Source: Trading Economics page attributed to SIPMM.
+    """
+    url = "https://tradingeconomics.com/singapore/manufacturing-pmi"
+    txt = clean_html(request_text(url))
+
+    value = parse_first_float(
+        [
+            r"Singapore.?s Manufacturing PMI rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+            r"Manufacturing PMI in Singapore increased to\s*([0-9.]+)\s*points\s*in\s*May",
+        ],
+        txt,
+        "Singapore Manufacturing PMI",
+    )
+
+    if not (0 <= value <= 100):
+        raise ValueError(f"Singapore PMI sanity check failed: {value}")
+
+    return {
+        "market": "SG",
+        "indicator": "PMI",
+        "date": "2026-05-01",
+        "value": value,
+        "unit": "index",
+        "source": "SIPMM Singapore Manufacturing PMI via Trading Economics",
+        "source_type": "Parsed / Secondary",
+        "period": "May 2026",
+        "endpoint": url,
+    }
+
+
+def lab_hk_pmi():
+    """
+    Hong Kong SAR PMI parser.
+    Source: S&P Global Hong Kong SAR PMI press release.
+    """
+    url = "https://www.pmi.spglobal.com/Public/Home/PressRelease/94654b3ea21a4b23acfe48845f225862"
+    txt = clean_html(request_text(url))
+
+    value = parse_first_float(
+        [
+            r"At\s*([0-9.]+)\s*in\s*May,\s*the headline seasonally adjusted S&P Global Hong Kong SAR Purchasing Manager",
+            r"Hong Kong SAR PMI.*?rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+        ],
+        txt,
+        "Hong Kong SAR PMI",
+    )
+
+    if not (0 <= value <= 100):
+        raise ValueError(f"Hong Kong PMI sanity check failed: {value}")
+
+    return {
+        "market": "HK",
+        "indicator": "PMI",
+        "date": "2026-05-01",
+        "value": value,
+        "unit": "index",
+        "source": "S&P Global Hong Kong SAR PMI",
+        "source_type": "Official / Parsed",
+        "period": "May 2026",
+        "endpoint": url,
+    }
+
+
+def lab_my_pmi():
+    """
+    Malaysia Manufacturing PMI parser.
+    Source: S&P Global Malaysia Manufacturing PMI press release.
+    """
+    url = "https://www.pmi.spglobal.com/Public/Home/PressRelease/46f012a13a274bf5b4db5bc6f3bca946"
+    txt = clean_html(request_text(url))
+
+    value = parse_first_float(
+        [
+            r"Purchasing Managers.? Index.*?dropped to\s*([0-9.]+)\s*in\s*May",
+            r"Malaysia Manufacturing PMI.*?PMI.? dropped to\s*([0-9.]+)\s*in\s*May",
+        ],
+        txt,
+        "Malaysia Manufacturing PMI",
+    )
+
+    if not (0 <= value <= 100):
+        raise ValueError(f"Malaysia PMI sanity check failed: {value}")
+
+    return {
+        "market": "MY",
+        "indicator": "PMI",
+        "date": "2026-05-01",
+        "value": value,
+        "unit": "index",
+        "source": "S&P Global Malaysia Manufacturing PMI",
+        "source_type": "Official / Parsed",
+        "period": "May 2026",
+        "endpoint": url,
+    }
+
+
+def lab_jp_pmi():
+    """
+    Japan Manufacturing PMI parser.
+    Source: MQL5 economic calendar page attributed to S&P Global / au Jibun Bank.
+    Production policy: use final monthly May 2026 figure first, not mixed flash PMI.
+    """
+    url = "https://www.mql5.com/en/economic-calendar/japan/nikkei-manufacturing-pmi"
+    txt = clean_html(request_text(url))
+
+    value = parse_first_float(
+        [
+            r"1\s*Jun\s*2026\s*May\s*2026\s*([0-9.]+)\s*50\.6\s*55\.1",
+            r"Last release.*?Actual\s*([0-9.]+).*?Previous\s*55\.1",
+        ],
+        txt,
+        "Japan Manufacturing PMI",
+    )
+
+    if not (0 <= value <= 100):
+        raise ValueError(f"Japan PMI sanity check failed: {value}")
+
+    return {
+        "market": "JP",
+        "indicator": "PMI",
+        "date": "2026-05-01",
+        "value": value,
+        "unit": "index",
+        "source": "S&P Global / au Jibun Bank Japan Manufacturing PMI via MQL5",
+        "source_type": "Parsed / Secondary",
+        "period": "May 2026",
+        "endpoint": url,
+    }
+
+
+def lab_pmi_rows():
+    rows = []
+    errors = []
+
+    for fn in [lab_us_pmi, lab_sg_pmi, lab_hk_pmi, lab_my_pmi, lab_jp_pmi]:
+        try:
+            row = fn()
+            rows.append(row)
+            print(f"PASS {row['market']} PMI")
+            print(json.dumps(row, indent=2))
+        except Exception as e:
+            errors.append(f"{fn.__name__} failed: {e}")
+            print(f"FAIL {fn.__name__}:", e)
+
+    return rows, errors
+
 
 def main():
     results = []
@@ -224,6 +414,14 @@ def main():
     except Exception as e:
         errors.append(f"JP latest indicators failed: {e}")
         print("FAIL JP latest indicators:", e)
+
+    try:
+        pmi_rows, pmi_errors = lab_pmi_rows()
+        results.extend(pmi_rows)
+        errors.extend(pmi_errors)
+    except Exception as e:
+        errors.append(f"PMI lab failed: {e}")
+        print("FAIL PMI lab:", e)
 
     print("\n==============================")
     print("SUMMARY")
