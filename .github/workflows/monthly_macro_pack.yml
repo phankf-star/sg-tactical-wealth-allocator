@@ -60,14 +60,33 @@ jobs:
           cat macro_pack_latest/diagnostics.csv || true
 
     
+
+      - name: Generate macro pack outside Streamlit
+        run: |
+          python g20_macro_fetcher.py
+
+      - name: Lab test rates history 252D
+        run: |
+          python rates_history_lab_test.py
+
+      - name: Lab check macro pack
+        run: |
+          python lab_check_macro_pack.py
+
+      - name: Show generated files
+        run: |
+          find macro_pack_latest -maxdepth 1 -type f -print
+          echo "---- macro_data.csv ----"
+          cat macro_pack_latest/macro_data.csv || true
+          echo "---- diagnostics.csv ----"
+          cat macro_pack_latest/diagnostics.csv || true
+          echo "---- rates_history_diagnostics.csv ----"
+          cat macro_pack_latest/rates_history_diagnostics.csv || true
+
       - name: Commit generated macro pack
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git fetch origin main
-          git checkout main
-          git pull --rebase origin main
 
           git add -A macro_pack_latest
 
