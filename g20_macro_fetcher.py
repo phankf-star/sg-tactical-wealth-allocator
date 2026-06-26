@@ -107,6 +107,13 @@ def month_year_to_first_day(month_name, year):
     m = month_name_to_number(month_name)
     return f"{int(year):04d}-{m:02d}-01"
 
+def parse_first_float(patterns, txt, label):
+    for pat in patterns:
+        m = re.search(pat, txt, flags=re.I | re.S)
+        if m:
+            return float(m.group(1))
+    raise ValueError(f"Could not parse {label}")
+
 
 def safe_float(x):
     try:
@@ -686,28 +693,252 @@ def add_malaysia_rates_manual_or_reviewed():
 # PMI seed rows
 # ─────────────────────────────────────────────────────────────────────────────
 
-def add_pmi_seed_rows():
-    seeds = [
-        ("US", "PMI", "2026-06-01", 54.0, "index", "ISM Manufacturing PMI / seed fallback"),
-        ("SG", "PMI", "2026-06-01", 51.0, "index", "SIPMM Singapore Manufacturing PMI"),
-        ("HK", "PMI", "2026-06-01", 50.4, "index", "S&P Global Hong Kong SAR PMI"),
-        ("CN", "PMI", "2026-06-01", 50.0, "index", "NBS Manufacturing PMI"),
-        ("MY", "PMI", "2026-06-01", 49.9, "index", "S&P Global Malaysia Manufacturing PMI"),
-        ("JP", "PMI", "2026-06-01", 50.4, "index", "au Jibun Bank Japan Manufacturing PMI"),
-    ]
 
-    for market, indicator, date, value, unit, source in seeds:
+def add_pmi_parsed_rows():
+    """
+    PMI parsed rows.
+
+    This replaces static PMI seed rows with source-parsed PMI rows.
+    Each market is handled independently:
+    - If parsing succeeds, write macro_data row and success diagnostic.
+    - If parsing fails, write diagnostic + manual_required for that market only.
+    """
+
+    def emit_pmi_row(market, date_txt, value, source, source_type, period, endpoint):
+        value = round(float(value), 3)
+
+        if not (0 <= value <= 100):
+            raise ValueError(f"{market} PMI sanity check failed: {value}")
+
         row(
             market,
-            indicator,
-            date,
+            "PMI",
+            date_txt,
             value,
-            unit,
+            "index",
             source,
-            "Seed",
-            "Seed fallback; review before active use.",
+            source_type,
+            f"Parsed PMI from source; period={period}.",
         )
-        diag(market, indicator, source, "seed", value=value, reason="Seed fallback row")
+
+        diag(
+            market,
+            "PMI",
+            source,
+            "success",
+            value=value,
+            reason=f"Parsed PMI {value} for {period}",
+            endpoint=endpoint,
+        )
+
+    # US PMI — ISM Manufacturing PMI via release page
+    try:
+        market = "US"
+        source = "ISM Manufacturing PMI via PRNewswire release"
+        source_type = "Parsed / Release"
+        period = "May 2026"
+        endpoint = "https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-may-2026-ism-manufacturing-pmi-report-302786165.html"
+
+        txt = clean_html_for_macro(request_text(endpoint, accept="text/html,text/plain,*/*"))
+
+        value = parse_first_float(
+            [
+                r"Manufacturing PMI.*?registered\s*([0-9.]+)\s*percent\s*in\s*May",
+                r"Manufacturing PMI.*?at\s*([0-9.]+)\s*%",
+                r"PMI.*?registered\s*([0-9.]+)\s*percent",
+            ],
+            txt,
+            "US ISM Manufacturing PMI",
+        )
+
+        emit_pmi_row(
+            market,
+            "2026-05-01",
+            value,
+            source,
+            source_type,
+            period,
+            endpoint,
+        )
+
+    except Exception as e:
+        diag(
+            "US",
+            "PMI",
+            "ISM Manufacturing PMI via PRNewswire release",
+            "failed",
+            reason=str(e),
+            endpoint="https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-may-2026-ism-manufacturing-pmi-report-302786165.html",
+        )
+        manual("US", "PMI", f"US PMI parser failed: {e}")
+
+    # Singapore PMI — SIPMM via Trading Economics
+    try:
+        market = "SG"
+        source = "SIPMM Singapore Manufacturing PMI via Trading Economics"
+        source_type = "Parsed / Secondary"
+        period = "May 2026"
+        endpoint = "https://tradingeconomics.com/singapore/manufacturing-pmi"
+
+        txt = clean_html_for_macro(request_text(endpoint, accept="text/html,text/plain,*/*"))
+
+        value = parse_first_float(
+            [
+                r"Singapore.?s Manufacturing PMI rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+                r"Manufacturing PMI in Singapore increased to\s*([0-9.]+)\s*points\s*in\s*May",
+            ],
+            txt,
+            "Singapore Manufacturing PMI",
+        )
+
+        emit_pmi_row(
+            market,
+            "2026-05-01",
+            value,
+            source,
+            source_type,
+            period,
+            endpoint,
+        )
+
+    except Exception as e:
+        diag(
+            "SG",
+            "PMI",
+            "SIPMM Singapore Manufacturing PMI via Trading Economics",
+            "failed",
+            reason=str(e),
+            endpoint="https://tradingeconomics.com/singapore/manufacturing-pmi",
+        )
+        manual("SG", "PMI", f"Singapore PMI parser failed: {e}")
+
+    # Hong Kong PMI — S&P Global via Trading Economics
+    try:
+        market = "HK"
+        source = "S&P Global Hong Kong SAR PMI via Trading Economics"
+        source_type = "Parsed / Secondary"
+        period = "May 2026"
+        endpoint = "https://tradingeconomics.com/hong-kong/manufacturing-pmi"
+
+        txt = clean_html_for_macro(request_text(endpoint, accept="text/html,text/plain,*/*"))
+
+        value = parse_first_float(
+            [
+                r"Hong Kong SAR PMI rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+                r"Manufacturing PMI in Hong Kong increased to\s*([0-9.]+)\s*points\s*in\s*May",
+                r"PMI rose to\s*([0-9.]+)\s*in\s*May",
+            ],
+            txt,
+            "Hong Kong SAR PMI",
+        )
+
+        emit_pmi_row(
+            market,
+            "2026-05-01",
+            value,
+            source,
+            source_type,
+            period,
+            endpoint,
+        )
+
+    except Exception as e:
+        diag(
+            "HK",
+            "PMI",
+            "S&P Global Hong Kong SAR PMI via Trading Economics",
+            "failed",
+            reason=str(e),
+            endpoint="https://tradingeconomics.com/hong-kong/manufacturing-pmi",
+        )
+        manual("HK", "PMI", f"Hong Kong PMI parser failed: {e}")
+
+    # Malaysia PMI — S&P Global via Trading Economics
+    try:
+        market = "MY"
+        source = "S&P Global Malaysia Manufacturing PMI via Trading Economics"
+        source_type = "Parsed / Secondary"
+        period = "May 2026"
+        endpoint = "https://tradingeconomics.com/malaysia/manufacturing-pmi"
+
+        txt = clean_html_for_macro(request_text(endpoint, accept="text/html,text/plain,*/*"))
+
+        value = parse_first_float(
+            [
+                r"Manufacturing PMI in Malaysia decreased to\s*([0-9.]+)\s*points\s*in\s*May",
+                r"S&P Global Manufacturing PMI.*?decreased to\s*([0-9.]+)\s*points\s*in\s*May",
+                r"Manufacturing PMI.*?fell to\s*([0-9.]+)\s*in\s*May",
+            ],
+            txt,
+            "Malaysia Manufacturing PMI",
+        )
+
+        emit_pmi_row(
+            market,
+            "2026-05-01",
+            value,
+            source,
+            source_type,
+            period,
+            endpoint,
+        )
+
+    except Exception as e:
+        diag(
+            "MY",
+            "PMI",
+            "S&P Global Malaysia Manufacturing PMI via Trading Economics",
+            "failed",
+            reason=str(e),
+            endpoint="https://tradingeconomics.com/malaysia/manufacturing-pmi",
+        )
+        manual("MY", "PMI", f"Malaysia PMI parser failed: {e}")
+
+    # Japan PMI — S&P Global via Trading Economics
+    try:
+        market = "JP"
+        source = "S&P Global Japan Manufacturing PMI via Trading Economics"
+        source_type = "Parsed / Secondary"
+        endpoint = "https://tradingeconomics.com/japan/manufacturing-pmi"
+
+        txt = clean_html_for_macro(request_text(endpoint, accept="text/html,text/plain,*/*"))
+
+        m = re.search(
+            r"Manufacturing PMI.*?increased to\s*([0-9.]+)\s*(?:points)?\s*in\s*([A-Za-z]+)\s*(20\d{2})",
+            txt,
+            flags=re.I | re.S,
+        )
+
+        if not m:
+            raise ValueError("Could not parse Japan Manufacturing PMI")
+
+        value = float(m.group(1))
+        pmi_month = m.group(2)
+        pmi_year = m.group(3)
+        pmi_date = month_year_to_first_day(pmi_month, pmi_year)
+        period = f"{pmi_month} {pmi_year}"
+
+        emit_pmi_row(
+            market,
+            pmi_date,
+            value,
+            source,
+            source_type,
+            period,
+            endpoint,
+        )
+
+    except Exception as e:
+        diag(
+            "JP",
+            "PMI",
+            "S&P Global Japan Manufacturing PMI via Trading Economics",
+            "failed",
+            reason=str(e),
+            endpoint="https://tradingeconomics.com/japan/manufacturing-pmi",
+        )
+        manual("JP", "PMI", f"Japan PMI parser failed: {e}")
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -759,8 +990,8 @@ def build_macro_pack():
     # Japan monthly macro rows
     add_japan_latest_indicators_live()
 
-    # PMI seeds
-    add_pmi_seed_rows()
+    # PMI parsed rows
+    add_pmi_parsed_rows()
 
     # Write CSV outputs
     macro_cols = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
