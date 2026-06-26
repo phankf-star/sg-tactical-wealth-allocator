@@ -210,20 +210,20 @@ def parse_first_float(patterns, txt, label):
 
 
 
+
 def lab_us_pmi():
     """
     US ISM Manufacturing PMI parser.
-    Source: ISM Manufacturing PMI May 2026 report page.
+    Source: ISM May 2026 release via PRNewswire.
     """
-    url = "https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/may/"
+    url = "https://www.prnewswire.com/news-releases/manufacturing-pmi-at-54-may-2026-ism-manufacturing-pmi-report-302786165.html"
     txt = clean_html(request_text(url))
 
     value = parse_first_float(
         [
             r"Manufacturing PMI.*?registered\s*([0-9.]+)\s*percent\s*in\s*May",
-            r"Manufacturing PMI.*?registered\s*([0-9.]+)\s*%",
-            r"May Manufacturing PMI.*?at\s*([0-9.]+)\s*%",
-            r"PMI.*?at\s*([0-9.]+)\s*%",
+            r"Manufacturing PMI.*?at\s*([0-9.]+)\s*%",
+            r"PMI.*?registered\s*([0-9.]+)\s*percent",
         ],
         txt,
         "US ISM Manufacturing PMI",
@@ -238,8 +238,8 @@ def lab_us_pmi():
         "date": "2026-05-01",
         "value": value,
         "unit": "index",
-        "source": "ISM Manufacturing PMI",
-        "source_type": "Official / Parsed",
+        "source": "ISM Manufacturing PMI via PRNewswire release",
+        "source_type": "Parsed / Release",
         "period": "May 2026",
         "endpoint": url,
     }
@@ -281,17 +281,16 @@ def lab_sg_pmi():
 def lab_hk_pmi():
     """
     Hong Kong SAR PMI parser.
-    Source: S&P Global Hong Kong SAR PMI press release.
+    Source: Trading Economics page attributed to S&P Global.
     """
-    url = "https://www.pmi.spglobal.com/Public/Home/PressRelease/94654b3ea21a4b23acfe48845f225862"
+    url = "https://tradingeconomics.com/hong-kong/manufacturing-pmi"
     txt = clean_html(request_text(url))
 
     value = parse_first_float(
         [
-            r"At\s*([0-9.]+)\s*in\s*May.*?S&P Global Hong Kong SAR.*?PMI",
-            r"Hong Kong SAR PMI.*?rose to\s*([0-9.]+)\s*in\s*May",
-            r"PMI.*?was up from\s*48\.6\s*in\s*April.*?At\s*([0-9.]+)\s*in\s*May",
-            r"([0-9.]+)\s*in\s*May.*?headline seasonally adjusted.*?Hong Kong SAR.*?PMI",
+            r"Hong Kong SAR PMI rose to\s*([0-9.]+)\s*in\s*May\s*2026",
+            r"Manufacturing PMI in Hong Kong increased to\s*([0-9.]+)\s*points\s*in\s*May",
+            r"PMI rose to\s*([0-9.]+)\s*in\s*May",
         ],
         txt,
         "Hong Kong SAR PMI",
@@ -306,8 +305,8 @@ def lab_hk_pmi():
         "date": "2026-05-01",
         "value": value,
         "unit": "index",
-        "source": "S&P Global Hong Kong SAR PMI",
-        "source_type": "Official / Parsed",
+        "source": "S&P Global Hong Kong SAR PMI via Trading Economics",
+        "source_type": "Parsed / Secondary",
         "period": "May 2026",
         "endpoint": url,
     }
@@ -316,17 +315,16 @@ def lab_hk_pmi():
 def lab_my_pmi():
     """
     Malaysia Manufacturing PMI parser.
-    Source: S&P Global Malaysia Manufacturing PMI press release.
+    Source: Trading Economics page attributed to S&P Global.
     """
-    url = "https://www.pmi.spglobal.com/Public/Home/PressRelease/46f012a13a274bf5b4db5bc6f3bca946"
+    url = "https://tradingeconomics.com/malaysia/manufacturing-pmi"
     txt = clean_html(request_text(url))
 
     value = parse_first_float(
         [
-            r"PMI.*?dropped to\s*([0-9.]+)\s*in\s*May",
-            r"Purchasing Managers.*?Index.*?dropped to\s*([0-9.]+)\s*in\s*May",
-            r"headline reading.*?([0-9.]+).*?May",
-            r"Malaysia Manufacturing PMI.*?falling to\s*([0-9.]+)\s*from",
+            r"Manufacturing PMI in Malaysia decreased to\s*([0-9.]+)\s*points\s*in\s*May",
+            r"S&P Global Manufacturing PMI.*?decreased to\s*([0-9.]+)\s*points\s*in\s*May",
+            r"Manufacturing PMI.*?fell to\s*([0-9.]+)\s*in\s*May",
         ],
         txt,
         "Malaysia Manufacturing PMI",
@@ -341,8 +339,8 @@ def lab_my_pmi():
         "date": "2026-05-01",
         "value": value,
         "unit": "index",
-        "source": "S&P Global Malaysia Manufacturing PMI",
-        "source_type": "Official / Parsed",
+        "source": "S&P Global Malaysia Manufacturing PMI via Trading Economics",
+        "source_type": "Parsed / Secondary",
         "period": "May 2026",
         "endpoint": url,
     }
@@ -389,6 +387,7 @@ def lab_jp_pmi():
         "period": f"{pmi_month} {pmi_year}",
         "endpoint": url,
     }
+
 
 
 def lab_pmi_rows():
