@@ -942,9 +942,6 @@ def add_pmi_parsed_rows():
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-
-# manual_seed_parser_block.py missing
-
 # Source catalogue
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1002,89 +999,7 @@ def build_macro_pack():
     manual_cols = ["run_utc", "market", "indicator", "reason"]
     source_cols = ["market", "indicator", "source", "source_type", "endpoint", "notes"]
 
-    # ------------------------------------------------------------
-    # Manual macro seed integration: SG/JP rates, CPI, unemployment
-    # ------------------------------------------------------------
-    manual_macro_df = pd.DataFrame()
-    manual_rates_df = pd.DataFrame()
-    try:
-        manual_seed_df = load_manual_macro_seed()
-        manual_macro_df, manual_rates_df = split_manual_seed_for_outputs(manual_seed_df)
-
-        if manual_macro_df is not None and not manual_macro_df.empty:
-            for rec in manual_macro_df.to_dict("records"):
-                row = {c: rec.get(c, "") for c in macro_cols}
-                MACRO_ROWS.append(row)
-
-        diag(
-            "PACK",
-            "Manual seed",
-            "macro_seed_inputs",
-            "accepted",
-            reason=f"manual_macro_rows={0 if manual_macro_df is None else len(manual_macro_df)}, manual_rate_rows={0 if manual_rates_df is None else len(manual_rates_df)}",
-            endpoint="macro_seed_inputs/",
-        )
-
-    except Exception as e:
-        diag(
-            "PACK",
-            "Manual seed",
-            "macro_seed_inputs",
-            "failed",
-            reason=str(e),
-            endpoint="macro_seed_inputs/",
-        )
-
-    # Main macro output
     write_csv(OUT_DIR / "macro_data.csv", MACRO_ROWS, macro_cols)
-
-    # 12M macro history output for Inflation / Unemployment / PMI etc.
-    try:
-        macro_hist_df = pd.DataFrame(MACRO_ROWS)
-        if not macro_hist_df.empty:
-            macro_hist_df["date"] = pd.to_datetime(macro_hist_df["date"], errors="coerce")
-            macro_hist_df["value"] = pd.to_numeric(macro_hist_df["value"], errors="coerce")
-            macro_hist_df = macro_hist_df.dropna(subset=["market", "indicator", "date", "value"])
-            macro_hist_df = macro_hist_df.sort_values(["market", "indicator", "date"])
-            macro_hist_df = macro_hist_df.drop_duplicates(["market", "indicator", "date"], keep="last")
-            macro_hist_df = macro_hist_df.groupby(["market", "indicator"], group_keys=False).tail(12)
-            macro_hist_df["date"] = macro_hist_df["date"].dt.strftime("%Y-%m-%d")
-            write_csv(OUT_DIR / "macro_history_12m.csv", macro_hist_df.to_dict("records"), macro_cols)
-        else:
-            write_csv(OUT_DIR / "macro_history_12m.csv", [], macro_cols)
-    except Exception as e:
-        diag("PACK", "macro_history_12m.csv", "builder", "failed", reason=str(e), endpoint="macro_history_12m.csv")
-        write_csv(OUT_DIR / "macro_history_12m.csv", [], macro_cols)
-
-    # 252D rates history output from manual SG/JP rates seed
-    try:
-        if manual_rates_df is not None and not manual_rates_df.empty:
-            manual_rates_df["date"] = pd.to_datetime(manual_rates_df["date"], errors="coerce")
-            manual_rates_df["value"] = pd.to_numeric(manual_rates_df["value"], errors="coerce")
-            manual_rates_df = manual_rates_df.dropna(subset=["market", "indicator", "date", "value"])
-            manual_rates_df = manual_rates_df.sort_values(["market", "indicator", "date"])
-            manual_rates_df = manual_rates_df.drop_duplicates(["market", "indicator", "date"], keep="last")
-            manual_rates_df = manual_rates_df.groupby(["market", "indicator"], group_keys=False).tail(252)
-            manual_rates_df["date"] = manual_rates_df["date"].dt.strftime("%Y-%m-%d")
-            write_csv(
-                OUT_DIR / "rates_history_252d.csv",
-                manual_rates_df.to_dict("records"),
-                list(manual_rates_df.columns),
-            )
-        else:
-            write_csv(
-                OUT_DIR / "rates_history_252d.csv",
-                [],
-                ["market", "indicator", "date", "value", "unit", "source", "source_type", "frequency", "notes"],
-            )
-    except Exception as e:
-        diag("PACK", "rates_history_252d.csv", "builder", "failed", reason=str(e), endpoint="rates_history_252d.csv")
-        write_csv(
-            OUT_DIR / "rates_history_252d.csv",
-            [],
-            ["market", "indicator", "date", "value", "unit", "source", "source_type", "frequency", "notes"],
-        )
-
     write_csv(OUT_DIR / "diagnostics.csv", DIAGNOSTIC_ROWS, diag_cols)
     write_csv(OUT_DIR / "manual_required.csv", MANUAL_ROWS, manual_cols)
     write_csv(OUT_DIR / "source_catalogue.csv", SOURCE_ROWS, source_cols)
