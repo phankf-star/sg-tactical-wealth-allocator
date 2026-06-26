@@ -203,7 +203,7 @@ def lab_japan_latest_indicators():
 
 def parse_first_float(patterns, txt, label):
     for pat in patterns:
-        m = re.search(pat, txt, flags=re.I)
+        m = re.search(pat, txt, flags=re.I | re.S)
         if m:
             return float(m.group(1))
     raise ValueError(f"Could not parse {label}")
