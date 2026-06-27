@@ -1819,6 +1819,7 @@ def _macro_pack_history(market, indicator):
 
 
 
+
 def macro_trend_df(market, indicator, fallback_result=None):
     history_file = Path("macro_pack_latest/macro_history_12m.csv")
 
@@ -2354,6 +2355,7 @@ def mini_trend_chart(df,title,subtitle,colour,fill_colour,y_title=''):
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
 
 
+
 def mini_pmi_bar_chart(df,title,subtitle):
     if df is None or df.empty or 'PMI' not in df.columns:
         st.info(f'{title}: data unavailable')
@@ -2450,6 +2452,13 @@ def _load_json_file(path,fallback):
 def _save_json_file(path,data):
     try: path.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8'); return True
     except Exception: return False
+
+
+# ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
+ETF_PREFS_FILE = Path('user_etf_preferences.json')
+PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
+ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
+DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
 def _load_user_etf_preferences(): return _load_json_file(ETF_PREFS_FILE,{'preferred_etfs':{}})
 def _save_user_etf_preferences(data): return _save_json_file(ETF_PREFS_FILE,data)
