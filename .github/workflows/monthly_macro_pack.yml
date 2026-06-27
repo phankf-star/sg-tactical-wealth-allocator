@@ -51,6 +51,9 @@ jobs:
         run: |
           python g20_macro_fetcher.py
 
+      - name: Update rolling 12M macro history
+        run: python tools/update_macro_history_12m_from_latest.py
+
       - name: Show generated files
         run: |
           echo "---- macro_pack_latest file list ----"
