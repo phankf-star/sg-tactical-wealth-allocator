@@ -253,6 +253,39 @@ def mini_pmi_bar_chart(df,title,subtitle):
 text, ok3 = replace_function(text, "mini_pmi_bar_chart", new_mini_pmi_bar_chart)
 
 
+# ------------------------------------------------------------
+#.json')# PATCH 5: Restore ETF preference constants if function patch removed them
+PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
+ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
+DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
+'''
+
+if "ETF_PREFS_FILE =" not in text:
+    marker = "def _load_user_etf_preferences():"
+    idx = text.find(marker)
+
+    if idx != -1:
+        text = text[:idx] + etf_constants_block + "\n" + text[idx:]
+        print("Restored ETF preference constants before _load_user_etf_preferences.")
+        ok4 = True
+    else:
+        marker = "def _normalise_ticker("
+        idx = text.find(marker)
+        if idx != -1:
+            text = text[:idx] + etf_constants_block + "\n" + text[idx:]
+            print("Restored ETF preference constants before _normalise_ticker.")
+            ok4 = True
+        else:
+            print("WARNING: Could not find ETF insertion marker.")
+            ok4 = False
+else:
+    print("ETF preference constants already present.")
+    ok4 = True
+# ------------------------------------------------------------
+etf_constants_block = '''
+# ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
+
+
 APP_FILE.write_text(text, encoding="utf-8")
 
 print("Patch completed successfully.")
@@ -260,3 +293,4 @@ print(f"Updated file: {APP_FILE}")
 print(f"render_macro_line_chart replaced: {ok1}")
 print(f"macro_trend_df replaced: {ok2}")
 print(f"mini_pmi_bar_chart replaced: {ok3}")
+print(f"ETF constants restored/present: {ok4}")
