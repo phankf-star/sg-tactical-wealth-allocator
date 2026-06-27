@@ -54,6 +54,9 @@ jobs:
       - name: Update rolling 12M macro history
         run: python tools/update_macro_history_12m_from_latest.py
 
+      - name: Update 252D rates history
+        run: python tools/update_rates_history_252d.py
+  
       - name: Show generated files
         run: |
           echo "---- macro_pack_latest file list ----"
