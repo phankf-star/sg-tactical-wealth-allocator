@@ -252,9 +252,14 @@ def mini_pmi_bar_chart(df,title,subtitle):
 '''
 text, ok3 = replace_function(text, "mini_pmi_bar_chart", new_mini_pmi_bar_chart)
 
-
 # ------------------------------------------------------------
-#.json')# PATCH 5: Restore ETF preference constants if function patch removed them
+# PATCH 5: Restore ETF preference constants if function patch removed them
+# ------------------------------------------------------------
+ok4 = False
+
+etf_constants_block = '''
+# ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
+ETF_PREFS_FILE = Path('user_etf_preferences.json')
 PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
@@ -281,10 +286,6 @@ if "ETF_PREFS_FILE =" not in text:
 else:
     print("ETF preference constants already present.")
     ok4 = True
-# ------------------------------------------------------------
-etf_constants_block = '''
-# ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
-
 
 APP_FILE.write_text(text, encoding="utf-8")
 
