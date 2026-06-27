@@ -1816,24 +1816,86 @@ def _macro_pack_history(market, indicator):
     if sub.empty: return pd.DataFrame()
     return sub[['Date','Value']].set_index('Date')
 
+
 def macro_trend_df(market, indicator, fallback_result=None):
-    df=_macro_pack_history(market,indicator)
+    df = _macro_pack_history(market, indicator)
+
     if not df.empty:
-        return df.tail(12)
-    if isinstance(fallback_result,dict) and fallback_result.get('value') is not None:
-        dt=pd.to_datetime(fallback_result.get('date',''),errors='coerce')
-        if pd.isna(dt): dt=pd.Timestamp.today().normalize()
-        return pd.DataFrame({'Value':[float(fallback_result.get('value'))]},index=[dt])
+        df = df.copy()
+        df.index = pd.to_datetime(df.index, errors='coerce')
+        df = df[df.index.notna()].sort_index()
+
+        if 'Value' in df.columns:
+            df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
+            df = df.dropna(subset=['Value'])
+
+        if not df.empty:
+            # Keep latest value per month to avoid duplicate timestamp noise.
+            monthly_key = df.index.to_period('M')
+            df = df[~monthly_key.duplicated(keep='last')]
+            df.index = df.index.to_period('M').to_timestamp()
+            return df.tail(12)
+
+    # Fallback: latest point only. Do not simulate history here.
+    # Proper 12M history should come from macro_pack_latest/macro_history_12m.csv.
+    if isinstance(fallback_result, dict) and fallback_result.get('value') is not None:
+        dt = pd.to_datetime(fallback_result.get('date', ''), errors='coerce')
+        if pd.isna(dt):
+            dt = pd.Timestamp.today().normalize()
+        dt = dt.to_period('M').to_timestamp()
+        return pd.DataFrame({'Value': [float(fallback_result.get('value'))]}, index=[dt])
+
     return pd.DataFrame()
 
 def render_macro_line_chart(df, title, subtitle='', colour=BLUE, y_title='Value'):
     if df is None or df.empty:
-        st.info(f'{title}: actual trend data unavailable.'); return
-    col=df.columns[0]
-    fig=go.Figure()
-    fig.add_trace(go.Scatter(x=df.index,y=df[col],mode='lines+markers',line=dict(color=colour,width=2),marker=dict(size=6),hovertemplate='%{x|%d %b %Y}<br>%{y:.2f}<extra></extra>'))
-    fig.update_layout(height=250,margin=dict(l=10,r=10,t=52,b=18),title=f'{title}<br><sup>{subtitle}</sup>',plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title=y_title)
-    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+        st.info(f'{title}: actual trend data unavailable.')
+        return
+
+    df = df.copy()
+    df.index = pd.to_datetime(df.index, errors='coerce')
+    df = df[df.index.notna()].sort_index()
+
+    col = df.columns[0]
+    df[col] = pd.to_numeric(df[col], errors='coerce')
+    df = df.dropna(subset=[col])
+
+    if df.empty:
+        st.info(f'{title}: actual trend data unavailable.')
+        return
+
+    # Normalise monthly macro dates to month-start to avoid timestamp-like x-axis labels.
+    if len(df) <= 18:
+        df.index = df.index.to_period('M').to_timestamp()
+
+    mode = 'lines+markers' if len(df) >= 2 else 'markers'
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(
+        x=df.index,
+        y=df[col],
+        mode=mode,
+        line=dict(color=colour, width=2),
+        marker=dict(size=6),
+        hovertemplate='%{x|%b %Y}<br>%{y:.2f}<extra></extra>'
+    ))
+
+    fig.update_layout(
+        height=250,
+        margin=dict(l=10, r=10, t=52, b=18),
+        title=f'{title}<br><sup>{subtitle}</sup>',
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        showlegend=False,
+        yaxis_title=y_title,
+        xaxis=dict(
+            type='date',
+            tickformat='%b %Y',
+            showgrid=False
+        )
+    )
+
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
