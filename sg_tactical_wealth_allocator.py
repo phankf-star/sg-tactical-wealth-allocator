@@ -1818,6 +1818,7 @@ def _macro_pack_history(market, indicator):
 
 
 
+
 def macro_trend_df(market, indicator, fallback_result=None):
     history_file = Path("macro_pack_latest/macro_history_12m.csv")
 
@@ -2352,20 +2353,60 @@ def mini_trend_chart(df,title,subtitle,colour,fill_colour,y_title=''):
     fig.update_layout(height=240, margin=dict(l=10,r=10,t=48,b=10), title=f'{title}<br><sup>{subtitle}</sup>', plot_bgcolor='white', paper_bgcolor='white', showlegend=False, yaxis_title=y_title)
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
 
+
 def mini_pmi_bar_chart(df,title,subtitle):
-    if df is None or df.empty or 'PMI' not in df.columns: st.info(f'{title}: data unavailable'); return
-    colours=[GREEN if v>=50 else RED for v in df.PMI]
-    fig=go.Figure(); fig.add_trace(go.Bar(x=df.index,y=df.PMI,marker_color=colours,text=[f'{v:.1f}' for v in df.PMI],textposition='outside',cliponaxis=False))
-    fig.add_hline(y=50,line_dash='dash',line_color=SLATE,annotation_text='50 Expansion / Contraction',annotation_position='top left')
-    fig.update_layout(height=250,margin=dict(l=10,r=10,t=58,b=10),title=f'{title}<br><sup>{subtitle}</sup>',plot_bgcolor='white',paper_bgcolor='white',showlegend=False,yaxis_title='PMI')
+    if df is None or df.empty or 'PMI' not in df.columns:
+        st.info(f'{title}: data unavailable')
+        return
+
+    df = df.copy()
+    df.index = pd.to_datetime(df.index, errors='coerce')
+    df = df[df.index.notna()].sort_index()
+    df['PMI'] = pd.to_numeric(df['PMI'], errors='coerce')
+    df = df.dropna(subset=['PMI']).tail(12)
+
+    if df.empty:
+        st.info(f'{title}: data unavailable')
+        return
+
+    colours = [GREEN if v >= 50 else RED for v in df.PMI]
+
+    # Keep title compact to avoid overlap inside two-column layout.
+    clean_title = 'PMI 12M Monthly Releases'
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=df.index,
+        y=df.PMI,
+        marker_color=colours,
+        text=None,
+        hovertemplate='%{x|%b %Y}<br>PMI: %{y:.1f}<extra></extra>'
+    ))
+
+    fig.add_hline(
+        y=50,
+        line_dash='dash',
+        line_color=SLATE,
+        annotation_text='50 Expansion / Contraction',
+        annotation_position='top left'
+    )
+
+    fig.update_layout(
+        height=250,
+        margin=dict(l=10, r=10, t=58, b=10),
+        title=f'{clean_title}<br><sup>{subtitle}</sup>',
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        showlegend=False,
+        yaxis_title='PMI',
+        xaxis=dict(
+            type='date',
+            tickformat='%b %Y',
+            showgrid=False
+        )
+    )
+
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
-
-
-# ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
-ETF_PREFS_FILE = Path('user_etf_preferences.json')
-PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
-ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
-DEFAULT_OWNER_PASSCODE = 'Kf272287'  # Testing default only. Override with st.secrets/env in production.
 
 def _normalise_ticker(ticker): return str(ticker or '').strip().upper()
 def ensure_access_role():
