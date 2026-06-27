@@ -1817,33 +1817,73 @@ def _macro_pack_history(market, indicator):
     return sub[['Date','Value']].set_index('Date')
 
 
+
 def macro_trend_df(market, indicator, fallback_result=None):
+    history_file = Path("macro_pack_latest/macro_history_12m.csv")
+
+    frames = []
+
+    if history_file.exists():
+        try:
+            hist_df = pd.read_csv(history_file)
+            hist_df.columns = [str(c).strip().lower() for c in hist_df.columns]
+
+            if {"market", "indicator", "date", "value"}.issubset(set(hist_df.columns)):
+                frames.append(hist_df)
+        except Exception:
+            pass
+
+    # Backward compatibility: old macro pack / overrides still work.
     df = _macro_pack_history(market, indicator)
-
     if not df.empty:
-        df = df.copy()
-        df.index = pd.to_datetime(df.index, errors='coerce')
-        df = df[df.index.notna()].sort_index()
+        tmp = df.reset_index().rename(columns={"Date": "date", "Value": "value"})
+        tmp["market"] = market
+        tmp["indicator"] = indicator
+        tmp["unit"] = "%"
+        tmp["source"] = "legacy macro pack history"
+        tmp["source_type"] = "Legacy"
+        tmp["notes"] = ""
+        frames.append(tmp)
 
-        if 'Value' in df.columns:
-            df['Value'] = pd.to_numeric(df['Value'], errors='coerce')
-            df = df.dropna(subset=['Value'])
+    if frames:
+        raw = pd.concat(frames, ignore_index=True)
+        raw.columns = [str(c).strip().lower() for c in raw.columns]
 
-        if not df.empty:
-            # Keep latest value per month to avoid duplicate timestamp noise.
-            monthly_key = df.index.to_period('M')
-            df = df[~monthly_key.duplicated(keep='last')]
-            df.index = df.index.to_period('M').to_timestamp()
-            return df.tail(12)
+        aliases = {
+            market,
+            MARKET_UPLOAD_ALIASES.get(market, market),
+            PLATFORM_TO_UPLOAD_ALIAS.get(market, market),
+        }
 
-    # Fallback: latest point only. Do not simulate history here.
-    # Proper 12M history should come from macro_pack_latest/macro_history_12m.csv.
-    if isinstance(fallback_result, dict) and fallback_result.get('value') is not None:
-        dt = pd.to_datetime(fallback_result.get('date', ''), errors='coerce')
+        inds = {
+            indicator,
+            "Jobs" if indicator == "Unemployment" else indicator,
+            "Unemployment" if indicator == "Jobs" else indicator,
+        }
+
+        sub = raw[
+            raw["market"].astype(str).str.upper().isin({str(x).upper() for x in aliases})
+            & raw["indicator"].astype(str).str.lower().isin({str(x).lower() for x in inds})
+        ].copy()
+
+        if not sub.empty:
+            sub["Date"] = pd.to_datetime(sub["date"], errors="coerce")
+            sub["Value"] = pd.to_numeric(sub["value"], errors="coerce")
+            sub = sub.dropna(subset=["Date", "Value"]).sort_values("Date")
+
+            if not sub.empty:
+                sub["Month"] = sub["Date"].dt.to_period("M")
+                sub = sub.drop_duplicates(["Month"], keep="last")
+                sub["Date"] = sub["Month"].dt.to_timestamp()
+                return sub[["Date", "Value"]].set_index("Date").tail(12)
+
+    # Fallback: latest point only. Do not fake history.
+    if isinstance(fallback_result, dict) and fallback_result.get("value") is not None:
+        dt = pd.to_datetime(fallback_result.get("date", ""), errors="coerce")
         if pd.isna(dt):
             dt = pd.Timestamp.today().normalize()
-        dt = dt.to_period('M').to_timestamp()
-        return pd.DataFrame({'Value': [float(fallback_result.get('value'))]}, index=[dt])
+        dt = dt.to_period("M").to_timestamp()
+        return pd.DataFrame({"Value": [float(fallback_result.get("value"))]}, index=[dt])
 
     return pd.DataFrame()
 
