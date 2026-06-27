@@ -356,7 +356,6 @@ else:
 
     if not ok6:
         print("WARNING: Rates Trend assignment line not found.")
-``
 
 
 # ------------------------------------------------------------
