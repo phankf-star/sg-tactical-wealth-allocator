@@ -40,7 +40,7 @@ from pathlib import Path
 from datetime import datetime
 
 import pandas as pd
-
+from manual_seed_parser_block import load_manual_macro_seed, split_manual_seed_for_outputs
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Output config
