@@ -1,2 +1,2 @@
 ﻿generated_utc,notes
-2026-06-26T15:41:50Z,"Global20Engine macro pack generated. MY Inflation uses OpenDOSM official CSV cpi_2d_inflation, division=overall, inflation_yoy. SG and JP rates are excluded from macro pack active monthly fetch path and handled by live adapters in main app."
+2026-06-27T00:04:52Z,"Global20Engine macro pack generated. MY Inflation uses OpenDOSM official CSV cpi_2d_inflation, division=overall, inflation_yoy. SG and JP rates are excluded from macro pack active monthly fetch path and handled by live adapters in main app."

@@ -2,16 +2,42 @@
 HK,Inflation,2026-05-01,2.0,%,C&SD Table 510-60001 Composite CPI YoY,Official / Reviewed,Reviewed row. Replace with live C&SD Table 510-60001 fetch when confirmed in macro fetcher runtime.
 HK,PMI,2026-05-01,50.4,index,S&P Global Hong Kong SAR PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
 HK,Unemployment,2026-05-31,3.7,%,HK Government / C&SD unemployment press release,Official / Parsed,Parsed from official HK unemployment press release; period=March - May 2026.
-JP,Inflation,2026-05-01,1.5,%,Statistics Bureau of Japan latest indicators / CPI,Official / Parsed,Parsed Japan CPI YoY from Statistics Bureau latest indicators; period=May 2026.
+JP,Inflation,2026-01-01,1.6784452296819685,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
+JP,Inflation,2026-02-01,1.419698314108242,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
+JP,Inflation,2026-03-01,1.5915119363395291,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
+JP,Inflation,2026-04-01,1.585903083700435,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
+JP,Inflation,2026-05-01,1.7559262510974616,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
 JP,PMI,2026-06-01,54.9,index,S&P Global Japan Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=June 2026.
-JP,Unemployment,2026-04-01,2.5,%,Statistics Bureau of Japan latest indicators / Labour Force Survey,Official / Parsed,Parsed Japan unemployment rate from Statistics Bureau latest indicators; period=April 2026.
+JP,Unemployment,2025-05-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-06-01,2.5,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-07-01,2.4,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-08-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-09-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-10-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-11-01,2.4,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2025-12-01,2.4,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2026-01-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2026-02-01,2.6,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2026-03-01,2.8,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
+JP,Unemployment,2026-04-01,2.7,%,"Japan Labour Force Survey manual export - unemployment rate, All Japan, Both sexes",Manual official seed,"Filtered Labour force status=Unemployed person, Area=All Japan, Sex=Both sexes"
 MY,Inflation,2026-05-01,2.0,%,OpenDOSM storage CSV cpi_2d_inflation,success,Fetched Malaysia headline CPI inflation YoY from OpenDOSM official CSV; filtered division=overall.
 MY,PMI,2026-05-01,49.9,index,S&P Global Malaysia Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
-SG,Inflation,2026-05-01,1.8,%,SingStat CPI,Official / Reviewed,Reviewed static row pending full SingStat macro-pack integration.
+SG,Inflation,2025-06-01,0.8,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-07-01,0.6,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-08-01,0.5,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-09-01,0.7,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-10-01,1.2,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-11-01,1.2,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2025-12-01,1.2,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2026-01-01,1.4,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2026-02-01,1.2,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2026-03-01,1.8,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2026-04-01,1.8,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
+SG,Inflation,2026-05-01,1.8,% YoY,SingStat CPI YoY manual export - All Items,Manual official seed,Percent change in CPI over corresponding period of previous year
 SG,PMI,2026-05-01,51.0,index,SIPMM Singapore Manufacturing PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
 SG,Unemployment,2026-03-01,2.0,%,MOM / SingStat unemployment,Official / Reviewed,Singapore overall unemployment rate for Mar-26 / 1Q 2026; reviewed row.
 US,Claims,2026-06-20,215.0,k,FRED ICSA,Official / API,US initial claims; converted to thousands.
 US,Inflation,2026-05-01,4.167,%,FRED CPIAUCSL YoY,Official / API,Computed from latest CPI index versus CPI about 12 months earlier.
 US,PMI,2026-05-01,54.0,index,ISM Manufacturing PMI via PRNewswire release,Parsed / Release,Parsed PMI from source; period=May 2026.
-US,Rates,2026-06-24,4.41,%,FRED DGS10,Official / API,US 10-year Treasury constant maturity rate.
+US,Rates,2026-06-25,4.4,%,FRED DGS10,Official / API,US 10-year Treasury constant maturity rate.
 US,Unemployment,2026-05-01,4.3,%,FRED UNRATE,Official / API,US unemployment rate.
