@@ -155,46 +155,100 @@ def fetch_hk_hibor():
     return pd.DataFrame(columns=COLUMNS)
 
 
+
 def fetch_bnm_opr():
-    """Malaysia BNM OPR history. BNM dates are day-first when slash-formatted."""
-    headers = {"Accept": "application/vnd.BNM.API.v1+json"}
+    """Malaysia BNM OPR history1+json"}    """Malaysia BNM OPR history. BNM dates are day-first when slash-formatted."""
+
     urls = [
         "https://api.bnm.gov.my/public/opr",
         f"https://api.bnm.gov.my/public/opr/year/{TODAY.year}",
+        f"https://api.bnm.gov.my/public/opr?year={TODAY.year}",
         f"https://api.bnm.gov.my/public/opr/year/{TODAY.year - 1}",
+        f"https://api.bnm.gov.my/public/opr?year={TODAY.year - 1}",
+        f"https://api.bnm.gov.my/public/opr/year/{TODAY.year - 2}",
+        f"https://api.bnm.gov.my/public/opr?year={TODAY.year - 2}",
     ]
+
     rows = []
+
+    def flatten_json(obj):
+        out = []
+        if isinstance(obj, dict):
+            out.append(obj)
+            for v in obj.values():
+                out.extend(flatten_json(v))
+        elif isinstance(obj, list):
+            for v in obj:
+                out.extend(flatten_json(v))
+        return out
+
     for url in urls:
         try:
             txt = request_text(url, headers=headers)
             payload = json.loads(txt)
-            records = []
-            if isinstance(payload, dict):
-                for key in ["data", "records"]:
-                    if isinstance(payload.get(key), list):
-                        records = payload.get(key)
-                        break
-                if not records and isinstance(payload.get("result"), dict):
-                    records = payload["result"].get("records") or payload["result"].get("data") or []
-            elif isinstance(payload, list):
-                records = payload
-            for r in records or []:
+
+            records = flatten_json(payload)
+            parsed_here = 0
+
+            for r in records:
                 if not isinstance(r, dict):
                     continue
-                dt_raw = r.get("date") or r.get("effective_date") or r.get("Date")
+
+                # BNM can use several date/rate key variants.
+                dt_raw = (
+                    r.get("date")
+                    or r.get("effective_date")
+                    or r.get("effectiveDate")
+                    or r.get("Date")
+                    or r.get("meeting_date")
+                    or r.get("year_dt")
+                )
+
                 val = np.nan
-                for k in ["rate", "opr", "OPR", "value"]:
+                for k in [
+                    "rate",
+                    "opr",
+                    "OPR",
+                    "value",
+                    "new_opr",
+                    "overnight_policy_rate",
+                    "overnight policy rate",
+                ]:
                     if k in r:
                         val = clean_number(r.get(k))
                         if not pd.isna(val):
                             break
+
+                # Secondary fallback: scan numeric values if key names differ.
+                if pd.isna(val):
+                    for k, v in r.items():
+                        kk = str(k).lower()
+                        if any(token in kk for token in ["opr", "rate", "value"]):
+                            val = clean_number(v)
+                            if not pd.isna(val):
+                                break
+
                 dt = normalise_date(dt_raw, dayfirst=True)
-                if pd.notna(dt) and pd.notna(val):
-                    rows.append({"date": dt, "value": val})
+
+                if pd.notna(dt) and pd.notna(val) and -2 <= float(val) <= 25:
+                    rows.append({"date": dt, "value": float(val)})
+                    parsed_here += 1
+
+            print(f"MY BNM parsed {parsed_here} candidate policy records from {url}")
+
         except Exception as e:
             print(f"WARNING: BNM OPR fetch failed for {url}: {e}")
+
     if rows:
-        return daily_step_from_events(pd.DataFrame(rows), "MY", "BNM OpenAPI Overnight Policy Rate (OPR)", "Policy-rate event history forward-filled to daily 252D chart")
+        events = pd.DataFrame(rows)
+        events = events.drop_duplicates(["date", "value"]).sort_values("date")
+        return daily_step_from_events(
+            events,
+            "MY",
+            "BNM OpenAPI Overnight Policy Rate (OPR)",
+            f"Policy-rate event history forward-filled to daily 252D chart; policy points parsed={len(events)}"
+        )
+
     return pd.DataFrame(columns=COLUMNS)
 
 
