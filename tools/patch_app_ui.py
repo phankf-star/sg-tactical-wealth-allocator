@@ -1,10 +1,16 @@
 
+
 from pathlib import Path
 
-APP_FILE = Path("Global20Enginev38ac -keep.py")
+APP_FILE = Path("sg_tactical_wealth_allocator.py")
 
 if not APP_FILE.exists():
+    print("Repo root Python files found:")
+    for f in sorted(Path(".").glob("*.py")):
+        print(" -", f)
     raise FileNotFoundError(f"App file not found: {APP_FILE}")
+
+print(f"Using app file: {APP_FILE}")
 
 text = APP_FILE.read_text(encoding="utf-8")
 
