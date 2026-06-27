@@ -252,8 +252,115 @@ def mini_pmi_bar_chart(df,title,subtitle):
 '''
 text, ok3 = replace_function(text, "mini_pmi_bar_chart", new_mini_pmi_bar_chart)
 
+
+
 # ------------------------------------------------------------
-# PATCH 5: Restore ETF preference constants if function patch removed them
+# PATCH 5: Add rates history reader for 252D rates mini chart
+# ------------------------------------------------------------
+rates_history_helper = '''
+def rates_history_trend_df(market, fallback_result=None, limit=252):
+    rates_file = Path("macro_pack_latest/rates_history_252d.csv")
+
+    if rates_file.exists():
+        try:
+            df = pd.read_csv(rates_file)
+            df.columns = [str(c).strip().lower() for c in df.columns]
+
+            market_cols = [c for c in ["market", "country", "region"] if c in df.columns]
+            date_col = "date" if "date" in df.columns else None
+
+            value_col = None
+            for c in ["value", "rate", "rates", "yield", "close"]:
+                if c in df.columns:
+                    value_col = c
+                    break
+
+            if date_col and value_col:
+                if market_cols:
+                    mcol = market_cols[0]
+                    aliases = {
+                        market,
+                        MARKET_UPLOAD_ALIASES.get(market, market),
+                        PLATFORM_TO_UPLOAD_ALIAS.get(market, market),
+                    }
+
+                    sub = df[
+                        df[mcol].astype(str).str.upper().isin({str(x).upper() for x in aliases})
+                    ].copy()
+                else:
+                    sub = df.copy()
+
+                if "indicator" in sub.columns:
+                    rate_mask = sub["indicator"].astype(str).str.lower().str.contains(
+                        "rate|yield|sora|opr|hibor|boj|dgs10",
+                        regex=True,
+                        na=False
+                    )
+                    if rate_mask.any():
+                        sub = sub[rate_mask].copy()
+
+                sub["Date"] = pd.to_datetime(sub[date_col], errors="coerce")
+                sub["Value"] = pd.to_numeric(sub[value_col], errors="coerce")
+                sub = sub.dropna(subset=["Date", "Value"]).sort_values("Date")
+
+                if not sub.empty:
+                    sub = sub.drop_duplicates(["Date"], keep="last")
+                    return sub[["Date", "Value"]].set_index("Date").tail(limit)
+
+        except Exception:
+            pass
+
+    return macro_trend_df(market, "Rates", fallback_result)
+'''
+
+if "def rates_history_trend_df(" not in text:
+    marker = "def classify(dd):"
+    idx = text.find(marker)
+
+    if idx != -1:
+        text = text[:idx] + rates_history_helper.rstrip() + "\n\n" + text[idx:]
+        print("Inserted rates_history_trend_df before classify.")
+        ok5 = True
+    else:
+        print("WARNING: Could not find insertion marker for rates_history_trend_df.")
+        ok5 = False
+else:
+    print("rates_history_trend_df already present.")
+    ok5 = True
+
+
+# ------------------------------------------------------------
+# PATCH 6: Make Rates Trend use rates_history_252d.csv
+# ------------------------------------------------------------
+old_rates_candidates = [
+    "rates_df=macro_trend_df(index_label,'Rates',rates_res).rename(columns={'Value':'Rates'})",
+    "rates_df = macro_trend_df(index_label,'Rates',rates_res).rename(columns={'Value':'Rates'})",
+    "rates_df=macro_trend_df(index_label, 'Rates', rates_res).rename(columns={'Value':'Rates'})",
+    "rates_df = macro_trend_df(index_label, 'Rates', rates_res).rename(columns={'Value':'Rates'})",
+]
+
+new_rates_line = "rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})"
+
+ok6 = False
+
+if new_rates_line in text:
+    print("Rates Trend already uses rates_history_trend_df.")
+    ok6 = True
+else:
+    for old_rates_line in old_rates_candidates:
+        if old_rates_line in text:
+            text = text.replace(old_rates_line, new_rates_line)
+            print("Patched Rates Trend to use rates_history_trend_df.")
+            ok6 = True
+            break
+
+    if not ok6:
+        print("WARNING: Rates Trend assignment line not found.")
+``
+
+
+# ------------------------------------------------------------
+# PATCH 7: Restore ETF preference constants if function patch removed them
 # ------------------------------------------------------------
 ok4 = False
 
