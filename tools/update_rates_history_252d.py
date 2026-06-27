@@ -325,11 +325,68 @@ def preserve_existing_market(market):
 def main():
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    def latest_macro_rate_step(market):
-        """
-        Build a flat 252D daily step series from latest macro_data.csv Rates value.
-        Used only as fallback when official/history fetch fails.
-        """
+ 
+
+def latest_macro_rate_step(market):
+    """
+    Build a flat 252D daily step series from latest macro_data.csv Rates value.
+    Used only as fallback when official/history fetch fails.
+    """
+    latest_file = Path("macro_pack_latest/macro_data.csv")
+    if not latest_file.exists():
+        return pd.DataFrame(columns=COLUMNS)
+
+    try:
+        df = pd.read_csv(latest_file)
+        df.columns = [str(c).strip().lower() for c in df.columns]
+
+        if not {"market", "indicator", "date", "value"}.issubset(set(df.columns)):
+            return pd.DataFrame(columns=COLUMNS)
+
+        df["market"] = df["market"].astype(str).str.upper()
+        df["indicator"] = df["indicator"].astype(str).str.title()
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
+        df["value"] = pd.to_numeric(df["value"], errors="coerce")
+
+        aliases = {market.upper()}
+
+        if market.upper() == "US":
+            aliases.update({"S&P 500", "NASDAQ", "DJIA"})
+        elif market.upper() == "MY":
+            aliases.update({"KLSE"})
+        elif market.upper() == "HK":
+            aliases.update({"HSI"})
+        elif market.upper() == "SG":
+            aliases.update({"STI"})
+        elif market.upper() == "JP":
+            aliases.update({"NIKKEI 225"})
+
+        sub = df[
+            df["market"].isin(aliases)
+            & df["indicator"].eq("Rates")
+        ].dropna(subset=["date", "value"]).sort_values("date")
+
+        if sub.empty:
+            return pd.DataFrame(columns=COLUMNS)
+
+        latest = sub.iloc[-1]
+        idx = pd.date_range(START, TODAY, freq="D")
+        flat = pd.DataFrame({
+            "date": idx,
+            "value": float(latest["value"]),
+        })
+
+        return make_rows(
+            market,
+            flat,
+            "macro_data.csv latest Rates fallback",
+            "Flat 252D step fallback from latest monthly macro pack Rates value"
+        )
+
+    except Exception as e:
+        print(f"WARNING: latest macro rate fallback failed for {market}: {e}")
+        return pd.DataFrame(columns=COLUMNS)
+
         latest_file = Path("macro_pack_latest/macro_data.csv")
         if not latest_file.exists():
             return pd.DataFrame(columns=COLUMNS)
