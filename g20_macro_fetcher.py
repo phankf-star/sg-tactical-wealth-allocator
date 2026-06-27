@@ -1133,6 +1133,86 @@ def build_macro_pack():
     }
 
 
+
+# ------------------------------------------------------------
+# Macro history 12M updater
+# Keeps a rolling monthly history for dashboard mini charts.
+# Input: latest macro_data.csv rows.
+# Output: macro_pack_latest/macro_history_12m.csv
+# ------------------------------------------------------------
+MACRO_HISTORY_12M_FILE = Path("macro_pack_latest/macro_history_12m.csv")
+
+def _normalise_macro_history_input(df):
+    required = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
+    df = df.copy()
+    df.columns = [str(c).strip().lower() for c in df.columns]
+
+    for c in required:
+        if c not in df.columns:
+            df[c] = ""
+
+    df["market"] = df["market"].astype(str).str.strip()
+    df["indicator"] = df["indicator"].astype(str).str.strip().str.title()
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["value"] = pd.to_numeric(df["value"], errors="coerce")
+
+    df = df.dropna(subset=["date", "value"])
+    df = df[df["market"].ne("")]
+    df = df[df["indicator"].ne("")]
+
+    # Monthly normalisation: one observation per market/indicator/month.
+    df["date"] = df["date"].dt.to_period("M").dt.to_timestamp()
+
+    return df[required]
+
+
+def update_macro_history_12m(latest_macro_df, history_file=MACRO_HISTORY_12M_FILE):
+    latest = _normalise_macro_history_input(latest_macro_df)
+
+    # Keep macro indicators only. Claims N/A rows are excluded automatically because value is non-numeric.
+    keep_indicators = {"Inflation", "Unemployment", "Jobs", "Rates", "PMI"}
+    latest = latest[latest["indicator"].isin(keep_indicators)].copy()
+
+    if history_file.exists():
+        try:
+            old = pd.read_csv(history_file)
+            old = _normalise_macro_history_input(old)
+        except Exception:
+            old = pd.DataFrame(columns=["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"])
+    else:
+        old = pd.DataFrame(columns=["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"])
+
+    combined = pd.concat([old, latest], ignore_index=True)
+
+    if combined.empty:
+        history_file.parent.mkdir(parents=True, exist_ok=True)
+        combined.to_csv(history_file, index=False)
+        print(f"macro_history_12m written: 0 rows -> {history_file}")
+        return combined
+
+    combined["date"] = pd.to_datetime(combined["date"], errors="coerce")
+    combined["value"] = pd.to_numeric(combined["value"], errors="coerce")
+    combined = combined.dropna(subset=["date", "value"])
+
+    combined["month"] = combined["date"].dt.to_period("M").astype(str)
+
+    # Latest row wins for the same market / indicator / month.
+    combined = combined.sort_values(["market", "indicator", "date"])
+    combined = combined.drop_duplicates(["market", "indicator", "month"], keep="last")
+
+    # Rolling 12 months per market + indicator.
+    combined = combined.sort_values(["market", "indicator", "date"])
+    combined = combined.groupby(["market", "indicator"], group_keys=False).tail(12)
+
+    combined = combined.drop(columns=["month"], errors="ignore")
+    combined = combined.sort_values(["market", "indicator", "date"])
+
+    history_file.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(history_file, index=False)
+
+    print(f"macro_history_12m written: {len(combined)} rows -> {history_file}")
+    return combined
+
 if __name__ == "__main__":
     result = build_macro_pack()
     print(json.dumps(result, indent=2))
