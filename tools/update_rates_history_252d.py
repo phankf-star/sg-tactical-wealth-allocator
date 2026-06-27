@@ -327,11 +327,13 @@ def main():
 
  
 
+
 def latest_macro_rate_step(market):
     """
     Build a flat 252D daily step series from latest macro_data.csv Rates value.
     Used only as fallback when official/history fetch fails.
     """
+
     latest_file = Path("macro_pack_latest/macro_data.csv")
     if not latest_file.exists():
         return pd.DataFrame(columns=COLUMNS)
