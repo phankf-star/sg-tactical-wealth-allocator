@@ -267,8 +267,103 @@ def preserve_existing_market(market):
         return pd.DataFrame(columns=COLUMNS)
 
 
+
 def main():
     OUT_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    def latest_macro_rate_step(market):
+        """
+        Build a flat 252D daily step series from latest macro_data.csv Rates value.
+        Used only as fallback when official/history fetch fails.
+        """
+        latest_file = Path("macro_pack_latest/macro_data.csv")
+        if not latest_file.exists():
+            return pd.DataFrame(columns=COLUMNS)
+
+        try:
+            df = pd.read_csv(latest_file)
+            df.columns = [str(c).strip().lower() for c in df.columns]
+
+            if not {"market", "indicator", "date", "value"}.issubset(set(df.columns)):
+                return pd.DataFrame(columns=COLUMNS)
+
+            df["market"] = df["market"].astype(str).str.upper()
+            df["indicator"] = df["indicator"].astype(str).str.title()
+            df["date"] = pd.to_datetime(df["date"], errors="coerce")
+            df["value"] = pd.to_numeric(df["value"], errors="coerce")
+
+            aliases = {market.upper()}
+
+            if market.upper() == "US":
+                aliases.update({"S&P 500", "NASDAQ", "DJIA"})
+            elif market.upper() == "MY":
+                aliases.update({"KLSE"})
+            elif market.upper() == "HK":
+                aliases.update({"HSI"})
+            elif market.upper() == "SG":
+                aliases.update({"STI"})
+            elif market.upper() == "JP":
+                aliases.update({"NIKKEI 225"})
+
+            sub = df[
+                df["market"].isin(aliases)
+                & df["indicator"].eq("Rates")
+            ].dropna(subset=["date", "value"]).sort_values("date")
+
+            if sub.empty:
+                return pd.DataFrame(columns=COLUMNS)
+
+            latest = sub.iloc[-1]
+            idx = pd.date_range(START, TODAY, freq="D")
+            flat = pd.DataFrame({
+                "date": idx,
+                "value": float(latest["value"]),
+            })
+
+            return make_rows(
+                market,
+                flat,
+                "macro_data.csv latest Rates fallback",
+                "Flat 252D step fallback from latest monthly macro pack Rates value"
+            )
+
+        except Exception as e:
+            print(f"WARNING: latest macro rate fallback failed for {market}: {e}")
+            return pd.DataFrame(columns=COLUMNS)
+
+    def choose_market_result(market, df, min_rows=20):
+        """
+        Guarded output selector:
+        1. Use fetched/seed data if enough rows.
+        2. Else preserve existing market history.
+        3. Else use latest macro_data.csv flat fallback.
+        """
+        try:
+            if df is not None and not df.empty and len(df) >= min_rows:
+                print(f"{market}: accepted {len(df)} rows")
+                return df
+
+            if df is not None and not df.empty:
+                print(f"WARNING: {market}: only {len(df)} rows; trying preserved/fallback history")
+            else:
+                print(f"WARNING: {market}: no rows; trying preserved/fallback history")
+
+            preserved = preserve_existing_market(market)
+            if preserved is not None and not preserved.empty and len(preserved) >= min_rows:
+                print(f"{market}: preserved existing {len(preserved)} rows")
+                return preserved
+
+            fallback = latest_macro_rate_step(market)
+            if fallback is not None and not fallback.empty:
+                print(f"{market}: fallback using {len(fallback)} rows")
+                return fallback
+
+            return pd.DataFrame(columns=COLUMNS)
+
+        except Exception as e:
+            print(f"WARNING: choose_market_result failed for {market}: {e}")
+            return pd.DataFrame(columns=COLUMNS)
+
     results = []
 
     fetchers = {
@@ -281,42 +376,40 @@ def main():
     for market, fn in fetchers.items():
         try:
             df = fn()
-            if df is not None and not df.empty:
-                print(f"{market}: fetched {len(df)} rows")
-                results.append(df)
-            else:
-                print(f"WARNING: {market}: no rows fetched")
+            selected = choose_market_result(market, df, min_rows=20)
+            if selected is not None and not selected.empty:
+                results.append(selected)
         except Exception as e:
             print(f"WARNING: {market}: fetch failed: {e}")
+            selected = choose_market_result(market, pd.DataFrame(columns=COLUMNS), min_rows=20)
+            if selected is not None and not selected.empty:
+                results.append(selected)
 
-    # SG / JP: prefer optional repo seed files because live official daily history can be unreliable in hosted runtime.
+    # SG: prefer repo seed/existing because live MAS/SORA daily history is unreliable in hosted runtime.
     sg_seed = load_optional_seed_file(
         "SG",
         ["sg_rates_sora_daily.csv", "SG Domestic Interest Rates 2026-06-26.csv"],
         "SG SORA daily seed / repo CSV",
         dayfirst=True,
     )
-    if sg_seed.empty:
-        sg_seed = preserve_existing_market("SG")
-    if not sg_seed.empty:
-        print(f"SG: using {len(sg_seed)} rows")
-        results.append(sg_seed)
+    sg_selected = choose_market_result("SG", sg_seed, min_rows=20)
+    if sg_selected is not None and not sg_selected.empty:
+        results.append(sg_selected)
     else:
-        print("WARNING: SG: no seed/existing rows found")
+        print("WARNING: SG: no usable seed/existing/fallback rows found")
 
+    # JP: prefer repo seed/existing because BOJ live history can return only partial rows.
     jp_seed = load_optional_seed_file(
         "JP",
         ["jp_rates_call_overnight_daily.csv", "JP Rates.csv", "jp_rates.csv"],
         "BOJ overnight call rate daily seed / repo CSV",
         dayfirst=False,
     )
-    if jp_seed.empty:
-        jp_seed = preserve_existing_market("JP")
-    if not jp_seed.empty:
-        print(f"JP: using {len(jp_seed)} rows")
-        results.append(jp_seed)
+    jp_selected = choose_market_result("JP", jp_seed, min_rows=20)
+    if jp_selected is not None and not jp_selected.empty:
+        results.append(jp_selected)
     else:
-        print("WARNING: JP: no seed/existing rows found")
+        print("WARNING: JP: no usable seed/existing/fallback rows found")
 
     if results:
         combined = pd.concat(results, ignore_index=True)
@@ -327,17 +420,21 @@ def main():
     for c in COLUMNS:
         if c not in combined.columns:
             combined[c] = ""
+
     combined = combined[COLUMNS].copy()
     combined["date"] = pd.to_datetime(combined["date"], errors="coerce")
     combined["value"] = pd.to_numeric(combined["value"], errors="coerce")
     combined = combined.dropna(subset=["date", "value"])
+
     combined = combined.sort_values(["market", "date"])
     combined = combined.drop_duplicates(["market", "date"], keep="last")
     combined = combined.groupby("market", group_keys=False).tail(OUTPUT_ROWS_PER_MARKET)
+
     combined["date"] = combined["date"].dt.strftime("%Y-%m-%d")
     combined = combined.sort_values(["market", "date"])
 
     combined.to_csv(OUT_FILE, index=False)
+
     print(f"rates_history_252d written: {len(combined)} rows -> {OUT_FILE}")
     if not combined.empty:
         print(combined.groupby("market").size().to_string())
