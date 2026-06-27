@@ -1820,6 +1820,7 @@ def _macro_pack_history(market, indicator):
 
 
 
+
 def macro_trend_df(market, indicator, fallback_result=None):
     history_file = Path("macro_pack_latest/macro_history_12m.csv")
 
@@ -1938,6 +1939,61 @@ def render_macro_line_chart(df, title, subtitle='', colour=BLUE, y_title='Value'
     )
 
     st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+
+
+def rates_history_trend_df(market, fallback_result=None, limit=252):
+    rates_file = Path("macro_pack_latest/rates_history_252d.csv")
+
+    if rates_file.exists():
+        try:
+            df = pd.read_csv(rates_file)
+            df.columns = [str(c).strip().lower() for c in df.columns]
+
+            market_cols = [c for c in ["market", "country", "region"] if c in df.columns]
+            date_col = "date" if "date" in df.columns else None
+
+            value_col = None
+            for c in ["value", "rate", "rates", "yield", "close"]:
+                if c in df.columns:
+                    value_col = c
+                    break
+
+            if date_col and value_col:
+                if market_cols:
+                    mcol = market_cols[0]
+                    aliases = {
+                        market,
+                        MARKET_UPLOAD_ALIASES.get(market, market),
+                        PLATFORM_TO_UPLOAD_ALIAS.get(market, market),
+                    }
+
+                    sub = df[
+                        df[mcol].astype(str).str.upper().isin({str(x).upper() for x in aliases})
+                    ].copy()
+                else:
+                    sub = df.copy()
+
+                if "indicator" in sub.columns:
+                    rate_mask = sub["indicator"].astype(str).str.lower().str.contains(
+                        "rate|yield|sora|opr|hibor|boj|dgs10",
+                        regex=True,
+                        na=False
+                    )
+                    if rate_mask.any():
+                        sub = sub[rate_mask].copy()
+
+                sub["Date"] = pd.to_datetime(sub[date_col], errors="coerce")
+                sub["Value"] = pd.to_numeric(sub[value_col], errors="coerce")
+                sub = sub.dropna(subset=["Date", "Value"]).sort_values("Date")
+
+                if not sub.empty:
+                    sub = sub.drop_duplicates(["Date"], keep="last")
+                    return sub[["Date", "Value"]].set_index("Date").tail(limit)
+
+        except Exception:
+            pass
+
+    return macro_trend_df(market, "Rates", fallback_result)
 
 def classify(dd):
     # Drawdown Allocation Engine stance only. Do not generate SELL / STRONG SELL
@@ -2353,6 +2409,7 @@ def mini_trend_chart(df,title,subtitle,colour,fill_colour,y_title=''):
     fig=go.Figure(); fig.add_trace(go.Scatter(x=df.index,y=df.iloc[:,0],mode='lines',line=dict(color=colour,width=3),fill='tozeroy',fillcolor=fill_colour))
     fig.update_layout(height=240, margin=dict(l=10,r=10,t=48,b=10), title=f'{title}<br><sup>{subtitle}</sup>', plot_bgcolor='white', paper_bgcolor='white', showlegend=False, yaxis_title=y_title)
     st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+
 
 
 
@@ -2905,7 +2962,7 @@ def render_market(expanded=False):
             pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
             inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
             unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
-            rates_df=macro_trend_df(index_label,'Rates',rates_res).rename(columns={'Value':'Rates'})
+            rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})
             vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
             tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
             if not tnx_raw.empty and not irx_raw.empty:
