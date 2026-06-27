@@ -192,9 +192,71 @@ def macro_trend_df(market, indicator, fallback_result=None):
 text, ok2 = replace_function(text, "macro_trend_df", new_macro_trend_df)
 
 
+# ------------------------------------------------------------
+# PATCH 4: Clean PMI bar chart title and remove overlapping labels
+# ------------------------------------------------------------
+new_mini_pmi_bar_chart = '''
+def mini_pmi_bar_chart(df,title,subtitle):
+    if df is None or df.empty or 'PMI' not in df.columns:
+        st.info(f'{title}: data unavailable')
+        return
+
+    df = df.copy()
+    df.index = pd.to_datetime(df.index, errors='coerce')
+    df = df[df.index.notna()].sort_index()
+    df['PMI'] = pd.to_numeric(df['PMI'], errors='coerce')
+    df = df.dropna(subset=['PMI']).tail(12)
+
+    if df.empty:
+        st.info(f'{title}: data unavailable')
+        return
+
+    colours = [GREEN if v >= 50 else RED for v in df.PMI]
+
+    # Keep title compact to avoid overlap inside two-column layout.
+    clean_title = 'PMI 12M Monthly Releases'
+
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=df.index,
+        y=df.PMI,
+        marker_color=colours,
+        text=None,
+        hovertemplate='%{x|%b %Y}<br>PMI: %{y:.1f}<extra></extra>'
+    ))
+
+    fig.add_hline(
+        y=50,
+        line_dash='dash',
+        line_color=SLATE,
+        annotation_text='50 Expansion / Contraction',
+        annotation_position='top left'
+    )
+
+    fig.update_layout(
+        height=250,
+        margin=dict(l=10, r=10, t=58, b=10),
+        title=f'{clean_title}<br><sup>{subtitle}</sup>',
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        showlegend=False,
+        yaxis_title='PMI',
+        xaxis=dict(
+            type='date',
+            tickformat='%b %Y',
+            showgrid=False
+        )
+    )
+
+    st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+'''
+text, ok3 = replace_function(text, "mini_pmi_bar_chart", new_mini_pmi_bar_chart)
+
+
 APP_FILE.write_text(text, encoding="utf-8")
 
 print("Patch completed successfully.")
 print(f"Updated file: {APP_FILE}")
 print(f"render_macro_line_chart replaced: {ok1}")
 print(f"macro_trend_df replaced: {ok2}")
+print(f"mini_pmi_bar_chart replaced: {ok3}")
