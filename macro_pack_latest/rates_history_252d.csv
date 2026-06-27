@@ -1,505 +1,757 @@
-﻿market,indicator,date,value,unit,source,source_type,frequency,notes
-JP,Rates,2025-06-12,0.481,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-13,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-16,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-17,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-18,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-19,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-20,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-23,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-24,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-25,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-26,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-27,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-06-30,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-01,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-02,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-03,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-04,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-07,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-08,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-09,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-10,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-11,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-14,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-15,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-16,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-17,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-18,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-22,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-23,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-24,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-25,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-28,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-29,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-30,0.481,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-07-31,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-01,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-04,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-05,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-06,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-07,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-08,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-12,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-13,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-14,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-15,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-18,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-19,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-20,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-21,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-22,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-25,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-26,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-27,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-28,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-08-29,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-01,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-02,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-03,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-04,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-05,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-08,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-09,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-10,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-11,0.48,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-12,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-16,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-17,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-18,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-19,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-22,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-24,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-25,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-26,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-29,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-09-30,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-01,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-02,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-03,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-06,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-07,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-08,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-09,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-10,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-14,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-15,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-16,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-17,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-20,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-21,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-22,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-23,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-24,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-27,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-28,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-29,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-30,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-10-31,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-04,0.476,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-05,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-06,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-07,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-10,0.481,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-11,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-12,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-13,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-14,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-17,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-18,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-19,0.479,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-20,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-21,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-25,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-26,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-27,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-11-28,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-01,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-02,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-03,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-04,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-05,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-08,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-09,0.482,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-10,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-11,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-12,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-15,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-16,0.482,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-17,0.478,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-18,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-19,0.477,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-22,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-23,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-24,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-25,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-26,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-29,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2025-12-30,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-05,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-06,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-07,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-08,0.729,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-09,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-13,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-14,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-15,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-16,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-19,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-20,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-21,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-22,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-23,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-26,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-27,0.736,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-28,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-29,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-01-30,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-02,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-03,0.73,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-04,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-05,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-06,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-09,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-10,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-12,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-13,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-16,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-17,0.73,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-18,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-19,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-20,0.729,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-24,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-25,0.729,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-26,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-02-27,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-02,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-03,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-04,0.73,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-05,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-06,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-09,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-10,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-11,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-12,0.734,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-13,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-16,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-17,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-18,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-19,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-23,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-24,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-25,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-26,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-27,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-30,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-03-31,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-01,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-02,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-03,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-06,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-07,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-08,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-09,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-10,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-13,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-14,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-15,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-16,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-17,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-20,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-21,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-22,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-23,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-24,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-27,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-28,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-04-30,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-01,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-07,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-08,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-11,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-12,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-13,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-14,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-15,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-18,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-19,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-20,0.728,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-21,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-22,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-25,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-26,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-27,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-28,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-05-29,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-01,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-02,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-03,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-04,0.726,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-05,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-08,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-09,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-10,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-11,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-12,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-15,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-16,0.727,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-17,0.978,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-18,0.977,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-19,0.977,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-22,0.977,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-23,0.976,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-JP,Rates,2026-06-24,0.977,%,BOJ Time-Series Data Search manual export - FM01 STRDCLUCON,Manual official seed,daily,Dropped NA/weekend/blank future rows
-SG,Rates,2025-06-26,1.8108,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-06-27,1.6345,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-06-30,1.5598,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-01,1.4297,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-02,1.4954,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-03,1.5695,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-04,1.4896,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-07,1.5986,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-08,1.6566,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-09,1.6217,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-10,1.6104,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-11,1.7048,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-14,1.6642,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-15,1.5284,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-16,1.5451,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-17,1.3029,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-18,1.3181,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-21,1.2996,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-22,1.4564,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-23,1.8136,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-24,1.9165,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-25,1.8852,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-28,1.7849,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-29,1.8668,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-30,1.8246,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-07-31,1.7516,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-01,1.5817,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-04,1.6645,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-05,1.6922,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-06,1.603,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-07,1.6337,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-08,1.6067,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-11,1.6123,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-12,1.3941,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-13,1.3742,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-14,1.3053,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-15,1.1958,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-18,1.2518,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-19,1.4948,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-20,1.7069,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-21,1.5064,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-22,1.2648,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-25,1.1347,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-26,0.9504,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-27,0.8668,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-28,0.9728,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-08-29,1.0396,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-01,0.7261,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-02,0.9315,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-03,1.4808,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-04,1.4707,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-05,1.7007,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-08,1.6383,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-09,1.7149,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-10,1.4302,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-11,1.3468,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-12,1.3736,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-15,1.3764,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-16,1.1235,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-17,1.1218,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-18,1.1129,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-19,1.5372,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-22,1.4201,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-23,1.3212,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-24,1.218,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-25,1.318,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-26,1.3773,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-29,1.3755,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-09-30,1.199,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-01,1.0402,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-02,1.0847,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-03,1.2469,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-06,0.9886,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-07,1.1621,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-08,1.243,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-09,1.5033,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-10,1.4439,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-13,1.2878,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-14,1.2879,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-15,1.2249,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-16,1.1306,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-17,1.3384,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-21,1.2262,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-22,1.1649,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-23,1.1507,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-24,1.2447,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-27,1.1525,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-28,0.9414,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-29,0.9622,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-30,1.1456,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-10-31,1.3515,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-03,1.0306,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-04,0.9741,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-05,0.8707,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-06,0.8568,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-07,0.9396,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-10,1.0879,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-11,0.9941,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-12,0.9166,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-13,1.0034,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-14,1.0216,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-17,1.2845,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-18,1.1555,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-19,1.2484,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-20,1.3935,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-21,1.6685,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-24,1.267,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-25,1.0782,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-26,1.1713,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-27,1.27,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-11-28,1.0518,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-01,1.0297,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-02,0.9457,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-03,0.9624,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-04,1.0027,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-05,1.1351,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-08,1.1503,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-09,1.0664,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-10,1.0377,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-11,1.0593,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-12,1.1768,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-15,1.1563,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-16,1.2652,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-17,1.2629,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-18,1.279,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-19,1.3529,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-22,1.329,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-23,1.2776,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-24,1.2334,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-26,1.2221,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-29,1.3414,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-30,1.3212,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2025-12-31,0.8949,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-02,1.0119,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-05,1.097,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-06,1.1005,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-07,1.018,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-08,1.0286,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-09,1.0545,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-12,0.9742,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-13,0.9285,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-14,1.0614,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-15,1.3342,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-16,1.2119,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-19,0.9821,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-20,0.9284,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-21,0.9361,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-22,1.1667,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-23,1.3741,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-26,1.4489,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-27,1.2136,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-28,1.31,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-29,1.4553,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-01-30,1.1092,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-02,1.1251,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-03,0.9793,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-04,0.8908,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-05,0.9307,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-06,0.8641,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-09,0.9142,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-10,0.8694,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-11,0.8678,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-12,0.9956,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-13,1.0513,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-16,1.0894,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-19,1.337,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-20,1.294,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-23,1.1091,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-24,1.0422,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-25,1.0786,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-26,1.001,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-02-27,1.0528,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-02,1.0562,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-03,0.8424,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-04,0.8154,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-05,0.8024,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-06,0.88,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-09,1.0054,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-10,0.9932,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-11,1.0022,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-12,0.8864,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-13,0.8809,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-16,0.9103,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-17,0.9394,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-18,0.9678,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-19,1.1503,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-20,1.2621,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-23,1.2026,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-24,1.1609,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-25,1.1783,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-26,1.1312,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-27,1.2085,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-30,1.1552,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-03-31,0.9954,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-01,0.8715,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-02,0.9834,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-06,0.9769,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-07,1.0277,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-08,1.0722,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-09,1.0477,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-10,0.8033,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-13,0.9324,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-14,0.8462,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-15,0.7953,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-16,0.8818,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-17,0.8942,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-20,0.9409,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-21,1.0024,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-22,0.9162,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-23,0.9772,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-24,1.0172,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-27,1.1487,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-28,1.2899,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-29,1.3069,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-04-30,1.361,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-04,1.4077,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-05,1.4564,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-06,1.2896,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-07,1.3195,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-08,1.4596,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-11,1.3115,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-12,1.1227,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-13,1.1313,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-14,1.2718,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-15,1.1891,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-18,1.1387,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-19,1.1397,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-20,1.1071,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-21,1.1029,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-22,0.9842,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-25,0.906,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-26,0.8869,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-28,0.7564,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-05-29,0.8704,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-02,0.9175,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-03,0.9967,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-04,0.9381,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-05,1.0435,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-08,1.2059,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-09,1.3253,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-10,1.245,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-11,1.1747,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-12,1.1693,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-15,1.0038,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-16,0.7736,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-17,0.8169,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-18,0.934,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-19,1.0328,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-22,1.1041,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-23,1.0471,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-24,1.0841,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
-SG,Rates,2026-06-25,1.1553,%,MAS Domestic Interest Rates manual export - SORA,Manual official seed,daily,Manual official MAS SORA daily seed; Year/Month forward-filled by parser
+market,date,value,indicator,unit,source,source_type,notes
+HK,2025-05-19,1.19048,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-20,0.96036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-21,0.7578,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-22,0.66613,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-23,0.58964,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-26,0.56917,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-27,0.60119,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-28,0.59589,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-29,0.58857,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-05-30,0.58762,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-02,0.88893,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-03,0.87423,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-04,0.76952,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-05,0.7,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-06,0.63952,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-09,0.55982,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-10,0.54524,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-11,0.62119,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-12,0.63185,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-13,0.5981,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-16,0.53952,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-17,0.52452,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-18,0.5403,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-19,0.53506,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-20,0.52845,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-23,0.68363,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-24,0.74714,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-25,0.90964,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-26,0.96554,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-27,0.83036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-06-30,0.72744,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-02,0.72958,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-03,0.7125,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-04,0.85875,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-07,1.05446,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-08,1.07488,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-09,1.10143,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-10,1.03304,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-11,1.08191,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-14,1.14857,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-15,1.13905,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-16,1.17482,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-17,1.17726,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-18,1.07321,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-21,0.91036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-22,0.92958,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-23,0.93817,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-24,0.89857,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-25,0.91679,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-28,1.02321,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-29,1.02143,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-30,1.03244,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-07-31,1.03363,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-01,0.9931,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-04,0.93762,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-06,0.87774,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-07,0.96494,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-08,0.95893,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-11,0.95202,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-12,0.90893,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-13,0.91036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-14,1.04524,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-15,1.45095,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-18,2.01393,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-19,2.57417,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-20,2.85774,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-21,2.84191,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-22,2.7706,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-25,2.7272,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-26,2.81464,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-27,3.2331,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-28,3.30649,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-08-29,3.29655,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-01,3.15345,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-02,3.14816,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-03,2.84964,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-04,2.96702,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-05,3.00018,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-09,3.04369,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-10,3.08625,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-11,3.0372,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-12,3.16196,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-15,3.19036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-16,3.2175,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-17,3.21107,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-18,3.36089,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-19,3.41607,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-22,3.6131,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-23,3.91107,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-25,3.62202,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-26,3.60661,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-29,3.59804,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-09-30,3.53762,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-02,3.49685,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-03,3.51464,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-06,3.58667,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-08,3.55417,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-09,3.52036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-10,3.48435,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-13,3.44024,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-14,3.50423,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-15,3.42417,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-16,3.46494,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-17,3.53167,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-20,3.57857,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-21,3.66411,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-22,3.53185,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-23,3.54095,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-24,3.47292,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-27,3.5,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-28,3.43738,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-30,3.41536,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-10-31,3.42911,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-03,3.38173,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-04,3.315,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-05,3.16131,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-06,3.11845,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-07,3.04637,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-10,3.02268,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-11,3.01982,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-12,3.11661,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-13,3.09756,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-14,3.06351,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-17,3.00429,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-18,2.87762,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-19,2.28369,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-20,2.41036,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-21,2.495,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-24,2.6256,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-25,2.81369,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-26,2.97768,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-27,3.2428,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-11-28,3.18286,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-01,2.93488,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-02,2.80232,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-03,2.88458,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-04,3.03482,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-05,3.07512,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-08,3.09571,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-09,3.13316,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-10,3.11435,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-11,3.13387,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-12,3.03952,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-15,2.97554,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-16,3.12756,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-17,3.25381,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-18,3.18363,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-19,3.16798,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-22,3.1175,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-23,3.10637,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-24,3.28911,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-29,3.3506,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-30,3.21107,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2025-12-31,3.07548,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-02,2.6225,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-05,2.67226,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-06,2.97869,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-07,2.95518,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-08,3.00798,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-09,2.86369,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-12,2.83881,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-13,2.69,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-14,2.64786,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-15,2.84857,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-16,2.84095,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-19,2.77673,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-20,2.75923,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-21,2.72893,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-22,2.80405,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-23,2.79292,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-26,2.78167,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-27,2.74571,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-28,2.66321,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-29,2.65,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-01-30,2.61357,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-02,2.53363,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-03,2.51994,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-04,2.49435,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-05,2.59452,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-06,2.58815,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-09,2.55,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-10,2.50446,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-11,2.48268,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-12,2.5,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-13,2.51464,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-16,2.45792,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-20,2.47673,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-23,2.43952,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-24,2.34238,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-25,2.35375,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-26,2.4322,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-02-27,2.41321,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-02,2.35518,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-03,2.30446,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-04,2.41399,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-05,2.31179,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-06,2.19613,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-09,2.04524,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-10,2.02083,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-11,2.02982,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-12,2.02982,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-13,2.07583,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-16,2.05637,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-17,2.08173,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-18,2.07298,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-19,2.05446,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-20,2.02375,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-23,1.95107,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-24,1.95,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-25,2.12548,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-26,2.41316,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-27,2.44786,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-30,2.28292,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-03-31,2.23506,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-01,1.97655,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-02,1.98601,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-08,2.07798,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-09,2.32321,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-10,2.24024,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-13,2.23244,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-14,2.30976,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-15,2.29649,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-16,2.34571,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-17,2.55143,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-20,2.43577,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-21,2.44286,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-22,2.47631,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-23,2.48577,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-24,2.48815,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-27,2.45732,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-28,2.43667,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-29,2.43387,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-04-30,2.44238,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-04,2.4431,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-05,2.48887,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-06,2.47845,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-07,2.5147,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-08,2.61613,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-11,2.68387,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-12,2.7,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-13,2.7,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-14,2.65518,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-15,2.63881,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-18,2.62619,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-19,2.6,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-20,2.57262,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-21,2.59268,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-22,2.6,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-26,2.57298,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-27,2.6,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-28,2.65143,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+HK,2026-05-29,2.60923,Rates,%,HKMA Open API HIBOR daily,Official / History,Preferred HKMA HIBOR field used where available
+JP,2025-06-12,0.481,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-13,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-16,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-17,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-18,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-19,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-20,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-23,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-24,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-25,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-26,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-27,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-06-30,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-01,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-02,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-03,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-04,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-07,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-08,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-09,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-10,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-11,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-14,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-15,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-16,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-17,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-18,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-22,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-23,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-24,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-25,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-28,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-29,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-30,0.481,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-07-31,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-01,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-04,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-05,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-06,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-07,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-08,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-12,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-13,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-14,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-15,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-18,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-19,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-20,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-21,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-22,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-25,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-26,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-27,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-28,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-08-29,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-01,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-02,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-03,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-04,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-05,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-08,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-09,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-10,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-11,0.48,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-12,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-16,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-17,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-18,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-19,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-22,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-24,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-25,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-26,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-29,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-09-30,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-01,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-02,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-03,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-06,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-07,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-08,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-09,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-10,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-14,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-15,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-16,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-17,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-20,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-21,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-22,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-23,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-24,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-27,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-28,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-29,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-30,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-10-31,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-04,0.476,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-05,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-06,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-07,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-10,0.481,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-11,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-12,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-13,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-14,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-17,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-18,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-19,0.479,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-20,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-21,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-25,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-26,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-27,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-11-28,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-01,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-02,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-03,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-04,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-05,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-08,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-09,0.482,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-10,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-11,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-12,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-15,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-16,0.482,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-17,0.478,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-18,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-19,0.477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-22,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-23,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-24,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-25,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-26,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-29,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2025-12-30,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-05,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-06,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-07,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-08,0.729,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-09,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-13,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-14,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-15,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-16,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-19,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-20,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-21,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-22,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-23,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-26,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-27,0.736,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-28,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-29,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-01-30,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-02,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-03,0.73,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-04,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-05,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-06,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-09,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-10,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-12,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-13,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-16,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-17,0.73,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-18,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-19,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-20,0.729,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-24,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-25,0.729,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-26,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-02-27,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-02,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-03,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-04,0.73,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-05,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-06,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-09,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-10,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-11,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-12,0.734,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-13,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-16,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-17,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-18,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-19,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-23,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-24,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-25,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-26,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-27,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-30,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-03-31,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-01,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-02,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-03,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-06,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-07,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-08,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-09,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-10,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-13,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-14,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-15,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-16,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-17,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-20,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-21,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-22,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-23,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-24,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-27,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-28,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-04-30,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-01,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-07,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-08,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-11,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-12,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-13,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-14,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-15,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-18,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-19,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-20,0.728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-21,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-22,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-25,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-26,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-27,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-28,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-05-29,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-01,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-02,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-03,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-04,0.726,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-05,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-08,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-09,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-10,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-11,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-12,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-15,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-16,0.727,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-17,0.978,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-18,0.977,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-19,0.977,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-22,0.977,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-23,0.976,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+JP,2026-06-24,0.977,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-06-26,1.8108,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-06-27,1.6345,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-06-30,1.5598,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-01,1.4297,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-02,1.4954,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-03,1.5695,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-04,1.4896,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-07,1.5986,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-08,1.6566,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-09,1.6217,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-10,1.6104,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-11,1.7048,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-14,1.6642,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-15,1.5284,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-16,1.5451,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-17,1.3029,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-18,1.3181,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-21,1.2996,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-22,1.4564,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-23,1.8136,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-24,1.9165,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-25,1.8852,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-28,1.7849,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-29,1.8668,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-30,1.8246,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-07-31,1.7516,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-01,1.5817,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-04,1.6645,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-05,1.6922,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-06,1.603,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-07,1.6337,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-08,1.6067,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-11,1.6123,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-12,1.3941,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-13,1.3742,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-14,1.3053,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-15,1.1958,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-18,1.2518,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-19,1.4948,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-20,1.7069,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-21,1.5064,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-22,1.2648,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-25,1.1347,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-26,0.9504,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-27,0.8668,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-28,0.9728,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-08-29,1.0396,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-01,0.7261,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-02,0.9315,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-03,1.4808,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-04,1.4707,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-05,1.7007,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-08,1.6383,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-09,1.7149,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-10,1.4302,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-11,1.3468,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-12,1.3736,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-15,1.3764,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-16,1.1235,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-17,1.1218,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-18,1.1129,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-19,1.5372,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-22,1.4201,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-23,1.3212,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-24,1.218,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-25,1.318,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-26,1.3773,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-29,1.3755,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-09-30,1.199,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-01,1.0402,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-02,1.0847,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-03,1.2469,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-06,0.9886,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-07,1.1621,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-08,1.243,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-09,1.5033,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-10,1.4439,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-13,1.2878,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-14,1.2879,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-15,1.2249,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-16,1.1306,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-17,1.3384,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-21,1.2262,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-22,1.1649,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-23,1.1507,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-24,1.2447,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-27,1.1525,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-28,0.9414,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-29,0.9622,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-30,1.1456,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-10-31,1.3515,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-03,1.0306,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-04,0.9741,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-05,0.8707,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-06,0.8568,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-07,0.9396,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-10,1.0879,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-11,0.9941,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-12,0.9166,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-13,1.0034,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-14,1.0216,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-17,1.2845,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-18,1.1555,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-19,1.2484,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-20,1.3935,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-21,1.6685,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-24,1.267,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-25,1.0782,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-26,1.1713,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-27,1.27,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-11-28,1.0518,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-01,1.0297,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-02,0.9457,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-03,0.9624,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-04,1.0027,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-05,1.1351,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-08,1.1503,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-09,1.0664,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-10,1.0377,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-11,1.0593,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-12,1.1768,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-15,1.1563,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-16,1.2652,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-17,1.2629,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-18,1.279,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-19,1.3529,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-22,1.329,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-23,1.2776,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-24,1.2334,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-26,1.2221,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-29,1.3414,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-30,1.3212,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2025-12-31,0.8949,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-02,1.0119,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-05,1.097,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-06,1.1005,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-07,1.018,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-08,1.0286,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-09,1.0545,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-12,0.9742,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-13,0.9285,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-14,1.0614,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-15,1.3342,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-16,1.2119,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-19,0.9821,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-20,0.9284,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-21,0.9361,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-22,1.1667,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-23,1.3741,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-26,1.4489,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-27,1.2136,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-28,1.31,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-29,1.4553,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-01-30,1.1092,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-02,1.1251,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-03,0.9793,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-04,0.8908,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-05,0.9307,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-06,0.8641,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-09,0.9142,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-10,0.8694,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-11,0.8678,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-12,0.9956,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-13,1.0513,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-16,1.0894,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-19,1.337,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-20,1.294,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-23,1.1091,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-24,1.0422,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-25,1.0786,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-26,1.001,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-02-27,1.0528,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-02,1.0562,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-03,0.8424,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-04,0.8154,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-05,0.8024,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-06,0.88,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-09,1.0054,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-10,0.9932,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-11,1.0022,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-12,0.8864,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-13,0.8809,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-16,0.9103,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-17,0.9394,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-18,0.9678,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-19,1.1503,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-20,1.2621,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-23,1.2026,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-24,1.1609,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-25,1.1783,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-26,1.1312,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-27,1.2085,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-30,1.1552,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-03-31,0.9954,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-01,0.8715,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-02,0.9834,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-06,0.9769,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-07,1.0277,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-08,1.0722,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-09,1.0477,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-10,0.8033,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-13,0.9324,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-14,0.8462,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-15,0.7953,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-16,0.8818,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-17,0.8942,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-20,0.9409,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-21,1.0024,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-22,0.9162,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-23,0.9772,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-24,1.0172,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-27,1.1487,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-28,1.2899,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-29,1.3069,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-04-30,1.361,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-04,1.4077,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-05,1.4564,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-06,1.2896,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-07,1.3195,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-08,1.4596,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-11,1.3115,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-12,1.1227,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-13,1.1313,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-14,1.2718,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-15,1.1891,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-18,1.1387,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-19,1.1397,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-20,1.1071,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-21,1.1029,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-22,0.9842,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-25,0.906,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-26,0.8869,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-28,0.7564,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-05-29,0.8704,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-02,0.9175,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-03,0.9967,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-04,0.9381,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-05,1.0435,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-08,1.2059,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-09,1.3253,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-10,1.245,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-11,1.1747,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-12,1.1693,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-15,1.0038,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-16,0.7736,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-17,0.8169,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-18,0.934,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-19,1.0328,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-22,1.1041,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-23,1.0471,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-24,1.0841,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
+SG,2026-06-25,1.1553,Rates,%,Preserved existing rates_history_252d.csv,Official / History,Fallback preserved from previous generated file
