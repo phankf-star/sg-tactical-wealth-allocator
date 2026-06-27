@@ -1,0 +1,40 @@
+
+name: Patch Macro History 12M
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-macro-history-12m:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run macro history patch
+        run: python tools/patch_macro_history_12m.py
+
+      - name: Show git diff
+        run: git diff -- g20_macro_fetcher.py
+
+      - name: Commit patched macro fetcher
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          if git diff --quiet; then
+            echo "No changes to commit."
+          else
+            git add g20_macro_fetcher.py
+            git commit -m "Add rolling 12M macro history output"
+            git push
+          fi
