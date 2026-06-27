@@ -1526,6 +1526,67 @@ def _normalise_series_values(values, limit=252):
     except Exception:
         return []
 
+
+def svg_plotly_lite_sparkline(values, colour=BLUE, limit=126, high_label='', current_label='', title=''):
+    # Plotly-lite SVG sparkline for Executive KPI cards.
+    # Uses SVG because these cards are rendered as HTML via st.markdown.
+    vals = _normalise_series_values(values, limit=limit)
+    if len(vals) < 2:
+        return '<div class="mini-chart-empty">Insufficient data</div>'
+    vmin, vmax = min(vals), max(vals)
+    if vmax == vmin:
+        vmax = vmin + 1e-9
+    w, h = 252, 104
+    pad_l, pad_r, pad_t, pad_b = 14, 12, 16, 22
+    chart_w = w - pad_l - pad_r
+    chart_h = h - pad_t - pad_b
+    step = chart_w / max(len(vals)-1, 1)
+    pts = []
+    for i, v in enumerate(vals):
+        x = pad_l + i * step
+        y = pad_t + chart_h - ((v - vmin) / (vmax - vmin)) * chart_h
+        pts.append((x, y))
+    line = ' '.join([f'{x:.1f},{y:.1f}' for x, y in pts])
+    area = f'{pad_l},{pad_t + chart_h:.1f} ' + line + f' {w-pad_r},{pad_t + chart_h:.1f}'
+    hi_idx = max(range(len(vals)), key=lambda i: vals[i])
+    lo_idx = min(range(len(vals)), key=lambda i: vals[i])
+    hx, hy = pts[hi_idx]
+    lx, ly = pts[lo_idx]
+    cx, cy = pts[-1]
+    high_text = high_label or f'{vals[hi_idx]:,.0f}'
+    cur_text = current_label or f'{vals[-1]:,.0f}'
+    title_text = hesc(title) if title else ' '
+    grid_y1 = pad_t + chart_h * 0.33
+    grid_y2 = pad_t + chart_h * 0.66
+    ht_x = max(34, min(w-38, hx))
+    ct_x = max(34, min(w-30, cx))
+    ct_y = min(h-10, max(26, cy + 16))
+    gradient_id = f"sparkFill{abs(hash(tuple(round(x,4) for x in vals[-8:]))) % 100000}"
+    return f"""
+    <svg viewBox="0 0 {w} {h}" class="xec-mini-svg plotly-lite-spark" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="{gradient_id}" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="{colour}" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="{colour}" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <rect x="0" y="0" width="{w}" height="{h}" rx="12" fill="#FFFFFF"/>
+      <text x="14" y="13" font-size="8.8" fill="#64748B" font-weight="700">{title_text}</text>
+      <line x1="{pad_l}" x2="{w-pad_r}" y1="{grid_y1:.1f}" y2="{grid_y1:.1f}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="2 3"/>
+      <line x1="{pad_l}" x2="{w-pad_r}" y1="{grid_y2:.1f}" y2="{grid_y2:.1f}" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="2 3"/>
+      <line x1="{pad_l}" x2="{w-pad_r}" y1="{pad_t+chart_h:.1f}" y2="{pad_t+chart_h:.1f}" stroke="#CBD5E1" stroke-width="1"/>
+      <polygon points="{area}" fill="url(#{gradient_id})"/>
+      <polyline points="{line}" fill="none" stroke="{colour}" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="{hx:.1f}" cy="{hy:.1f}" r="3.4" fill="#16A34A" stroke="#FFFFFF" stroke-width="1.5"/>
+      <circle cx="{lx:.1f}" cy="{ly:.1f}" r="2.8" fill="#F59E0B" stroke="#FFFFFF" stroke-width="1.2" opacity="0.95"/>
+      <circle cx="{cx:.1f}" cy="{cy:.1f}" r="4.0" fill="#EF4444" stroke="#FFFFFF" stroke-width="1.6"/>
+      <text x="{ht_x:.1f}" y="{max(24, hy-8):.1f}" text-anchor="middle" font-size="8.5" fill="#16A34A" font-weight="700">{high_text}</text>
+      <text x="{ct_x:.1f}" y="{ct_y:.1f}" text-anchor="middle" font-size="8.5" fill="#EF4444" font-weight="700">{cur_text}</text>
+      <text x="{pad_l}" y="{h-5}" font-size="7.6" fill="#94A3B8">{len(vals)} observations</text>
+      <text x="{w-pad_r}" y="{h-5}" text-anchor="end" font-size="7.6" fill="#94A3B8">Latest</text>
+    </svg>
+    """
+
 def svg_price_high_current(values, colour=BLUE, limit=126, high_label='', current_label=''):
     vals = _normalise_series_values(values, limit=limit)
     if len(vals) < 2:
@@ -2491,7 +2552,7 @@ def render_executive():
     z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
     risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'
     z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
-    recent_price=ud['Close'].tail(126).copy(); price_mini=svg_price_high_current(recent_price,BLUE,126,'',''); drawdown_mini=svg_price_high_current(recent_price,structural_colour,126,f'{peak:,.0f}',f'{close:,.0f}'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
+    recent_price=ud['Close'].dropna().tail(126); recent_price=recent_price[recent_price > 0]; price_mini=svg_plotly_lite_sparkline(recent_price.values,BLUE,limit=126,title='6M price sparkline'); drawdown_mini=svg_plotly_lite_sparkline(recent_price.values,structural_colour,limit=126,high_label=f'{peak:,.0f}',current_label=f'{close:,.0f}',title='Peak-to-current path'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
     next_trigger_compact=compact_next_trigger_label(zone); marker_label='Fully deployed' if next_trigger_compact=='Fully deployed' else f'Next: {next_trigger_compact}'
     progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8))
     stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
@@ -2670,8 +2731,8 @@ def render_market(expanded=False):
         st.markdown('## 🌦️ Live Market & Trend Monitor')
         st.caption('Diagnostic layer only. The Executive Centre remains the summary / decision view; this section shows the supporting price, macro, valuation, drawdown and trigger evidence.')
 
-        # 1. Yahoo-style price chart. Visible once the monitor is opened.
-        st.markdown('### 📉 Yahoo-style Index Price Chart')
+        # 1. Index price chart. Visible once the monitor is opened.
+        st.markdown('### 📉 Index Price Chart')
         render_yahoo_style_index_chart(ud,index_label,ticker)
 
         current_proxy=st.session_state.get('pmi_proxy_label',pmi_proxy_default['label'])
