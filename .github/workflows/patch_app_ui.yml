@@ -22,9 +22,9 @@ jobs:
 
       - name: Run app UI patch
         run: python tools/patch_app_ui.py
-
+      
       - name: Show git diff
-        run: git diff -- "Global20Enginev38ac -keep.py"
+        run: git diff -- "sg_tactical_wealth_allocator.py"
 
       - name: Commit patched app file
         run: |
@@ -34,7 +34,7 @@ jobs:
           if git diff --quiet; then
             echo "No changes to commit."
           else
-            git add "Global20Enginev38ac -keep.py"
+            git add "sg_tactical_wealth_allocator.py"
             git commit -m "Patch app UI macro mini chart axis and index chart wording"
             git push
           fi
