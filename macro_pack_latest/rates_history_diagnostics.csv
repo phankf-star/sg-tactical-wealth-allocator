@@ -1,29 +1,12 @@
-﻿market,adapter,endpoint,status,rows,latest,reason,tested_at
-US,FRED DGS10 daily,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,failed,0,,The read operation timed out,2026-06-27 00:06:22 UTC
-US,Yahoo ^TNX daily fallback,https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&interval=1d,accepted,248,2026-06-26=4.372000217437744,,2026-06-27 00:06:22 UTC
-HK,HKMA daily HIBOR,https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?pagesize=1000&sortby=end_of_day&sortorder=desc,accepted,252,2026-05-29=2.60923,,2026-06-27 00:06:25 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr,reached,0,,Parsed 0 candidate policy records,2026-06-27 00:06:26 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2026,reached,3,,Parsed 3 candidate policy records,2026-06-27 00:06:27 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2026,reached,0,,Parsed 0 candidate policy records,2026-06-27 00:06:28 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2025,reached,6,,Parsed 6 candidate policy records,2026-06-27 00:06:30 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2025,reached,0,,Parsed 0 candidate policy records,2026-06-27 00:06:31 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2024,reached,8,,Parsed 8 candidate policy records,2026-06-27 00:06:32 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2024,reached,0,,Parsed 0 candidate policy records,2026-06-27 00:06:33 UTC
-MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr | https://api.bnm.gov.my/public/opr/year/2026 | https://api.bnm.gov.my/public/opr?year=2026,accepted,252,2026-06-26=2.75,Policy points parsed=15,2026-06-27 00:06:33 UTC
-JP,BOJ FM01 STRDCLUCON daily v5,https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=json&lang=en&db=FM01&startDate=202306&code=STRDCLUCON,failed,0,,JSON reached but no date/value rows parsed,2026-06-27 00:06:34 UTC
-JP,BOJ FM01 STRDCLUCON daily v5,https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=json&lang=en&db=FM01&startDate=202306&code=STRDCLUCON%40D,failed,0,,HTTP Error 400: Bad Request,2026-06-27 00:06:35 UTC
-JP,BOJ FM01 STRDCLUCON daily v5,https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=json&lang=en&db=FM01&startDate=202306&code=STRDCLUCON%40D,failed,0,,JSON reached but no date/value rows parsed,2026-06-27 00:06:35 UTC
-JP,BOJ FM01 STRDCLUCON daily v5,https://www.stat-search.boj.or.jp/api/v1/getDataCode?format=csv&lang=en&db=FM01&startDate=202306&code=STRDCLUCON,partial,1,2026-06-26=0.977,Low row count; JP CSV raw preview written,2026-06-27 00:06:37 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,reached,0,,Direct GET parsed candidate rows,2026-06-27 00:06:38 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,post_1_reached,0,,POST candidate 1,2026-06-27 00:06:40 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,post_2_reached,0,,POST candidate 2,2026-06-27 00:06:40 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,post_3_reached,0,,POST candidate 3,2026-06-27 00:06:42 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,post_4_reached,0,,POST candidate 4,2026-06-27 00:06:43 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,post_5_reached,0,,POST candidate 5,2026-06-27 00:06:44 UTC
-SG,MAS Domestic Interest Rates HTML SORA,https://eservices.mas.gov.sg/statistics/dir/domesticinterestrates.aspx,failed,0,,No MAS SORA rows parsed; raw preview written,2026-06-27 00:06:44 UTC
-SG,SG SORA daily redistributor fallback,https://straitsdata.com/finance/mas,reached,10,,Parsed 10 SORA candidate rows,2026-06-27 00:06:45 UTC
-SG,SG SORA daily redistributor fallback,https://www.toolsg.com/en/sora-index,reached,0,,Parsed 0 SORA candidate rows,2026-06-27 00:06:46 UTC
-SG,SG SORA daily redistributor fallback,https://dailysora.org/,reached,0,,Parsed 0 SORA candidate rows,2026-06-27 00:06:48 UTC
-SG,SG SORA daily redistributor fallback,https://straitsdata.com/finance/mas | https://www.toolsg.com/en/sora-index | https://dailysora.org/,partial,10,2026-06-25=1.1553,Daily SORA redistributor history below 20 rows,2026-06-27 00:06:48 UTC
-SG,SG SORA combined MAS+redistributor,MAS HTML + redistributor,partial,10,2026-06-25=1.1553,Combined SG daily SORA rows,2026-06-27 00:06:48 UTC
-SG,SingStat/data.gov.sg monthly interest-rate matrix,https://data.gov.sg/api/action/datastore_search?resource_id=d_5fe5a4bb4a1ecc4d8a56a095832e2b24&limit=100,failed,8,,No recognised monthly interest-rate rows parsed,2026-06-27 00:06:50 UTC
+market,adapter,endpoint,status,rows,latest,reason,tested_at
+US,FRED DGS10 daily,https://fred.stlouisfed.org/graph/fredgraph.csv?id=DGS10,failed,0,,The read operation timed out,2026-06-27 14:18:40 UTC
+US,Yahoo ^TNX daily fallback,https://query1.finance.yahoo.com/v8/finance/chart/%5ETNX?range=1y&interval=1d,accepted,247,2026-06-18=4.451000213623047,,2026-06-27 14:18:40 UTC
+HK,HKMA daily HIBOR,https://api.hkma.gov.hk/public/market-data-and-statistics/monthly-statistical-bulletin/er-ir/hk-interbank-ir-daily?pagesize=1000&sortby=end_of_day&sortorder=desc,accepted,252,2026-05-29=2.60923,,2026-06-27 14:18:43 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr,reached,1,,Parsed 1 candidate policy records,2026-06-27 14:18:44 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2026,reached,3,,Parsed 3 candidate policy records,2026-06-27 14:18:45 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2026,reached,1,,Parsed 1 candidate policy records,2026-06-27 14:18:46 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2025,reached,6,,Parsed 6 candidate policy records,2026-06-27 14:18:47 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2025,reached,1,,Parsed 1 candidate policy records,2026-06-27 14:18:48 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr/year/2024,reached,8,,Parsed 8 candidate policy records,2026-06-27 14:18:50 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr?year=2024,reached,1,,Parsed 1 candidate policy records,2026-06-27 14:18:51 UTC
+MY,BNM OPR policy-step,https://api.bnm.gov.my/public/opr | https://api.bnm.gov.my/public/opr/year/2026 | https://api.bnm.gov.my/public/opr?year=2026,accepted,252,2026-06-27=0.0,Policy points parsed=15,2026-06-27 14:18:51 UTC
