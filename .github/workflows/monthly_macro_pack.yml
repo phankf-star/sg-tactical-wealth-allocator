@@ -1,95 +1,45 @@
-name: Generate Global20Engine Macro Pack
+name: Monthly Macro Pack
 
 on:
-  workflow_dispatch:
   schedule:
-    # Monthly scheduled run. Adjust cron if needed.
-    - cron: "15 0 1 * *"
+    # Run after official macro data normally starts updating.
+    # Singapore/Malaysia/HK/Japan/US macro releases are not always available on the 1st day.
+    - cron: "15 0 5 * *"
+    - cron: "15 0 10 * *"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
-concurrency:
-  group: global20engine-macro-pack
-  cancel-in-progress: false
-
 jobs:
-  generate-macro-pack:
+  build-monthly-macro-pack:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pandas requests beautifulsoup4 lxml openpyxl yfinance
+          pip install pandas numpy requests beautifulsoup4 lxml openpyxl yfinance
 
-      - name: Show repository files before run
-        run: |
-          pwd
-          find . -maxdepth 2 -type f | sort
-
-      - name: Lab test macro adapters
-        run: |
-          if [ -f macro_adapter_lab.py ]; then
-            python macro_adapter_lab.py
-          else
-            echo "macro_adapter_lab.py not found; skipping adapter lab."
-          fi
-
-      - name: Generate macro pack outside Streamlit
+      - name: Generate monthly macro pack
         run: |
           python g20_macro_fetcher.py
 
-      - name: Update rolling 12M macro history
-        run: python tools/update_macro_history_12m_from_latest.py
-
-      - name: Update 252D rates history
-        run: python tools/update_rates_history_252d.py
-  
-      - name: Show generated files
-        run: |
-          echo "---- macro_pack_latest file list ----"
-          find macro_pack_latest -maxdepth 1 -type f -print | sort || true
-
-          echo "---- macro_data.csv ----"
-          cat macro_pack_latest/macro_data.csv || true
-
-          echo "---- diagnostics.csv ----"
-          cat macro_pack_latest/diagnostics.csv || true
-
-          echo "---- rates_history_diagnostics.csv ----"
-          cat macro_pack_latest/rates_history_diagnostics.csv || true
-
-          echo "---- sg_mas_raw_preview.html first 120 lines ----"
-          sed -n '1,120p' macro_pack_latest/sg_mas_raw_preview.html || true
-
-          echo "---- jp_boj_raw_preview.txt ----"
-          cat macro_pack_latest/jp_boj_raw_preview.txt || true
-
-      - name: Commit generated macro pack
+      - name: Commit updated macro pack outputs
         run: |
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git add -A macro_pack_latest
-
-          echo "---- staged / unstaged status ----"
-          git status --short
-
-          if git diff --cached --quiet; then
-            echo "No macro pack changes to commit"
-          else
-            git commit -m "Update Global20Engine macro pack"
-            git push
-          fi
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add macro_pack_latest/ || true
+          git add data/ || true
+          git add *.csv || true
+          git diff --cached --quiet || git commit -m "Auto-update monthly macro pack"
+          git push
