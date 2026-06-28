@@ -1,0 +1,42 @@
+name: Update Global Macro Regime
+
+on:
+  schedule:
+    # Weekly macro-regime refresh after weekly FRED/NFCI/liquidity updates.
+    - cron: "45 0 * * 3"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-global-macro-regime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas
+
+      - name: Generate global macro regime files
+        run: |
+          python tools/update_global_macro_regime.py
+
+      - name: Commit global macro regime outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add macro_pack_latest/global_macro_regime_latest.csv || true
+          git add macro_pack_latest/global_macro_regime_diagnostics.csv || true
+          git diff --cached --quiet || git commit -m "Auto-update global macro regime"
+          git push
