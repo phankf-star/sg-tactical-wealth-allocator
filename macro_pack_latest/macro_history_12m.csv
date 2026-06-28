@@ -1,8 +1,8 @@
-market,indicator,date,value,unit,source,source_type,notes
+﻿market,indicator,date,value,unit,source,source_type,notes
 HK,Inflation,2026-05-01,2.0,%,C&SD Table 510-60001 Composite CPI YoY,Official / Reviewed,Reviewed row. Replace with live C&SD Table 510-60001 fetch when confirmed in macro fetcher runtime.
 HK,PMI,2026-05-01,50.4,index,S&P Global Hong Kong SAR PMI via Trading Economics,Parsed / Secondary,Parsed PMI from source; period=May 2026.
 HK,Unemployment,2026-05-31,3.7,%,HK Government / C&SD unemployment press release,Official / Parsed,Parsed from official HK unemployment press release; period=March - May 2026.
-JP,Inflation,2026-01-01,1.6784452296819683,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
+JP,Inflation,2026-01-01,1.6784452296819685,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
 JP,Inflation,2026-02-01,1.419698314108242,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
 JP,Inflation,2026-03-01,1.5915119363395291,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
 JP,Inflation,2026-04-01,1.585903083700435,% YoY,Japan Statistics Bureau CPI manual export - All items less imputed rent,Manual official seed,YoY calculated from CPI index by parser
