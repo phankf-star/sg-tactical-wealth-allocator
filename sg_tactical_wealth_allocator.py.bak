@@ -2957,6 +2957,30 @@ def render_market(expanded=False):
         rates_res=resolve_macro_value(index_label,'Rates')
 
         # 2. Macro-only trend snapshot. No duplicate index price chart here.
+        with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
+            st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
+            pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
+            inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
+            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
+            rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})
+            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
+            tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
+            if not tnx_raw.empty and not irx_raw.empty:
+                aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
+                if not aligned.empty: curve_df=pd.DataFrame({'Yield Curve':aligned.TNX-aligned.IRX},index=aligned.index)
+            r1c1,r1c2=st.columns(2)
+            with r1c1:
+                if pmi_app: mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
+                else: st.info('PMI is not applicable for this asset class.')
+            with r1c2: render_macro_line_chart(inflation_df,'Inflation Trend','Parsed macro-pack / latest official value',RED,'%')
+            r2c1,r2c2=st.columns(2)
+            with r2c1: render_macro_line_chart(unemployment_df,'Unemployment Trend','Parsed macro-pack / latest official value',ORANGE,'%')
+            with r2c2: render_macro_line_chart(rates_df,f'{rate_card_label(index_label)} Trend','Parsed macro-pack / latest official value',PURPLE,'%')
+            r3c1,r3c2=st.columns(2)
+            with r3c1: mini_trend_chart(vix_df,'VIX 12M','Global volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
+            with r3c2: mini_trend_chart(curve_df,'Yield Curve 12M','US 10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
+
+        # 3. Valuation channel.
         with st.expander('📈 Quantitative Valuation Channels',expanded=False):
             st.markdown('### Quantitative Valuation Channels')
             render_trend_channel(ud,index_label)
@@ -2998,30 +3022,6 @@ def render_market(expanded=False):
             st.markdown('#### Deployment Trigger Audit')
             st.dataframe(trigger_df,use_container_width=True,hide_index=True)
 
-        with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
-            st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
-            pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
-            inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
-            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
-            rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})
-            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
-            tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
-            if not tnx_raw.empty and not irx_raw.empty:
-                aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
-                if not aligned.empty: curve_df=pd.DataFrame({'Yield Curve':aligned.TNX-aligned.IRX},index=aligned.index)
-            r1c1,r1c2=st.columns(2)
-            with r1c1:
-                if pmi_app: mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
-                else: st.info('PMI is not applicable for this asset class.')
-            with r1c2: render_macro_line_chart(inflation_df,'Inflation Trend','Parsed macro-pack / latest official value',RED,'%')
-            r2c1,r2c2=st.columns(2)
-            with r2c1: render_macro_line_chart(unemployment_df,'Unemployment Trend','Parsed macro-pack / latest official value',ORANGE,'%')
-            with r2c2: render_macro_line_chart(rates_df,f'{rate_card_label(index_label)} Trend','Parsed macro-pack / latest official value',PURPLE,'%')
-            r3c1,r3c2=st.columns(2)
-            with r3c1: mini_trend_chart(vix_df,'VIX 12M','Global volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
-            with r3c2: mini_trend_chart(curve_df,'Yield Curve 12M','US 10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
-
-        # 3. Valuation channel.
 def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
         init_user_etf_preferences()
