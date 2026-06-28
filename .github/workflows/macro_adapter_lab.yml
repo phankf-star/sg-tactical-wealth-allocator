@@ -1,20 +1,15 @@
-name: Monthly Macro Pack
+name: Macro Adapter Lab
 
 on:
-  schedule:
-    # Run after official macro data normally starts updating.
-    # Singapore/Malaysia/HK/Japan/US macro releases are not always available on the 1st day.
-    - cron: "15 0 5 * *"
-    - cron: "15 0 10 * *"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  build-monthly-macro-pack:
+  macro-adapter-lab:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     steps:
       - name: Checkout repository
@@ -30,16 +25,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install pandas numpy requests beautifulsoup4 lxml openpyxl yfinance
 
-      - name: Generate monthly macro pack
+      - name: Run macro adapter diagnostics only
         run: |
-          python g20_macro_fetcher.py
-
-      - name: Commit updated macro pack outputs
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add macro_pack_latest/ || true
-          git add data/ || true
-          git add *.csv || true
-          git diff --cached --quiet || git commit -m "Auto-update monthly macro pack"
-          git push
+          python tools/macro_adapter_lab.py
