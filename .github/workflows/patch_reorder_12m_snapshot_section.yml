@@ -1,0 +1,34 @@
+name: Patch Reorder 12M Snapshot Section
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch-reorder-12m-snapshot-section:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Move 12M Macro & Market Trend Snapshot to bottom of section group
+        run: |
+          python tools/patch_reorder_12m_snapshot_section.py
+
+      - name: Commit reordered section layout
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add sg_tactical_wealth_allocator.py
+          git add sg_tactical_wealth_allocator.py.bak || true
+          git diff --cached --quiet || git commit -m "Move 12M snapshot section to bottom"
+          git push
