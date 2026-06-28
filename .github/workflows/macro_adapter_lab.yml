@@ -27,4 +27,15 @@ jobs:
 
       - name: Run macro adapter diagnostics only
         run: |
-          python tools/macro_adapter_lab.py
+          if [ -f "macro_adapter_lab.py" ]; then
+            python macro_adapter_lab.py
+          elif [ -f "tools/macro_adapter_lab.py" ]; then
+            python tools/macro_adapter_lab.py
+          else
+            echo "ERROR: macro_adapter_lab.py not found in repo root or tools/"
+            echo "Available root files:"
+            ls -la
+            echo "Available tools files:"
+            ls -la tools || true
+            exit 2
+          fi
