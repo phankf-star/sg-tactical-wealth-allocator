@@ -12,6 +12,7 @@ Tests:
 3. Strict PMI accepts clean macro_pack_latest/macro_data.csv PMI rows.
 4. Strict PMI fails when a required PMI market is missing.
 5. Strict PMI fails when PMI source/source_type/notes are seed/default/fallback/manual.
+6. Repository macro_pack_latest/macro_data.csv PMI rows are production-safe.
 
 This test suite does not call external FRED/PMI sources. It only tests the strict PMI validation layer.
 """
@@ -27,16 +28,17 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TARGET = REPO_ROOT / "tools" / "update_global_macro_regime.py"
+REPO_MACRO_DATA = REPO_ROOT / "macro_pack_latest" / "macro_data.csv"
 
 REQUIRED_COLUMNS = ["market", "indicator", "date", "value", "unit", "source", "source_type", "notes"]
+REQUIRED_PMI_MARKETS = ("US", "SG", "HK", "MY", "JP")
 
 CLEAN_ROWS = [
     ["US", "PMI", "2026-05-01", 54.0, "index", "ISM Manufacturing PMI via parsed release", "Parsed / Release", "Parsed PMI from source; period=May 2026."],
     ["SG", "PMI", "2026-05-01", 51.0, "index", "SIPMM Singapore Manufacturing PMI via parser", "Parsed / Secondary", "Parsed PMI from source; period=May 2026."],
     ["HK", "PMI", "2026-05-01", 50.4, "index", "S&P Global Hong Kong SAR PMI via parser", "Parsed / Secondary", "Parsed PMI from source; period=May 2026."],
-    ["CN", "PMI", "2026-05-01", 50.0, "index", "NBS China Manufacturing PMI parsed release", "Parsed / Official", "Parsed PMI from source; period=May 2026."],
     ["MY", "PMI", "2026-05-01", 49.9, "index", "S&P Global Malaysia PMI parsed release", "Parsed / Release", "Parsed PMI from source; period=May 2026."],
-    ["JP", "PMI", "2026-05-01", 50.4, "index", "Japan Manufacturing PMI parsed release", "Parsed / Secondary", "Parsed PMI from source; period=May 2026."],
+    ["JP", "PMI", "2026-06-01", 54.9, "index", "Japan Manufacturing PMI parsed release", "Parsed / Secondary", "Parsed PMI from source; period=June 2026."],
 ]
 
 
@@ -95,29 +97,39 @@ def test_no_old_app_default_pmi_fallback_strings():
         raise AssertionError("Old PMI fallback strings still present: " + ", ".join(hits))
 
 
+def assert_clean_build(module, expected_rows):
+    pmi, status, source, latest_date, remarks, audit = module.build_growth_pmi_strict()
+    expected = round(sum(float(r[3]) for r in expected_rows) / len(expected_rows), 3)
+    if round(pmi, 3) != expected:
+        raise AssertionError(f"Unexpected composite PMI: {pmi}; expected {expected}")
+    if status != "Moderate":
+        raise AssertionError(f"Unexpected PMI status: {status}")
+    if source != "Monthly macro pack PMI composite":
+        raise AssertionError(f"Unexpected source: {source}")
+    if latest_date != "2026-06-01":
+        raise AssertionError(f"Unexpected latest PMI date: {latest_date}")
+    if set(audit["coverage"].astype(str)) != {"OK"}:
+        raise AssertionError("Clean rows should all audit as OK")
+    if set(audit["market"].astype(str)) != set(REQUIRED_PMI_MARKETS):
+        raise AssertionError("Audit markets do not match required PMI markets")
+    if not module.PMI_AUDIT_OUT.exists():
+        raise AssertionError("PMI audit output was not written")
+
+
 def test_accepts_clean_pmi_rows():
     module = load_target_module()
     with tempfile.TemporaryDirectory() as tmp:
         base = Path(tmp)
         write_macro_data(base, CLEAN_ROWS)
         patch_module_paths(module, base)
-        pmi, status, source, latest_date, remarks, audit = module.build_growth_pmi_strict()
-        expected = round(sum(float(r[3]) for r in CLEAN_ROWS) / len(CLEAN_ROWS), 3)
-        if round(pmi, 3) != expected:
-            raise AssertionError(f"Unexpected composite PMI: {pmi}; expected {expected}")
-        if status != "Moderate":
-            raise AssertionError(f"Unexpected PMI status: {status}")
-        if source != "Monthly macro pack PMI composite":
-            raise AssertionError(f"Unexpected source: {source}")
-        if set(audit["coverage"].astype(str)) != {"OK"}:
-            raise AssertionError("Clean rows should all audit as OK")
+        assert_clean_build(module, CLEAN_ROWS)
 
 
 def test_rejects_missing_required_market():
     module = load_target_module()
     with tempfile.TemporaryDirectory() as tmp:
         base = Path(tmp)
-        rows = [r for r in CLEAN_ROWS if r[0] != "CN"]
+        rows = [r for r in CLEAN_ROWS if r[0] != "HK"]
         write_macro_data(base, rows)
         patch_module_paths(module, base)
         expect_raises(module.build_growth_pmi_strict, "Missing production-safe PMI rows")
@@ -145,6 +157,26 @@ def test_rejects_app_default_source():
         expect_raises(module.build_growth_pmi_strict, "Missing production-safe PMI rows")
 
 
+def test_repository_macro_data_pmi_rows_are_strict():
+    if not REPO_MACRO_DATA.exists():
+        raise AssertionError(f"Missing repository macro_data.csv: {REPO_MACRO_DATA}")
+    module = load_target_module()
+    module.MACRO_DATA_FILE = REPO_MACRO_DATA
+    module.PMI_AUDIT_OUT = REPO_ROOT / "macro_pack_latest" / "pmi_source_audit_test.csv"
+    pmi, status, source, latest_date, remarks, audit = module.build_growth_pmi_strict()
+    expected_markets = set(REQUIRED_PMI_MARKETS)
+    actual_markets = set(audit.loc[audit["coverage"].eq("OK"), "market"].astype(str))
+    if actual_markets != expected_markets:
+        raise AssertionError(f"Repository PMI market coverage mismatch: {actual_markets}; expected {expected_markets}")
+    if round(pmi, 3) <= 0:
+        raise AssertionError("Repository PMI composite should be positive")
+    if status not in {"Strong", "Moderate", "Slowing", "Contraction"}:
+        raise AssertionError(f"Unexpected repository PMI status: {status}")
+    if source != "Monthly macro pack PMI composite":
+        raise AssertionError(f"Unexpected repository PMI source: {source}")
+    module.PMI_AUDIT_OUT.unlink(missing_ok=True)
+
+
 def main() -> int:
     tests = [
         test_compile,
@@ -153,6 +185,7 @@ def main() -> int:
         test_rejects_missing_required_market,
         test_rejects_seed_source_type,
         test_rejects_app_default_source,
+        test_repository_macro_data_pmi_rows_are_strict,
     ]
     failures = []
     for test in tests:
