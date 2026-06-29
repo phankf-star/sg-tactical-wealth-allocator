@@ -18,18 +18,14 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Apply base app data-source governance patch
+      - name: Apply surgical curve / PMI scope fix
         run: |
           python patch_base_app_data_source_governance.py sg_tactical_wealth_allocator.py
-
-      - name: Verify base app data-source governance
-        run: |
-          python verify_base_app_data_source_governance.py sg_tactical_wealth_allocator.py
 
       - name: Commit patched base app
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator.py.bak_data_source_governance_clean
-          git commit -m "Apply base app data-source governance patch" || echo "No changes to commit"
+          git add sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator.py.bak_curve_surgical_fix
+          git commit -m "Fix base app curve indentation after governance patch" || echo "No changes to commit"
           git push
