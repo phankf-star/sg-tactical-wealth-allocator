@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38ac — render_market macro fallback fix; Live Market Trend Monitor
+# Global20Engine v38ac — Base App Data-Source Governance Audit patch; Live Market Trend Monitor
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -1161,6 +1161,27 @@ def get_uploaded_macro_value(market,indicator):
 def _uploaded_result(uploaded):
     unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
     return _source_result(uploaded['value'],display,f"{uploaded.get('source_type','Owner-uploaded')} · {uploaded.get('source','')} · {uploaded.get('date','')}",uploaded.get('source_type','Owner-uploaded'),uploaded.get('date',''))
+
+
+def _pack_first_macro_result(market, indicator):
+    """Return generated/applied macro pack value before any dashboard fallback.
+
+    Governance rule: macro pack / owner-uploaded values are the source of truth for
+    monthly macro indicators such as PMI. The base app must not silently substitute
+    built-in PMI seeds, session values, or simulated data when the pack is absent.
+    """
+    uploaded = get_uploaded_macro_value(market, indicator)
+    if uploaded is not None:
+        return _uploaded_result(uploaded)
+    return None
+
+
+def _is_real_macro_value(res):
+    """True only when a resolver result contains a usable numeric macro value."""
+    try:
+        return isinstance(res, dict) and res.get('value') is not None and pd.notna(float(res.get('value')))
+    except Exception:
+        return False
 def _awaiting_live(source_label, diagnostic='Live fetch unavailable or parser returned no usable value.'):
     return _source_result(None,'Awaiting','', 'Awaiting', diagnostic=f'{source_label} · {diagnostic}')
 def _awaiting_validation(source_label): return _source_result(None,'Awaiting validation',source_label,'Needs validation',diagnostic='Official adapter is mapped but still requires runtime validation.')
@@ -1243,7 +1264,10 @@ def resolve_macro_value(market,indicator):
     if uploaded is not None:
         return _uploaded_result(uploaded)
     if indicator=='PMI':
-        return _source_result(None,'Awaiting pack',MACRO_SOURCE_REGISTRY.get(market,{}).get('PMI','Monthly macro pack PMI'),'Awaiting',diagnostic='PMI is resolved from generated/uploaded monthly macro pack first; default/session PMI remains fallback display only.')
+        packed = _pack_first_macro_result(market, 'PMI')
+        if _is_real_macro_value(packed):
+            return packed
+        return _source_result(None,'Awaiting pack',MACRO_SOURCE_REGISTRY.get(market,{}).get('PMI','Monthly macro pack PMI'),'Awaiting',diagnostic='PMI requires generated/applied macro pack or explicit owner upload; no built-in/session fallback is used for dashboard scoring.')
     if indicator=='Rates':
         if market in US_MARKETS or market in USD_PROXY_MARKETS:
             data=us_macro_dashboard_data()
@@ -2133,9 +2157,6 @@ def _macro_risk_v2_components(asset_name, pmi_value, vix_value, curve_value):
     rates=resolve_macro_value(asset_name,'Rates')
     pmi_res=resolve_macro_value(asset_name,'PMI')
     infl_v=_macro_numeric(inflation); unemp_v=_macro_numeric(unemployment); claims_v=_macro_numeric(claims); rates_v=_macro_numeric(rates); pmi_v=_macro_numeric(pmi_res)
-    if pmi_v is None and asset_name not in PMI_NA_MARKETS:
-        try: pmi_v=float(pmi_value)
-        except Exception: pmi_v=None
     if infl_v is not None:
         infl_score = 45 if infl_v < -1 else _bounded_score(infl_v, [(2.5,10),(4.0,35),(6.0,70),(999,100)])
         add('Inflation', infl_v, infl_score, 0.20, inflation.get('source_type',''))
@@ -2773,9 +2794,9 @@ def render_executive():
             return f'{float(v):.2f}%'
         except Exception: return 'N/A'
     pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
-    pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
-    pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
-    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('value') is not None else 'Seed'
+    pmi_display=pmi_res['display'] if isinstance(pmi_res,dict) else ('N/A' if not pmi_applicable else 'Awaiting pack')
+    pmi_sub=macro_visible_sub('PMI', pmi_res.get('sub','') if isinstance(pmi_res,dict) else '', pmi_res.get('source_type','Awaiting') if isinstance(pmi_res,dict) else 'Awaiting', pmi_res.get('date','') if isinstance(pmi_res,dict) else '') if pmi_applicable else 'N/A'
+    pmi_src=pmi_res['source_type'] if isinstance(pmi_res,dict) else ('N/A' if not pmi_applicable else 'Awaiting')
     rate_label=rate_card_label(index_label)
     cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
     def _source_class(src):
@@ -2825,15 +2846,32 @@ def render_assumptions():
 
 
 def get_pmi_df(chosen,latest_in):
-    if sel in PMI_NA_MARKETS: return pd.DataFrame()
+    """PMI chart data source governance.
+
+    Pack/history-first only:
+    1) macro_pack_latest/macro_history_12m.csv / macro_data.csv / overrides via macro_trend_df
+    2) FRED NAPM for US markets as official live history fallback
+    3) otherwise empty dataframe with explicit unavailable state
+
+    No built-in PMI history and no simulated PMI trend are used.
+    """
+    if sel in PMI_NA_MARKETS:
+        return pd.DataFrame()
+
+    pmi_res_local = resolve_macro_value(index_label,'PMI')
+    pack_df = macro_trend_df(index_label,'PMI',pmi_res_local)
+    if pack_df is not None and not pack_df.empty:
+        out = pack_df.copy().rename(columns={'Value':'PMI'})
+        if 'PMI' not in out.columns and len(out.columns) > 0:
+            out = out.rename(columns={out.columns[0]:'PMI'})
+        return out[['PMI']].tail(12)
+
     if sel in PMI_FRED_MARKETS:
         fred=fetch_fred_pmi('NAPM')
-        if not fred.empty: return fred.tail(12)
-    hist_map=st.session_state.pmi_history.get(chosen) or DEFAULT_PMI_HISTORY.get(chosen)
-    if hist_map:
-        idx=pd.to_datetime([k+'-01' for k in sorted(hist_map.keys())]); vals=[hist_map[k] for k in sorted(hist_map.keys())]
-        return pd.DataFrame({'PMI':vals},index=idx).tail(12)
-    dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq='ME'); vals=np.linspace(max(latest_in+1.0,30),latest_in,12); st.caption('⚠️ Simulated PMI trend — click 🔄 Update PMI to fetch/save actual data.'); return pd.DataFrame({'PMI':vals},index=dates)
+        if fred is not None and not fred.empty:
+            return fred.tail(12)
+
+    return pd.DataFrame()
 
 def render_trend_channel(df, market_name):
     c1,c2,c3,c4=st.columns([1,1,1,1])
@@ -2950,7 +2988,8 @@ def render_market(expanded=False):
         latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
         month_in=st.session_state.get('latest_pmi_month',actual['month'])
         pmi_app=sel not in PMI_NA_MARKETS
-        latest_display=0.0 if not pmi_app else latest_in
+        pmi_score_res=resolve_macro_value(sel,'PMI') if pmi_app else {'value':None}
+        latest_display=_macro_numeric(pmi_score_res) if pmi_app else None
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
         inflation_res=resolve_macro_value(index_label,'Inflation')
         unemployment_res=resolve_macro_value(index_label,'Unemployment')
