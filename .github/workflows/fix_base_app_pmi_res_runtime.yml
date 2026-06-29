@@ -1,0 +1,31 @@
+name: Fix Base App PMI Resolver Runtime Error
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-pmi-res:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Fix pmi_res runtime error
+        run: |
+          python fix_base_app_pmi_res_runtime.py sg_tactical_wealth_allocator.py
+
+      - name: Commit runtime fix
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator.py.bak_pmi_res_runtime_fix
+          git commit -m "Fix base app PMI resolver runtime error" || echo "No changes to commit"
+          git push
