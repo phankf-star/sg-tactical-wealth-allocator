@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-Global20Engine Base App Data-Source Governance Patch - active runtime/scope repair
-Use as the existing active file:
+Global20Engine Base App Data-Source Governance Patch - final _curve indentation repair
+Use as existing active file:
   patch_base_app_data_source_governance.py
 
 Purpose:
-- Fix pmi_res NameError caused by pmi_res being inserted in the wrong scope near _curve().
-- Keep workflow unchanged.
+- Repair current runtime/compile issue: def _curve(v): has unindented try block.
+- Keep existing governance patch results intact.
 - Macro fetcher/workflows untouched.
 """
 from pathlib import Path
@@ -17,49 +17,44 @@ if not TARGET.exists():
     raise SystemExit(f"Target file not found: {TARGET}")
 
 text = TARGET.read_text(encoding='utf-8', errors='replace')
-backup = TARGET.with_suffix(TARGET.suffix + '.bak_pmi_scope_repair')
+backup = TARGET.with_suffix(TARGET.suffix + '.bak_curve_indent_final')
 backup.write_text(text, encoding='utf-8')
 changes=[]
 
-# 1) Repair the _curve + pmi_res scope block.
-# The app error means pmi_res is visually present but not in the same executable scope
-# as _pmi_pack_value. This normalises the section so pmi_res is directly above
-# _pmi_pack_value at top-level app flow.
-pattern = r"def _curve\(v\):.*?_pmi_pack_value\s*=\s*pmi_res\.get\('value'\) if isinstance\(pmi_res,dict\) else None"
+# Replace the entire _curve block up to _pmi_pack_value with a clean, correctly indented block.
+pattern = r"def _curve\(v\):\s*try:\s*if v is None or pd\.isna\(v\): return 'N/A'\s*return f'\{float\(v\):\.2f\}%'\s*except Exception: return 'N/A'\s*pmi_res=resolve_macro_value\(index_label,'PMI'\)\s*_pmi_pack_value\s*=\s*pmi_res\.get\('value'\) if isinstance\(pmi_res,dict\) else None"
 replacement = """def _curve(v):
     try:
-        if v is None or pd.isna(v): return 'N/A'
+        if v is None or pd.isna(v):
+            return 'N/A'
         return f'{float(v):.2f}%'
-    except Exception: return 'N/A'
+    except Exception:
+        return 'N/A'
+
 pmi_res=resolve_macro_value(index_label,'PMI')
 _pmi_pack_value = pmi_res.get('value') if isinstance(pmi_res,dict) else None"""
 text2, n = re.subn(pattern, replacement, text, count=1, flags=re.S)
 if n:
     text = text2
-    changes.append('repair _curve / pmi_res scope')
-    print('OK: repair _curve / pmi_res scope')
+    changes.append('repair _curve indentation and pmi_res scope')
+    print('OK: repair _curve indentation and pmi_res scope')
 else:
-    print('SKIP: _curve / pmi_res scope block not found')
-
-# 2) Defensive cleanup if duplicate pmi_res line appears immediately after repair.
-text2, n2 = re.subn(
-    r"pmi_res=resolve_macro_value\(index_label,'PMI'\)\n\s*pmi_res=resolve_macro_value\(index_label,'PMI'\)",
-    "pmi_res=resolve_macro_value(index_label,'PMI')",
-    text,
-    count=1
-)
-if n2:
-    text = text2
-    changes.append('remove duplicate pmi_res resolver')
-    print('OK: remove duplicate pmi_res resolver')
+    # Fallback: handle line-broken variants between def _curve and pmi_res.
+    pattern2 = r"def _curve\(v\):.*?pmi_res=resolve_macro_value\(index_label,'PMI'\)\s*_pmi_pack_value\s*=\s*pmi_res\.get\('value'\) if isinstance\(pmi_res,dict\) else None"
+    text2, n2 = re.subn(pattern2, replacement, text, count=1, flags=re.S)
+    if n2:
+        text = text2
+        changes.append('repair _curve block fallback')
+        print('OK: repair _curve block fallback')
+    else:
+        print('CHECK: _curve block not found')
 
 TARGET.write_text(text, encoding='utf-8')
 
-# Compile check
+# Compile and governance checks
 py_compile.compile(str(TARGET), doraise=True)
 print('PASS - Compile check')
 
-# Verification checks
 get_pmi = re.search(r"def get_pmi_df\(chosen,latest_in\):(.*?)(?=\ndef render_trend_channel\()", text, flags=re.S)
 checks = [
     ('pmi_res resolver is directly before _pmi_pack_value', "pmi_res=resolve_macro_value(index_label,'PMI')\n_pmi_pack_value" in text),
