@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38ad — base-app data-source governance; no silent macro/PMI defaults in production
+# Global20Engine v38ac — render_market macro fallback fix; Live Market Trend Monitor
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38ad Data-Source Governance', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -3358,7 +3358,7 @@ def render_crash(expanded=False):
 def render_audit(expanded=False):
     with st.expander('📡 AUDIT, METHODOLOGY & EXPORT',expanded=expanded):
         left,right=st.columns([1,1])
-        left.markdown('#### 📡 Data Source & Freshness'); _audit_pmi_freshness=resolve_macro_value(index_label,'PMI'); _audit_pmi_value=(_audit_pmi_freshness.get('display','Awaiting pack') if isinstance(_audit_pmi_freshness,dict) else 'Awaiting pack'); _audit_pmi_source=(_audit_pmi_freshness.get('sub','Macro pack PMI') if isinstance(_audit_pmi_freshness,dict) else 'Macro pack PMI'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Source of Truth','macro_pack_latest/macro_data.csv',GREEN)+kv('PMI Value',_audit_pmi_value,GREEN)+kv('PMI Source',_audit_pmi_source,GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
+        left.markdown('#### 📡 Data Source & Freshness'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Proxy',st.session_state.get('pmi_proxy_label',pmi_label),GREEN)+kv('PMI Value',f'{st.session_state.get("latest_pmi_value",latest_pmi):.1f} · {st.session_state.get("latest_pmi_month","")}',GREEN)+kv('PMI Source',st.session_state.get('latest_pmi_source',pmi_proxy_default['source']),GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
         right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score v2 is a weighted multi-factor macro indicator, not a crash prediction.\n- Applicable indicators are re-weighted when a market has N/A data, for example non-US Claims.\n- Source quality and adapter status are shown in tooltips/diagnostics only; they are not direct risk-score penalties.\n- PMI is monthly, not intraday live data.\n- US, SG, HK, MY and JP PMI should come from the parsed monthly macro pack as read-only dashboard input.\n- Manual PMI override is mainly retained for A-Share / China while China official mapping remains validation-oriented.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
         st.markdown('#### ⚙️ Cycle Signal Settings & PMI Override')
         audit_pmi=resolve_macro_value(index_label,'PMI')
@@ -3382,7 +3382,7 @@ def render_audit(expanded=False):
             st.caption('Owner Mode is hidden from the sidebar during user testing. Macro Data Manager and Macro Adapter Diagnostics are retained here as collapsed admin/source-health tooling.')
             render_macro_data_manager_sidebar()
             render_macro_adapter_diagnostics_sidebar()
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':'macro_pack_latest/macro_data.csv','PMI Value':(resolve_macro_value(index_label,'PMI').get('value') if isinstance(resolve_macro_value(index_label,'PMI'),dict) else None),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Live Market & Trend Monitor':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
