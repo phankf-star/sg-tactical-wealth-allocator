@@ -1,71 +1,133 @@
 #!/usr/bin/env python3
-"""
-Global20Engine surgical fix for the current post-governance patch error.
+# patch_base_app_data_source_governance.py
+# Purpose: safely patch sg_tactical_wealth_allocator.py to resolve PMI from macro_data.csv.
 
-Current known issue:
-    IndentationError around def _curve(v): / try:
-
-This file intentionally does NOT re-run the earlier broad regex governance patch.
-It only repairs the malformed _curve block and verifies governance checks.
-"""
 from pathlib import Path
-import re, sys, py_compile
+import re
 
-TARGET = Path(sys.argv[1]) if len(sys.argv) > 1 else Path("sg_tactical_wealth_allocator.py")
-if not TARGET.exists():
-    raise SystemExit(f"Target file not found: {TARGET}")
+APP_PATH = Path('sg_tactical_wealth_allocator.py')
+BACKUP_PATH = Path('sg_tactical_wealth_allocator.py.bak')
 
-text = TARGET.read_text(encoding="utf-8", errors="replace")
-backup = TARGET.with_suffix(TARGET.suffix + ".bak_curve_surgical_fix")
-backup.write_text(text, encoding="utf-8")
+if not APP_PATH.exists():
+    raise FileNotFoundError(f'Base app not found: {APP_PATH}')
 
-replacement = (
-    "def _curve(v):\n"
-    "    try:\n"
-    "        if v is None or pd.isna(v):\n"
-    "            return 'N/A'\n"
-    "        return f'{float(v):.2f}%'\n"
-    "    except Exception:\n"
-    "        return 'N/A'\n"
-    "\n"
-    "pmi_res=resolve_macro_value(index_label,'PMI')\n"
-    "_pmi_pack_value = pmi_res.get('value') if isinstance(pmi_res,dict) else None"
+text = APP_PATH.read_text(encoding='utf-8')
+original = text
+
+if not BACKUP_PATH.exists():
+    BACKUP_PATH.write_text(text, encoding='utf-8')
+
+HELPER_MARKER = '# --- Macro Data Governance Helpers ---'
+HELPERS = r'''
+# --- Macro Data Governance Helpers ---
+@st.cache_data(ttl=3600)
+def load_macro_data():
+    possible_paths = [
+        'macro_data.csv',
+        'data/macro_data.csv',
+        'macro_pack_latest/macro_data.csv',
+        'docs/macro_data.csv',
+    ]
+    for p in possible_paths:
+        try:
+            df = pd.read_csv(p)
+            if not df.empty:
+                df.columns = [str(c).strip() for c in df.columns]
+                return df, p
+        except Exception:
+            pass
+    return pd.DataFrame(), None
+
+
+def _pick_col(df, candidates):
+    lower_map = {str(c).strip().lower(): c for c in df.columns}
+    for c in candidates:
+        if c.lower() in lower_map:
+            return lower_map[c.lower()]
+    for col in df.columns:
+        col_l = str(col).strip().lower()
+        if any(c.lower() in col_l for c in candidates):
+            return col
+    return None
+
+
+def resolve_macro_value(index_label, indicator, fallback=None):
+    df, source_path = load_macro_data()
+    if df.empty:
+        return fallback, 'fallback', None
+
+    market_col = _pick_col(df, ['market', 'country', 'region', 'index_label', 'economy'])
+    indicator_col = _pick_col(df, ['indicator', 'metric', 'name', 'series'])
+    value_col = _pick_col(df, ['value', 'latest_value', 'actual', 'observation', 'last'])
+    date_col = _pick_col(df, ['date', 'latest_date', 'as_of', 'period', 'timestamp'])
+
+    if value_col is None:
+        return fallback, 'fallback', source_path
+
+    try:
+        work = df.copy()
+        if indicator_col is not None:
+            work = work[work[indicator_col].astype(str).str.contains(indicator, case=False, na=False)]
+
+        if market_col is not None:
+            label = str(index_label)
+            if any(x in label for x in ['US', 'S&P', 'Nasdaq']):
+                scoped = work[work[market_col].astype(str).str.contains('US|United States|S&P|Nasdaq', case=False, na=False)]
+                if not scoped.empty:
+                    work = scoped
+            elif 'Singapore' in label or 'Straits' in label or 'STI' in label:
+                scoped = work[work[market_col].astype(str).str.contains('SG|Singapore|STI', case=False, na=False)]
+                if not scoped.empty:
+                    work = scoped
+            elif 'Hong Kong' in label or 'Hang Seng' in label or 'HK' in label:
+                scoped = work[work[market_col].astype(str).str.contains('HK|Hong Kong|Hang Seng', case=False, na=False)]
+                if not scoped.empty:
+                    work = scoped
+
+        if work.empty:
+            return fallback, 'fallback', source_path
+
+        if date_col is not None:
+            work[date_col] = pd.to_datetime(work[date_col], errors='coerce')
+            work = work.sort_values(date_col)
+
+        vals = pd.to_numeric(work[value_col], errors='coerce').dropna()
+        if vals.empty:
+            return fallback, 'fallback', source_path
+
+        return float(vals.iloc[-1]), 'macro_data.csv', source_path
+    except Exception:
+        return fallback, 'fallback', source_path
+# --- End Macro Data Governance Helpers ---
+'''
+
+if HELPER_MARKER not in text:
+    safe_float_pattern = r'(def safe_float\(v,fb=1000\.0\):[\s\S]*?except: return fb)'
+    text, n = re.subn(safe_float_pattern, r'\1\n' + HELPERS, text, count=1)
+    if n != 1:
+        raise RuntimeError('Could not locate safe_float() block for macro governance helper injection.')
+
+old_pmi = "pmi_in=st.slider('US ISM PMI',40.0,60.0,51.5)"
+new_pmi = (
+    "pmi_default, pmi_source, pmi_path = resolve_macro_value(sel_idx, 'PMI', 51.5)\n"
+    "    pmi_default = float(min(max(pmi_default if pmi_default is not None else 51.5, 40.0), 60.0))\n"
+    "    pmi_in=st.slider('US ISM PMI',40.0,60.0,pmi_default)\n"
+    "    st.caption(f'📡 PMI source: {pmi_source}' + (f' — {pmi_path}' if pmi_path else ''))"
 )
 
-# Replace only the broken section: from def _curve(v): through _pmi_pack_value assignment.
-pattern = r"def _curve\(v\):[\s\S]*?_pmi_pack_value\s*=\s*pmi_res\.get\('value'\) if isinstance\(pmi_res,dict\) else None"
-new_text, n = re.subn(pattern, replacement, text, count=1)
-if n != 1:
-    raise SystemExit("Could not find exactly one _curve/_pmi_pack_value block to repair. No file was changed.")
-
-TARGET.write_text(new_text, encoding="utf-8")
-
-# Compile first. If this fails, stop immediately.
-py_compile.compile(str(TARGET), doraise=True)
-print("PASS - Compile check")
-
-# Governance checks that should already be true after the previous successful patch.
-get_pmi = re.search(r"def get_pmi_df\(chosen,latest_in\):([\s\S]*?)(?=
-def render_trend_channel\()", new_text)
-checks = [
-    ("pmi_res resolver directly before _pmi_pack_value", "pmi_res=resolve_macro_value(index_label,'PMI')\n_pmi_pack_value" in new_text),
-    ("No Macro Risk Score fallback to passed-in PMI", "try: pmi_v=float(pmi_value)" not in new_text),
-    ("PMI card does not mark missing pack data as Seed", "else 'Seed'" not in new_text),
-    ("No simulated PMI trend caption", "Simulated PMI trend" not in new_text),
-    ("get_pmi_df body does not use DEFAULT_PMI_HISTORY", bool(get_pmi and "DEFAULT_PMI_HISTORY" not in get_pmi.group(1))),
-    ("macro_data.csv source path still present", "macro_pack_latest/macro_data.csv" in new_text),
-    ("macro_history_12m.csv source path still present", "macro_pack_latest/macro_history_12m.csv" in new_text),
-    ("rates_history_252d.csv source path still present", "macro_pack_latest/rates_history_252d.csv" in new_text),
-]
-
-for name, ok in checks:
-    print(("PASS" if ok else "CHECK") + " - " + name)
-
-if all(ok for _, ok in checks):
-    print("RESULT: PASS")
+if old_pmi in text:
+    text = text.replace(old_pmi, new_pmi, 1)
+elif "pmi_source" in text and "resolve_macro_value(sel_idx, 'PMI'" in text:
+    print('PMI slider already patched; skipping PMI replacement.')
 else:
-    print("RESULT: REVIEW REQUIRED")
-    raise SystemExit(1)
+    raise RuntimeError('Could not locate the current hardcoded PMI slider block. App structure changed; no patch written.')
 
-print(f"Backup created: {backup}")
-print(f"Patched file: {TARGET}")
+text = text.replace('No free API.', 'PMI loaded from macro_data.csv when available.')
+compile(text, str(APP_PATH), 'exec')
+
+if text == original:
+    print('No changes required. Base app already appears patched.')
+else:
+    APP_PATH.write_text(text, encoding='utf-8')
+    print('✅ Base app data-source governance patch applied successfully.')
+    print('Backup:', BACKUP_PATH)
