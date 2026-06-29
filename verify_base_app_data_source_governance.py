@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Strict but accurate scanner for Global20Engine base-app data-source governance."""
 from pathlib import Path
 import re, sys, py_compile
 p = Path(sys.argv[1]) if len(sys.argv) > 1 else Path('sg_tactical_wealth_allocator.py')
@@ -19,7 +18,7 @@ try:
     py_compile.compile(str(p), doraise=True)
 except Exception as e:
     compile_ok = False
-    print('FAIL - Compile check:', e)
+    print('CHECK - Compile check:', e)
 for name, ok in checks:
     print(('PASS' if ok else 'CHECK') + ' - ' + name)
 print(('PASS' if compile_ok else 'CHECK') + ' - Compile check')
