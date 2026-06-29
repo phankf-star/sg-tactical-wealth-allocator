@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Global20Engine v38ad — base-app data-source governance; no silent macro/PMI defaults in production
+# Global20Engine v38ac — render_market macro fallback fix; Live Market Trend Monitor
 # Adds web-based Monthly Macro Pack Generator with Excel download if available
 # and CSV ZIP fallback when openpyxl is unavailable.
 # Source priority: generated/applied pack → uploaded pack → saved overrides → live adapters.
@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Global Drawdown Allocation Engine v38ad Data-Source Governance', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -1161,18 +1161,6 @@ def get_uploaded_macro_value(market,indicator):
 def _uploaded_result(uploaded):
     unit=uploaded.get('unit',''); display=f"{uploaded['value']:.1f}{unit}" if unit and '%' in unit else (f"{uploaded['value']:.1f}" if abs(uploaded['value'])<1000 else f"{uploaded['value']:,.0f}")
     return _source_result(uploaded['value'],display,f"{uploaded.get('source_type','Owner-uploaded')} · {uploaded.get('source','')} · {uploaded.get('date','')}",uploaded.get('source_type','Owner-uploaded'),uploaded.get('date',''))
-
-def _pack_first_macro_result(market, indicator):
-    uploaded = get_uploaded_macro_value(market, indicator)
-    if uploaded is not None:
-        return _uploaded_result(uploaded)
-    return None
-
-def _is_real_macro_value(res):
-    try:
-        return isinstance(res, dict) and res.get('value') is not None
-    except Exception:
-        return False
 def _awaiting_live(source_label, diagnostic='Live fetch unavailable or parser returned no usable value.'):
     return _source_result(None,'Awaiting','', 'Awaiting', diagnostic=f'{source_label} · {diagnostic}')
 def _awaiting_validation(source_label): return _source_result(None,'Awaiting validation',source_label,'Needs validation',diagnostic='Official adapter is mapped but still requires runtime validation.')
@@ -1254,7 +1242,8 @@ def resolve_macro_value(market,indicator):
     uploaded=get_uploaded_macro_value(market,indicator)
     if uploaded is not None:
         return _uploaded_result(uploaded)
-    if indicator=='PMI': return _source_result(None,'Awaiting pack',MACRO_SOURCE_REGISTRY.get(market,{}).get('PMI','Monthly macro pack PMI'),'Awaiting',diagnostic='PMI must be read from macro_pack_latest/macro_data.csv or explicit owner override. App defaults/session PMI are audit/admin only and cannot drive production scoring/display.')
+    if indicator=='PMI':
+        return _source_result(None,'Awaiting pack',MACRO_SOURCE_REGISTRY.get(market,{}).get('PMI','Monthly macro pack PMI'),'Awaiting',diagnostic='PMI is resolved from generated/uploaded monthly macro pack first; default/session PMI remains fallback display only.')
     if indicator=='Rates':
         if market in US_MARKETS or market in USD_PROXY_MARKETS:
             data=us_macro_dashboard_data()
@@ -2143,7 +2132,10 @@ def _macro_risk_v2_components(asset_name, pmi_value, vix_value, curve_value):
     claims=resolve_macro_value(asset_name,'Claims')
     rates=resolve_macro_value(asset_name,'Rates')
     pmi_res=resolve_macro_value(asset_name,'PMI')
-    infl_v=_macro_numeric(inflation); unemp_v=_macro_numeric(unemployment); claims_v=_macro_numeric(claims); rates_v=_macro_numeric(rates); pmi_v=_macro_numeric(pmi_res)  # Governance: no fallback to passed-in/session/default PMI; missing pack PMI is excluded and weights re-normalise.
+    infl_v=_macro_numeric(inflation); unemp_v=_macro_numeric(unemployment); claims_v=_macro_numeric(claims); rates_v=_macro_numeric(rates); pmi_v=_macro_numeric(pmi_res)
+    if pmi_v is None and asset_name not in PMI_NA_MARKETS:
+        try: pmi_v=float(pmi_value)
+        except Exception: pmi_v=None
     if infl_v is not None:
         infl_score = 45 if infl_v < -1 else _bounded_score(infl_v, [(2.5,10),(4.0,35),(6.0,70),(999,100)])
         add('Inflation', infl_v, infl_score, 0.20, inflation.get('source_type',''))
@@ -2184,8 +2176,8 @@ def calc_market_scores_by_asset(asset_name, pmi_value, dd_value, trend_weak, vix
     else:
         vix_s=0 if vix_value is None else min(max((vix_value-15)*2,0),30)
         curve_s=10 if curve_value is None else (20 if curve_value<0 else 10 if curve_value<.5 else 0)
-        pmi_s=0
-        dd_s=0; trend_s=0; total=min(vix_s+curve_s,100); components=[]
+        pmi_s=0 if pmi_value>=52 else 8 if pmi_value>=50 else 16 if pmi_value>=47 else 20
+        dd_s=0; trend_s=0; total=min(vix_s+curve_s+pmi_s,100); components=[]
     try: st.session_state['macro_risk_v2_components']=components
     except Exception: pass
     regime='CRASH RISK' if total>=70 else 'WARNING' if total>=50 else 'WATCH' if total>=30 else 'NORMAL'
@@ -2736,17 +2728,9 @@ if sel not in m:
 
 ud=m[sel]['df']; ticker=m[sel]['ticker']; index_label=sel; pmi_proxy_default=PMI_PROXY_MAP.get(sel, {'label':'N/A','region':'N/A','source':'N/A','default':0})
 if st.session_state.get('pmi_selected_market') != sel:
-    st.session_state.pmi_selected_market=sel
-    st.session_state.pmi_proxy_label=pmi_proxy_default['label']
-    _boot_pmi = _pack_first_macro_result(sel,'PMI')
-    if _is_real_macro_value(_boot_pmi):
-        st.session_state.latest_pmi_value=float(_boot_pmi.get('value'))
-        st.session_state.latest_pmi_month=str(_boot_pmi.get('date',''))
-        st.session_state.latest_pmi_source=str(_boot_pmi.get('sub','Macro pack PMI'))
-    else:
-        st.session_state.latest_pmi_value=float('nan')
-        st.session_state.latest_pmi_month='Awaiting pack'
-        st.session_state.latest_pmi_source='Awaiting macro_pack_latest/macro_data.csv PMI row'
+    st.session_state.pmi_selected_market=sel; st.session_state.pmi_proxy_label=pmi_proxy_default['label']; st.session_state.latest_pmi_value=float(pmi_proxy_default['default'])
+    act=LATEST_PMI_ACTUALS.get(pmi_proxy_default['label'], LATEST_PMI_ACTUALS['N/A']); st.session_state.latest_pmi_month=act['month']; st.session_state.latest_pmi_source=pmi_proxy_default['source']
+
 close,peak,dd,ref,struct_peak_date,struct_current_date,struct_boundary=current_structural_dd(ud)
 zone,zc=classify(dd); deploy_pct=deploy_rule(dd)
 available_cash=max(cash_balance,0); available_srs=srs_balance; available_cpf=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0); total_available=available_cash+available_srs+available_cpf; deploy=total_available*deploy_pct
@@ -2788,21 +2772,15 @@ def render_executive():
             if v is None or pd.isna(v): return 'N/A'
             return f'{float(v):.2f}%'
         except Exception: return 'N/A'
-    _pmi_pack_value = pmi_res.get('value') if isinstance(pmi_res,dict) else None
-try:
-    _pmi_pack_float = float(_pmi_pack_value) if _pmi_pack_value is not None else None
-except Exception:
-    _pmi_pack_float = None
-pmi_state='N/A' if not pmi_applicable else ('Expansion' if (_pmi_pack_float is not None and _pmi_pack_float>=50) else 'Contraction' if _pmi_pack_float is not None else 'Awaiting pack')
-curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
-pmi_display=pmi_res['display'] if isinstance(pmi_res,dict) and pmi_res.get('value') is not None else ('N/A' if not pmi_applicable else 'Awaiting pack')
-pmi_sub=pmi_res['sub'] if isinstance(pmi_res,dict) and pmi_res.get('value') is not None else pmi_state
-pmi_src=pmi_res['source_type'] if isinstance(pmi_res,dict) and pmi_res.get('value') is not None else ('N/A' if not pmi_applicable else 'Awaiting')
-rate_label=rate_card_label(index_label)
-cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
-def _source_class(src):
-    badge=clean_macro_badge(src)
-    return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
+    pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
+    pmi_display=pmi_res['display'] if pmi_res and pmi_res.get('value') is not None else (f'{latest_pmi:.1f}' if pmi_applicable else 'N/A')
+    pmi_sub=pmi_res['sub'] if pmi_res and pmi_res.get('source_type')=='Owner-uploaded' else pmi_state
+    pmi_src=pmi_res['source_type'] if pmi_res and pmi_res.get('value') is not None else 'Seed'
+    rate_label=rate_card_label(index_label)
+    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
+    def _source_class(src):
+        badge=clean_macro_badge(src)
+        return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
     macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source / Query',s),('Dashboard Badge',clean_macro_badge(src)),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(macro_visible_sub(n,s,src))} <span class="source-pill {_source_class(src)}">{hesc(clean_macro_badge(src))}</span></div></div>''' for n,v,s,src,diag in cards])
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
     st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger_card_label(zone))}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Conditions Snapshot {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
@@ -2847,17 +2825,15 @@ def render_assumptions():
 
 
 def get_pmi_df(chosen,latest_in):
-    if sel in PMI_NA_MARKETS:
-        return pd.DataFrame()
-    pack_pmi = resolve_macro_value(sel,'PMI')
-    hist_df = macro_trend_df(sel,'PMI',pack_pmi).rename(columns={'Value':'PMI'})
-    if hist_df is not None and not hist_df.empty:
-        return hist_df.tail(12)
+    if sel in PMI_NA_MARKETS: return pd.DataFrame()
     if sel in PMI_FRED_MARKETS:
         fred=fetch_fred_pmi('NAPM')
-        if not fred.empty:
-            return fred.tail(12)
-    return pd.DataFrame()
+        if not fred.empty: return fred.tail(12)
+    hist_map=st.session_state.pmi_history.get(chosen) or DEFAULT_PMI_HISTORY.get(chosen)
+    if hist_map:
+        idx=pd.to_datetime([k+'-01' for k in sorted(hist_map.keys())]); vals=[hist_map[k] for k in sorted(hist_map.keys())]
+        return pd.DataFrame({'PMI':vals},index=idx).tail(12)
+    dates=pd.date_range(end=pd.Timestamp.today().normalize(),periods=12,freq='ME'); vals=np.linspace(max(latest_in+1.0,30),latest_in,12); st.caption('⚠️ Simulated PMI trend — click 🔄 Update PMI to fetch/save actual data.'); return pd.DataFrame({'PMI':vals},index=dates)
 
 def render_trend_channel(df, market_name):
     c1,c2,c3,c4=st.columns([1,1,1,1])
@@ -2974,14 +2950,37 @@ def render_market(expanded=False):
         latest_in=float(st.session_state.get('latest_pmi_value',actual['value']))
         month_in=st.session_state.get('latest_pmi_month',actual['month'])
         pmi_app=sel not in PMI_NA_MARKETS
-        _local_pmi_res = resolve_macro_value(sel,'PMI')
-        latest_display = 0.0 if not pmi_app else (_local_pmi_res.get('value') if isinstance(_local_pmi_res,dict) and _local_pmi_res.get('value') is not None else float('nan'))
+        latest_display=0.0 if not pmi_app else latest_in
         local_score,local_alert,lvix,lcurve,lpmi,ldd,ltrend=calc_market_scores_by_asset(sel,latest_display,dd,trend_below,vix,curve_spread)
         inflation_res=resolve_macro_value(index_label,'Inflation')
         unemployment_res=resolve_macro_value(index_label,'Unemployment')
         rates_res=resolve_macro_value(index_label,'Rates')
 
         # 2. Macro-only trend snapshot. No duplicate index price chart here.
+        with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
+            st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
+            pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
+            inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
+            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
+            rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})
+            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
+            tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
+            if not tnx_raw.empty and not irx_raw.empty:
+                aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
+                if not aligned.empty: curve_df=pd.DataFrame({'Yield Curve':aligned.TNX-aligned.IRX},index=aligned.index)
+            r1c1,r1c2=st.columns(2)
+            with r1c1:
+                if pmi_app: mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
+                else: st.info('PMI is not applicable for this asset class.')
+            with r1c2: render_macro_line_chart(inflation_df,'Inflation Trend','Parsed macro-pack / latest official value',RED,'%')
+            r2c1,r2c2=st.columns(2)
+            with r2c1: render_macro_line_chart(unemployment_df,'Unemployment Trend','Parsed macro-pack / latest official value',ORANGE,'%')
+            with r2c2: render_macro_line_chart(rates_df,f'{rate_card_label(index_label)} Trend','Parsed macro-pack / latest official value',PURPLE,'%')
+            r3c1,r3c2=st.columns(2)
+            with r3c1: mini_trend_chart(vix_df,'VIX 12M','Global volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
+            with r3c2: mini_trend_chart(curve_df,'Yield Curve 12M','US 10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
+
+        # 3. Valuation channel.
         with st.expander('📈 Quantitative Valuation Channels',expanded=False):
             st.markdown('### Quantitative Valuation Channels')
             render_trend_channel(ud,index_label)
@@ -3023,30 +3022,6 @@ def render_market(expanded=False):
             st.markdown('#### Deployment Trigger Audit')
             st.dataframe(trigger_df,use_container_width=True,hide_index=True)
 
-        with st.expander('📊 12M Macro & Market Trend Snapshot',expanded=False):
-            st.caption('Macro-only trend evidence. The full index price chart is shown once at the top of this monitor to avoid duplication.')
-            pmi_df=get_pmi_df(chosen,latest_in) if pmi_app else pd.DataFrame()
-            inflation_df=macro_trend_df(index_label,'Inflation',inflation_res).rename(columns={'Value':'Inflation'})
-            unemployment_df=macro_trend_df(index_label,'Unemployment',unemployment_res).rename(columns={'Value':'Unemployment'})
-            rates_df=rates_history_trend_df(index_label,rates_res).rename(columns={'Value':'Rates'})
-            vix_raw=hist('^VIX','2025-06-01'); vix_df=vix_raw[['Close']].rename(columns={'Close':'VIX'}) if not vix_raw.empty else pd.DataFrame()
-            tnx_raw=hist('^TNX','2025-06-01'); irx_raw=hist('^IRX','2025-06-01'); curve_df=pd.DataFrame()
-            if not tnx_raw.empty and not irx_raw.empty:
-                aligned=tnx_raw[['Close']].rename(columns={'Close':'TNX'}).join(irx_raw[['Close']].rename(columns={'Close':'IRX'}),how='inner')
-                if not aligned.empty: curve_df=pd.DataFrame({'Yield Curve':aligned.TNX-aligned.IRX},index=aligned.index)
-            r1c1,r1c2=st.columns(2)
-            with r1c1:
-                if pmi_app: mini_pmi_bar_chart(pmi_df,f'{chosen} 12M Monthly Releases',f'{month_in} latest monthly signal')
-                else: st.info('PMI is not applicable for this asset class.')
-            with r1c2: render_macro_line_chart(inflation_df,'Inflation Trend','Parsed macro-pack / latest official value',RED,'%')
-            r2c1,r2c2=st.columns(2)
-            with r2c1: render_macro_line_chart(unemployment_df,'Unemployment Trend','Parsed macro-pack / latest official value',ORANGE,'%')
-            with r2c2: render_macro_line_chart(rates_df,f'{rate_card_label(index_label)} Trend','Parsed macro-pack / latest official value',PURPLE,'%')
-            r3c1,r3c2=st.columns(2)
-            with r3c1: mini_trend_chart(vix_df,'VIX 12M','Global volatility regime',AMBER,'rgba(245,158,11,.18)','VIX')
-            with r3c2: mini_trend_chart(curve_df,'Yield Curve 12M','US 10Y minus 13W spread',BLUE,'rgba(37,99,235,.16)','Spread %')
-
-        # 3. Valuation channel.
 def render_performance(expanded=False):
     with st.expander('📊 MARKET PERFORMANCE & ETF TRACKER', expanded=expanded):
         init_user_etf_preferences()
@@ -3383,7 +3358,7 @@ def render_crash(expanded=False):
 def render_audit(expanded=False):
     with st.expander('📡 AUDIT, METHODOLOGY & EXPORT',expanded=expanded):
         left,right=st.columns([1,1])
-        left.markdown('#### 📡 Data Source & Freshness'); _audit_pmi_freshness=resolve_macro_value(index_label,'PMI'); _audit_pmi_value=(_audit_pmi_freshness.get('display','Awaiting pack') if isinstance(_audit_pmi_freshness,dict) else 'Awaiting pack'); _audit_pmi_source=(_audit_pmi_freshness.get('sub','Macro pack PMI') if isinstance(_audit_pmi_freshness,dict) else 'Macro pack PMI'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Source of Truth','macro_pack_latest/macro_data.csv',GREEN)+kv('PMI Value',_audit_pmi_value,GREEN)+kv('PMI Source',_audit_pmi_source,GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
+        left.markdown('#### 📡 Data Source & Freshness'); left.markdown('<div class="light-card">'+kv('Market Data','Yahoo Finance',BLUE)+kv('Currency Display',f'{currency_symbol} / {currency_name}',GREEN)+kv('PMI Proxy',st.session_state.get('pmi_proxy_label',pmi_label),GREEN)+kv('PMI Value',f'{st.session_state.get("latest_pmi_value",latest_pmi):.1f} · {st.session_state.get("latest_pmi_month","")}',GREEN)+kv('PMI Source',st.session_state.get('latest_pmi_source',pmi_proxy_default['source']),GREEN)+kv('Risk Model','Alternative asset' if sel in PMI_NA_MARKETS else 'Equity macro',PURPLE)+kv('Valuation Model','OOS Expanding Valuation Channel (Live Quant Model)',PURPLE)+kv('Bias Status','No look-ahead bias for OOS valuation model',GREEN)+kv('Last Refreshed',datetime.now().strftime('%d %b %Y %H:%M SGT'),SLATE)+'</div>',unsafe_allow_html=True)
         right.markdown('#### 🧾 Methodology Notes'); right.markdown('- Live Risk Score v2 is a weighted multi-factor macro indicator, not a crash prediction.\n- Applicable indicators are re-weighted when a market has N/A data, for example non-US Claims.\n- Source quality and adapter status are shown in tooltips/diagnostics only; they are not direct risk-score penalties.\n- PMI is monthly, not intraday live data.\n- US, SG, HK, MY and JP PMI should come from the parsed monthly macro pack as read-only dashboard input.\n- Manual PMI override is mainly retained for A-Share / China while China official mapping remains validation-oriented.\n- Gold / Bitcoin use the alternative-asset risk model; PMI is not applicable.\n- Phase 2 default valuation model is Expanding Window (OOS) to reduce look-ahead bias.\n- Full-history regression remains available as collapsible research-only reference.')
         st.markdown('#### ⚙️ Cycle Signal Settings & PMI Override')
         audit_pmi=resolve_macro_value(index_label,'PMI')
@@ -3407,7 +3382,7 @@ def render_audit(expanded=False):
             st.caption('Owner Mode is hidden from the sidebar during user testing. Macro Data Manager and Macro Adapter Diagnostics are retained here as collapsed admin/source-health tooling.')
             render_macro_data_manager_sidebar()
             render_macro_adapter_diagnostics_sidebar()
-        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':'macro_pack_latest/macro_data.csv','PMI Value':(resolve_macro_value(index_label,'PMI').get('value') if isinstance(resolve_macro_value(index_label,'PMI'),dict) else None),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
+        snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Live Market & Trend Monitor':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
