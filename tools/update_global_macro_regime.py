@@ -9,7 +9,7 @@ Generates:
 Locked regime design:
   Credit     = Chicago Fed NFCI via FRED series NFCI
   Liquidity  = US Net Liquidity proxy = WALCL - WDTGAL - RRPONTSYD
-  Growth     = Global PMI composite from available PMI inputs / fallback app defaults
+  Growth     = Global PMI composite from strict macro_pack_latest/macro_data.csv PMI rows
   Volatility = VIX via FRED series VIXCLS
 
 No FRED API key required. Uses FRED graph CSV endpoint.
@@ -34,18 +34,15 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 LATEST_OUT = OUT_DIR / "global_macro_regime_latest.csv"
 DIAG_OUT = OUT_DIR / "global_macro_regime_diagnostics.csv"
+MACRO_DATA_FILE = OUT_DIR / "macro_data.csv"
+PMI_AUDIT_OUT = OUT_DIR / "pmi_source_audit.csv"
+
+REQUIRED_PMI_MARKETS = ("US", "SG", "HK", "MY", "JP")
+PMI_REQUIRED_COLUMNS = ("market", "indicator", "date", "value", "source", "source_type", "notes")
+PMI_FORBIDDEN_SOURCE_TERMS = ("fallback", "default", "seed", "manual")
 
 FRED_CSV = "https://fred.stlouisfed.org/graph/fredgraph.csv?id={series_id}"
 
-# Existing Global20Engine PMI defaults, used only when no local macro-pack PMI file is found.
-# These match the current app's PMI proxy design and keep the executive page auditable.
-DEFAULT_PMI_VALUES = {
-    "US ISM Manufacturing PMI": {"value": 54.0, "date": "2026-05", "source": "App default / FRED ISM proxy"},
-    "China Caixin Manufacturing PMI": {"value": 50.0, "date": "2026-06", "source": "App default / NBS-Caixin proxy"},
-    "Singapore S&P Global PMI": {"value": 51.0, "date": "2026-06", "source": "App default / SIPMM-S&P proxy"},
-    "Malaysia Manufacturing PMI": {"value": 49.9, "date": "2026-06", "source": "App default / S&P Global proxy"},
-    "Japan Jibun Bank Manufacturing PMI": {"value": 50.4, "date": "2026-06", "source": "App default / Jibun-S&P proxy"},
-}
 
 
 def _now_iso() -> str:
@@ -146,81 +143,95 @@ def classify_liquidity(net_df: pd.DataFrame) -> tuple[str, str, float, float, st
     return "Neutral", "Stable", latest, chg4, latest_date
 
 
-def load_pmi_from_local_files() -> list[dict]:
-    """Try to discover PMI rows from macro_pack_latest CSV files.
+def _normalise_text(value: object) -> str:
+    return "" if pd.isna(value) else str(value).strip()
 
-    This is intentionally flexible because prior macro pack schemas may differ.
-    Expected-ish columns may include: indicator, value, date/month, source.
-    """
-    rows = []
-    for p in OUT_DIR.glob("*.csv"):
-        if p.name in {LATEST_OUT.name, DIAG_OUT.name}:
-            continue
-        try:
-            df = pd.read_csv(p)
-        except Exception:
-            continue
-        lower_cols = {c.lower(): c for c in df.columns}
-        # Find rows where any text column mentions PMI.
-        text_cols = [c for c in df.columns if df[c].dtype == object]
-        if not text_cols:
-            continue
-        mask = pd.Series(False, index=df.index)
-        for c in text_cols:
-            mask = mask | df[c].astype(str).str.contains("PMI", case=False, na=False)
-        sub = df[mask].copy()
-        if sub.empty:
-            continue
-        value_col = None
-        for candidate in ["value", "latest", "actual", "pmi", "reading"]:
-            if candidate in lower_cols:
-                value_col = lower_cols[candidate]
-                break
-        if value_col is None:
-            # fallback: first numeric column
-            num_cols = [c for c in sub.columns if pd.api.types.is_numeric_dtype(sub[c])]
-            if num_cols:
-                value_col = num_cols[0]
-        if value_col is None:
-            continue
-        for _, r in sub.iterrows():
-            val = pd.to_numeric(r.get(value_col), errors="coerce")
-            if pd.isna(val) or float(val) <= 0:
-                continue
-            label = None
-            for c in text_cols:
-                txt = str(r.get(c, ""))
-                if "PMI" in txt.upper():
-                    label = txt[:80]
-                    break
-            date_val = None
-            for candidate in ["date", "month", "period", "as_of"]:
-                if candidate in lower_cols:
-                    date_val = str(r.get(lower_cols[candidate], ""))
-                    break
-            source_val = None
-            for candidate in ["source", "provider"]:
-                if candidate in lower_cols:
-                    source_val = str(r.get(lower_cols[candidate], ""))
-                    break
-            rows.append({"label": label or "PMI", "value": float(val), "date": date_val or "", "source": source_val or f"local macro pack: {p.name}"})
-    return rows
+
+def _pmi_rejection_reason(row: pd.Series) -> str:
+    joined = " ".join(
+        _normalise_text(row.get(col, ""))
+        for col in ("source", "source_type", "notes")
+    ).lower()
+    hits = [term for term in PMI_FORBIDDEN_SOURCE_TERMS if term in joined]
+    return "Forbidden PMI source wording: " + ", ".join(hits) if hits else ""
+
+
+def _load_macro_data_pmi_rows() -> pd.DataFrame:
+    """Load production PMI rows from macro_pack_latest/macro_data.csv only."""
+    if not MACRO_DATA_FILE.exists():
+        raise FileNotFoundError(f"Missing macro data file: {MACRO_DATA_FILE}")
+
+    df = pd.read_csv(MACRO_DATA_FILE)
+    missing_cols = [col for col in PMI_REQUIRED_COLUMNS if col not in df.columns]
+    if missing_cols:
+        raise ValueError("macro_data.csv missing required PMI columns: " + ", ".join(missing_cols))
+
+    pmi = df[df["indicator"].astype(str).str.upper().str.strip().eq("PMI")].copy()
+    if pmi.empty:
+        raise ValueError("No PMI rows found in macro_data.csv")
+
+    pmi["market"] = pmi["market"].astype(str).str.upper().str.strip()
+    pmi["date"] = pd.to_datetime(pmi["date"], errors="coerce")
+    pmi["value"] = pd.to_numeric(pmi["value"], errors="coerce")
+    pmi = pmi.dropna(subset=["market", "date", "value"])
+    pmi = pmi[(pmi["value"] >= 35) & (pmi["value"] <= 70)]
+    if pmi.empty:
+        raise ValueError("No usable PMI rows found in macro_data.csv")
+
+    # Keep the latest usable PMI row per market before strict source checks.
+    return pmi.sort_values(["market", "date"]).groupby("market", as_index=False).tail(1)
+
+
+def build_growth_pmi_strict() -> tuple[float, str, str, str, str, pd.DataFrame]:
+    """Build production Global PMI from macro_data.csv with no default or fallback path."""
+    pmi = _load_macro_data_pmi_rows()
+
+    audit_rows = []
+    safe_rows = []
+    for _, row in pmi.iterrows():
+        market = _normalise_text(row.get("market", "")).upper()
+        reason = _pmi_rejection_reason(row)
+        if market not in REQUIRED_PMI_MARKETS:
+            reason = "Non-required PMI market"
+        coverage = "OK" if not reason else "REJECTED"
+
+        audit_rows.append({
+            "market": market,
+            "indicator": _normalise_text(row.get("indicator", "PMI")),
+            "date": pd.Timestamp(row["date"]).strftime("%Y-%m-%d"),
+            "value": float(row["value"]),
+            "source": _normalise_text(row.get("source", "")),
+            "source_type": _normalise_text(row.get("source_type", "")),
+            "coverage": coverage,
+            "reason": reason,
+        })
+        if coverage == "OK":
+            safe_rows.append(row)
+
+    audit = pd.DataFrame(audit_rows)
+    PMI_AUDIT_OUT.parent.mkdir(parents=True, exist_ok=True)
+    audit.to_csv(PMI_AUDIT_OUT, index=False)
+
+    safe_markets = {str(row["market"]).upper().strip() for row in safe_rows}
+    missing = [m for m in REQUIRED_PMI_MARKETS if m not in safe_markets]
+    if missing:
+        raise ValueError("Missing production-safe PMI rows: " + ", ".join(missing))
+
+    safe = pd.DataFrame(safe_rows)
+    pmi_value = float(safe["value"].mean())
+    latest_date = pd.Timestamp(safe["date"].max()).strftime("%Y-%m-%d")
+    remarks = (
+        f"Strict composite from {len(safe)} production-safe PMI rows in "
+        f"{MACRO_DATA_FILE.as_posix()}; required markets: "
+        + ", ".join(REQUIRED_PMI_MARKETS)
+    )
+    return (pmi_value, classify_pmi(pmi_value), "Monthly macro pack PMI composite", latest_date, remarks, audit)
 
 
 def build_growth_pmi() -> tuple[float, str, str, str, str]:
-    local = load_pmi_from_local_files()
-    if local:
-        vals = [r["value"] for r in local if 35 <= r["value"] <= 70]
-        if vals:
-            pmi = sum(vals) / len(vals)
-            dates = sorted({r.get("date", "") for r in local if r.get("date")})
-            latest_date = dates[-1] if dates else "local macro pack"
-            return pmi, classify_pmi(pmi), "Local macro pack composite", latest_date, f"Composite from {len(vals)} PMI rows discovered in macro_pack_latest"
-
-    vals = [v["value"] for v in DEFAULT_PMI_VALUES.values()]
-    pmi = sum(vals) / len(vals)
-    latest_date = sorted({v["date"] for v in DEFAULT_PMI_VALUES.values()})[-1]
-    return pmi, classify_pmi(pmi), "App PMI defaults composite", latest_date, "Fallback composite from existing app PMI defaults; replace with official PMI fetch when licensed/public source is settled"
+    """Compatibility wrapper for the production Growth row."""
+    pmi, status, source, latest_date, remarks, _audit = build_growth_pmi_strict()
+    return pmi, status, source, latest_date, remarks
 
 
 def main() -> int:
@@ -303,13 +314,13 @@ def main() -> int:
             "source": pmi_source,
             "source_series": "PMI composite excluding N/A",
             "last_updated": pmi_date,
-            "coverage": "OK" if "Fallback" not in pmi_remarks else "FALLBACK",
+            "coverage": "OK",
             "remarks": pmi_remarks,
         })
-        diag("growth_pmi", "OK", "PMI composite", f"{pmi:.1f}", pmi_date, source_url="local macro_pack_latest or app defaults")
+        diag("growth_pmi", "OK", "PMI composite", f"{pmi:.1f}", pmi_date, source_url=str(MACRO_DATA_FILE))
     except Exception as e:
         latest_rows.append({"indicator": "Growth", "value": "N/A", "numeric_value": "", "status": "Unavailable", "trend": "Unavailable", "source": "PMI composite", "source_series": "PMI", "last_updated": "", "coverage": "ERROR", "remarks": str(e)})
-        diag("growth_pmi", "ERROR", "PMI composite", error=str(e), source_url="local macro_pack_latest or app defaults")
+        diag("growth_pmi", "ERROR", "PMI composite", error=str(e), source_url=str(MACRO_DATA_FILE))
 
     # Volatility: VIXCLS
     try:
