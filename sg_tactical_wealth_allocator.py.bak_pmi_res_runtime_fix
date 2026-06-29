@@ -2788,8 +2788,7 @@ def render_executive():
             if v is None or pd.isna(v): return 'N/A'
             return f'{float(v):.2f}%'
         except Exception: return 'N/A'
-    pmi_res=resolve_macro_value(index_label,'PMI')
-_pmi_pack_value = pmi_res.get('value') if isinstance(pmi_res,dict) else None
+    _pmi_pack_value = pmi_res.get('value') if isinstance(pmi_res,dict) else None
 try:
     _pmi_pack_float = float(_pmi_pack_value) if _pmi_pack_value is not None else None
 except Exception:
