@@ -30,6 +30,6 @@ jobs:
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator.py.bak_data_source_governance_v4
+          git add sg_tactical_wealth_allocator.py sg_tactical_wealth_allocator.py.bak_data_source_governance_clean
           git commit -m "Apply base app data-source governance patch" || echo "No changes to commit"
           git push
