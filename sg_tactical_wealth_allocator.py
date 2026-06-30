@@ -2704,15 +2704,9 @@ def add_performance_and_gap(rows,market_name):
 
 # ------------------------- Crash Deployment Engine landing page -------------------------
 def render_landing_page():
-    """Minimal responsive landing page using native Streamlit layout.
-    No Base64, no README HTML, no raw grid wrapper. Logo stays as external asset.
-    """
+    """Image-2 aligned landing page: left navigation shell + Executive Centre overview."""
     logo_path = None
-    for candidate in [
-        Path('assets/crash_deployment_engine_logo.png'),
-        Path('Crash Deployment Engine.png'),
-        Path('crash_deployment_engine_logo.png'),
-    ]:
+    for candidate in [Path('assets/crash_deployment_engine_logo.png'), Path('Crash Deployment Engine.png'), Path('crash_deployment_engine_logo.png')]:
         if candidate.exists():
             logo_path = candidate
             break
@@ -2721,116 +2715,109 @@ def render_landing_page():
     <style>
     [data-testid="stSidebar"] {display: none;}
     [data-testid="stHeader"] {background: transparent;}
-    .stApp {
-        background:
-            radial-gradient(circle at top left, rgba(20,184,166,.20), transparent 30%),
-            radial-gradient(circle at top right, rgba(239,68,68,.14), transparent 32%),
-            linear-gradient(135deg, #020617 0%, #07111F 52%, #020617 100%);
-    }
-    .block-container {
-        max-width: 1120px;
-        padding-top: 2.2rem;
-        padding-bottom: 2.2rem;
-    }
-    .cde-card {
-        border: 1px solid rgba(148,163,184,.22);
-        border-radius: 28px;
-        background: rgba(2,6,23,.72);
-        box-shadow: 0 28px 88px rgba(0,0,0,.36);
-        padding: clamp(22px, 4vw, 48px);
-        text-align: center;
-    }
-    .cde-title {
-        margin-top: 18px;
-        font-size: clamp(38px, 7vw, 82px);
-        line-height: .94;
-        font-weight: 950;
-        letter-spacing: .02em;
-        color: #F8FAFC;
-    }
-    .cde-title span {color: #2DD4BF;}
-    .cde-centre {
-        margin-top: 16px;
-        color: #CBD5E1;
-        font-size: clamp(13px, 1.5vw, 18px);
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: .12em;
-    }
-    .cde-subtitle {
-        margin-top: 16px;
-        color: #F8FAFC;
-        font-size: clamp(18px, 2.4vw, 30px);
-        font-weight: 850;
-        line-height: 1.25;
-    }
-    .cde-subtitle strong {color:#2DD4BF;}
-    .cde-chips {
-        margin-top: 24px;
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-    }
-    .cde-chip {
-        border: 1px solid rgba(148,163,184,.22);
-        border-radius: 999px;
-        background: rgba(15,23,42,.76);
-        color: #CBD5E1;
-        padding: 9px 13px;
-        font-size: 12px;
-        font-weight: 800;
-    }
-    div[data-testid="stImage"] img {
-        max-height: 330px;
-        object-fit: contain;
-        filter: drop-shadow(0 18px 40px rgba(0,0,0,.35));
-    }
-    div.stButton > button:first-child {
-        margin-top: 26px;
-        width: min(340px, 88vw);
-        border: 0;
-        border-radius: 16px;
-        background: linear-gradient(90deg, #0F766E, #14B8A6, #22D3EE);
-        color: white;
-        font-weight: 950;
-        letter-spacing: .10em;
-        text-transform: uppercase;
-        padding: 15px 20px;
-        box-shadow: 0 16px 36px rgba(20,184,166,.26);
-    }
-    @media (max-width: 760px) {
-        .block-container {padding: 1rem .85rem 1.6rem .85rem;}
-        .cde-card {border-radius: 22px; padding: 20px 16px;}
-        div[data-testid="stImage"] img {max-height: 210px;}
-        .cde-title {margin-top: 14px;}
-        .cde-chips {gap: 8px; margin-top: 18px;}
-        .cde-chip {font-size: 11px; padding: 8px 10px;}
-    }
+    .stApp {background: linear-gradient(135deg, #06111F 0%, #F8FAFC 38%, #EEF5FB 100%);}
+    .block-container {max-width: 1280px; padding-top: 0.9rem; padding-bottom: 1.5rem;}
+    .cde-side {background: linear-gradient(180deg,#061B33 0%,#071827 100%); color:#E5EEF7; min-height:760px; padding:22px 18px; border-radius:24px; box-shadow:0 24px 68px rgba(15,23,42,.22);}
+    .cde-main {padding:28px 8px 24px 0; color:#0F172A;}
+    .cde-nav-title {font-size:12px; text-transform:uppercase; letter-spacing:.10em; font-weight:900; color:#F8FAFC; margin:18px 0 10px;}
+    .cde-nav-item {padding:12px 14px; border-radius:11px; margin:8px 0; font-size:14px; font-weight:850; color:#DCE8F5;}
+    .cde-nav-item.active {background:linear-gradient(90deg,#2563EB,#0EA5E9); color:#FFFFFF; box-shadow:0 12px 26px rgba(37,99,235,.28);}
+    .cde-nav-sub {font-size:11px; line-height:1.45; color:#B8C7D9; margin:-3px 10px 10px 36px;}
+    .cde-divider {height:1px; background:rgba(226,232,240,.20); margin:18px 0;}
+    .cde-select-label {font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:#DDEAF6; font-weight:900; margin:12px 0 7px;}
+    .cde-select-box {background:#FFFFFF; color:#0F172A; border-radius:10px; padding:11px 12px; font-weight:850; font-size:13px; margin-bottom:12px;}
+    .cde-capital {color:#2DD4BF; font-size:24px; font-weight:950; margin-top:8px;}
+    .cde-top {display:flex; justify-content:space-between; gap:18px; align-items:flex-start; margin-bottom:24px;}
+    .cde-title {font-size:clamp(30px,4.2vw,44px); line-height:1; font-weight:950; letter-spacing:.02em; margin:0; color:#0F172A;}
+    .cde-tag {font-size:14px; color:#475569; font-weight:800; margin-top:8px;}
+    .cde-centre {font-size:21px; font-weight:950; color:#334155; margin-top:2px;}
+    .cde-refresh {font-size:12px; text-align:right; color:#64748B; font-weight:750;}
+    .cde-btn-mini {margin-top:8px; display:inline-block; background:#FFFFFF; border:1px solid #D8E2EE; border-radius:10px; padding:10px 18px; color:#2563EB; font-weight:950;}
+    .cde-card-grid {display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:22px;}
+    .cde-card {background:rgba(255,255,255,.84); border:1px solid #D8E2EE; border-radius:14px; padding:16px; min-height:96px; box-shadow:0 10px 28px rgba(15,23,42,.05);}
+    .cde-card .label {font-size:12px; color:#475569; font-weight:900; margin-bottom:8px;}
+    .cde-card .big {font-size:26px; line-height:1; font-weight:950; color:#F97316;}
+    .cde-card .green {color:#10B981;}
+    .cde-card .small {font-size:12px; color:#475569; font-weight:750; margin-top:6px;}
+    .cde-section-title {font-size:22px; font-weight:950; margin:12px 0 3px;}
+    .cde-section-sub {font-size:13px; color:#475569; font-weight:700; margin-bottom:12px;}
+    .cde-table {width:100%; border-collapse:collapse; background:rgba(255,255,255,.76); border:1px solid #D8E2EE; border-radius:14px; overflow:hidden; font-size:13px;}
+    .cde-table th {text-align:left; background:#EEF4FB; color:#334155; padding:12px; font-weight:950;}
+    .cde-table td {padding:12px; border-top:1px solid #D8E2EE; font-weight:800; color:#0F172A;}
+    .cde-buy {background:#DCFCE7; color:#16A34A; padding:5px 9px; border-radius:999px; font-weight:950; font-size:11px;}
+    .cde-watch {background:#FFEDD5; color:#F97316; padding:5px 9px; border-radius:999px; font-weight:950; font-size:11px;}
+    .cde-hold {background:#E5E7EB; color:#334155; padding:5px 9px; border-radius:999px; font-weight:950; font-size:11px;}
+    .cde-bottom {display:grid; grid-template-columns:1.15fr 1fr 1.25fr; gap:16px; margin-top:18px;}
+    .cde-panel {background:rgba(255,255,255,.84); border:1px solid #D8E2EE; border-radius:14px; padding:16px; min-height:112px;}
+    .cde-panel-title {font-size:12px; color:#475569; font-weight:950; margin-bottom:8px;}
+    .cde-trigger {font-size:38px; color:#F97316; font-weight:950; line-height:1; margin-top:8px;}
+    div.stButton > button:first-child {width:100%; border:0; border-radius:14px; background:linear-gradient(90deg,#0F766E,#14B8A6,#22D3EE); color:white; font-weight:950; letter-spacing:.09em; text-transform:uppercase; padding:14px 18px; box-shadow:0 14px 34px rgba(20,184,166,.26); margin-top:14px;}
+    @media (max-width:900px) {.block-container{padding:.7rem .55rem 1rem;} .cde-side{min-height:auto;} .cde-main{padding:18px 0;} .cde-top{display:block;} .cde-refresh{text-align:left;margin-top:14px;} .cde-card-grid{grid-template-columns:1fr 1fr;gap:12px;} .cde-bottom{grid-template-columns:1fr;} .cde-table{font-size:11px;} .cde-table th,.cde-table td{padding:9px 7px;}}
+    @media (max-width:560px) {.cde-card-grid{grid-template-columns:1fr;} .cde-title{font-size:30px;} .cde-centre{font-size:17px;} .cde-table th:nth-child(3),.cde-table td:nth-child(3){display:none;}}
     </style>
-    <div class="cde-card">
     """, unsafe_allow_html=True)
 
-    if logo_path:
-        st.image(str(logo_path), use_container_width=True)
-    else:
-        st.warning('Logo file not found. Add assets/crash_deployment_engine_logo.png')
+    side, main = st.columns([0.24, 0.76], gap='large')
 
-    st.markdown("""
-        <div class="cde-title"><span>CRASH</span><br/>DEPLOYMENT ENGINE</div>
-        <div class="cde-centre">Executive Centre — All Markets</div>
-        <div class="cde-subtitle">Turning market crashes into <strong>opportunities.</strong></div>
-        <div class="cde-chips">
-            <div class="cde-chip">Executive Centre</div>
-            <div class="cde-chip">Market Deep Dive</div>
-            <div class="cde-chip">Crash Analytics</div>
+    with side:
+        st.markdown('<div class="cde-side">', unsafe_allow_html=True)
+        if logo_path:
+            st.image(str(logo_path), use_container_width=True)
+        else:
+            st.markdown('<div style="border:1px dashed rgba(255,255,255,.32);border-radius:14px;padding:18px;text-align:center;color:#CBD5E1;font-weight:900;">CRASH<br/>DEPLOYMENT<br/>ENGINE</div>', unsafe_allow_html=True)
+        st.markdown("""
+        <div class="cde-nav-title">Navigation</div>
+        <div class="cde-nav-item active">▰&nbsp;&nbsp; Executive Centre</div>
+        <div class="cde-nav-item">▧&nbsp;&nbsp; Market Deep Dive</div>
+        <div class="cde-nav-sub">Live Monitor, Market Performance and Suggested Deployment are inside this page.</div>
+        <div class="cde-nav-item">⌁&nbsp;&nbsp; Crash Analytics</div>
+        <div class="cde-nav-item">▣&nbsp;&nbsp; Audit, Methodology & Export</div>
+        <div class="cde-nav-item">⚙&nbsp;&nbsp; Settings / Admin</div>
+        <div class="cde-divider"></div>
+        <div class="cde-nav-title">Market Context</div>
+        <div class="cde-select-label">Asset Group</div><div class="cde-select-box">Market / Equity Index ▾</div>
+        <div class="cde-select-label">Focus Market</div><div class="cde-select-box">HSI ▾</div>
+        <div class="cde-divider"></div>
+        <div class="cde-nav-title">Capital Overview</div>
+        <div style="font-size:12px;color:#DDEAF6;font-weight:850;">Total Investible Capital</div>
+        <div class="cde-capital">HK$100,000</div>
+        <div style="font-size:12px;color:#DDEAF6;font-weight:750;margin-top:8px;">Deployed: HK$10,000 (10%)<br/>Remaining: HK$90,000 (90%)</div>
+        """, unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with main:
+        st.markdown("""
+        <div class="cde-main">
+            <div class="cde-top">
+                <div><h1 class="cde-title">CRASH DEPLOYMENT ENGINE</h1><div class="cde-tag">Turning market crashes into opportunities.</div><div class="cde-centre">Executive Centre — All Markets</div></div>
+                <div class="cde-refresh">Market data as of<br/>19 Jun 2026, 07:00<br/><span class="cde-btn-mini">↻ Refresh</span></div>
+            </div>
+            <div class="cde-card-grid">
+                <div class="cde-card"><div class="label">Global Risk Regime</div><div class="big">WATCH</div><div class="small">Macro score 42 / 100</div></div>
+                <div class="cde-card"><div class="label">Best Opportunity</div><div class="big green">A-SHARE</div><div class="small">Highest opportunity score</div></div>
+                <div class="cde-card"><div class="label">Deployment Stage</div><div class="big">INITIAL</div><div class="small">10% cumulative deployment</div></div>
+                <div class="cde-card"><div class="label">Current Market Environment</div><div class="small"><b style="color:#10B981;">18.2</b>&nbsp;&nbsp; Tightening &nbsp; Neutral &nbsp; Moderate<br/>Volatility Normal · Credit Cautious · Liquidity Steady</div></div>
+            </div>
+            <div class="cde-section-title">Market Opportunity Overview</div>
+            <div class="cde-section-sub">Landing-level cross-market comparison. Full analysis stays in Market Deep Dive.</div>
+            <table class="cde-table">
+                <tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>Score</th><th>Signal</th><th>Landing Action</th></tr>
+                <tr><td>①</td><td>A-Share</td><td>CSI 300</td><td style="color:#F97316;">-17.4%</td><td>92</td><td><span class="cde-buy">BUY</span></td><td style="color:#2563EB;">Review</td></tr>
+                <tr><td>②</td><td>HSI</td><td>Hang Seng</td><td style="color:#F97316;">-13.1%</td><td>78</td><td><span class="cde-buy">BUY</span></td><td style="color:#2563EB;">Focus Market</td></tr>
+                <tr><td>③</td><td>KOSPI</td><td>KOSPI</td><td style="color:#F97316;">-8.7%</td><td>55</td><td><span class="cde-watch">WATCH</span></td><td>Monitor</td></tr>
+                <tr><td>4</td><td>Nikkei 225</td><td>N225</td><td>-5.2%</td><td>32</td><td><span class="cde-hold">HOLD</span></td><td>Hold Cash</td></tr>
+                <tr><td>5</td><td>S&P 500</td><td>SPY</td><td>-3.2%</td><td>20</td><td><span class="cde-hold">HOLD</span></td><td>Hold Cash</td></tr>
+            </table>
+            <div class="cde-bottom">
+                <div class="cde-panel"><div class="cde-panel-title">Deployment Ladder</div><div style="font-size:13px;font-weight:800;line-height:1.85;">0% to -8%: Hold<br/><span style="color:#F97316;">-8% to -15%: 10% Initial deploy</span><br/><span style="color:#10B981;">-15% to -25%: 25% Deploy more</span><br/><span style="color:#10B981;">-25% to -35%: 50% Strong deploy</span></div></div>
+                <div class="cde-panel"><div class="cde-panel-title">Deployment Allocation by Capital Source</div><div style="font-size:13px;font-weight:800;line-height:1.75;">Cash available HK$90,000<br/>Deployed HK$10,000<br/>Other funds HK$0</div></div>
+                <div class="cde-panel"><div class="cde-panel-title">Next Deployment Trigger — Highest Priority Market</div><div style="font-size:13px;font-weight:850;">HANG SENG (HK) &nbsp; Additional Deployment</div><div class="cde-trigger">-15%</div><div style="font-size:12px;color:#475569;font-weight:800;">Current drawdown: -13.1% · Distance: -1.9%</div></div>
+            </div>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    if st.button('Enter Platform', key='enter_crash_deployment_engine'):
-        st.session_state.show_landing_page = False
-        st.rerun()
+        """, unsafe_allow_html=True)
+        if st.button('Enter Platform', key='enter_crash_deployment_engine'):
+            st.session_state.show_landing_page = False
+            st.rerun()
 
 # ------------------------- app state/load -------------------------
 with st.spinner('Loading market data...'):
