@@ -25,6 +25,11 @@ import yfinance as yf
 
 st.set_page_config(page_title='Global Drawdown Allocation Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 
+# --- Crash Deployment Engine landing page state ---
+if 'landing_page' not in st.session_state:
+    st.session_state.landing_page = True
+
+
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
 # Currency display helpers.
@@ -2696,6 +2701,83 @@ def add_performance_and_gap(rows,market_name):
         out.append(row)
     return pd.DataFrame(out)
 
+
+# ------------------------- Crash Deployment Engine landing page -------------------------
+def render_landing_page():
+    """Entry landing page. Keeps sidebar market selector as source of truth after entry."""
+    logo_candidates = [
+        Path('assets/crash_deployment_engine_logo.png'),
+        Path('Crash Deployment Engine.png'),
+        Path('crash_deployment_engine_logo.png'),
+    ]
+    logo_path = next((p for p in logo_candidates if p.exists()), None)
+
+    st.markdown("""
+    <style>
+    [data-testid="stSidebar"] {display: none;}
+    .cde-shell {
+        min-height: 86vh;
+        padding: 34px 38px 30px 38px;
+        border-radius: 28px;
+        background:
+            radial-gradient(circle at 14% 18%, rgba(20,184,166,.20), transparent 28%),
+            radial-gradient(circle at 84% 12%, rgba(239,68,68,.13), transparent 30%),
+            linear-gradient(135deg, #020617 0%, #06111f 48%, #020617 100%);
+        color: #F8FAFC;
+        border: 1px solid rgba(148,163,184,.22);
+        box-shadow: 0 26px 90px rgba(2,6,23,.38);
+    }
+    .cde-grid {display: grid; grid-template-columns: minmax(320px, .92fr) minmax(380px, 1.08fr); gap: 34px; align-items: center;}
+    .cde-logo-card {background: rgba(2,6,23,.18); border: 1px solid rgba(148,163,184,.16); border-radius: 24px; padding: 18px;}
+    .cde-kicker {font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: #2DD4BF; font-weight: 800; margin-bottom: 12px;}
+    .cde-title {font-size: clamp(42px, 5.2vw, 76px); line-height: .92; font-weight: 950; letter-spacing: .02em; margin: 0;}
+    .cde-title span {color: #2DD4BF;}
+    .cde-centre {margin-top: 14px; font-size: clamp(15px, 1.35vw, 20px); color: #CBD5E1; letter-spacing: .08em; text-transform: uppercase;}
+    .cde-subtitle {margin-top: 18px; max-width: 760px; font-size: clamp(20px, 2vw, 30px); line-height: 1.25; color: #F8FAFC; font-weight: 700;}
+    .cde-subtitle strong {color:#2DD4BF;}
+    .cde-panel-row {display:grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 28px;}
+    .cde-panel {border:1px solid rgba(148,163,184,.18); background:rgba(15,23,42,.62); border-radius:18px; padding:16px;}
+    .cde-panel .label {font-size:12px; color:#94A3B8; text-transform:uppercase; letter-spacing:.12em;}
+    .cde-panel .value {font-size:18px; font-weight:850; margin-top:6px; color:#F8FAFC;}
+    .cde-note {margin-top: 20px; color:#94A3B8; font-size:13px; line-height:1.55;}
+    div.stButton > button:first-child {
+        margin-top: 26px; width: 100%; border-radius: 16px; border: 0;
+        background: linear-gradient(90deg, #0F766E, #14B8A6, #22D3EE);
+        color: white; font-weight: 900; letter-spacing: .08em; text-transform: uppercase;
+        padding: 15px 18px; box-shadow: 0 16px 34px rgba(20,184,166,.24);
+    }
+    div.stButton > button:first-child:hover {filter: brightness(1.07); color:white; border:0;}
+    @media (max-width: 900px) {.cde-grid {grid-template-columns: 1fr;} .cde-panel-row {grid-template-columns: 1fr;}}
+    </style>
+    """, unsafe_allow_html=True)
+
+    st.markdown('<div class="cde-shell"><div class="cde-grid">', unsafe_allow_html=True)
+    left, right = st.columns([0.92, 1.08])
+    with left:
+        st.markdown('<div class="cde-logo-card">', unsafe_allow_html=True)
+        if logo_path:
+            st.image(str(logo_path), use_container_width=True)
+        else:
+            st.markdown('<div style="padding:72px 24px;text-align:center;border:1px dashed rgba(148,163,184,.35);border-radius:18px;color:#94A3B8;">Logo file not found<br/>Place logo at assets/crash_deployment_engine_logo.png</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    with right:
+        st.markdown("""
+        <div class="cde-kicker">Macro-Tactical Deploy Layer</div>
+        <h1 class="cde-title"><span>CRASH</span><br/>DEPLOYMENT ENGINE</h1>
+        <div class="cde-centre">Executive Centre — All Markets</div>
+        <div class="cde-subtitle">Turning market crashes into <strong>opportunities.</strong></div>
+        <div class="cde-panel-row">
+            <div class="cde-panel"><div class="label">Entry View</div><div class="value">Executive Centre</div></div>
+            <div class="cde-panel"><div class="label">Market Control</div><div class="value">Sidebar Selector</div></div>
+            <div class="cde-panel"><div class="label">Deep Dive</div><div class="value">Inside App</div></div>
+        </div>
+        <div class="cde-note">Landing page is an entry layer only. Market selection remains controlled inside the main dashboard to avoid duplicated routing logic.</div>
+        """, unsafe_allow_html=True)
+        if st.button('Enter Platform', key='enter_crash_deployment_engine'):
+            st.session_state.landing_page = False
+            st.rerun()
+    st.markdown('</div></div>', unsafe_allow_html=True)
+
 # ------------------------- app state/load -------------------------
 with st.spinner('Loading market data...'):
     m=market_data()
@@ -3443,4 +3525,7 @@ def run_render_loop():
     st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
     st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
 
-run_render_loop()
+if st.session_state.get('landing_page', True):
+    render_landing_page()
+else:
+    run_render_loop()
