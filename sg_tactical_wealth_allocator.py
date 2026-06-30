@@ -23,7 +23,7 @@ import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 
-st.set_page_config(page_title='Crash Deployment Engine v38ac', layout='wide', initial_sidebar_state='expanded')
+st.set_page_config(page_title='Global Drawdown Allocation Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 
 BLUE = '#2563EB'; RED = '#EF4444'; ORANGE = '#F97316'; AMBER = '#F59E0B'; GREEN = '#16A34A'; SLATE = '#64748B'; PURPLE = '#7C3AED'; TEXT = '#111827'; MUTED = '#6B7280'
 
@@ -187,24 +187,6 @@ section[data-testid="stSidebar"] [data-baseweb="select"] * {color:#111827 !impor
 /* v36z diagnostics-state-fix compact */
 .xec-title{font-size:1.55rem;font-weight:950;color:#0F172A;margin:4px 0 14px}.xec-grid{display:grid;gap:14px;margin-bottom:14px;overflow:visible!important}.xec-top-grid{grid-template-columns:minmax(0,1.05fr) minmax(360px,.95fr)}.xec-kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible!important}.xec-macro-grid{grid-template-columns:repeat(7,minmax(0,1fr));gap:12px;overflow:visible!important}.xec-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:12px 0 18px}.xec-card{position:relative;background:#fff;border:1px solid #DDE7F3;border-radius:18px;box-shadow:0 8px 22px rgba(15,23,42,.06);overflow:visible!important}.xec-card:hover{z-index:1000!important}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-micro-card,.xec-action-card,.xec-macro-wrap{overflow:visible!important}.xec-hero-card,.xec-deploy-card{padding:22px 24px;min-height:188px;display:flex;flex-direction:column;justify-content:center}.xec-eyebrow,.xec-kpi-label,.xec-micro-name,.xec-section-label,.xec-deploy-title{position:relative;display:flex;align-items:center;gap:6px;color:#0F172A;font-size:.76rem;font-weight:950;text-transform:uppercase;letter-spacing:.05em}.xec-decision{font-size:1.65rem;line-height:1.08;font-weight:950;color:var(--accent,#2563EB);margin:9px 0}.xec-decision small{font-size:.92rem;color:#16A34A}.xec-sub,.xec-kpi-sub,.xec-micro-sub{font-size:.78rem;line-height:1.4;color:#64748B;font-weight:700}.xec-pill-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}.xec-pill{border-radius:999px;padding:6px 10px;font-size:.75rem;font-weight:900}.xec-pill.green{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.xec-pill.blue{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.xec-pill.amber{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-deploy-head{display:flex;justify-content:space-between;gap:12px}.xec-active-badge{font-size:.76rem;font-weight:950;color:#047857;background:#ECFDF5;border:1px solid #BBF7D0;padding:7px 12px;border-radius:999px}.xec-progress{position:relative;height:14px;background:#DCE9F8;border-radius:999px;margin:24px 0 14px;overflow:visible}.xec-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#10B981,#22C55E);width:var(--fill,0%)}.xec-progress-marker{position:absolute;top:-8px;left:var(--marker,0%);transform:translateX(-50%);background:#0EA5E9;color:#fff;border-radius:999px;padding:4px 8px;font-size:.66rem;font-weight:950;white-space:nowrap}.xec-deploy-meta{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(120px,.45fr);gap:18px;color:#64748B;font-size:.78rem;font-weight:800;line-height:1.45}.xec-kpi-card{padding:18px;min-height:188px}.xec-kpi-value{font-size:1.86rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-kpi-value.green{color:#16A34A}.xec-kpi-value.amber{color:#B45309}.xec-kpi-value.red{color:#DC2626}.xec-mini{height:72px;margin-top:9px;display:flex;align-items:center;justify-content:center;overflow:hidden}.xec-mini svg{width:100%;height:72px}.xec-z-mini{height:66px;border-radius:12px;margin-top:12px;background:linear-gradient(90deg,#DCFCE7 0 35%,#F8FAFC 35% 65%,#FEE2E2 65% 100%);overflow:hidden;display:flex;align-items:center;justify-content:center}.xec-risk-mini{height:76px;display:flex;align-items:center;justify-content:center}.xec-macro-wrap{padding:18px}.xec-micro-card{padding:16px 14px;min-height:104px}.xec-micro-card.unavailable{background:#FBFCFE;border-color:#E6EDF7;box-shadow:0 4px 12px rgba(15,23,42,.035)}.xec-micro-value{font-size:1.25rem;font-weight:950;color:#0F172A;margin-top:12px}.xec-micro-value.muted{font-size:1.02rem;color:#94A3B8}.source-pill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 7px;font-size:.66rem;font-weight:900;margin-left:4px}.source-official{background:#ECFDF5;color:#047857;border:1px solid #BBF7D0}.source-upload{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE}.source-awaiting{background:#F8FAFC;color:#64748B;border:1px solid #CBD5E1}.source-na{background:#F8FAFC;color:#94A3B8;border:1px solid #E2E8F0}.source-validation{background:#FFFBEB;color:#B45309;border:1px solid #FDE68A}.xec-summary{background:#0F1B2D;color:#fff;border-radius:16px;padding:16px 20px;margin:16px 0 14px}.xec-summary-title{font-size:.84rem;font-weight:950;text-transform:uppercase;margin-bottom:12px}.xec-summary-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.xec-summary-chip{background:#17263C;border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:12px 14px}.xec-summary-chip span{display:block;color:#9FB0C8;font-size:.67rem;text-transform:uppercase;font-weight:950}.xec-summary-chip b{display:block;color:#fff;font-size:.84rem;margin-top:5px}.xec-visible-section-title{font-size:1.05rem;font-weight:950;color:#0F172A;margin:4px 0 12px}.xec-action-card{padding:18px 20px;min-height:172px}.xec-action-card.compact{min-height:132px}.xec-action-card h4{font-size:1.02rem;margin:0 0 12px;color:#0F172A}.xec-formula{font-size:1.55rem;line-height:1.22;font-weight:950;color:#0F172A;margin:14px 0 6px}.xec-note{font-size:.77rem;line-height:1.4;color:#64748B;font-weight:650;margin-top:10px}.xec-kpi-label .exec-info-dot,.xec-micro-name .exec-info-dot,.xec-section-label .exec-info-dot,.xec-eyebrow .exec-info-dot,.xec-deploy-title .exec-info-dot,.xec-action-card h4 .exec-info-dot{position:relative!important;z-index:100001!important;flex:0 0 auto!important}.xec-kpi-label .exec-tooltip,.xec-micro-name .exec-tooltip,.xec-section-label .exec-tooltip,.xec-eyebrow .exec-tooltip,.xec-deploy-title .exec-tooltip,.xec-action-card h4 .exec-tooltip{position:absolute!important;top:22px!important;left:0!important;width:min(420px,calc(100vw - 56px))!important;max-width:min(420px,calc(100vw - 56px))!important;z-index:1000000!important;white-space:normal!important;pointer-events:none!important}.xec-macro-grid .xec-card:nth-child(n+5) .exec-tooltip{left:auto!important;right:0!important}@media(max-width:1180px){.xec-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.xec-macro-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.xec-summary-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:760px){.xec-top-grid,.xec-kpi-grid,.xec-macro-grid,.xec-summary-grid,.xec-action-grid{grid-template-columns:1fr}.xec-hero-card,.xec-deploy-card,.xec-kpi-card,.xec-macro-wrap,.xec-action-card{padding:15px 16px;min-height:auto}}
 
-
-
-/* Crash Deployment Engine locked UI overlay */
-section[data-testid="stSidebar"] {background:linear-gradient(180deg,#0b2b4c,#08233d) !important; border-right:1px solid #284a6b !important;}
-section[data-testid="stSidebar"] * {color:#d7e4f2;}
-section[data-testid="stSidebar"] .stRadio label, section[data-testid="stSidebar"] .stRadio div {color:#d7e4f2 !important;}
-section[data-testid="stSidebar"] .stButton button {background:#fff !important; color:#2563EB !important; border:1px solid #d7e2ef !important; font-weight:900 !important;}
-section[data-testid="stSidebar"] input, section[data-testid="stSidebar"] textarea {color:#111827 !important; background:#FFFFFF !important;}
-.cde-logo-card{background:radial-gradient(circle at 35% 30%,#0a1828 0%,#04101e 55%,#01060d 100%);border:1px solid #284a6b;border-radius:12px;padding:14px 12px 12px;margin-bottom:18px;box-shadow:0 14px 28px rgba(0,0,0,.32);}
-.cde-logo-row{display:flex;align-items:center;gap:10px;}
-.cde-logo-svg{width:100px;height:100px;flex:none;}
-.cde-logo-text-main{color:#f8fafc!important;font-weight:950;font-size:28px;letter-spacing:.05em;line-height:1;text-shadow:0 0 10px rgba(255,255,255,.22);}
-.cde-logo-text-sub{color:#20d397!important;font-weight:950;font-size:11.5px;letter-spacing:.14em;margin-top:8px;line-height:1.15;}
-.cde-logo-tag{margin-top:10px;color:#cbd5e1!important;font-size:8.2px;font-weight:800;letter-spacing:.12em;line-height:1.45;text-align:center;border-top:1px solid rgba(148,163,184,.22);padding-top:8px;}
-.cde-logo-tag span{color:#20d397!important;}
-.cde-sidebar-note{font-size:11px;color:#9fb2c7!important;font-style:italic;margin:-2px 0 8px 32px;line-height:1.4;}
-.cde-market-selector-panel{background:#F8FAFC;border:1px solid #DDE7F3;border-radius:16px;padding:16px 18px;margin:8px 0 18px;}
-
 </style>
 ''', unsafe_allow_html=True)
 
@@ -273,8 +255,8 @@ BENCHMARK_TICKERS = {
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
-NAV_OPTIONS = ['🧠 Executive Centre','▣ Market Deep Dive','🏆 Crash Analytics','📡 Audit, Methodology & Export']
-SECTION_ORDER = ['▣ Market Deep Dive','🏆 Crash Analytics','📡 Audit, Methodology & Export']
+NAV_OPTIONS = ['🧠 Executive Centre','💰 Suggested Deploy','🌦️ Live Market & Trend Monitor','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
+SECTION_ORDER = ['💰 Suggested Deploy','🌦️ Live Market & Trend Monitor','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
 CRISIS_EVENTS = [('1987-08-01','1987-12-31','1987 Black Monday'),('2000-03-01','2002-10-31','2000-2002 Dot-com Bust'),('2007-10-01','2009-03-31','2008 Global Financial Crisis'),('2020-02-01','2020-04-30','2020 COVID-19'),('2022-01-01','2022-10-31','2022 Inflation & Rate Hike')]
 
 # ------------------------- helpers -------------------------
@@ -2719,35 +2701,17 @@ with st.spinner('Loading market data...'):
     m=market_data()
     if not m: st.error('Market data unavailable. Try Refresh Market Data.'); st.stop()
 
-# Crash Deployment Engine: Market selectors are owned by Market Deep Dive, not sidebar.
-if 'asset_group_selection' not in st.session_state:
-    st.session_state.asset_group_selection = 'Market / Equity Index'
-asset_group = st.session_state.asset_group_selection
-if asset_group not in ASSET_GROUPS:
-    asset_group = 'Market / Equity Index'
-    st.session_state.asset_group_selection = asset_group
-group_items = ASSET_GROUPS[asset_group]
-default_item = 'STI' if asset_group == 'Market / Equity Index' and 'STI' in group_items else group_items[0]
-if 'selected_market_name' not in st.session_state:
-    st.session_state.selected_market_name = default_item
-sel = st.session_state.selected_market_name
-if sel not in group_items:
-    sel = default_item
-    st.session_state.selected_market_name = sel
-currency_code,currency_symbol,currency_html,currency_name=market_currency_info(sel)
-st.session_state.currency_text=currency_symbol
-st.session_state.currency_html=currency_html
-
 with st.sidebar:
-    st.markdown("""
-    <div class="cde-logo-card"><div class="cde-logo-row">
-    <svg class="cde-logo-svg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="orbBgCDE" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#0d2235"/><stop offset="100%" stop-color="#02060d"/></radialGradient><linearGradient id="redBarCDE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient><linearGradient id="greenBarCDE" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#0f766e"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs><circle cx="70" cy="70" r="58" fill="url(#orbBgCDE)"/><path d="M 70 12 A 58 58 0 0 0 70 128" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/><path d="M 70 12 A 58 58 0 0 1 70 128" fill="none" stroke="#20d397" stroke-width="3" stroke-linecap="round"/><rect x="24" y="44" width="7" height="34" rx="1.5" fill="url(#redBarCDE)"/><rect x="36" y="54" width="7" height="30" rx="1.5" fill="url(#redBarCDE)"/><rect x="48" y="63" width="7" height="24" rx="1.5" fill="url(#redBarCDE)"/><rect x="60" y="72" width="7" height="18" rx="1.5" fill="url(#redBarCDE)"/><rect x="76" y="72" width="7" height="18" rx="1.5" fill="url(#greenBarCDE)"/><rect x="88" y="63" width="7" height="24" rx="1.5" fill="url(#greenBarCDE)"/><rect x="100" y="54" width="7" height="30" rx="1.5" fill="url(#greenBarCDE)"/><rect x="112" y="44" width="7" height="34" rx="1.5" fill="url(#greenBarCDE)"/><path d="M 20 32 L 32 41 L 42 35 L 52 56 L 60 49 L 70 94" fill="none" stroke="#ef4444" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M 70 94 L 61 87 L 69 80 Z" fill="#ef4444"/><path d="M 70 94 Q 92 76 108 38 Q 113 25 121 16" fill="none" stroke="#20d397" stroke-width="4" stroke-linecap="round"/><path d="M 121 16 L 113 23 L 123 29 Z" fill="#20d397"/><circle cx="70" cy="108" r="10" fill="none" stroke="#20d397" stroke-width="1.2" opacity=".5"/><circle cx="70" cy="108" r="5" fill="none" stroke="#20d397" stroke-width="1.4" opacity=".75"/><circle cx="70" cy="108" r="3" fill="#20d397"/></svg>
-    <div><div class="cde-logo-text-main">CRASH</div><div class="cde-logo-text-sub">DEPLOYMENT ENGINE</div></div></div><div class="cde-logo-tag">TURNING MARKET CRASHES <span>INTO OPPORTUNITIES</span></div></div>
-    """, unsafe_allow_html=True)
     st.markdown('## 📍 Navigation')
     active_section=st.radio('Go to section', NAV_OPTIONS, index=0, label_visibility='collapsed')
-    st.markdown('<div class="cde-sidebar-note">Asset Group & Focus Market selectors are inside Market Deep Dive.</div>', unsafe_allow_html=True)
-    st.markdown('---')
+    st.markdown('---'); st.markdown('## ⚙️ Quick Settings')
+    asset_group=st.selectbox('Asset Group', list(ASSET_GROUPS.keys()), index=0)
+    group_items=ASSET_GROUPS[asset_group]; default_item='STI' if asset_group=='Market / Equity Index' and 'STI' in group_items else group_items[0]
+    sel=st.selectbox('Selected Market' if asset_group=='Market / Equity Index' else 'Selected Alternative Asset', group_items, index=group_items.index(default_item))
+    st.session_state.selected_market_name=sel
+    currency_code,currency_symbol,currency_html,currency_name=market_currency_info(sel)
+    st.session_state.currency_text=currency_symbol
+    st.session_state.currency_html=currency_html
     st.markdown('### 💰 Investible Capital & Safeguards')
     st.caption('Investible capital excludes emergency funds. This platform is for decision support only and should not be relied on as a sole trading or investment instruction.')
     st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
@@ -2761,7 +2725,8 @@ with st.sidebar:
         st.caption(f'Funding Profile: {funding_profile}')
         cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
         srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
-        if include_srs: srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
+        if include_srs:
+            srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
         if include_cpf_oa:
             cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
             preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
@@ -2773,8 +2738,8 @@ with st.sidebar:
     emergency_buffer=0.0
     st.session_state.funding_profile=funding_profile
     st.markdown('---')
-    if st.button('🔄 Refresh Market Data',use_container_width=True):
-        st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
+    # Owner Mode hidden for user testing; macro admin tooling moved to Audit, Methodology & Export.
+    if st.button('🔄 Refresh Market Data',use_container_width=True): st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
 
 if sel not in m:
     df=hist(INDEX_TICKERS[sel])
@@ -2800,52 +2765,11 @@ live_score,alert,vix_s,curve_s,pmi_s,dd_s,trend_s=calc_market_scores_by_asset(se
 conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); decision_line=f'Deploy approximately {fmt_sgd(deploy)} using staged tranches.' if deploy>0 else 'No deployment now. Capital is preserved until a deployment trigger appears.'; next_trigger=next_trigger_label(zone)
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
-# CDE: old global page title removed; page titles are rendered by page router.
+st.title('📉 Global Drawdown Allocation Engine')
+st.caption('v38ac · Multi-asset drawdown allocation platform with Live Market & Trend Monitor, Macro Conditions Snapshot and audit-ready governance.')
 
 # ------------------------- renderers -------------------------
 def render_executive():
-    """Executive Centre landing page: all-market summary only."""
-    display_markets = ['A-Share','HSI','STI','KLSE','Nikkei 225','S&P 500','Nasdaq','DJIA']
-    rows=[]
-    for mk in display_markets:
-        if mk not in m: continue
-        try:
-            c, pk, ddv, basis, pkdt, cdt, boundary = current_structural_dd(m[mk]['df'])
-            dpr=deploy_rule(ddv)
-            score=max(0,min(100,round(abs(float(ddv))*3.4+dpr*28)))
-            sig='BUY' if dpr>=.25 else 'WATCH' if dpr>=.10 else 'HOLD'
-            action='Open in Market Deep Dive' if mk==st.session_state.get('selected_market_name',sel) else ('Review' if sig=='BUY' else 'Monitor' if sig=='WATCH' else 'Hold Cash')
-            rows.append({'Market':mk,'Index / ETF':INDEX_TICKERS.get(mk,''),'Drawdown':ddv,'Score':score,'Signal':sig,'Action':action})
-        except Exception:
-            pass
-    if not rows:
-        rows=[{'Market':index_label,'Index / ETF':ticker,'Drawdown':dd,'Score':0,'Signal':'HOLD','Action':'Open in Market Deep Dive'}]
-    rows=sorted(rows,key=lambda r:r['Score'],reverse=True)
-    best=rows[0]
-    selected_name=st.session_state.get('selected_market_name',sel)
-    total_cap=total_available if 'total_available' in globals() else cash_balance
-    deployed_amt=total_cap*deploy_pct
-    remaining_amt=max(total_cap-deployed_amt,0)
-    next_amt=total_cap*.15
-    def sig_badge(sig):
-        cls='buy' if sig=='BUY' else 'watch' if sig=='WATCH' else 'hold'
-        return '<span class="cde-sig '+cls+'">'+sig+'</span>'
-    table_rows=''
-    for i,r in enumerate(rows[:5],1):
-        row_cls=' class="highlight"' if r['Market']==selected_name else ''
-        table_rows += '<tr'+row_cls+'><td>'+str(i)+'</td><td>'+hesc(r['Market'])+'</td><td>'+hesc(r['Index / ETF'])+'</td><td class="orange">'+f"{r['Drawdown']:.1f}%"+'</td><td>'+str(r['Score'])+'</td><td>'+sig_badge(r['Signal'])+'</td><td class="link">'+hesc(r['Action'])+'</td></tr>'
-    env_html = f'<div class="env-grid"><div><b class="green">{vix:.1f}</b><span>Volatility<br/>Normal</span></div><div><b class="orange">Tightening</b><span>Credit<br/>Cautious</span></div><div><b style="color:#2563eb">Neutral</b><span>Liquidity<br/>Steady</span></div><div><b class="orange">Moderate</b><span>Growth<br/>Slowing</span></div></div>' if vix is not None else '<div class="small">Market environment diagnostics available in Market Deep Dive.</div>'
-    html=f"""
-    <style>.cde-landing-title{{font-size:34px;font-weight:950;letter-spacing:.05em;color:#0f172a;text-transform:uppercase;margin:0 0 6px;line-height:1.05}}.cde-landing-sub{{font-size:16px;font-weight:800;color:#475569;margin:0 0 6px}}.cde-page-title{{font-size:22px;font-weight:900;color:#334155;margin:0 0 26px}}.cde-grid{{display:grid;gap:18px;margin-bottom:24px}}.cde-kpi-grid{{grid-template-columns:1fr 1fr 1fr 1.45fr}}.cde-bottom-grid{{grid-template-columns:1.25fr 1.05fr .95fr}}.cde-card{{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.04)}}.cde-label{{font-size:12px;color:#4a6380;margin-bottom:7px;font-weight:800}}.cde-big{{font-size:25px;font-weight:950;line-height:1.1;color:#0f172a}}.green{{color:#059669!important}}.orange{{color:#f97316!important}}.small{{font-size:12px;color:#64748b;font-weight:700;line-height:1.45}}.env-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}}.env-grid b{{display:block;font-size:13px;margin-bottom:4px;font-weight:900}}.env-grid span{{font-size:10px;color:#64748b;font-weight:800;line-height:1.35}}.cde-section-title{{font-size:20px;font-weight:950;color:#111827;margin-top:8px}}.cde-section-sub{{font-size:12px;color:#52657a;font-weight:700;margin:4px 0 12px}}.cde-table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)}}.cde-table th{{background:#e8eef5;color:#334155;text-align:left;padding:12px 14px;font-size:12px;letter-spacing:.03em;font-weight:900}}.cde-table td{{padding:13px 14px;border-bottom:1px solid #d3dfec;font-weight:800}}.cde-table tr.highlight{{background:#f3f9ff}}.cde-sig{{display:inline-block;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:900}}.cde-sig.buy{{background:#dcfce7;color:#047857}}.cde-sig.watch{{background:#ffedd5;color:#c2410c}}.cde-sig.hold{{background:#e5e7eb;color:#374151}}.link{{color:#2563eb;font-weight:900}}.cde-three{{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}}.ladder-row{{display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;font-size:12px;margin:7px 0;align-items:center}}.dot{{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1;vertical-align:-1px}}.dot.active{{background:#f97316}}.donut{{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 {deploy_pct*360:.0f}deg,#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}}.donut:before{{content:'{current_currency_html()}{deployed_amt/1000:.0f}k';width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f2e5d;font-size:12px}}.takeaway{{display:flex;gap:16px;align-items:center}}.icon{{width:44px;height:44px;border-radius:50%;background:#dffced;color:#00a86b;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;flex:none}}.edge{{display:flex;gap:24px;align-items:flex-end}}.edge b{{display:block;font-size:24px;color:#00a86b;margin-bottom:3px;font-weight:900}}</style>
-    <div class="cde-landing-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-landing-sub">Turning market crashes into opportunities.</div><div class="cde-page-title">Executive Centre — All Markets</div>
-    <section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-label">Global Risk Regime</div><div class="cde-big orange">{hesc(alert)}</div><div class="small">Macro score {live_score:.0f} / 100</div></div><div class="cde-card"><div class="cde-label">Best Opportunity</div><div class="cde-big green">{hesc(best['Market']).upper()}</div><div class="small">Highest opportunity score</div></div><div class="cde-card"><div class="cde-label">Deployment Stance</div><div class="cde-big orange">{'INITIAL' if deploy_pct <= .10 else 'ACTIVE'}</div><div class="small">{deploy_pct:.0%} cumulative deployment</div></div><div class="cde-card"><div class="cde-label">Current Market Environment</div>{env_html}</div></section>
-    <div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full analysis stays in Market Deep Dive.</div><table class="cde-table"><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>Score</th><th>Signal</th><th>Landing Action</th></tr></thead><tbody>{table_rows}</tbody></table><div class="small" style="margin-top:8px">Landing table is for prioritisation only; market-specific execution details are intentionally not duplicated here.</div>
-    <section class="cde-three"><div class="cde-card"><div class="cde-label">Deployment Ladder</div><div class="ladder-row"><span><span class="dot"></span>0% to -8%</span><b>0%</b><span>Hold</span></div><div class="ladder-row"><span><span class="dot active"></span>-8% to -15%</span><b class="orange">10%</b><span>Initial deploy</span></div><div class="ladder-row"><span><span class="dot"></span>-15% to -25%</span><b class="green">25%</b><span>Deploy more</span></div><div class="ladder-row"><span><span class="dot"></span>-25% to -35%</span><b class="green">50%</b><span>Strong deploy</span></div></div><div class="cde-card"><div class="cde-label">Deployment Allocation by Capital Source</div><div style="display:grid;grid-template-columns:105px 1fr;gap:14px;align-items:center"><div class="donut"></div><div class="small">● Cash available&nbsp;&nbsp; {fmt_sgd_html(remaining_amt)}<br/>● Deployed&nbsp;&nbsp; {fmt_sgd_html(deployed_amt)}<br/>● Other funds&nbsp;&nbsp; {fmt_sgd_html(0)}</div></div></div><div class="cde-card"><div class="cde-label">Next Deployment Trigger — Highest Priority Market</div><b>{hesc(best['Market']).upper()}</b><div class="small">Drawdown Trigger</div><div class="cde-big orange">-15%</div><div class="small"><b>Additional Deployment</b><br/>{fmt_sgd_html(next_amt)} (15%)<br/>Current drawdown: {best['Drawdown']:.1f}%</div></div></section>
-    <section class="cde-grid cde-bottom-grid" style="margin-top:24px"><div class="cde-card takeaway"><div class="icon">⊙</div><div><div class="cde-label">Key Takeaway</div><div class="small">Opportunities are emerging across the ranked markets. The landing page summarises all markets; single-market execution remains inside Market Deep Dive.</div></div></div><div class="cde-card"><div class="cde-label">Historical Edge — All Markets</div><div class="edge"><div><b>84%</b><span class="small">Success</span></div><div><b>+175%</b><span class="small">Avg 3Y</span></div><div><b>2.8Y</b><span class="small">Recovery</span></div><div><b>+42%</b><span class="small">Worst 3Y</span></div></div></div><div class="cde-card takeaway"><div class="icon">✓</div><div><div class="cde-label">System Status</div><div class="small">All systems operational<br/>Data quality: High<br/>Model confidence: Good</div></div></div></section>
-    """
-    st.markdown(html, unsafe_allow_html=True)
-
-def render_market_deep_dive_summary():
     display_dd=min(dd,0.0)
     structural_tip=tooltip_html('Active Structural Drawdown',[('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],'Formula:<br>(current close − structural peak) ÷ structural peak')
     stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],f'Decision note:<br>{hesc(decision_line)}')
@@ -3500,45 +3424,21 @@ def render_audit(expanded=False):
         snap=pd.DataFrame([{'Timestamp':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Selected Index':index_label,'Ticker':ticker,'Drawdown Reference':ref,'Current Structural Drawdown %':round(dd,2),'Allocation Stance':zone,'Action Zone':zone,'Suggested Deploy S$':round(deploy,2),'Funding Source':funding_source,'PMI Proxy':st.session_state.get('pmi_proxy_label',pmi_label),'PMI Value':st.session_state.get('latest_pmi_value',latest_pmi),'Live Risk Score':round(live_score,1),'Risk Regime':alert,'Risk Model':'Alternative asset macro-risk subset' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2','Valuation Model':'OOS Expanding Valuation Channel (Live Quant Model)','Valuation Z-Score':exec_z_score,'Bias Status':'No look-ahead bias for OOS valuation model','Signal Confidence':conf_label}])
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
-def render_market_deep_dive(expanded=False):
-    """Market Deep Dive: previous selected-market page plus relocated selectors."""
-    st.markdown('## ▣ Market Deep Dive')
-    st.caption('Select the asset group and focus market here. The previous selected-market page is shown below.')
-    st.markdown('<div class="cde-market-selector-panel">', unsafe_allow_html=True)
-    c1, c2 = st.columns([1, 1])
-    ag_options = list(ASSET_GROUPS.keys())
-    current_ag = st.session_state.get('asset_group_selection', 'Market / Equity Index')
-    if current_ag not in ag_options:
-        current_ag = 'Market / Equity Index'
-    new_ag = c1.selectbox('Asset Group', ag_options, index=ag_options.index(current_ag), key='market_deep_dive_asset_group')
-    items = ASSET_GROUPS[new_ag]
-    default_item = 'STI' if new_ag == 'Market / Equity Index' and 'STI' in items else items[0]
-    current_sel = st.session_state.get('selected_market_name', default_item)
-    if current_sel not in items:
-        current_sel = default_item
-    new_sel = c2.selectbox('Focus Market', items, index=items.index(current_sel), key='market_deep_dive_focus_market')
-    st.markdown('</div>', unsafe_allow_html=True)
-    if new_ag != st.session_state.get('asset_group_selection') or new_sel != st.session_state.get('selected_market_name'):
-        st.session_state.asset_group_selection = new_ag
-        st.session_state.selected_market_name = new_sel
-        st.rerun()
-    render_market_deep_dive_summary()
-    render_suggested(expanded=True)
-
-RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
+RENDERERS={'💰 Suggested Deploy':render_suggested,'🌦️ Live Market & Trend Monitor':render_market,'📊 Market Performance':render_performance,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
-    """Locked page router: Executive Centre is all-market landing; Market Deep Dive is previous selected-market page."""
-    if active_section == '🧠 Executive Centre':
-        render_executive()
-    elif active_section == '▣ Market Deep Dive':
-        render_market_deep_dive(expanded=True)
-    elif active_section == '🏆 Crash Analytics':
-        render_crash(expanded=True)
-    elif active_section == '📡 Audit, Methodology & Export':
-        render_audit(expanded=True)
-    else:
-        render_executive()
+    render_executive()
+    for section in SECTION_ORDER:
+        if section == '💰 Suggested Deploy':
+            if active_section == section:
+                RENDERERS[section](expanded=True)
+            else:
+                RENDERERS[section](expanded=True if active_section == '🧠 Executive Centre' else False)
+            # Assumptions & Limits moved to Audit, Methodology & Export.
+        elif active_section == section:
+            RENDERERS[section](expanded=True)
+        else:
+            RENDERERS[section](expanded=False)
     st.markdown('---')
     st.caption(f'🕒 Last refreshed: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")} SGT')
     st.caption('⚠️ Disclaimer: Educational only. Not financial advice. Past performance does not guarantee future results. Consult a licensed adviser.')
