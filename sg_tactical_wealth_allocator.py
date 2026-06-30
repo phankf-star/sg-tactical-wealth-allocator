@@ -203,7 +203,7 @@ section[data-testid="stSidebar"] input, section[data-testid="stSidebar"] textare
 .cde-logo-tag{margin-top:10px;color:#cbd5e1!important;font-size:8.2px;font-weight:800;letter-spacing:.12em;line-height:1.45;text-align:center;border-top:1px solid rgba(148,163,184,.22);padding-top:8px;}
 .cde-logo-tag span{color:#20d397!important;}
 .cde-sidebar-note{font-size:11px;color:#9fb2c7!important;font-style:italic;margin:-2px 0 8px 32px;line-height:1.4;}
-.cde-market-selector-panel{background:#F8FAFC;border:1px solid #DDE7F3;border-radius:16px;padding:16px 18px;margin:8px 0 16px;}
+.cde-market-selector-panel{background:#F8FAFC;border:1px solid #DDE7F3;border-radius:16px;padding:16px 18px;margin:8px 0 18px;}
 
 </style>
 ''', unsafe_allow_html=True)
@@ -2740,17 +2740,9 @@ st.session_state.currency_html=currency_html
 
 with st.sidebar:
     st.markdown("""
-    <div class="cde-logo-card">
-      <div class="cde-logo-row">
-        <svg class="cde-logo-svg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg" aria-label="Crash Deployment Engine icon">
-          <defs><radialGradient id="orbBgCDE" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#0d2235"/><stop offset="100%" stop-color="#02060d"/></radialGradient><linearGradient id="redBarCDE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient><linearGradient id="greenBarCDE" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#0f766e"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs>
-          <circle cx="70" cy="70" r="58" fill="url(#orbBgCDE)"/><path d="M 70 12 A 58 58 0 0 0 70 128" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/><path d="M 70 12 A 58 58 0 0 1 70 128" fill="none" stroke="#20d397" stroke-width="3" stroke-linecap="round"/>
-          <rect x="24" y="44" width="7" height="34" rx="1.5" fill="url(#redBarCDE)"/><rect x="36" y="54" width="7" height="30" rx="1.5" fill="url(#redBarCDE)"/><rect x="48" y="63" width="7" height="24" rx="1.5" fill="url(#redBarCDE)"/><rect x="60" y="72" width="7" height="18" rx="1.5" fill="url(#redBarCDE)"/>
-          <rect x="76" y="72" width="7" height="18" rx="1.5" fill="url(#greenBarCDE)"/><rect x="88" y="63" width="7" height="24" rx="1.5" fill="url(#greenBarCDE)"/><rect x="100" y="54" width="7" height="30" rx="1.5" fill="url(#greenBarCDE)"/><rect x="112" y="44" width="7" height="34" rx="1.5" fill="url(#greenBarCDE)"/>
-          <path d="M 20 32 L 32 41 L 42 35 L 52 56 L 60 49 L 70 94" fill="none" stroke="#ef4444" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M 70 94 L 61 87 L 69 80 Z" fill="#ef4444"/><path d="M 70 94 Q 92 76 108 38 Q 113 25 121 16" fill="none" stroke="#20d397" stroke-width="4" stroke-linecap="round"/><path d="M 121 16 L 113 23 L 123 29 Z" fill="#20d397"/><circle cx="70" cy="108" r="10" fill="none" stroke="#20d397" stroke-width="1.2" opacity=".5"/><circle cx="70" cy="108" r="5" fill="none" stroke="#20d397" stroke-width="1.4" opacity=".75"/><circle cx="70" cy="108" r="3" fill="#20d397"/>
-        </svg><div><div class="cde-logo-text-main">CRASH</div><div class="cde-logo-text-sub">DEPLOYMENT ENGINE</div></div>
-      </div><div class="cde-logo-tag">TURNING MARKET CRASHES <span>INTO OPPORTUNITIES</span></div>
-    </div>
+    <div class="cde-logo-card"><div class="cde-logo-row">
+    <svg class="cde-logo-svg" viewBox="0 0 140 140" xmlns="http://www.w3.org/2000/svg"><defs><radialGradient id="orbBgCDE" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="#0d2235"/><stop offset="100%" stop-color="#02060d"/></radialGradient><linearGradient id="redBarCDE" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#7f1d1d"/></linearGradient><linearGradient id="greenBarCDE" x1="0" y1="1" x2="0" y2="0"><stop offset="0%" stop-color="#0f766e"/><stop offset="100%" stop-color="#5eead4"/></linearGradient></defs><circle cx="70" cy="70" r="58" fill="url(#orbBgCDE)"/><path d="M 70 12 A 58 58 0 0 0 70 128" fill="none" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/><path d="M 70 12 A 58 58 0 0 1 70 128" fill="none" stroke="#20d397" stroke-width="3" stroke-linecap="round"/><rect x="24" y="44" width="7" height="34" rx="1.5" fill="url(#redBarCDE)"/><rect x="36" y="54" width="7" height="30" rx="1.5" fill="url(#redBarCDE)"/><rect x="48" y="63" width="7" height="24" rx="1.5" fill="url(#redBarCDE)"/><rect x="60" y="72" width="7" height="18" rx="1.5" fill="url(#redBarCDE)"/><rect x="76" y="72" width="7" height="18" rx="1.5" fill="url(#greenBarCDE)"/><rect x="88" y="63" width="7" height="24" rx="1.5" fill="url(#greenBarCDE)"/><rect x="100" y="54" width="7" height="30" rx="1.5" fill="url(#greenBarCDE)"/><rect x="112" y="44" width="7" height="34" rx="1.5" fill="url(#greenBarCDE)"/><path d="M 20 32 L 32 41 L 42 35 L 52 56 L 60 49 L 70 94" fill="none" stroke="#ef4444" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M 70 94 L 61 87 L 69 80 Z" fill="#ef4444"/><path d="M 70 94 Q 92 76 108 38 Q 113 25 121 16" fill="none" stroke="#20d397" stroke-width="4" stroke-linecap="round"/><path d="M 121 16 L 113 23 L 123 29 Z" fill="#20d397"/><circle cx="70" cy="108" r="10" fill="none" stroke="#20d397" stroke-width="1.2" opacity=".5"/><circle cx="70" cy="108" r="5" fill="none" stroke="#20d397" stroke-width="1.4" opacity=".75"/><circle cx="70" cy="108" r="3" fill="#20d397"/></svg>
+    <div><div class="cde-logo-text-main">CRASH</div><div class="cde-logo-text-sub">DEPLOYMENT ENGINE</div></div></div><div class="cde-logo-tag">TURNING MARKET CRASHES <span>INTO OPPORTUNITIES</span></div></div>
     """, unsafe_allow_html=True)
     st.markdown('## 📍 Navigation')
     active_section=st.radio('Go to section', NAV_OPTIONS, index=0, label_visibility='collapsed')
@@ -2808,46 +2800,42 @@ live_score,alert,vix_s,curve_s,pmi_s,dd_s,trend_s=calc_market_scores_by_asset(se
 conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); decision_line=f'Deploy approximately {fmt_sgd(deploy)} using staged tranches.' if deploy>0 else 'No deployment now. Capital is preserved until a deployment trigger appears.'; next_trigger=next_trigger_label(zone)
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
-# CDE locked landing header is rendered inside render_executive(); old Global Drawdown title removed.
+# CDE: old global page title removed; page titles are rendered by page router.
 
 # ------------------------- renderers -------------------------
 def render_executive():
-    """Locked CDE landing: executive summary of all markets only."""
+    """Executive Centre landing page: all-market summary only."""
     display_markets = ['A-Share','HSI','STI','KLSE','Nikkei 225','S&P 500','Nasdaq','DJIA']
-    rows = []
+    rows=[]
     for mk in display_markets:
-        if mk not in m:
-            continue
+        if mk not in m: continue
         try:
             c, pk, ddv, basis, pkdt, cdt, boundary = current_structural_dd(m[mk]['df'])
-            dpr = deploy_rule(ddv)
-            score = max(0, min(100, round(abs(float(ddv))*3.4 + dpr*28)))
-            sig = 'BUY' if dpr >= .25 else 'WATCH' if dpr >= .10 else 'HOLD'
-            action = 'Open in Market Deep Dive' if mk == st.session_state.get('selected_market_name', sel) else ('Review' if sig == 'BUY' else 'Monitor' if sig == 'WATCH' else 'Hold Cash')
+            dpr=deploy_rule(ddv)
+            score=max(0,min(100,round(abs(float(ddv))*3.4+dpr*28)))
+            sig='BUY' if dpr>=.25 else 'WATCH' if dpr>=.10 else 'HOLD'
+            action='Open in Market Deep Dive' if mk==st.session_state.get('selected_market_name',sel) else ('Review' if sig=='BUY' else 'Monitor' if sig=='WATCH' else 'Hold Cash')
             rows.append({'Market':mk,'Index / ETF':INDEX_TICKERS.get(mk,''),'Drawdown':ddv,'Score':score,'Signal':sig,'Action':action})
         except Exception:
             pass
     if not rows:
         rows=[{'Market':index_label,'Index / ETF':ticker,'Drawdown':dd,'Score':0,'Signal':'HOLD','Action':'Open in Market Deep Dive'}]
-    rows = sorted(rows, key=lambda r: r['Score'], reverse=True)
-    best = rows[0]
-    selected_name = st.session_state.get('selected_market_name', sel)
-    total_cap = total_available if 'total_available' in globals() else cash_balance
-    deployed_amt = total_cap * deploy_pct
-    remaining_amt = max(total_cap - deployed_amt, 0)
-    next_amt = total_cap * .15
+    rows=sorted(rows,key=lambda r:r['Score'],reverse=True)
+    best=rows[0]
+    selected_name=st.session_state.get('selected_market_name',sel)
+    total_cap=total_available if 'total_available' in globals() else cash_balance
+    deployed_amt=total_cap*deploy_pct
+    remaining_amt=max(total_cap-deployed_amt,0)
+    next_amt=total_cap*.15
     def sig_badge(sig):
-        cls = 'buy' if sig == 'BUY' else 'watch' if sig == 'WATCH' else 'hold'
-        return '<span class="cde-sig ' + cls + '">' + sig + '</span>'
-    table_rows = ''
-    for i, r in enumerate(rows[:5], 1):
-        row_cls = ' class="highlight"' if r['Market'] == selected_name else ''
-        table_rows += '<tr' + row_cls + '><td>' + str(i) + '</td><td>' + hesc(r['Market']) + '</td><td>' + hesc(r['Index / ETF']) + '</td><td class="orange">' + f"{r['Drawdown']:.1f}%" + '</td><td>' + str(r['Score']) + '</td><td>' + sig_badge(r['Signal']) + '</td><td class="link">' + hesc(r['Action']) + '</td></tr>'
-    if vix is not None:
-        env_html = f'<div class="env-grid"><div><b class="green">{vix:.1f}</b><span>Volatility<br/>Normal</span></div><div><b class="orange">Tightening</b><span>Credit<br/>Cautious</span></div><div><b style="color:#2563eb">Neutral</b><span>Liquidity<br/>Steady</span></div><div><b class="orange">Moderate</b><span>Growth<br/>Slowing</span></div></div>'
-    else:
-        env_html = '<div class="small">Volatility, credit, liquidity and growth diagnostics available in Market Deep Dive.</div>'
-    html = f"""
+        cls='buy' if sig=='BUY' else 'watch' if sig=='WATCH' else 'hold'
+        return '<span class="cde-sig '+cls+'">'+sig+'</span>'
+    table_rows=''
+    for i,r in enumerate(rows[:5],1):
+        row_cls=' class="highlight"' if r['Market']==selected_name else ''
+        table_rows += '<tr'+row_cls+'><td>'+str(i)+'</td><td>'+hesc(r['Market'])+'</td><td>'+hesc(r['Index / ETF'])+'</td><td class="orange">'+f"{r['Drawdown']:.1f}%"+'</td><td>'+str(r['Score'])+'</td><td>'+sig_badge(r['Signal'])+'</td><td class="link">'+hesc(r['Action'])+'</td></tr>'
+    env_html = f'<div class="env-grid"><div><b class="green">{vix:.1f}</b><span>Volatility<br/>Normal</span></div><div><b class="orange">Tightening</b><span>Credit<br/>Cautious</span></div><div><b style="color:#2563eb">Neutral</b><span>Liquidity<br/>Steady</span></div><div><b class="orange">Moderate</b><span>Growth<br/>Slowing</span></div></div>' if vix is not None else '<div class="small">Market environment diagnostics available in Market Deep Dive.</div>'
+    html=f"""
     <style>.cde-landing-title{{font-size:34px;font-weight:950;letter-spacing:.05em;color:#0f172a;text-transform:uppercase;margin:0 0 6px;line-height:1.05}}.cde-landing-sub{{font-size:16px;font-weight:800;color:#475569;margin:0 0 6px}}.cde-page-title{{font-size:22px;font-weight:900;color:#334155;margin:0 0 26px}}.cde-grid{{display:grid;gap:18px;margin-bottom:24px}}.cde-kpi-grid{{grid-template-columns:1fr 1fr 1fr 1.45fr}}.cde-bottom-grid{{grid-template-columns:1.25fr 1.05fr .95fr}}.cde-card{{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:18px;box-shadow:0 1px 2px rgba(15,23,42,.04)}}.cde-label{{font-size:12px;color:#4a6380;margin-bottom:7px;font-weight:800}}.cde-big{{font-size:25px;font-weight:950;line-height:1.1;color:#0f172a}}.green{{color:#059669!important}}.orange{{color:#f97316!important}}.small{{font-size:12px;color:#64748b;font-weight:700;line-height:1.45}}.env-grid{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}}.env-grid b{{display:block;font-size:13px;margin-bottom:4px;font-weight:900}}.env-grid span{{font-size:10px;color:#64748b;font-weight:800;line-height:1.35}}.cde-section-title{{font-size:20px;font-weight:950;color:#111827;margin-top:8px}}.cde-section-sub{{font-size:12px;color:#52657a;font-weight:700;margin:4px 0 12px}}.cde-table{{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)}}.cde-table th{{background:#e8eef5;color:#334155;text-align:left;padding:12px 14px;font-size:12px;letter-spacing:.03em;font-weight:900}}.cde-table td{{padding:13px 14px;border-bottom:1px solid #d3dfec;font-weight:800}}.cde-table tr.highlight{{background:#f3f9ff}}.cde-sig{{display:inline-block;border-radius:999px;padding:5px 11px;font-size:11px;font-weight:900}}.cde-sig.buy{{background:#dcfce7;color:#047857}}.cde-sig.watch{{background:#ffedd5;color:#c2410c}}.cde-sig.hold{{background:#e5e7eb;color:#374151}}.link{{color:#2563eb;font-weight:900}}.cde-three{{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:24px}}.ladder-row{{display:grid;grid-template-columns:1fr 50px 1fr;gap:8px;font-size:12px;margin:7px 0;align-items:center}}.dot{{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1;vertical-align:-1px}}.dot.active{{background:#f97316}}.donut{{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 {deploy_pct*360:.0f}deg,#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}}.donut:before{{content:'{current_currency_html()}{deployed_amt/1000:.0f}k';width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;color:#0f2e5d;font-size:12px}}.takeaway{{display:flex;gap:16px;align-items:center}}.icon{{width:44px;height:44px;border-radius:50%;background:#dffced;color:#00a86b;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;flex:none}}.edge{{display:flex;gap:24px;align-items:flex-end}}.edge b{{display:block;font-size:24px;color:#00a86b;margin-bottom:3px;font-weight:900}}</style>
     <div class="cde-landing-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-landing-sub">Turning market crashes into opportunities.</div><div class="cde-page-title">Executive Centre — All Markets</div>
     <section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-label">Global Risk Regime</div><div class="cde-big orange">{hesc(alert)}</div><div class="small">Macro score {live_score:.0f} / 100</div></div><div class="cde-card"><div class="cde-label">Best Opportunity</div><div class="cde-big green">{hesc(best['Market']).upper()}</div><div class="small">Highest opportunity score</div></div><div class="cde-card"><div class="cde-label">Deployment Stance</div><div class="cde-big orange">{'INITIAL' if deploy_pct <= .10 else 'ACTIVE'}</div><div class="small">{deploy_pct:.0%} cumulative deployment</div></div><div class="cde-card"><div class="cde-label">Current Market Environment</div>{env_html}</div></section>
@@ -2856,6 +2844,43 @@ def render_executive():
     <section class="cde-grid cde-bottom-grid" style="margin-top:24px"><div class="cde-card takeaway"><div class="icon">⊙</div><div><div class="cde-label">Key Takeaway</div><div class="small">Opportunities are emerging across the ranked markets. The landing page summarises all markets; single-market execution remains inside Market Deep Dive.</div></div></div><div class="cde-card"><div class="cde-label">Historical Edge — All Markets</div><div class="edge"><div><b>84%</b><span class="small">Success</span></div><div><b>+175%</b><span class="small">Avg 3Y</span></div><div><b>2.8Y</b><span class="small">Recovery</span></div><div><b>+42%</b><span class="small">Worst 3Y</span></div></div></div><div class="cde-card takeaway"><div class="icon">✓</div><div><div class="cde-label">System Status</div><div class="small">All systems operational<br/>Data quality: High<br/>Model confidence: Good</div></div></div></section>
     """
     st.markdown(html, unsafe_allow_html=True)
+
+def render_market_deep_dive_summary():
+    display_dd=min(dd,0.0)
+    structural_tip=tooltip_html('Active Structural Drawdown',[('Basis',ref.replace('Structural Drawdown · ','')),('High / Peak',f'{struct_peak_date.strftime("%Y-%m-%d")} · {peak:,.0f}'),('Current',f'{struct_current_date.strftime("%Y-%m-%d")} · {close:,.0f}')],'Formula:<br>(current close − structural peak) ÷ structural peak')
+    stance_tip=tooltip_html('Decision Rule Explanation',[('Current Zone',zone),('Deploy Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone))],f'Decision note:<br>{hesc(decision_line)}')
+    deploy_tip=tooltip_html('Suggested Deploy',[('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],'Details are shown in the Calculation Basis & Capital Source section below.')
+    index_tip=tooltip_html('Current Market Level',[('Ticker',ticker),('Market',index_label),('Data Source','Yahoo Finance')],'Latest available close used for drawdown and allocation calculations.')
+    risk_tip=tooltip_html('Macro Risk Score',[('Regime',alert),('Risk Score',f'{live_score:.0f}/100'),('Model','Alternative price model' if sel in PMI_NA_MARKETS else 'Macro Risk Score v2')],'Risk-condition indicator, not a crash prediction.')
+    z_tip=tooltip_html('Valuation Z-Score (OOS)',[('Current Z','N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'),('Attractive','Below -1'),('Normal','-1 to +1'),('Expensive','Above +1')],'Context only; not automatic deployment.')
+    macro_tip=tooltip_html('Macro Data Source Priority',[('Priority','Official API/table → owner-upload → diagnostic awaiting state'),('Diagnostics','See Macro Adapter Diagnostics in sidebar'),('Claims','US Initial Jobless Claims; US-only'),('Rates','Market-specific basis shown in each tooltip')],'Macro cards are diagnostic context only and do not change Suggested Deploy unless the scoring model is explicitly revised.')
+    structural_colour=zc if zone!='HOLD / NO DEPLOYMENT' else SLATE; hero_border,hero_bg,hero_soft=hero_colours_for_zone(zone)
+    z_display='N/A' if exec_z_score is None else f'{exec_z_score:+.2f}'
+    risk_value_class='red' if alert=='CRASH RISK' else 'amber' if alert in ['WARNING','WATCH'] else 'green'
+    z_value_class='green' if exec_valuation_colour in [GREEN,'#059669'] else 'red' if exec_valuation_colour==RED else 'amber' if exec_valuation_colour==ORANGE else ''
+    recent_price=ud['Close'].dropna().tail(126); recent_price=recent_price[recent_price > 0]; price_mini=svg_plotly_lite_sparkline(recent_price.values,BLUE,limit=126,title='6M price sparkline'); drawdown_mini=svg_plotly_lite_sparkline(recent_price.values,structural_colour,limit=126,high_label=f'{peak:,.0f}',current_label=f'{close:,.0f}',title='Peak-to-current path'); z_mini=svg_valuation_bell(exec_z_score if exec_z_score is not None else 0,exec_valuation_colour); risk_mini=svg_risk_gauge(live_score,'Scorecard')
+    next_trigger_compact=compact_next_trigger_label(zone); marker_label='Fully deployed' if next_trigger_compact=='Fully deployed' else f'Next: {next_trigger_compact}'
+    progress_fill=max(0,min(100,deploy_pct*100)); marker_pos=min(96,max(4,progress_fill if progress_fill>0 else 8))
+    stance_pill=f'<span class="xec-pill green">Deployment active · {deploy_pct:.0%}</span>' if deploy>0 else '<span class="xec-pill green">Capital preserved</span>'; active_badge='Active' if deploy>0 else 'Watch'
+    inflation=resolve_macro_value(index_label,'Inflation'); unemployment=resolve_macro_value(index_label,'Unemployment'); rates=resolve_macro_value(index_label,'Rates'); claims=resolve_macro_value(index_label,'Claims')
+    pmi_res=resolve_macro_value(index_label,'PMI')
+    def _curve(v):
+        try:
+            if v is None or pd.isna(v): return 'N/A'
+            return f'{float(v):.2f}%'
+        except Exception: return 'N/A'
+    pmi_state='N/A' if not pmi_applicable else ('Expansion' if latest_pmi>=50 else 'Contraction'); curve_state='N/A' if curve_spread is None else ('Normal' if curve_spread>=0 else 'Inverted')
+    pmi_display=pmi_res['display'] if isinstance(pmi_res,dict) else ('N/A' if not pmi_applicable else 'Awaiting pack')
+    pmi_sub=macro_visible_sub('PMI', pmi_res.get('sub','') if isinstance(pmi_res,dict) else '', pmi_res.get('source_type','Awaiting') if isinstance(pmi_res,dict) else 'Awaiting', pmi_res.get('date','') if isinstance(pmi_res,dict) else '') if pmi_applicable else 'N/A'
+    pmi_src=pmi_res['source_type'] if isinstance(pmi_res,dict) else ('N/A' if not pmi_applicable else 'Awaiting')
+    rate_label=rate_card_label(index_label)
+    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
+    def _source_class(src):
+        badge=clean_macro_badge(src)
+        return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
+    macro_html=''.join([f'''<div class="xec-card xec-micro-card {'unavailable' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}"><div class="xec-micro-name">{hesc(n)} {tooltip_html(n,[('Source / Query',s),('Dashboard Badge',clean_macro_badge(src)),('Basis',macro_tooltip_text(n,index_label)),('Diagnostic',diag or 'No diagnostic issue reported')],macro_tooltip_text(n,index_label))}</div><div class="xec-micro-value {'muted' if str(v).startswith('Awaiting') or str(v).startswith('Live fetch') or str(v).startswith('Pending') or v=='N/A' else ''}">{hesc(v)}</div><div class="xec-micro-sub">{hesc(macro_visible_sub(n,s,src))} <span class="source-pill {_source_class(src)}">{hesc(clean_macro_badge(src))}</span></div></div>''' for n,v,s,src,diag in cards])
+    risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
+    st.markdown(f'''<div class="xec-title">Executive Centre — Macro-Tactical Deploy Layer</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision ({hesc(index_label)}) {stance_tip}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)} Diagnosis above; execution details below.</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-head"><div><div class="xec-deploy-title">Suggested Deploy: {fmt_sgd_html(deploy)} ({deploy_pct:.0%}) {deploy_tip}</div><div class="xec-sub">Capital base: selected investible capital only</div></div><div class="xec-active-badge">{hesc(active_badge)}</div></div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger: {hesc(next_trigger_card_label(zone))}</span><span>Cumulative deploy: {deploy_pct:.0%}</span></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Conditions Snapshot {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
 
 def render_suggested(expanded=False):
     suggested_title=f'💰 Calculation Basis & Capital Source — {fmt_sgd(deploy)} Suggested' if deploy>0 else f'💰 Calculation Basis & Capital Source — {fmt_sgd(0)} / Capital Preserved'
@@ -3476,9 +3501,9 @@ def render_audit(expanded=False):
         st.markdown('#### 📤 Tactical Snapshot Export'); st.dataframe(snap,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Tactical Snapshot CSV',snap.to_csv(index=False),file_name='tactical_snapshot_phase2.csv',mime='text/csv')
 
 def render_market_deep_dive(expanded=False):
-    """Market Deep Dive page: Asset Group + Focus Market selectors live here."""
+    """Market Deep Dive: previous selected-market page plus relocated selectors."""
     st.markdown('## ▣ Market Deep Dive')
-    st.caption('Select the asset group and focus market here. All single-market sections below will follow this selection.')
+    st.caption('Select the asset group and focus market here. The previous selected-market page is shown below.')
     st.markdown('<div class="cde-market-selector-panel">', unsafe_allow_html=True)
     c1, c2 = st.columns([1, 1])
     ag_options = list(ASSET_GROUPS.keys())
@@ -3497,14 +3522,13 @@ def render_market_deep_dive(expanded=False):
         st.session_state.asset_group_selection = new_ag
         st.session_state.selected_market_name = new_sel
         st.rerun()
+    render_market_deep_dive_summary()
     render_suggested(expanded=True)
-    render_market(expanded=True)
-    render_performance(expanded=True)
 
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
-    """Locked page router: Executive Centre is landing; Market Deep Dive is separate selected-market page."""
+    """Locked page router: Executive Centre is all-market landing; Market Deep Dive is previous selected-market page."""
     if active_section == '🧠 Executive Centre':
         render_executive()
     elif active_section == '▣ Market Deep Dive':
