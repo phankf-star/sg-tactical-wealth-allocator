@@ -27,14 +27,13 @@ st.set_page_config(page_title='Crash Deployment Engine v38ac', layout='wide', in
 
 st.markdown('''
 <style>
-.cde-logo-card{background:#061326;border:1px solid #284a6b;border-radius:12px;padding:13px;margin-bottom:14px}
-.cde-logo-main{color:#fff;font-size:26px;font-weight:950;letter-spacing:.04em;line-height:1.05}.cde-logo-sub{color:#20d397;font-size:11px;font-weight:900;letter-spacing:.12em}.cde-logo-tag{color:#cbd5e1;font-size:8px;font-weight:800;text-align:center;margin-top:8px;border-top:1px solid #334155;padding-top:7px}
-.cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827;border-radius:6px}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px;border-radius:0 8px 8px 0}
-.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 18px}.cde-title{font-size:38px;font-weight:950;color:#0f172a;letter-spacing:.03em}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px;font-size:12px;font-weight:800}
-.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:112px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:8px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750;line-height:1.45}.cde-green{color:#059669}.cde-orange{color:#f97316}.cde-blue{color:#2563eb}
-.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:12px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:10px 12px;font-size:12px;font-weight:950}.cde-table td{padding:11px 12px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}
-.cde-command{background:#fff;border:1px solid #d3dfec;border-radius:16px;padding:22px 24px;margin:18px 0 22px}.cde-command-title{font-size:24px;font-weight:950;color:#0f2e5d}.cde-command-sub{font-size:14px;color:#334155;font-weight:750;margin:4px 0 18px}.cde-command-top{display:grid;grid-template-columns:1.25fr 1fr 1.15fr 1.15fr .8fr;gap:16px;align-items:center}.cde-command-label{font-size:11.5px;color:#334155;font-weight:950}.cde-command-value{font-size:25px;font-weight:950;color:#0f172a;margin-top:6px}.cde-command-note{font-size:12px;color:#64748b;font-weight:750}.cde-divider{border-left:1px solid #d8e2ee;padding-left:16px}.cde-command-mid{display:grid;grid-template-columns:1fr 1fr;gap:20px;border:1px solid #dbe5f0;border-radius:12px;margin-top:20px;padding:16px}.cde-ladder-row{display:grid;grid-template-columns:62px 1fr;gap:10px;font-size:12.5px;margin:6px 0;color:#334155;font-weight:800}.cde-ladder-row.active{background:#ecfdf5;border-radius:8px;padding:6px}.cde-action-strip{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:20px;align-items:center;background:#ecfdf5;border-radius:12px;padding:15px 17px;margin-top:18px}.cde-deep-btn{display:block;background:#059669;color:#fff!important;text-align:center;border-radius:9px;padding:12px 16px;font-weight:950}.cde-mini-metrics{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}
-@media(max-width:900px){.cde-hero,.cde-command-top,.cde-command-mid,.cde-action-strip{display:block}.cde-title{font-size:30px}.cde-card{min-height:auto}}
+.cde-logo-card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:10px 9px;margin-bottom:14px;box-shadow:0 6px 18px rgba(15,23,42,.08)}
+.cde-logo-wrap{display:flex;align-items:center;gap:9px}.cde-logo-mark{width:48px;height:48px;flex:0 0 48px}.cde-logo-text1{font-size:22px;line-height:.95;font-weight:950;letter-spacing:.04em;color:#0f172a}.cde-logo-text2{font-size:13px;line-height:1.02;font-weight:950;letter-spacing:.02em;color:#059669}.cde-logo-text3{font-size:13px;line-height:1.02;font-weight:950;letter-spacing:.02em;color:#0f172a}.cde-logo-tagline{font-size:7.5px;color:#64748b;font-weight:850;text-align:center;margin-top:7px;border-top:1px solid #e5e7eb;padding-top:6px;letter-spacing:.01em}.cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827;border-radius:6px}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px;border-radius:0 8px 8px 0}.currency-pill{display:inline-block;background:#ecfdf5;border:1px solid #bbf7d0;color:#047857;border-radius:999px;padding:5px 10px;font-weight:900;font-size:11px}
+.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 18px}.cde-title{font-size:38px;font-weight:950;color:#0f172a;letter-spacing:.02em}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px;font-size:12px;font-weight:800}.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:112px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:8px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750;line-height:1.45}.cde-green{color:#059669}.cde-orange{color:#ff4b1f}
+.cde-flag{display:inline-flex;align-items:center;justify-content:center;width:24px;height:16px;border-radius:3px;margin-right:7px;box-shadow:inset 0 0 0 1px rgba(15,23,42,.18);vertical-align:middle}.cde-flag.hk{background:#de2910}.cde-flag.hk:before{content:'✿';color:white;font-size:10px}.cde-flag.my{background:linear-gradient(#cc0001 0 14%,#fff 14% 28%,#cc0001 28% 42%,#fff 42% 56%,#cc0001 56% 70%,#fff 70% 84%,#cc0001 84%);position:relative}.cde-flag.my:before{content:'';position:absolute;left:0;top:0;width:11px;height:9px;background:#010066}.cde-flag.cn{background:#de2910}.cde-flag.cn:before{content:'★';color:#ffde00;font-size:8px}.cde-flag.us{background:linear-gradient(#b22234 0 14%,#fff 14% 28%,#b22234 28% 42%,#fff 42% 56%,#b22234 56% 70%,#fff 70% 84%,#b22234 84%);position:relative}.cde-flag.us:before{content:'';position:absolute;left:0;top:0;width:11px;height:9px;background:#3c3b6e}.cde-flag.jp{background:#fff;position:relative}.cde-flag.jp:before{content:'';width:8px;height:8px;border-radius:50%;background:#bc002d}.cde-flag.sg{background:linear-gradient(#ef3340 0 50%,#fff 50%);position:relative}.cde-flag.sg:before{content:'★';position:absolute;left:3px;top:1px;color:#fff;font-size:7px}
+.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:12px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:10px 12px;font-size:12px;font-weight:950}.cde-table td{padding:11px 12px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}.cde-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:950;margin-left:4px}.cde-tip .cde-tiptext{visibility:hidden;opacity:0;position:absolute;z-index:99;left:-80px;top:22px;width:285px;background:#0f172a;color:#fff;text-align:left;border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.35;box-shadow:0 10px 24px rgba(15,23,42,.22);transition:.15s}.cde-tip:hover .cde-tiptext{visibility:visible;opacity:1}
+.cde-command{background:#fff;border:1px solid #d3dfec;border-radius:16px;padding:22px 24px;margin:18px 0 10px;box-shadow:0 10px 24px rgba(15,23,42,.06)}.cde-command-title{font-size:25px;font-weight:950;color:#0f2e5d;letter-spacing:.02em}.cde-command-sub{font-size:15px;color:#334155;font-weight:750;margin:5px 0 26px}.cde-command-top{display:grid;grid-template-columns:92px 1.2fr 1fr 1.15fr 1.15fr .8fr;gap:18px;align-items:center}.cde-market-circle{width:74px;height:74px;border-radius:50%;background:#e60012;color:#fff;display:flex;align-items:center;justify-content:center;font-size:35px;box-shadow:0 8px 18px rgba(230,0,18,.18)}.cde-command-label{font-size:11.5px;color:#334155;font-weight:950}.cde-command-value{font-size:30px;font-weight:950;color:#0f172a;margin-top:6px}.cde-command-note{font-size:13px;color:#64748b;font-weight:750}.cde-divider{border-left:1px solid #d8e2ee;padding-left:18px}.cde-progress{height:12px;background:#dbe3ed;border-radius:999px;overflow:hidden;margin:10px 0 3px}.cde-progress-fill{height:100%;background:linear-gradient(90deg,#ff4b1f,#ff6a1f);border-radius:999px}.cde-command-mid{display:grid;grid-template-columns:1.08fr 1fr;gap:26px;border:1px solid #dbe5f0;border-radius:15px;margin-top:26px;padding:22px}.cde-ladder-wrap{display:grid;grid-template-columns:1fr 170px;gap:18px;align-items:center}.cde-ladder-row{display:grid;grid-template-columns:54px 1fr;gap:12px;font-size:13px;margin:8px 0;color:#334155;font-weight:800;position:relative}.cde-ladder-row.active{background:#f1f5f9;border-radius:8px;padding:7px}.cde-ladder-row.active:before{content:'';position:absolute;left:-14px;top:50%;transform:translateY(-50%);border-top:7px solid transparent;border-bottom:7px solid transparent;border-left:0;border-right:9px solid #10b981}.cde-gauge{width:146px;height:146px;border-radius:50%;background:conic-gradient(#10b981 var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}.cde-gauge-inner{width:92px;height:92px;background:#fff;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center}.cde-gauge-inner b{font-size:30px;color:#0f172a}.cde-gauge-inner span{font-size:12px;color:#334155;font-weight:850}.cde-gauge-meta{display:flex;justify-content:space-around;margin-top:12px;font-size:13px;font-weight:850}.cde-allocation{display:grid;grid-template-columns:170px 1fr;gap:24px;align-items:center}.cde-donut{width:146px;height:146px;border-radius:50%;background:conic-gradient(#2563eb var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center}.cde-donut-inner{width:88px;height:88px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:950;font-size:19px;color:#0f172a}.cde-legend-row{display:grid;grid-template-columns:18px 1fr auto;gap:10px;margin:15px 0;font-size:14px;font-weight:800;color:#334155}.cde-dot{width:12px;height:12px;border-radius:50%;margin-top:4px}.cde-action-strip{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:26px;align-items:center;background:linear-gradient(135deg,#ecfdf5,#dcfce7);border:1px solid #bbf7d0;border-radius:15px;padding:20px 24px;margin-top:18px}.cde-action-icon{width:48px;height:48px;border-radius:50%;background:#bbf7d0;display:flex;align-items:center;justify-content:center;color:#047857;font-size:28px;font-weight:950;margin-right:14px}.cde-action-flex{display:flex;align-items:center}.cde-mini-metrics{display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}
+@media(max-width:900px){.cde-hero,.cde-command-top,.cde-command-mid,.cde-action-strip,.cde-ladder-wrap,.cde-allocation{display:block}.cde-title{font-size:30px}.cde-card{min-height:auto}.cde-market-circle{margin-bottom:12px}.cde-divider{border-left:0;padding-left:0;margin-top:12px}.cde-gauge,.cde-donut{margin:12px auto}.cde-action-strip>div{margin-bottom:12px}}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -2715,15 +2714,6 @@ with st.spinner('Loading market data...'):
     m=market_data()
     if not m: st.error('Market data unavailable. Try Refresh Market Data.'); st.stop()
 
-
-st.markdown('''
-<style>
-.cde-logo-card{background:linear-gradient(145deg,#061326,#08223f)!important;border:1px solid #2e5f8f!important;box-shadow:0 8px 22px rgba(2,6,23,.18)}
-.cde-logo-row{display:flex;align-items:center;gap:10px}.cde-logo-icon{width:42px;height:42px;border-radius:12px;background:#0b1f38;border:1px solid #315a82;display:flex;align-items:center;justify-content:center;position:relative;font-size:22px;font-weight:950}.cde-red-arrow{color:#ef4444;position:absolute;left:8px;top:9px}.cde-green-arrow{color:#22c55e;position:absolute;right:7px;bottom:7px}.cde-logo-main{color:#ffffff!important;text-shadow:0 1px 8px rgba(255,255,255,.22)}.cde-logo-sub{color:#34d399!important}.cde-logo-tag{color:#e2e8f0!important}
-.cde-flag{display:inline-flex;align-items:center;justify-content:center;width:24px;height:16px;border-radius:3px;margin-right:7px;font-size:8px;font-weight:950;color:#fff;box-shadow:inset 0 0 0 1px rgba(15,23,42,.18);vertical-align:middle}.cde-flag.hk{background:linear-gradient(135deg,#de2910 0 72%,#fff 72% 77%,#de2910 77%)}.cde-flag.my{background:linear-gradient(#cc0001 0 14%,#fff 14% 28%,#cc0001 28% 42%,#fff 42% 56%,#cc0001 56% 70%,#fff 70% 84%,#cc0001 84%);position:relative}.cde-flag.my:before{content:'';position:absolute;left:0;top:0;width:11px;height:9px;background:#010066}.cde-flag.cn{background:#de2910}.cde-flag.cn:before{content:'★';color:#ffde00;font-size:8px}.cde-flag.us{background:linear-gradient(#b22234 0 14%,#fff 14% 28%,#b22234 28% 42%,#fff 42% 56%,#b22234 56% 70%,#fff 70% 84%,#b22234 84%);position:relative}.cde-flag.us:before{content:'';position:absolute;left:0;top:0;width:11px;height:9px;background:#3c3b6e}.cde-flag.jp{background:#fff;position:relative}.cde-flag.jp:before{content:'';width:8px;height:8px;border-radius:50%;background:#bc002d}.cde-flag.sg{background:linear-gradient(#ef3340 0 50%,#fff 50%);position:relative}.cde-flag.sg:before{content:'★';position:absolute;left:3px;top:1px;color:#fff;font-size:7px}.cde-tip{position:relative;display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:950;margin-left:4px}.cde-tip .cde-tiptext{visibility:hidden;opacity:0;position:absolute;z-index:99;left:-75px;top:22px;width:285px;background:#0f172a;color:#fff;text-align:left;border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.35;box-shadow:0 10px 24px rgba(15,23,42,.22);transition:.15s}.cde-tip:hover .cde-tiptext{visibility:visible;opacity:1}.cde-command{border:1px solid #c9d8ea!important;box-shadow:0 12px 26px rgba(15,23,42,.06);padding:0!important;overflow:hidden}.cde-command-head{background:linear-gradient(135deg,#0f2e5d,#124a8c);color:#fff;padding:18px 22px}.cde-command-title{color:#fff!important;letter-spacing:.04em}.cde-command-sub{color:#dbeafe!important;margin-bottom:0!important}.cde-command-body{padding:20px 22px}.cde-command-top{background:#f8fafc;border:1px solid #dbe5f0;border-radius:13px;padding:16px}.cde-command-mid{background:#fff}.cde-action-strip{background:linear-gradient(135deg,#ecfdf5,#d1fae5)!important;border:1px solid #a7f3d0}.cde-real-btn-note{font-size:11px;color:#047857;font-weight:850;text-align:center;margin-top:8px}.cde-table td:last-child{color:#047857;font-weight:950}
-</style>
-''', unsafe_allow_html=True)
-
 # CDE locked sidebar navigation and Market Deep Dive selector behaviour.
 if 'active_section' not in st.session_state:
     st.session_state.active_section = '🧠 Executive Centre'
@@ -2736,20 +2726,16 @@ if 'selected_market_name' not in st.session_state:
     st.session_state.selected_market_name = 'STI' if 'STI' in default_items else default_items[0]
 
 with st.sidebar:
-    st.markdown('''<div class="cde-logo-card cde-logo-locked"><div class="cde-logo-row"><svg class="cde-logo-svg" viewBox="0 0 64 64" aria-label="Crash Deployment Engine logo"><path d="M8 18 L24 34 L36 24 L52 42" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 34 L36 24 L52 10" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="52" cy="10" r="5" fill="#22c55e"/></svg><div><div class="cde-logo-main">CRASH</div><div class="cde-logo-sub">DEPLOYMENT ENGINE</div></div></div><div class="cde-logo-tag">TURNING MARKET CRASH INTO OPPORTUNITIES</div></div>''', unsafe_allow_html=True)
+    st.markdown('''<div class="cde-logo-card"><div class="cde-logo-wrap"><svg class="cde-logo-mark" viewBox="0 0 80 80" aria-label="Crash Deployment Engine logo"><defs><linearGradient id="cdeRed" x1="0" x2="1"><stop offset="0" stop-color="#ef4444"/><stop offset="1" stop-color="#f97316"/></linearGradient><linearGradient id="cdeGreen" x1="0" x2="1"><stop offset="0" stop-color="#10b981"/><stop offset="1" stop-color="#059669"/></linearGradient></defs><path d="M13 18 C5 33 7 52 20 64" fill="none" stroke="#ef4444" stroke-width="4"/><rect x="22" y="30" width="8" height="25" rx="1" fill="url(#cdeRed)"/><rect x="34" y="22" width="8" height="33" rx="1" fill="url(#cdeRed)"/><rect x="46" y="38" width="8" height="17" rx="1" fill="url(#cdeRed)"/><path d="M22 60 C36 47 48 34 63 17" fill="none" stroke="url(#cdeGreen)" stroke-width="6" stroke-linecap="round"/><path d="M58 15 L69 12 L66 24" fill="url(#cdeGreen)"/><ellipse cx="38" cy="66" rx="24" ry="5" fill="none" stroke="#94a3b8" stroke-width="2"/><ellipse cx="38" cy="66" rx="14" ry="3" fill="none" stroke="#0ea5e9" stroke-width="1.5"/></svg><div><div class="cde-logo-text1">CRASH</div><div class="cde-logo-text2">DEPLOYMENT</div><div class="cde-logo-text3">ENGINE</div></div></div><div class="cde-logo-tagline">Turning Market Crash into Opportunities</div></div>''', unsafe_allow_html=True)
     st.markdown('## 📍 Navigation')
-
     def _nav_button(label):
         if st.session_state.active_section == label:
-            st.markdown(f'<div class="cde-nav-active">{hesc(label)}</div>', unsafe_allow_html=True)
-            return False
+            st.markdown(f'<div class="cde-nav-active">{hesc(label)}</div>', unsafe_allow_html=True); return False
         return st.button(label, use_container_width=True, key='nav_' + re.sub(r'[^A-Za-z0-9]+', '_', label))
-
     if _nav_button('🧠 Executive Centre'):
         st.session_state.active_section = '🧠 Executive Centre'; st.rerun()
     if _nav_button('▣ Market Deep Dive'):
         st.session_state.active_section = '▣ Market Deep Dive'; st.rerun()
-
     if st.session_state.active_section == '▣ Market Deep Dive':
         st.markdown('<div class="cde-subpanel">', unsafe_allow_html=True)
         ag_options = list(ASSET_GROUPS.keys())
@@ -2771,47 +2757,35 @@ with st.sidebar:
         group_items = ASSET_GROUPS.get(asset_group, ASSET_GROUPS['Market / Equity Index'])
         sel = st.session_state.get('selected_market_name', 'STI')
         if sel not in group_items:
-            sel = 'STI' if 'STI' in group_items else group_items[0]
-            st.session_state.selected_market_name = sel
-
+            sel = 'STI' if 'STI' in group_items else group_items[0]; st.session_state.selected_market_name = sel
     if _nav_button('🏆 Crash Analytics'):
         st.session_state.active_section = '🏆 Crash Analytics'; st.rerun()
     if _nav_button('📡 Audit, Methodology & Export'):
         st.session_state.active_section = '📡 Audit, Methodology & Export'; st.rerun()
-
     active_section = st.session_state.active_section
     currency_code, currency_symbol, currency_html, currency_name = market_currency_info(sel)
-    st.session_state.currency_text = currency_symbol
-    st.session_state.currency_html = currency_html
-
-    st.markdown('---')
-    st.markdown('### 💰 Investible Capital & Safeguards')
+    st.session_state.currency_text = currency_symbol; st.session_state.currency_html = currency_html
+    st.markdown('---'); st.markdown('### 💰 Investible Capital & Safeguards')
     st.caption('Investible capital excludes emergency funds. This platform is for decision support only and should not be relied on as a sole trading or investment instruction.')
     st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
-
     if sel == 'STI':
         include_srs = st.toggle('Include SRS in investible capital', value=False, key='include_srs_sti')
         include_cpf_oa = st.toggle('Include CPF-OA in investible capital', value=False, key='include_cpf_oa_sti')
         funding_parts = ['S$ Cash']
         if include_srs: funding_parts.append('SRS')
         if include_cpf_oa: funding_parts.append('CPF-OA')
-        funding_profile = ' + '.join(funding_parts)
-        st.caption(f'Funding Profile: {funding_profile}')
+        funding_profile = ' + '.join(funding_parts); st.caption(f'Funding Profile: {funding_profile}')
         cash_balance = st.number_input(f'Investible Cash ({currency_symbol})', 0.0, value=100000.0, step=5000.0)
         srs_balance = 0.0; cpf_oa_balance = 0.0; preserve_cpf = False
-        if include_srs:
-            srs_balance = st.number_input('Investible SRS (S$)', 0.0, value=35000.0, step=5000.0)
+        if include_srs: srs_balance = st.number_input('Investible SRS (S$)', 0.0, value=35000.0, step=5000.0)
         if include_cpf_oa:
             cpf_oa_balance = st.number_input('CPF-OA Balance (S$)', 0.0, value=180000.0, step=5000.0)
             preserve_cpf = st.checkbox('Exclude S$20k CPF-OA Minimum Floor', value=True)
     else:
-        funding_profile = f'{currency_symbol} Investible Cash'
-        st.caption(f'Funding Profile: {funding_profile}')
+        funding_profile = f'{currency_symbol} Investible Cash'; st.caption(f'Funding Profile: {funding_profile}')
         cash_balance = st.number_input(f'Investible Cash ({currency_symbol})', 0.0, value=100000.0, step=5000.0)
         srs_balance = 0.0; cpf_oa_balance = 0.0; preserve_cpf = False
-
-    emergency_buffer = 0.0
-    st.session_state.funding_profile = funding_profile
+    emergency_buffer = 0.0; st.session_state.funding_profile = funding_profile
     st.markdown('---')
     if st.button('🔄 Refresh Market Data', use_container_width=True):
         st.cache_data.clear(); st.toast('Market data refreshed.', icon='🔄')
@@ -2840,14 +2814,12 @@ live_score,alert,vix_s,curve_s,pmi_s,dd_s,trend_s=calc_market_scores_by_asset(se
 conf_score=confidence_score(dd,live_score,trend_below); conf_label=confidence_label(conf_score); decision_line=f'Deploy approximately {fmt_sgd(deploy)} using staged tranches.' if deploy>0 else 'No deployment now. Capital is preserved until a deployment trigger appears.'; next_trigger=next_trigger_label(zone)
 _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15); exec_z_score=float(_exec_tc['z_score']) if _exec_tc is not None else None; exec_valuation_zone,exec_valuation_colour=valuation_status(exec_z_score)
 
-# CDE: old global title removed; page headers are rendered by locked router.
+# CDE: old selected-market title removed; Market Deep Dive route owns old selected-market page.
 
 # ------------------------- renderers -------------------------
 
-
-
 # ─────────────────────────────────────────────────────────────────────────────
-# Crash Deployment Engine LP-R1-01 to LP-R1-07 locked landing layer — v3 milestone-aligned
+# Crash Deployment Engine LP-R1-01 to LP-R1-07 locked Executive Centre landing
 # ─────────────────────────────────────────────────────────────────────────────
 def market_flag(market):
     flag_class = {'HSI':'hk','KLSE':'my','A-Share':'cn','Nasdaq':'us','S&P 500':'us','DJIA':'us','Nikkei 225':'jp','STI':'sg'}.get(market, '')
@@ -2865,8 +2837,7 @@ def cde_next_future_trigger(dd_value):
     try: d = float(dd_value)
     except Exception: return 'N/A','N/A',0.0,'N/A'
     for threshold, label, pct in ladder:
-        if d > threshold:
-            return f'{threshold:.0f}%', label, pct, f'{abs(threshold-d):.1f}%'
+        if d > threshold: return f'{threshold:.0f}%', label, pct, f'{abs(threshold-d):.1f}%'
     return 'Fully deployed', 'MAX CRISIS BUY', 1.00, 'N/A'
 
 def cde_all_market_rows():
@@ -2881,8 +2852,7 @@ def cde_all_market_rows():
             opp_score = max(0, min(100, round(abs(float(ddv))*3.2 + dpr*30 + (10 if trend_weak else 0))))
             signal = 'BUY' if dpr >= .25 else 'WATCH' if dpr >= .10 else 'HOLD'
             rows.append({'Market':mk,'Index / ETF':INDEX_TICKERS.get(mk,''),'Drawdown':float(ddv),'Score':opp_score,'Signal':signal,'Zone':zone_name,'Deploy %':float(dpr),'Risk Score':score_val})
-        except Exception:
-            pass
+        except Exception: pass
     return sorted(rows, key=lambda r: r['Score'], reverse=True)
 
 def cde_historical_edge_all_markets(threshold=10):
@@ -2901,8 +2871,7 @@ def cde_historical_edge_all_markets(threshold=10):
                 if not fut.empty and ti: forward_3y.append(((safe_float(fut.Close.iloc[0]) / ti) - 1) * 100)
                 post = price_df.loc[price_df.index >= td]; rec = post[post.Close >= pi] if pi else pd.DataFrame()
                 if not rec.empty: recovery_years.append((pd.Timestamp(rec.index[0]) - td).days / 365.25)
-        except Exception:
-            continue
+        except Exception: continue
     if not all_events:
         return {'success':'Pending','avg3y':'Pending','recovery':'Pending','worst3y':'Pending','tooltip':'No consolidated crash-event rows were available.'}
     sample = int(sum(len(x) for x in all_events)); valid3 = [x for x in forward_3y if pd.notna(x)]
@@ -2911,10 +2880,12 @@ def cde_historical_edge_all_markets(threshold=10):
     tooltip = f'Calculated from consolidated Crash & Recovery Analytics event basis across supported equity markets. Sample basis: {sample} crash-event rows; {len(valid3)} events with sufficient 3Y forward data; {len(recovery_years)} recovered events.'
     return {'success':success,'avg3y':avg3y,'recovery':recovery,'worst3y':worst3y,'tooltip':tooltip}
 
+def cde_confidence_bars():
+    return "<span style='display:inline-flex;gap:3px;margin-left:8px;vertical-align:middle'><span style='width:5px;height:9px;background:#16a34a;border-radius:2px;display:inline-block'></span><span style='width:5px;height:13px;background:#16a34a;border-radius:2px;display:inline-block'></span><span style='width:5px;height:18px;background:#16a34a;border-radius:2px;display:inline-block'></span><span style='width:5px;height:23px;background:#16a34a;border-radius:2px;display:inline-block'></span></span>"
+
 def render_executive():
     rows = cde_all_market_rows()
-    if not rows:
-        st.info('All-market landing data is unavailable. Try Refresh Market Data.'); return
+    if not rows: st.info('All-market landing data is unavailable. Try Refresh Market Data.'); return
     best = rows[0]
     risk_values = [safe_float(r.get('Risk Score'), np.nan) for r in rows]
     global_risk_score = np.nanmean(risk_values); global_risk_score = live_score if pd.isna(global_risk_score) else global_risk_score
@@ -2925,14 +2896,13 @@ def render_executive():
     deployed_amt = total_cap * max_deploy_pct; remaining_amt = max(total_cap - deployed_amt, 0)
     next_trigger, next_tier, next_pct, distance = cde_next_future_trigger(best['Drawdown'])
     active_tier = f"{best['Zone']} / {best['Deploy %']:.0%}"; next_amt = max(total_cap * (next_pct - max_deploy_pct), 0)
+    progress_pct = 0 if next_trigger in ['N/A','Fully deployed'] else max(0, min(100, abs(best['Drawdown']) / abs(float(str(next_trigger).replace('%',''))) * 100))
     edge = cde_historical_edge_all_markets()
-
     st.markdown(f"""<div class='cde-hero'><div><div class='cde-title'>CRASH DEPLOYMENT ENGINE</div><div class='cde-subtitle'>Turning Market Crash into Opportunities</div><div class='cde-page-label'>Executive Centre — All Markets</div></div><div><span class='cde-pill'>Market data as of {datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div>""", unsafe_allow_html=True)
     k1, k2, k3 = st.columns(3)
     k1.markdown(f"<div class='cde-card'><div class='cde-card-title'>Global Risk Regime</div><div class='cde-main-value cde-orange'>{hesc(global_regime)}</div><div class='cde-card-sub'>Average macro score {global_risk_score:.0f} / 100</div></div>", unsafe_allow_html=True)
     k2.markdown(f"<div class='cde-card'><div class='cde-card-title'>Best Opportunity</div><div class='cde-main-value cde-green'>{cde_market_display(best['Market']).upper()}</div><div class='cde-card-sub'>Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div>", unsafe_allow_html=True)
     k3.markdown(f"<div class='cde-card'><div class='cde-card-title'>Deployment Stance</div><div class='cde-main-value cde-orange'>{hesc(deployment_stance)}</div><div class='cde-card-sub'>Highest active cumulative deployment {max_deploy_pct:.0%}</div></div>", unsafe_allow_html=True)
-
     st.markdown('### Market Opportunity Overview')
     st.caption('Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive.')
     score_tip = "Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only."
@@ -2941,48 +2911,26 @@ def render_executive():
         sig_cls = 'buy' if r['Signal'] == 'BUY' else 'watch' if r['Signal'] == 'WATCH' else 'hold'
         table_rows.append(f"<tr><td>{i}</td><td>{cde_market_display(r['Market'])}</td><td>{hesc(r['Index / ETF'])}</td><td class='cde-orange'>{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class='cde-sig {sig_cls}'>{hesc(r['Signal'])}</span></td></tr>")
     score_header = "Score <span class='cde-tip'>i<span class='cde-tiptext'>" + hesc(score_tip) + "</span></span>"
-    table_html = "<table class='cde-table'><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>" + score_header + "</th><th>Signal</th></tr></thead><tbody>" + ''.join(table_rows) + "</tbody></table>"
-    st.markdown(table_html, unsafe_allow_html=True)
-    if st.button('Deep Dive →', use_container_width=True, key='cde_landing_deep_dive_button'):
-        go_market_deep_dive()
-
+    st.markdown("<table class='cde-table'><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>" + score_header + "</th><th>Signal</th></tr></thead><tbody>" + ''.join(table_rows) + "</tbody></table>", unsafe_allow_html=True)
+    if st.button('Deep Dive →', use_container_width=True, key='cde_landing_deep_dive_button'): go_market_deep_dive()
     ladder_html = ''
     for label, pct in [('Hold',0),('Initial Watch',.10),('Initial Deploy',.25),('Deploy More',.50),('Strong Deploy',.75),('Maximum Deploy',1.0)]:
-        active = ' active' if max_deploy_pct >= pct and pct > 0 else ''
+        active = ' active' if abs(max_deploy_pct-pct) < 0.001 or (max_deploy_pct >= pct and pct == .25) else ''
         ladder_html += f"<div class='cde-ladder-row{active}'><span>{pct:.0%}</span><span>{label}</span></div>"
     command_html = f"""
-    <section class='cde-command'>
-      <div class='cde-command-title'>DEPLOYMENT COMMAND CENTRE</div>
-      <div class='cde-command-sub'>Your next best action and deployment plan.</div>
-      <div class='cde-command-top'>
-        <div><div class='cde-command-label'>TARGET MARKET</div><div class='cde-command-value'>{cde_market_display(best['Market']).upper()}</div><div class='cde-command-note'>{hesc(best['Index / ETF'])}</div></div>
-        <div class='cde-divider'><div class='cde-command-label'>TRIGGER LEVEL</div><div class='cde-command-value cde-orange'>{hesc(next_trigger)}</div><div class='cde-command-note'>Drawdown Trigger</div></div>
-        <div class='cde-divider'><div class='cde-command-label'>CURRENT DRAWDOWN</div><div class='cde-command-value cde-orange'>{best['Drawdown']:.1f}%</div><div class='cde-command-note'>Active tier: {hesc(active_tier)}</div></div>
-        <div class='cde-divider'><div class='cde-command-label'>DISTANCE TO TRIGGER</div><div class='cde-command-value cde-orange'>{hesc(distance)}</div></div>
-        <div class='cde-divider'><div class='cde-command-label'>CONFIDENCE</div><div class='cde-command-value cde-green'>High</div></div>
-      </div>
-      <div class='cde-command-mid'>
-        <div><div class='cde-card-title'>Deployment Ladder</div>{ladder_html}</div>
-        <div><div class='cde-card-title'>Deployment Allocation</div><div class='cde-card-sub'>Cash Available: {fmt_sgd_html(remaining_amt)} ({1-max_deploy_pct:.0%})<br>Deployed: {fmt_sgd_html(deployed_amt)} ({max_deploy_pct:.0%})<br>Other Funds: {fmt_sgd_html(0)} (0%)</div></div>
-      </div>
-      <div class='cde-action-strip'>
-        <div><div class='cde-command-label'>NEXT DEPLOYMENT AMOUNT</div><div class='cde-command-value cde-green'>{fmt_sgd_html(next_amt)}</div><div class='cde-command-note'>({max(next_pct-max_deploy_pct,0):.0%} incremental)</div></div>
-        <div><div class='cde-command-label'>CONDITION</div><div class='cde-card-sub'>When {hesc(best['Market'])} drawdown reaches {hesc(next_trigger)}</div></div>
-        <div><div class='cde-button-note'>Market Deep Dive CTA below</div></div>
-      </div>
-    </section>
+    <section class='cde-command'><div class='cde-command-title'>DEPLOYMENT COMMAND CENTRE</div><div class='cde-command-sub'>Your next best action and deployment plan.</div>
+      <div class='cde-command-top'><div class='cde-market-circle'>✿</div><div><div class='cde-command-label'>TARGET MARKET</div><div class='cde-command-value'>{hesc(best['Market']).upper()}</div><div class='cde-command-note'>Hang Seng Index</div></div><div class='cde-divider'><div class='cde-command-label'>TRIGGER LEVEL</div><div class='cde-command-value cde-orange'>{hesc(next_trigger)}</div><div class='cde-command-note'>Drawdown Trigger</div></div><div class='cde-divider'><div class='cde-command-label'>CURRENT DRAWDOWN</div><div class='cde-command-value cde-orange'>{best['Drawdown']:.1f}%</div><div class='cde-progress'><div class='cde-progress-fill' style='width:{progress_pct:.0f}%'></div></div><div class='cde-command-note'>Active tier: {hesc(active_tier)}</div></div><div class='cde-divider'><div class='cde-command-label'>DISTANCE TO TRIGGER</div><div class='cde-command-value cde-orange'>{hesc(distance)}</div><div class='cde-command-note'>{progress_pct:.0f}% towards trigger</div></div><div class='cde-divider'><div class='cde-command-label'>CONFIDENCE</div><div class='cde-command-value cde-green'>High {cde_confidence_bars()}</div></div></div>
+      <div class='cde-command-mid'><div><div class='cde-card-title'>DEPLOYMENT LADDER</div><div class='cde-card-sub'>Systematic capital deployment during increasing market dislocation.</div><div class='cde-ladder-wrap'><div>{ladder_html}</div><div><div class='cde-gauge' style='--deg:{int(max_deploy_pct*360)}deg'><div class='cde-gauge-inner'><b>{max_deploy_pct:.0%}</b><span>DEPLOYED</span></div></div><div class='cde-gauge-meta'><div class='cde-green'>{fmt_sgd_html(deployed_amt)}<br><span class='cde-card-sub'>Deployed</span></div><div class='cde-green'>{fmt_sgd_html(remaining_amt)}<br><span class='cde-card-sub'>Available</span></div></div></div></div></div><div><div class='cde-card-title'>DEPLOYMENT ALLOCATION</div><div class='cde-card-sub'>By capital source.</div><div class='cde-allocation'><div class='cde-donut' style='--deg:{int(max_deploy_pct*360)}deg'><div class='cde-donut-inner'>{current_currency_html()}{total_cap/1000:.0f}k</div></div><div><div class='cde-legend-row'><span class='cde-dot' style='background:#5eead4'></span><span>Cash Available</span><b>{fmt_sgd_html(remaining_amt)} ({1-max_deploy_pct:.0%})</b></div><div class='cde-legend-row'><span class='cde-dot' style='background:#2563eb'></span><span>Deployed</span><b>{fmt_sgd_html(deployed_amt)} ({max_deploy_pct:.0%})</b></div><div class='cde-legend-row'><span class='cde-dot' style='background:#cbd5e1'></span><span>Other Funds</span><b>{fmt_sgd_html(0)} (0%)</b></div></div></div></div></div>
+      <div class='cde-action-strip'><div class='cde-action-flex'><div class='cde-action-icon'>◎</div><div><div class='cde-command-label'>NEXT DEPLOYMENT AMOUNT</div><div class='cde-command-value cde-green'>{fmt_sgd_html(next_amt)}</div><div class='cde-command-note'>({max(next_pct-max_deploy_pct,0):.0%} incremental)</div></div></div><div><div class='cde-command-label'>CONDITION</div><div class='cde-card-sub'>When {hesc(best['Market'])} drawdown reaches {hesc(next_trigger)}</div></div><div><div class='cde-command-note'>Use the button below to open the selected-market page.</div></div></div></section>
     """
     st.markdown(command_html, unsafe_allow_html=True)
-    if st.button('View Market Deep Dive →', use_container_width=True, key='cde_command_centre_deep_dive_button'):
-        go_market_deep_dive()
-
+    if st.button('View Market Deep Dive →', use_container_width=True, key='cde_command_centre_deep_dive_button'): go_market_deep_dive()
     b1, b2, b3 = st.columns([1.15,1.1,.95])
     b1.markdown("<div class='cde-card'><div class='cde-card-title'>Key Takeaway</div><div class='cde-card-sub'>Opportunities are ranked across all supported equity markets. Single-market execution and all original details remain inside sidebar Market Deep Dive.</div></div>", unsafe_allow_html=True)
     b2.markdown(f"<div class='cde-card'><div class='cde-card-title' title='{hesc(edge.get('tooltip',''))}'>Historical Edge — All Markets ⓘ</div><div class='cde-mini-metrics'><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div></div>", unsafe_allow_html=True)
     b3.markdown("<div class='cde-card'><div class='cde-card-title'>System Status</div><div class='cde-card-sub'>All systems operational<br>Data quality: High<br>Model confidence: Good</div></div>", unsafe_allow_html=True)
 
 def render_market_deep_dive(expanded=True):
-    """Market Deep Dive: old selected-market page, preserved under sidebar-selected route."""
     render_market_deep_dive_summary()
     render_suggested(expanded=True)
     render_market(expanded=False)
@@ -3648,7 +3596,6 @@ def render_audit(expanded=False):
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
-    """Locked CDE router: Executive Centre landing only; Market Deep Dive owns old selected-market page."""
     if active_section == '🧠 Executive Centre':
         render_executive()
     elif active_section == '▣ Market Deep Dive':
