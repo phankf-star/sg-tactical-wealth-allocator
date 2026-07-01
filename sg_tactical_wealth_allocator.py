@@ -2850,119 +2850,24 @@ def cde_historical_edge_all_markets(threshold=10):
     return {'success':success,'avg3y':avg3y,'recovery':recovery,'worst3y':worst3y,'tooltip':f'Consolidated from {sample} crash-event row(s) across {len(markets)} supported equity markets. 3Y metrics use {len(valid3)} event(s) with sufficient forward data; recovery time uses {len(recovery_years)} recovered event(s).'}
 
 def render_executive():
-    """LP-R1 landing page using safe Streamlit rendering.
-    This avoids large indented HTML blocks being displayed as raw text.
-    """
     rows=cde_all_market_rows()
-    if not rows:
-        st.info('All-market landing data is unavailable. Try Refresh Market Data.')
-        return
-
+    if not rows: st.info('All-market landing data is unavailable. Try Refresh Market Data.'); return
     flag_map={'HSI':'🇭🇰','KLSE':'🇲🇾','STI':'🇸🇬','A-Share':'🇨🇳','Nasdaq':'🇺🇸','S&P 500':'🇺🇸','DJIA':'🇺🇸','Nikkei 225':'🇯🇵'}
-    def market_display_name(market_name):
-        return f"{flag_map.get(market_name,'')} {market_name}".strip()
-
-    best=rows[0]
-    best_market=best['Market']
-    best_deploy_pct=safe_float(best.get('Deploy %'),0)
-    global_risk_score=np.nanmean([safe_float(r.get('Risk Score'),np.nan) for r in rows])
-    global_risk_score=live_score if pd.isna(global_risk_score) else global_risk_score
+    def market_display_name(market_name): return f"{flag_map.get(market_name,'')} {market_name}".strip()
+    best=rows[0]; global_risk_score=np.nanmean([safe_float(r.get('Risk Score'),np.nan) for r in rows]); global_risk_score=live_score if pd.isna(global_risk_score) else global_risk_score
     global_regime='CRASH RISK' if global_risk_score>=70 else 'WARNING' if global_risk_score>=50 else 'WATCH' if global_risk_score>=30 else 'NORMAL'
-    max_deploy_pct=max([safe_float(r.get('Deploy %'),0) for r in rows] or [0])
-    deployment_stance='ACTIVE' if max_deploy_pct>=.25 else 'INITIAL' if max_deploy_pct>=.10 else 'HOLD'
-    total_cap=total_available if 'total_available' in globals() else cash_balance
-    deployed_amt=total_cap*best_deploy_pct
-    remaining_amt=max(total_cap-deployed_amt,0)
-    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown'])
-    next_increment=max(safe_float(next_pct,best_deploy_pct)-best_deploy_pct,0)
-    next_deploy_amt=total_cap*next_increment
-    active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
-    edge=cde_historical_edge_all_markets()
-
-    st.markdown('## CRASH DEPLOYMENT ENGINE')
-    st.caption('Turning market crashes into opportunities.  •  Executive Centre — All Markets')
-
-    k1,k2,k3,k4=st.columns([1,1,1,1.35])
-    k1.metric('Global Risk Regime', global_regime, f'Average macro score {global_risk_score:.0f}/100')
-    k2.metric('Best Opportunity', market_display_name(best_market), f"Drawdown {best['Drawdown']:.1f}% · score {best['Score']}")
-    k3.metric('Deployment Stance', deployment_stance, f'Highest active cumulative deployment {max_deploy_pct:.0%}')
-    with k4:
-        st.markdown('**Current Market Environment**')
-        if vix is not None:
-            st.caption(f'Volatility: {vix:.1f} · Credit: Tightening · Liquidity: Neutral · Growth: Moderate')
-        else:
-            st.caption('Market environment diagnostics available in Market Deep Dive.')
-
-    st.markdown('### Market Opportunity Overview')
-    st.caption('Landing-level cross-market comparison. Score is a landing-level 0–100 ranking based on drawdown depth and active deployment tier; it is not a return forecast.')
-    opp_df=pd.DataFrame([{
-        'Rank':i,
-        'Market':market_display_name(r['Market']),
-        'Index / ETF':r['Index / ETF'],
-        'Drawdown':f"{r['Drawdown']:.1f}%",
-        'Score ⓘ':r['Score'],
-        'Signal':r['Signal'],
-        'Landing Action':'Deep Dive →'
-    } for i,r in enumerate(rows,1)])
-    st.dataframe(opp_df,use_container_width=True,hide_index=True)
-
-    st.markdown('### Deployment Command Centre')
-    st.caption('Compact next deployment trigger panel. Layout follows the approved sample; figures come from system calculations.')
-    c1,c2,c3,c4,c5=st.columns([1.1,.9,1.1,1,.8])
-    c1.metric('Target Market', market_display_name(best_market), 'Highest priority market')
-    c2.metric('Trigger Level', next_trigger, 'Drawdown trigger')
-    c3.metric('Current Drawdown', f"{best['Drawdown']:.1f}%", f'Active tier: {active_tier}')
-    c4.metric('Distance to Trigger', distance, 'Next future trigger only')
-    confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
-    c5.metric('Confidence', confidence_label, 'System score basis')
-
-    l1,l2=st.columns([1.15,1])
-    with l1:
-        st.markdown('**Deployment Ladder**')
-        ladder_df=pd.DataFrame([
-            {'Tier':'0%','Action':'Hold','Active':best_deploy_pct==0},
-            {'Tier':'10%','Action':'Initial Watch','Active':best_deploy_pct==.10},
-            {'Tier':'25%','Action':'Initial Deploy','Active':best_deploy_pct==.25},
-            {'Tier':'50%','Action':'Deploy More','Active':best_deploy_pct==.50},
-            {'Tier':'75%','Action':'Strong Deploy','Active':best_deploy_pct==.75},
-            {'Tier':'100%','Action':'Maximum Deploy','Active':best_deploy_pct==1},
-        ])
-        st.dataframe(ladder_df,use_container_width=True,hide_index=True)
-    with l2:
-        st.markdown('**Deployment Allocation**')
-        alloc_df=pd.DataFrame([
-            {'Capital Source':'Cash Available','Amount':fmt_sgd(remaining_amt)},
-            {'Capital Source':'Deployed','Amount':fmt_sgd(deployed_amt)},
-            {'Capital Source':'Other Funds','Amount':fmt_sgd(0)},
-        ])
-        st.dataframe(alloc_df,use_container_width=True,hide_index=True)
-
-    n1,n2,n3=st.columns([1,1.5,.8])
-    n1.metric('Next Deployment Amount', fmt_sgd(next_deploy_amt), f'{next_increment:.0%} incremental')
-    condition='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f'When {best_market} drawdown reaches {next_trigger}'
-    n2.markdown(f'**Condition**  \n{condition}')
-    with n3:
-        if st.button(f'Deep Dive → {market_display_name(best_market)}', use_container_width=True, key='lp_r1_01_deep_dive_to_best_market'):
-            st.session_state.active_section='▣ Market Deep Dive'
-            st.session_state.asset_group_selection='Market / Equity Index'
-            st.session_state.selected_market_name=best_market
-            st.rerun()
-
-    b1,b2,b3=st.columns([1.15,1.05,.95])
-    with b1:
-        st.markdown('**Key Takeaway**')
-        st.caption('Opportunities are ranked across all supported equity markets. Single-market execution and all original details remain inside Market Deep Dive.')
-    with b2:
-        st.markdown('**Historical Edge — All Markets ⓘ**')
-        st.caption(edge.get('tooltip','Dynamic all-market Crash & Recovery Analytics event basis where available.'))
-        m1,m2,m3,m4=st.columns(4)
-        m1.metric('Success',edge.get('success','N/A'))
-        m2.metric('Avg 3Y',edge.get('avg3y','N/A'))
-        m3.metric('Recovery',edge.get('recovery','N/A'))
-        m4.metric('Worst 3Y',edge.get('worst3y','N/A'))
-    with b3:
-        st.markdown('**System Status**')
-        st.caption('All systems operational\nData quality: High\nModel confidence: Good')
+    max_deploy_pct=max([safe_float(r.get('Deploy %'),0) for r in rows] or [0]); deployment_stance='ACTIVE' if max_deploy_pct>=.25 else 'INITIAL' if max_deploy_pct>=.10 else 'HOLD'
+    total_cap=total_available if 'total_available' in globals() else cash_balance; deployed_amt=total_cap*max_deploy_pct; remaining_amt=max(total_cap-deployed_amt,0)
+    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown']); active_tier=f"{best['Zone']} / {best['Deploy %']:.0%}"; edge=cde_historical_edge_all_markets()
+    table_rows=''.join([f'''<tr><td>{i}</td><td>{hesc(market_display_name(r['Market']))}</td><td>{hesc(r['Index / ETF'])}</td><td class="cde-orange">{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class="cde-sig {'buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'}">{hesc(r['Signal'])}</span></td><td><span class="cde-blue">Deep Dive →</span></td></tr>''' for i,r in enumerate(rows,1)])
+    env_html=f'''<div class="cde-env-grid"><div><b class="cde-green">{vix:.1f}</b><span>Volatility<br/>Normal</span></div><div><b class="cde-orange">Tightening</b><span>Credit<br/>Cautious</span></div><div><b class="cde-blue">Neutral</b><span>Liquidity<br/>Steady</span></div><div><b class="cde-orange">Moderate</b><span>Growth<br/>Slowing</span></div></div>''' if vix is not None else '<div class="cde-card-sub">Market environment diagnostics available in Market Deep Dive.</div>'
+    donut_deg=int(max_deploy_pct*360); edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
+    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Global Risk Regime</div><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{hesc(market_display_name(best['Market'])).upper()}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{hesc(deployment_stance)}</div><div class="cde-card-sub">Highest active cumulative deployment {max_deploy_pct:.0%}</div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment</div>{env_html}</div></section><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available only through sidebar Market Deep Dive.</div><table class="cde-table"><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>Score</th><th>Signal</th><th>Landing Action</th></tr></thead><tbody>{table_rows}</tbody></table><div class="cde-section-title">Deployment Command Centre</div><div class="cde-section-sub">Compact next deployment trigger panel. Figures are system-calculated.</div><section class="cde-grid cde-three-grid"><div class="cde-card"><div class="cde-card-title">Deployment Ladder</div><div class="cde-ladder-row"><span><span class="cde-dot"></span>0% to -8%</span><b>0%</b><span>Hold</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.10 else ''}"></span>-8% to -15%</span><b class="cde-orange">10%</b><span>Initial deploy</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.25 else ''}"></span>-15% to -25%</span><b class="cde-green">25%</b><span>Deploy more</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.50 else ''}"></span>-25% to -35%</span><b class="cde-green">50%</b><span>Strong deploy</span></div></div><div class="cde-card"><div class="cde-card-title">Deployment Allocation by Capital Source</div><div class="cde-allocation"><div class="cde-donut" style="--deg:{donut_deg}deg" data-label="{current_currency_html()}{deployed_amt/1000:.0f}k"></div><div class="cde-card-sub">● Cash available&nbsp;&nbsp; {fmt_sgd_html(remaining_amt)}<br>● Deployed&nbsp;&nbsp; {fmt_sgd_html(deployed_amt)}<br>● Other funds&nbsp;&nbsp; {fmt_sgd_html(0)}</div></div></div><div class="cde-card"><div class="cde-card-title">Next Deployment Trigger — Highest Priority Market</div><div class="cde-main-value">{hesc(market_display_name(best['Market'])).upper()}</div><div class="cde-card-sub"><b>Current drawdown:</b> {best['Drawdown']:.1f}%<br><b>Active tier:</b> {hesc(active_tier)}<br><b>Next future trigger:</b> {hesc(next_trigger)}<br><b>Distance:</b> {hesc(distance)}</div></div></section><section class="cde-grid cde-bottom-grid"><div class="cde-card cde-takeaway"><div class="cde-icon">⊙</div><div><div class="cde-card-title">Key Takeaway</div><div class="cde-card-sub">Opportunities are ranked across all supported equity markets. Single-market execution and all original details remain inside sidebar Market Deep Dive.</div></div></div><div class="cde-card"><div class="cde-card-title">Historical Edge — All Markets</div>{edge_html}</div><div class="cde-card cde-takeaway"><div class="cde-icon">✓</div><div><div class="cde-card-title">System Status</div><div class="cde-card-sub">All systems operational<br>Data quality: High<br>Model confidence: Good</div></div></div></section>''', unsafe_allow_html=True)
+    if st.button(f'Deep Dive → {market_display_name(best["Market"])}', use_container_width=True, key='lp_r1_01_visual_preserve_deep_dive'):
+        st.session_state.active_section='▣ Market Deep Dive'
+        st.session_state.asset_group_selection='Market / Equity Index'
+        st.session_state.selected_market_name=best['Market']
+        st.rerun()
 
 def render_market_deep_dive_summary():
     display_dd=min(dd,0.0)
