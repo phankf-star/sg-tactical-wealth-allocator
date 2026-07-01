@@ -261,8 +261,8 @@ BENCHMARK_TICKERS = {
     'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
-NAV_OPTIONS = ['🧠 Executive Centre','▣ Market Deep Dive','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
-SECTION_ORDER = ['▣ Market Deep Dive','🏆 Crash Analytics','📊 Market Performance','📡 Audit, Methodology & Export']
+NAV_OPTIONS = ['🧠 Executive Centre','▣ Market Deep Dive','🏆 Crash Analytics','📡 Audit, Methodology & Export']
+SECTION_ORDER = ['▣ Market Deep Dive','🏆 Crash Analytics','📡 Audit, Methodology & Export']
 CRISIS_EVENTS = [('1987-08-01','1987-12-31','1987 Black Monday'),('2000-03-01','2002-10-31','2000-2002 Dot-com Bust'),('2007-10-01','2009-03-31','2008 Global Financial Crisis'),('2020-02-01','2020-04-30','2020 COVID-19'),('2022-01-01','2022-10-31','2022 Inflation & Rate Hike')]
 
 # ------------------------- helpers -------------------------
@@ -2749,8 +2749,6 @@ with st.sidebar:
         if sel not in group_items: sel='STI' if 'STI' in group_items else group_items[0]; st.session_state.selected_market_name=sel
     if _nav_button('🏆 Crash Analytics'):
         st.session_state.active_section='🏆 Crash Analytics'; st.rerun()
-    if _nav_button('📊 Market Performance'):
-        st.session_state.active_section='📊 Market Performance'; st.rerun()
     if _nav_button('📡 Audit, Methodology & Export'):
         st.session_state.active_section='📡 Audit, Methodology & Export'; st.rerun()
     active_section=st.session_state.active_section
@@ -2853,16 +2851,77 @@ def cde_historical_edge_all_markets(threshold=10):
 
 def render_executive():
     rows=cde_all_market_rows()
-    if not rows: st.info('All-market landing data is unavailable. Try Refresh Market Data.'); return
-    best=rows[0]; global_risk_score=np.nanmean([safe_float(r.get('Risk Score'),np.nan) for r in rows]); global_risk_score=live_score if pd.isna(global_risk_score) else global_risk_score
+    if not rows:
+        st.info('All-market landing data is unavailable. Try Refresh Market Data.')
+        return
+
+    flag_map={'HSI':'🇭🇰','KLSE':'🇲🇾','STI':'🇸🇬','A-Share':'🇨🇳','Nasdaq':'🇺🇸','S&P 500':'🇺🇸','DJIA':'🇺🇸','Nikkei 225':'🇯🇵'}
+    def market_display_name(market_name):
+        return f"{flag_map.get(market_name,'')} {market_name}".strip()
+
+    best=rows[0]
+    best_market=best['Market']
+    best_deploy_pct=safe_float(best.get('Deploy %'),0)
+    global_risk_score=np.nanmean([safe_float(r.get('Risk Score'),np.nan) for r in rows])
+    global_risk_score=live_score if pd.isna(global_risk_score) else global_risk_score
     global_regime='CRASH RISK' if global_risk_score>=70 else 'WARNING' if global_risk_score>=50 else 'WATCH' if global_risk_score>=30 else 'NORMAL'
-    max_deploy_pct=max([safe_float(r.get('Deploy %'),0) for r in rows] or [0]); deployment_stance='ACTIVE' if max_deploy_pct>=.25 else 'INITIAL' if max_deploy_pct>=.10 else 'HOLD'
-    total_cap=total_available if 'total_available' in globals() else cash_balance; deployed_amt=total_cap*max_deploy_pct; remaining_amt=max(total_cap-deployed_amt,0)
-    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown']); active_tier=f"{best['Zone']} / {best['Deploy %']:.0%}"; edge=cde_historical_edge_all_markets()
-    table_rows=''.join([f'''<tr><td>{i}</td><td>{hesc(r['Market'])}</td><td>{hesc(r['Index / ETF'])}</td><td class="cde-orange">{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class="cde-sig {'buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'}">{hesc(r['Signal'])}</span></td><td>Review via sidebar Market Deep Dive</td></tr>''' for i,r in enumerate(rows,1)])
+    max_deploy_pct=max([safe_float(r.get('Deploy %'),0) for r in rows] or [0])
+    deployment_stance='ACTIVE' if max_deploy_pct>=.25 else 'INITIAL' if max_deploy_pct>=.10 else 'HOLD'
+    total_cap=total_available if 'total_available' in globals() else cash_balance
+    deployed_amt=total_cap*best_deploy_pct
+    remaining_amt=max(total_cap-deployed_amt,0)
+    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown'])
+    next_increment=max(safe_float(next_pct, best_deploy_pct)-best_deploy_pct,0)
+    next_deploy_amt=total_cap*next_increment
+    active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
+    edge=cde_historical_edge_all_markets()
+
+    score_tip=tooltip_html('Market Opportunity Score',[('Definition','Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only.')],'Not a return forecast and not the detailed Market Deep Dive score.')
+    edge_tip=tooltip_html('Historical Edge — All Markets',[('Basis',edge.get('tooltip','Dynamic all-market Crash & Recovery Analytics event basis where available.'))],'Remarks/sample basis are kept in this tooltip; visible card remains compact.')
+
+    table_rows=''.join([f'''<tr><td>{i}</td><td><span class="cde-market-label">{hesc(market_display_name(r['Market']))}</span></td><td>{hesc(r['Index / ETF'])}</td><td class="cde-orange">{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class="cde-sig {'buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'}">{hesc(r['Signal'])}</span></td><td><span class="cde-link-text">Deep Dive →</span></td></tr>''' for i,r in enumerate(rows,1)])
     env_html=f'''<div class="cde-env-grid"><div><b class="cde-green">{vix:.1f}</b><span>Volatility<br/>Normal</span></div><div><b class="cde-orange">Tightening</b><span>Credit<br/>Cautious</span></div><div><b class="cde-blue">Neutral</b><span>Liquidity<br/>Steady</span></div><div><b class="cde-orange">Moderate</b><span>Growth<br/>Slowing</span></div></div>''' if vix is not None else '<div class="cde-card-sub">Market environment diagnostics available in Market Deep Dive.</div>'
-    donut_deg=int(max_deploy_pct*360); edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div><div class="cde-card-sub" style="margin-top:8px">{hesc(edge.get('tooltip',''))}</div>'''
-    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Global Risk Regime</div><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{hesc(best['Market']).upper()}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{hesc(deployment_stance)}</div><div class="cde-card-sub">Highest active cumulative deployment {max_deploy_pct:.0%}</div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment</div>{env_html}</div></section><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available only through sidebar Market Deep Dive.</div><table class="cde-table"><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>Score</th><th>Signal</th><th>Landing Action</th></tr></thead><tbody>{table_rows}</tbody></table><section class="cde-grid cde-three-grid"><div class="cde-card"><div class="cde-card-title">Deployment Ladder</div><div class="cde-ladder-row"><span><span class="cde-dot"></span>0% to -8%</span><b>0%</b><span>Hold</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.10 else ''}"></span>-8% to -15%</span><b class="cde-orange">10%</b><span>Initial deploy</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.25 else ''}"></span>-15% to -25%</span><b class="cde-green">25%</b><span>Deploy more</span></div><div class="cde-ladder-row"><span><span class="cde-dot {'active' if max_deploy_pct>=.50 else ''}"></span>-25% to -35%</span><b class="cde-green">50%</b><span>Strong deploy</span></div></div><div class="cde-card"><div class="cde-card-title">Deployment Allocation by Capital Source</div><div class="cde-allocation"><div class="cde-donut" style="--deg:{donut_deg}deg" data-label="{current_currency_html()}{deployed_amt/1000:.0f}k"></div><div class="cde-card-sub">● Cash available&nbsp;&nbsp; {fmt_sgd_html(remaining_amt)}<br>● Deployed&nbsp;&nbsp; {fmt_sgd_html(deployed_amt)}<br>● Other funds&nbsp;&nbsp; {fmt_sgd_html(0)}</div></div></div><div class="cde-card"><div class="cde-card-title">Next Deployment Trigger — Highest Priority Market</div><div class="cde-main-value">{hesc(best['Market']).upper()}</div><div class="cde-card-sub"><b>Current drawdown:</b> {best['Drawdown']:.1f}%<br><b>Active tier:</b> {hesc(active_tier)}<br><b>Next future trigger:</b> {hesc(next_trigger)}<br><b>Distance:</b> {hesc(distance)}</div></div></section><section class="cde-grid cde-bottom-grid"><div class="cde-card cde-takeaway"><div class="cde-icon">⊙</div><div><div class="cde-card-title">Key Takeaway</div><div class="cde-card-sub">Opportunities are ranked across all supported equity markets. Single-market execution and all original details remain inside sidebar Market Deep Dive.</div></div></div><div class="cde-card"><div class="cde-card-title">Historical Edge — All Markets</div>{edge_html}</div><div class="cde-card cde-takeaway"><div class="cde-icon">✓</div><div><div class="cde-card-title">System Status</div><div class="cde-card-sub">All systems operational<br>Data quality: High<br>Model confidence: Good</div></div></div></section>''', unsafe_allow_html=True)
+    edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
+    trigger_progress=100 if next_trigger=='Fully deployed' else max(0,min(100,abs(min(best['Drawdown'],0))/max(abs(safe_float(str(next_trigger).replace('%',''),0)),1)*100))
+    confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
+    confidence_colour=GREEN if confidence_label=='High' else AMBER if confidence_label=='Medium' else SLATE
+    donut_deg=int(best_deploy_pct*360)
+
+    st.markdown(f'''<style>
+    .cde-market-label{{font-size:1em;line-height:1;white-space:nowrap}}
+    .cde-link-text{{font-weight:950;color:#2563eb;white-space:nowrap}}
+    .cde-command-centre{{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:16px 18px;margin:14px 0 22px 0}}
+    .cde-command-head{{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:12px}}
+    .cde-command-title{{font-size:16px;font-weight:950;color:#0f172a}}
+    .cde-command-sub{{font-size:11.5px;color:#64748b;font-weight:750}}
+    .cde-command-top{{display:grid;grid-template-columns:1.15fr .95fr 1.15fr 1fr .75fr;gap:12px;align-items:stretch}}
+    .cde-command-metric{{border-left:1px solid #e2e8f0;padding-left:12px;min-height:64px}}
+    .cde-command-metric:first-child{{border-left:0;padding-left:0}}
+    .cde-command-label{{font-size:10px;color:#475569;font-weight:950;text-transform:uppercase;letter-spacing:.02em}}
+    .cde-command-value{{font-size:22px;font-weight:950;color:#0f172a;line-height:1.15;margin-top:4px}}
+    .cde-command-small{{font-size:10.5px;color:#64748b;font-weight:750}}
+    .cde-command-bar{{height:8px;background:#e2e8f0;border-radius:999px;overflow:hidden;margin:7px 0 4px 0}}
+    .cde-command-fill{{height:100%;background:#ff6b35;border-radius:999px}}
+    .cde-command-mid{{display:grid;grid-template-columns:1.15fr 1fr;gap:12px;margin-top:12px}}
+    .cde-command-panel{{border:1px solid #e2e8f0;border-radius:12px;padding:12px;background:#fbfdff;min-height:92px}}
+    .cde-command-ladder{{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}}
+    .cde-command-step{{font-size:10.5px;background:#f1f5f9;border-radius:8px;padding:6px 7px;font-weight:800;color:#475569}}
+    .cde-command-step.active{{background:#e0f2fe;color:#075985}}
+    .cde-command-next{{background:#dcfce7;border:1px solid #bbf7d0;border-radius:12px;margin-top:12px;padding:12px;display:grid;grid-template-columns:1fr 1.35fr .95fr;gap:12px;align-items:center}}
+    @media(max-width:900px){{.cde-command-top,.cde-command-mid,.cde-command-next{{grid-template-columns:1fr}}.cde-command-metric{{border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:10px}}.cde-command-metric:first-child{{border-top:0;padding-top:0}}.cde-command-ladder{{grid-template-columns:1fr 1fr}}}}
+    </style>
+    <div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div>
+    <section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Global Risk Regime</div><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{hesc(market_display_name(best_market)).upper()}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{hesc(deployment_stance)}</div><div class="cde-card-sub">Highest active cumulative deployment {max_deploy_pct:.0%}</div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment</div>{env_html}</div></section>
+    <div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive.</div>
+    <table class="cde-table"><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>Score {score_tip}</th><th>Signal</th><th>Landing Action</th></tr></thead><tbody>{table_rows}</tbody></table>
+    <div class="cde-command-centre"><div class="cde-command-head"><div><div class="cde-command-title">DEPLOYMENT COMMAND CENTRE</div><div class="cde-command-sub">Your next best action and deployment plan.</div></div><div class="cde-command-small">Layout only follows the sample; figures are system-calculated.</div></div><div class="cde-command-top"><div class="cde-command-metric"><div class="cde-command-label">Target Market</div><div class="cde-command-value">{hesc(market_display_name(best_market)).upper()}</div><div class="cde-command-small">Highest priority market</div></div><div class="cde-command-metric"><div class="cde-command-label">Trigger Level</div><div class="cde-command-value">{hesc(next_trigger)}</div><div class="cde-command-small">Drawdown trigger</div></div><div class="cde-command-metric"><div class="cde-command-label">Current Drawdown</div><div class="cde-command-value">{best['Drawdown']:.1f}%</div><div class="cde-command-bar"><div class="cde-command-fill" style="width:{trigger_progress:.0f}%"></div></div><div class="cde-command-small">Active tier: {hesc(active_tier)}</div></div><div class="cde-command-metric"><div class="cde-command-label">Distance to Trigger</div><div class="cde-command-value">{hesc(distance)}</div><div class="cde-command-small">Next future trigger only</div></div><div class="cde-command-metric"><div class="cde-command-label">Confidence</div><div class="cde-command-value" style="color:{confidence_colour}">{hesc(confidence_label)}</div><div class="cde-command-small">System score basis</div></div></div><div class="cde-command-mid"><div class="cde-command-panel"><div class="cde-command-label">Deployment Ladder</div><div class="cde-command-ladder"><div class="cde-command-step {'active' if best_deploy_pct==0 else ''}">0% Hold</div><div class="cde-command-step {'active' if best_deploy_pct==.10 else ''}">10% Initial</div><div class="cde-command-step {'active' if best_deploy_pct==.25 else ''}">25% Deploy</div><div class="cde-command-step {'active' if best_deploy_pct==.50 else ''}">50% Strong</div><div class="cde-command-step {'active' if best_deploy_pct==.75 else ''}">75% Crisis</div><div class="cde-command-step {'active' if best_deploy_pct==1 else ''}">100% Max</div></div></div><div class="cde-command-panel"><div class="cde-command-label">Deployment Allocation</div><div class="cde-allocation"><div class="cde-donut" style="--deg:{donut_deg}deg" data-label="{best_deploy_pct:.0%}"></div><div class="cde-card-sub">● Cash available&nbsp;&nbsp; {fmt_sgd_html(remaining_amt)}<br>● Deployed&nbsp;&nbsp; {fmt_sgd_html(deployed_amt)}<br>● Other funds&nbsp;&nbsp; {fmt_sgd_html(0)}</div></div></div></div><div class="cde-command-next"><div><div class="cde-command-label">Next Deployment Amount</div><div class="cde-command-value">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-command-small">{next_increment:.0%} incremental</div></div><div><div class="cde-command-label">Condition</div><div class="cde-card-sub">{'Already at maximum deployment tier' if next_trigger=='Fully deployed' else 'When '+hesc(best_market)+' drawdown reaches '+hesc(next_trigger)}</div></div><div class="cde-card-sub">Use the button below to open the selected-market page.</div></div></div>
+    <section class="cde-grid cde-bottom-grid"><div class="cde-card cde-takeaway"><div class="cde-icon">⊙</div><div><div class="cde-card-title">Key Takeaway</div><div class="cde-card-sub">Opportunities are ranked across all supported equity markets. Single-market execution and all original details remain inside Market Deep Dive.</div></div></div><div class="cde-card"><div class="cde-card-title">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div><div class="cde-card cde-takeaway"><div class="cde-icon">✓</div><div><div class="cde-card-title">System Status</div><div class="cde-card-sub">All systems operational<br>Data quality: High<br>Model confidence: Good</div></div></div></section>''', unsafe_allow_html=True)
+
+    if st.button(f'Deep Dive → {market_display_name(best_market)}', use_container_width=True, key='lp_r1_01_deep_dive_to_best_market'):
+        st.session_state.active_section='▣ Market Deep Dive'
+        st.session_state.asset_group_selection='Market / Equity Index'
+        st.session_state.selected_market_name=best_market
+        st.rerun()
 
 def render_market_deep_dive_summary():
     display_dd=min(dd,0.0)
@@ -3529,7 +3588,7 @@ def render_market_deep_dive(expanded=True):
     render_performance(expanded=False)
     render_audit(expanded=False)
 
-RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📊 Market Performance':render_performance,'📡 Audit, Methodology & Export':render_audit}
+RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit}
 
 def run_render_loop():
     """Locked CDE router: Executive Centre landing only; Market Deep Dive owns old selected-market page."""
@@ -3539,8 +3598,6 @@ def run_render_loop():
         render_market_deep_dive(expanded=True)
     elif active_section == '🏆 Crash Analytics':
         render_crash(expanded=True)
-    elif active_section == '📊 Market Performance':
-        render_performance(expanded=True)
     elif active_section == '📡 Audit, Methodology & Export':
         render_audit(expanded=True)
     else:
