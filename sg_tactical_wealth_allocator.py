@@ -2736,7 +2736,7 @@ if 'selected_market_name' not in st.session_state:
     st.session_state.selected_market_name = 'STI' if 'STI' in default_items else default_items[0]
 
 with st.sidebar:
-    st.markdown('''<div class="cde-logo-card"><div class="cde-logo-row"><div class="cde-logo-icon"><span class="cde-red-arrow">↘</span><span class="cde-green-arrow">↗</span></div><div><div class="cde-logo-main">CRASH</div><div class="cde-logo-sub">DEPLOYMENT ENGINE</div></div></div><div class="cde-logo-tag">TURNING MARKET CRASH INTO OPPORTUNITIES</div></div>''', unsafe_allow_html=True)
+    st.markdown('''<div class="cde-logo-card cde-logo-locked"><div class="cde-logo-row"><svg class="cde-logo-svg" viewBox="0 0 64 64" aria-label="Crash Deployment Engine logo"><path d="M8 18 L24 34 L36 24 L52 42" fill="none" stroke="#ef4444" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 34 L36 24 L52 10" fill="none" stroke="#22c55e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="52" cy="10" r="5" fill="#22c55e"/></svg><div><div class="cde-logo-main">CRASH</div><div class="cde-logo-sub">DEPLOYMENT ENGINE</div></div></div><div class="cde-logo-tag">TURNING MARKET CRASH INTO OPPORTUNITIES</div></div>''', unsafe_allow_html=True)
     st.markdown('## 📍 Navigation')
 
     def _nav_button(label):
@@ -2845,14 +2845,13 @@ _exec_tc=build_trend_channel(ud,2040,model='Expanding Window',rolling_years=15);
 # ------------------------- renderers -------------------------
 
 
+
 # ─────────────────────────────────────────────────────────────────────────────
-# Crash Deployment Engine LP-R1-01 to LP-R1-07 locked landing layer — v2 fixes
+# Crash Deployment Engine LP-R1-01 to LP-R1-07 locked landing layer — v3 milestone-aligned
 # ─────────────────────────────────────────────────────────────────────────────
 def market_flag(market):
     flag_class = {'HSI':'hk','KLSE':'my','A-Share':'cn','Nasdaq':'us','S&P 500':'us','DJIA':'us','Nikkei 225':'jp','STI':'sg'}.get(market, '')
-    if not flag_class:
-        return ''
-    return f"<span class='cde-flag {flag_class}'></span>"
+    return f"<span class='cde-flag {flag_class}'></span>" if flag_class else ''
 
 def cde_market_display(market):
     return f"{market_flag(market)}{hesc(market)}"
@@ -2863,10 +2862,8 @@ def go_market_deep_dive():
 
 def cde_next_future_trigger(dd_value):
     ladder = [(-8,'INITIAL BUY',0.10),(-15,'BUY',0.25),(-25,'STRONG BUY',0.50),(-35,'CRISIS BUY',0.75),(-50,'MAX CRISIS BUY',1.00)]
-    try:
-        d = float(dd_value)
-    except Exception:
-        return 'N/A','N/A',0.0,'N/A'
+    try: d = float(dd_value)
+    except Exception: return 'N/A','N/A',0.0,'N/A'
     for threshold, label, pct in ladder:
         if d > threshold:
             return f'{threshold:.0f}%', label, pct, f'{abs(threshold-d):.1f}%'
@@ -2874,12 +2871,10 @@ def cde_next_future_trigger(dd_value):
 
 def cde_all_market_rows():
     rows = []
-    universe = [x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'] if x in m]
-    for mk in universe:
+    for mk in [x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'] if x in m]:
         try:
             c, pk, ddv, basis, pkdt, cdt, boundary = current_structural_dd(m[mk]['df'])
-            zone_name, _ = classify(ddv)
-            dpr = deploy_rule(ddv)
+            zone_name, _ = classify(ddv); dpr = deploy_rule(ddv)
             trend_weak = bool(c < safe_float(m[mk].get('ma200'), c))
             pmi_val = _macro_numeric(resolve_macro_value(mk, 'PMI')) if mk not in PMI_NA_MARKETS else None
             score_val, regime_val, *_ = calc_market_scores_by_asset(mk, pmi_val, ddv, trend_weak, vix, curve_spread)
@@ -2895,8 +2890,8 @@ def cde_historical_edge_all_markets(threshold=10):
     all_events = []; forward_3y = []; recovery_years = []
     for mk in markets:
         try:
-            price_df = m[mk]['df'][['Close']].dropna().copy()
-            bt = price_df.copy(); bt['rm'] = bt.Close.rolling(252, min_periods=1).max(); bt['dd_pct'] = ((bt.Close - bt.rm) / bt.rm) * 100
+            price_df = m[mk]['df'][['Close']].dropna().copy(); bt = price_df.copy()
+            bt['rm'] = bt.Close.rolling(252, min_periods=1).max(); bt['dd_pct'] = ((bt.Close - bt.rm) / bt.rm) * 100
             ev = crash_events(bt, threshold, safe_float(bt.Close.iloc[-1]), None)
             if ev is None or ev.empty: continue
             all_events.append(ev)
@@ -2933,24 +2928,21 @@ def render_executive():
     edge = cde_historical_edge_all_markets()
 
     st.markdown(f"""<div class='cde-hero'><div><div class='cde-title'>CRASH DEPLOYMENT ENGINE</div><div class='cde-subtitle'>Turning Market Crash into Opportunities</div><div class='cde-page-label'>Executive Centre — All Markets</div></div><div><span class='cde-pill'>Market data as of {datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div>""", unsafe_allow_html=True)
-    k1, k2, k3, k4 = st.columns([1,1,1,1.35])
+    k1, k2, k3 = st.columns(3)
     k1.markdown(f"<div class='cde-card'><div class='cde-card-title'>Global Risk Regime</div><div class='cde-main-value cde-orange'>{hesc(global_regime)}</div><div class='cde-card-sub'>Average macro score {global_risk_score:.0f} / 100</div></div>", unsafe_allow_html=True)
     k2.markdown(f"<div class='cde-card'><div class='cde-card-title'>Best Opportunity</div><div class='cde-main-value cde-green'>{cde_market_display(best['Market']).upper()}</div><div class='cde-card-sub'>Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div>", unsafe_allow_html=True)
     k3.markdown(f"<div class='cde-card'><div class='cde-card-title'>Deployment Stance</div><div class='cde-main-value cde-orange'>{hesc(deployment_stance)}</div><div class='cde-card-sub'>Highest active cumulative deployment {max_deploy_pct:.0%}</div></div>", unsafe_allow_html=True)
-    env_html = f"Volatility {vix:.1f} · Credit cautious · Liquidity neutral · Growth moderate" if vix is not None else "Market environment diagnostics available in Market Deep Dive."
-    k4.markdown(f"<div class='cde-card'><div class='cde-card-title'>Current Market Environment</div><div class='cde-card-sub'>{hesc(env_html)}</div></div>", unsafe_allow_html=True)
 
     st.markdown('### Market Opportunity Overview')
+    st.caption('Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive.')
     score_tip = "Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only."
-    st.markdown(f"<div class='cde-card-sub'>Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive.</div>", unsafe_allow_html=True)
     table_rows = []
     for i, r in enumerate(rows, 1):
         sig_cls = 'buy' if r['Signal'] == 'BUY' else 'watch' if r['Signal'] == 'WATCH' else 'hold'
-        table_rows.append(f"<tr><td>{i}</td><td>{cde_market_display(r['Market'])}</td><td>{hesc(r['Index / ETF'])}</td><td class='cde-orange'>{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class='cde-sig {sig_cls}'>{hesc(r['Signal'])}</span></td><td>Use button below</td></tr>")
+        table_rows.append(f"<tr><td>{i}</td><td>{cde_market_display(r['Market'])}</td><td>{hesc(r['Index / ETF'])}</td><td class='cde-orange'>{r['Drawdown']:.1f}%</td><td>{r['Score']}</td><td><span class='cde-sig {sig_cls}'>{hesc(r['Signal'])}</span></td></tr>")
     score_header = "Score <span class='cde-tip'>i<span class='cde-tiptext'>" + hesc(score_tip) + "</span></span>"
-    table_html = "<table class='cde-table'><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>" + score_header + "</th><th>Signal</th><th>Action</th></tr></thead><tbody>" + ''.join(table_rows) + "</tbody></table>"
+    table_html = "<table class='cde-table'><thead><tr><th>Rank</th><th>Market</th><th>Index / ETF</th><th>Drawdown</th><th>" + score_header + "</th><th>Signal</th></tr></thead><tbody>" + ''.join(table_rows) + "</tbody></table>"
     st.markdown(table_html, unsafe_allow_html=True)
-    st.caption('ⓘ Score tooltip: hover over the “i” beside Score, or use this note if your browser blocks table hover tooltips: ' + score_tip)
     if st.button('Deep Dive →', use_container_width=True, key='cde_landing_deep_dive_button'):
         go_market_deep_dive()
 
@@ -2960,8 +2952,8 @@ def render_executive():
         ladder_html += f"<div class='cde-ladder-row{active}'><span>{pct:.0%}</span><span>{label}</span></div>"
     command_html = f"""
     <section class='cde-command'>
-      <div class='cde-command-head'><div class='cde-command-title'>DEPLOYMENT COMMAND CENTRE</div><div class='cde-command-sub'>Target market, trigger condition, deployment ladder and next incremental action in one view.</div></div>
-      <div class='cde-command-body'>
+      <div class='cde-command-title'>DEPLOYMENT COMMAND CENTRE</div>
+      <div class='cde-command-sub'>Your next best action and deployment plan.</div>
       <div class='cde-command-top'>
         <div><div class='cde-command-label'>TARGET MARKET</div><div class='cde-command-value'>{cde_market_display(best['Market']).upper()}</div><div class='cde-command-note'>{hesc(best['Index / ETF'])}</div></div>
         <div class='cde-divider'><div class='cde-command-label'>TRIGGER LEVEL</div><div class='cde-command-value cde-orange'>{hesc(next_trigger)}</div><div class='cde-command-note'>Drawdown Trigger</div></div>
@@ -2976,8 +2968,7 @@ def render_executive():
       <div class='cde-action-strip'>
         <div><div class='cde-command-label'>NEXT DEPLOYMENT AMOUNT</div><div class='cde-command-value cde-green'>{fmt_sgd_html(next_amt)}</div><div class='cde-command-note'>({max(next_pct-max_deploy_pct,0):.0%} incremental)</div></div>
         <div><div class='cde-command-label'>CONDITION</div><div class='cde-card-sub'>When {hesc(best['Market'])} drawdown reaches {hesc(next_trigger)}</div></div>
-        <div><div class='cde-real-btn-note'>Use the real Streamlit button below</div></div>
-      </div>
+        <div><div class='cde-button-note'>Market Deep Dive CTA below</div></div>
       </div>
     </section>
     """
