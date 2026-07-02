@@ -1,0 +1,33 @@
+name: Patch LP-R1 Gauge Shape Only
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_file:
+        description: "Target app file to patch"
+        required: false
+        default: "sg_tactical_wealth_allocator.py"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run LP-R1 gauge shape patch
+        env:
+          TARGET_FILE: ${{ github.event.inputs.target_file }}
+        run: |
+          python patch_lp_r1_gauge_shape_only.py
+
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "Patch LP-R1 gauge shape only" || echo "No changes to commit"
+          git push
