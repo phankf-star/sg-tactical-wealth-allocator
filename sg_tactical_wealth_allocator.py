@@ -30,6 +30,10 @@ st.markdown('''
 
 .cde-kpi-grid .cde-card{height:154px;min-height:154px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.cde-kpi-grid .cde-card-title{min-height:26px}.cde-kpi-grid .cde-main-value{line-height:1.05}.cde-nav-group-caption{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 8px}.cde-dcc-title{font-size:19px;font-weight:950;color:#0f172a;margin:8px 0 2px}.cde-dcc-sub{font-size:12px;color:#475569;font-weight:800;margin-bottom:10px}.cde-dcc-section-title{font-size:14px;font-weight:950;color:#0f172a;margin:0 0 8px}.cde-dcc-mini{background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:10px 11px;min-height:78px;display:flex;flex-direction:column;justify-content:center}.cde-dcc-mini-target{background:#ecfdf5;border-color:#bbf7d0;align-items:flex-start}.cde-dcc-mini span{display:block;font-size:10.5px;color:#64748b;font-weight:950;letter-spacing:.01em;line-height:1.25;margin-bottom:6px}.cde-dcc-mini b{display:block;font-size:17px;color:#0f172a;line-height:1.2}.cde-dcc-mini-target b{font-size:18px;color:#047857}.cde-dcc-mini-target .cde-market-flag{margin-right:4px;vertical-align:middle}.cde-dcc-split{border-top:1px solid #e2e8f0;margin:13px 0 12px}.cde-dcc-line{font-size:12.5px;color:#334155;font-weight:800;margin:5px 0}.cde-dcc-line b{color:#0f172a}.cde-dcc-main-amount{font-size:24px;font-weight:950;color:#0f172a;margin-bottom:8px}.cde-market-exposure{margin-top:6px;font-size:12px;color:#334155;font-weight:800}.cde-market-exposure-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eef2f7;padding:4px 0}.cde-capital-summary-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:7px 0}.cde-capital-summary-row div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-capital-summary-row b{display:block;font-size:16px;color:#059669;line-height:1.1}.cde-capital-summary-row span{font-size:10.5px;color:#64748b;font-weight:850}.cde-dcc-outer [data-testid="stVerticalBlockBorderWrapper"]{border-color:#d3dfec!important;border-radius:14px!important}.cde-dcc-outer div[data-testid="column"]{align-self:stretch}.cde-dcc-outer div[data-testid="stButton"] button{border-radius:999px;border-color:#d3dfec;font-size:12px;font-weight:850;color:#2563eb;background:#fff;padding:6px 12px}.cde-dcc-outer div[data-testid="stButton"]{margin-top:8px}
 
+
+/* LP locked hierarchy — top 5 KPI cards remain dominant; DCC is compact support */
+.cde-kpi-grid .cde-card{height:158px!important;min-height:158px!important;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.cde-dcc-title{font-size:18px!important;margin:8px 0 1px!important}.cde-dcc-sub{font-size:11.5px!important;color:#64748b!important;margin-bottom:8px!important}.cde-watch-card{height:258px!important;min-height:258px!important;box-sizing:border-box}.cde-watch-title{font-size:15px!important}.cde-watch-sub{font-size:11px!important}.cde-watch-item{padding:8px 0!important}.cde-dcc-compact-holder{min-height:258px!important;box-sizing:border-box}.cde-dcc-section-title{font-size:13.5px!important;margin:0 0 6px!important}.cde-dcc-mini{min-height:62px!important;padding:8px 9px!important;border-radius:10px!important}.cde-dcc-mini span{font-size:9.5px!important;line-height:1.2!important;margin-bottom:4px!important}.cde-dcc-mini b{font-size:15.5px!important;line-height:1.18!important}.cde-dcc-mini-target{align-items:flex-start!important}.cde-dcc-mini-target b{font-size:17px!important;color:#047857!important}.cde-dcc-split{margin:9px 0 8px!important}.cde-dcc-main-amount{font-size:21px!important;margin-bottom:5px!important}.cde-dcc-line{font-size:11.5px!important;margin:3px 0!important}.cde-capital-summary-row{display:grid!important;grid-template-columns:1fr!important;gap:4px!important;margin:3px 0!important}.cde-capital-summary-row div{display:grid!important;grid-template-columns:1fr auto auto!important;gap:8px!important;align-items:center!important;background:#f8fafc!important;border:1px solid #e2e8f0!important;border-radius:8px!important;padding:5px 7px!important}.cde-capital-summary-row span{font-size:10.5px!important;color:#64748b!important;font-weight:850!important}.cde-capital-summary-row b{font-size:13px!important;color:#059669!important;line-height:1.1!important}.cde-capital-summary-row em{font-style:normal!important;font-size:11px!important;font-weight:900!important;color:#2563eb!important}.cde-market-exposure{margin-top:4px!important;font-size:11.3px!important}.cde-market-exposure-row{padding:3px 0!important}.cde-dcc-outer div[data-testid="stButton"] button{border-radius:999px!important;border-color:#d3dfec!important;font-size:11.5px!important;font-weight:850!important;color:#2563eb!important;background:#fff!important;padding:5px 10px!important}.cde-dcc-outer div[data-testid="stButton"]{margin-top:5px!important}
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -2945,19 +2949,24 @@ def render_executive():
     coverage_ratio=(remaining_amt/next_deploy_amt) if next_deploy_amt>0 else 0
     coverage_text='Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x coverage'
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
-    market_exposure_html=''
+    market_rows=[]
     try:
         if isinstance(trade_df_exec,pd.DataFrame) and not trade_df_exec.empty and 'Base Currency Equivalent' in trade_df_exec.columns:
             executed_view=trade_df_exec[trade_df_exec['Status'].astype(str).str.lower().eq('executed')].copy()
             if 'Base Currency' in executed_view.columns:
                 executed_view=executed_view[executed_view['Base Currency'].astype(str).str.upper().eq(currency_code)]
             if not executed_view.empty:
-                gp=executed_view.groupby('Market')['Base Currency Equivalent'].sum().sort_values(ascending=False).head(4)
-                market_exposure_html=''.join([f'<div class="cde-market-exposure-row"><span>{hesc(str(k))}</span><b>{fmt_sgd_html(v)}</b></div>' for k,v in gp.items()])
+                gp=executed_view.groupby('Market')['Base Currency Equivalent'].sum().sort_values(ascending=False)
+                market_rows=list(gp.items())
     except Exception:
-        market_exposure_html=''
-    if not market_exposure_html:
-        market_exposure_html=f'<div class="cde-market-exposure-row"><span>{hesc(best["Market"])}</span><b>{fmt_sgd_html(deployed_amt)}</b></div>'
+        market_rows=[]
+    if not market_rows:
+        market_rows=[(best['Market'], deployed_amt)]
+    market_preview_items=market_rows[:2]
+    more_count=max(len(market_rows)-len(market_preview_items),0)
+    market_exposure_html=''.join([f'<div class="cde-market-exposure-row"><span>{hesc(str(k))}</span><b>{fmt_sgd_html(v)}</b></div>' for k,v in market_preview_items])
+    if more_count>0:
+        market_exposure_html+=f'<div class="cde-market-exposure-row"><span>+{more_count} more</span><b>View full log</b></div>'
     active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
     confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
     edge=cde_historical_edge_all_markets()
@@ -2974,7 +2983,7 @@ def render_executive():
     # Top layer locked.
     st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-main-value cde-blue">{fmt_sgd_html(remaining_amt)}</div><div class="cde-card-sub">Next deploy {fmt_sgd_html(next_deploy_amt)} · {hesc(coverage_text)}</div></div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
 
-    # Deployment & Capital Command Centre placed above Market Opportunity Overview.
+    # Deployment & Capital Command Centre — compact supporting section below top KPIs.
     watch_items=[]
     for r in rows:
         trig, tier, pct, dist = cde_next_future_trigger(r['Drawdown'])
@@ -2982,30 +2991,37 @@ def render_executive():
     watch_items=sorted(watch_items,key=lambda x:x['DistanceNum'])[:3]
     watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span>{hesc(w['Distance'])} away</span><em>{hesc(w['Trigger'])}</em></div>''' for w in watch_items])
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
+    market_preview_tip=tooltip_html('Market Exposure Preview',[('Scope','Shows only the largest deployed market exposures.'),('Full detail','Open Portfolio & Trade Log for full market-by-market allocation.')],'Keeps the landing page compact while preserving access to full portfolio details.')
 
-    st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div><div class="cde-dcc-sub">Next trigger monitoring, next deployment and capital exposure.</div>', unsafe_allow_html=True)
-    watch_col, dcc_col = st.columns([0.30,0.70], gap='small')
+    st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div><div class="cde-dcc-sub">Compact support section. Top overview KPI cards remain the primary focus.</div>', unsafe_allow_html=True)
+    watch_col, dcc_col = st.columns([0.29,0.71], gap='small')
     with watch_col:
         st.markdown(f'''<div class="cde-watch-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div>''', unsafe_allow_html=True)
     with dcc_col:
         st.markdown('<div class="cde-dcc-outer">', unsafe_allow_html=True)
         with st.container(border=True):
+            st.markdown('<div class="cde-dcc-compact-holder">', unsafe_allow_html=True)
             st.markdown('<div class="cde-dcc-section-title">Action Target</div>', unsafe_allow_html=True)
-            a1,a2,a3,a4,a5=st.columns(5)
+            a1,a2,a3,a4,a5=st.columns([1.25,1,1,1,1])
             a1.markdown(f'''<div class="cde-dcc-mini cde-dcc-mini-target"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div>''', unsafe_allow_html=True)
             a2.markdown(f'''<div class="cde-dcc-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div>''', unsafe_allow_html=True)
             a3.markdown(f'''<div class="cde-dcc-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div>''', unsafe_allow_html=True)
             a4.markdown(f'''<div class="cde-dcc-mini"><span>Distance</span><b>{hesc(distance)}</b></div>''', unsafe_allow_html=True)
             a5.markdown(f'''<div class="cde-dcc-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div>''', unsafe_allow_html=True)
             st.markdown('<div class="cde-dcc-split"></div>', unsafe_allow_html=True)
-            nd_col, cap_col = st.columns([0.40,0.60], gap='medium')
+            nd_col, cap_col, me_col = st.columns([0.34,0.28,0.38], gap='small')
             with nd_col:
                 st.markdown(f'''<div class="cde-dcc-section-title">Next Deployment</div><div class="cde-dcc-main-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-dcc-line"><b>Condition:</b> {hesc(condition_text)}</div><div class="cde-dcc-line"><b>Available Dry Powder:</b> {fmt_sgd_html(remaining_amt)}</div><div class="cde-dcc-line"><b>Coverage:</b> {hesc(coverage_text)}</div>''', unsafe_allow_html=True)
             with cap_col:
-                st.markdown(f'''<div class="cde-dcc-section-title">Capital Exposure</div><div class="cde-capital-summary-row"><div><b>{fmt_sgd_html(total_cap)}</b><span>Total Capital</span></div><div><b>{fmt_sgd_html(deployed_amt)}</b><span>Allocated</span></div><div><b>{fmt_sgd_html(remaining_amt)}</b><span>Dry Powder</span></div></div><div class="cde-dcc-line"><b>Current Allocated / Deployed by Market</b></div><div class="cde-market-exposure">{market_exposure_html}</div>''', unsafe_allow_html=True)
+                alloc_pct=(deployed_amt/total_cap) if total_cap else 0
+                dry_pct=(remaining_amt/total_cap) if total_cap else 0
+                st.markdown(f'''<div class="cde-dcc-section-title">Capital Exposure</div><div class="cde-capital-summary-row"><div><span>Total Capital</span><b>{fmt_sgd_html(total_cap)}</b><em>100%</em></div><div><span>Allocated</span><b>{fmt_sgd_html(deployed_amt)}</b><em>{alloc_pct:.0%}</em></div><div><span>Dry Powder</span><b>{fmt_sgd_html(remaining_amt)}</b><em>{dry_pct:.0%}</em></div></div>''', unsafe_allow_html=True)
+            with me_col:
+                st.markdown(f'''<div class="cde-dcc-section-title">Market Exposure Preview {market_preview_tip}</div><div class="cde-market-exposure">{market_exposure_html}</div>''', unsafe_allow_html=True)
                 if st.button('Portfolio & Trade Log →', key='dcc_portfolio_trade_log_button', use_container_width=False):
                     st.session_state.active_section='📒 Trade Journal'
                     st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
