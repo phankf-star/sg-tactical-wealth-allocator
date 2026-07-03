@@ -26,8 +26,10 @@ import yfinance as yf
 st.set_page_config(page_title='Crash Deployment Engine v38ac', layout='wide', initial_sidebar_state='expanded')
 st.markdown('''
 <style>
-.cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px}.cde-logo-card{background:#fff;border:1px solid #dbe4ee;border-radius:14px;padding:10px;margin-bottom:14px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 8px rgba(15,23,42,.08)}.cde-logo-mark{width:44px;height:44px;border-radius:50%;border:2px solid #e2e8f0;background:linear-gradient(135deg,#fff,#f8fafc);flex:0 0 44px;position:relative;box-shadow:inset 0 0 0 1px rgba(148,163,184,.12)}.cde-logo-mark:before{content:'';position:absolute;left:11px;top:16px;width:4px;height:17px;background:#ff4444;border-radius:2px;box-shadow:8px 6px 0 #ff4444}.cde-logo-mark:after{content:'';position:absolute;left:15px;top:25px;width:28px;height:5px;background:#ff4444;transform:rotate(-43deg);border-radius:3px;box-shadow:22px -18px 0 #22c55e}.cde-logo-main{color:#0f172a;font-size:15.5px;font-weight:950;line-height:1.02;letter-spacing:.2px}.cde-logo-sub{color:#334155;font-size:9.5px;font-weight:950;line-height:1.05;margin-top:1px}.cde-logo-tag{color:#475569;font-size:6.8px;font-weight:850;margin-top:5px;white-space:nowrap}.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 20px}.cde-title{font-size:38px;font-weight:950;color:#0f172a}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-refresh-box{text-align:right;font-size:12px;color:#64748b;font-weight:800}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px}.cde-grid{display:grid;gap:16px;margin-bottom:22px}.cde-kpi-grid{grid-template-columns:1fr 1fr 1fr 1.18fr 1.12fr}.cde-three-grid{grid-template-columns:1fr 1fr 1fr}.cde-bottom-grid{grid-template-columns:1.08fr .92fr}.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:118px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:10px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750}.cde-green{color:#059669}.cde-orange{color:#f97316}.cde-blue{color:#2563eb}.cde-flag-circle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:8px;font-size:11px;line-height:1;background:#fff;border:1px solid #d3dfec;vertical-align:-3px;box-shadow:0 1px 1px rgba(15,23,42,.08)}.cde-card-title{font-size:15px}.cde-main-value{font-size:30px}.cde-card-sub{font-size:12.5px}.cde-row-head{background:#e8eef5;border:1px solid #d3dfec;border-radius:8px 8px 0 0;padding:5px 8px;font-size:11px;font-weight:950;color:#334155;min-height:24px;display:flex;align-items:center}.cde-row-line{border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px;font-weight:800;min-height:24px;display:flex;align-items:center;background:#fff}.stButton>button{min-height:24px;padding:2px 8px;font-size:11px;border-radius:8px}.cde-env-compact{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px;font-size:11.5px;color:#334155;font-weight:850;line-height:1.3}.cde-env-compact b{font-weight:950;color:#0f172a}.cde-risk-card{position:relative}.cde-risk-flex{display:grid;grid-template-columns:1fr 66px;gap:4px;align-items:center}.cde-risk-left .cde-main-value{font-size:25px}.cde-risk-left .cde-card-sub{margin-top:2px}.cde-risk-gauge-side{height:38px;display:flex;align-items:center;justify-content:flex-end;overflow:hidden}.cde-risk-gauge-side svg{display:none}.cde-risk-mini-meter{width:56px;height:26px;position:relative;display:flex;align-items:flex-end;justify-content:center}.cde-risk-mini-arc{width:50px;height:25px;border-radius:58px 58px 0 0;background:conic-gradient(from 270deg,#22c55e 0deg,#22c55e 54deg,#facc15 54deg,#facc15 108deg,#f97316 108deg,#ef4444 180deg,transparent 180deg);position:absolute;bottom:0}.cde-risk-mini-arc:after{content:"";position:absolute;left:7px;right:7px;bottom:0;height:18px;background:#fff;border-radius:42px 42px 0 0}.cde-risk-mini-needle{position:absolute;bottom:0;left:50%;width:2px;height:21px;background:#0f172a;transform:rotate(var(--needle));transform-origin:bottom center;border-radius:2px}.cde-command-row{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-watch-card,.cde-action-card{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:10px 12px}.cde-watch-title,.cde-action-title{font-size:15px;font-weight:950;color:#0f172a;margin-bottom:2px}.cde-watch-sub,.cde-action-sub{font-size:10.5px;color:#64748b;font-weight:760;margin-bottom:8px}.cde-watch-item{display:grid;grid-template-columns:1fr .8fr .55fr;gap:6px;border-bottom:1px solid #eef2f7;padding:6px 0;font-size:11.5px;font-weight:850;color:#334155}.cde-watch-item:last-child{border-bottom:0}.cde-action-top{display:grid;grid-template-columns:1.15fr .9fr 1.05fr .85fr .7fr;gap:8px}.cde-command-mini{border-left:1px solid #e2e8f0;padding-left:8px;min-height:40px}.cde-command-mini:first-child{border-left:0;padding-left:0}.cde-command-target{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:10px;padding:7px 8px}.cde-command-label{font-size:8.8px;color:#475569;font-weight:950;text-transform:uppercase;letter-spacing:.02em}.cde-command-value{font-size:16px;font-weight:950;color:#0f172a;line-height:1.1;margin-top:2px}.cde-command-note{font-size:9px;color:#64748b;font-weight:760;margin-top:1px}.cde-action-bottom{display:grid;grid-template-columns:.85fr 1.25fr;gap:8px;margin-top:8px}.cde-command-panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-command-next{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}@media(max-width:900px){.cde-command-row,.cde-action-top,.cde-action-bottom,.cde-risk-flex{grid-template-columns:1fr}.cde-command-mini{border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:8px}.cde-command-mini:first-child{border-top:0;padding-top:0}}.cde-env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cde-env-grid b{display:block;font-size:14px;font-weight:950}.cde-env-grid span{font-size:10.5px;color:#64748b;font-weight:800}.cde-section-title{font-size:21px;font-weight:950;color:#111827}.cde-section-sub{font-size:12.5px;color:#52657a;font-weight:760;margin-bottom:11px}.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:20px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:11px 13px;font-size:12px;font-weight:950}.cde-table td{padding:12px 13px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}.cde-ladder-row{display:grid;grid-template-columns:1.1fr 58px 1fr;gap:8px;font-size:12.5px;margin:7px 0;font-weight:800}.cde-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1}.cde-dot.active{background:#f97316}.cde-donut{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}.cde-donut:before{content:attr(data-label);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:950;color:#0f2e5d;font-size:12px}.cde-allocation{display:grid;grid-template-columns:105px 1fr;gap:14px;align-items:center}.cde-mini-metrics{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}.cde-takeaway{display:flex;gap:14px;align-items:center}.cde-icon{width:42px;height:42px;border-radius:50%;background:#dcfce7;color:#059669;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:950}@media(max-width:900px){.cde-hero{display:block}.cde-kpi-grid,.cde-three-grid,.cde-bottom-grid{grid-template-columns:1fr}.cde-title{font-size:30px}.cde-card{min-height:auto}.cde-env-grid{grid-template-columns:repeat(2,1fr)}}
-.cde-kpi-grid .cde-card{min-height:142px;display:flex;flex-direction:column;justify-content:space-between}.cde-kpi-grid .cde-card-title{min-height:24px}.cde-kpi-grid .cde-main-value{line-height:1.05}.cde-section-note{font-size:12px;color:#64748b;font-weight:750;margin:-6px 0 12px}.cde-soft-card{background:#fff;border:1px solid #dbe4ee;border-radius:12px;padding:12px;margin:8px 0}.cde-soft-title{font-size:14px;font-weight:950;color:#0f172a;margin-bottom:4px}.cde-soft-sub{font-size:12px;color:#64748b;font-weight:750}.cde-side-help{font-size:11.5px;color:#64748b;line-height:1.35;margin:4px 0 8px}.cde-nav-group-caption{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 8px}.cde-card+.cde-card{margin-top:12px}.cde-command-capital-grid{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-dcc-section-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:14px}.cde-small-action-button{display:inline-block;border:1px solid #d3dfec;border-radius:999px;padding:6px 10px;font-size:11.5px;font-weight:900;color:#2563eb;background:#fff;margin-top:6px}.cde-capital-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.cde-capital-row div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-capital-row b{display:block;font-size:18px;color:#059669}.cde-capital-row span{font-size:10.5px;color:#64748b;font-weight:850}
+.cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px}.cde-logo-card{background:#fff;border:1px solid #dbe4ee;border-radius:14px;padding:10px;margin-bottom:14px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 8px rgba(15,23,42,.08)}.cde-logo-mark{width:44px;height:44px;border-radius:50%;border:2px solid #e2e8f0;background:linear-gradient(135deg,#fff,#f8fafc);flex:0 0 44px;position:relative;box-shadow:inset 0 0 0 1px rgba(148,163,184,.12)}.cde-logo-mark:before{content:'';position:absolute;left:11px;top:16px;width:4px;height:17px;background:#ff4444;border-radius:2px;box-shadow:8px 6px 0 #ff4444}.cde-logo-mark:after{content:'';position:absolute;left:15px;top:25px;width:28px;height:5px;background:#ff4444;transform:rotate(-43deg);border-radius:3px;box-shadow:22px -18px 0 #22c55e}.cde-logo-main{color:#0f172a;font-size:15.5px;font-weight:950;line-height:1.02;letter-spacing:.2px}.cde-logo-sub{color:#334155;font-size:9.5px;font-weight:950;line-height:1.05;margin-top:1px}.cde-logo-tag{color:#475569;font-size:6.8px;font-weight:850;margin-top:5px;white-space:nowrap}.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 20px}.cde-title{font-size:38px;font-weight:950;color:#0f172a}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-refresh-box{text-align:right;font-size:12px;color:#64748b;font-weight:800}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px}.cde-grid{display:grid;gap:16px;margin-bottom:22px}.cde-kpi-grid{grid-template-columns:1fr 1fr 1fr 1.18fr 1.12fr;align-items:stretch}.cde-three-grid{grid-template-columns:1fr 1fr 1fr}.cde-bottom-grid{grid-template-columns:1.08fr .92fr}.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:118px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:10px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750}.cde-green{color:#059669}.cde-orange{color:#f97316}.cde-blue{color:#2563eb}.cde-flag-circle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:8px;font-size:11px;line-height:1;background:#fff;border:1px solid #d3dfec;vertical-align:-3px;box-shadow:0 1px 1px rgba(15,23,42,.08)}.cde-card-title{font-size:15px}.cde-main-value{font-size:30px}.cde-card-sub{font-size:12.5px}.cde-row-head{background:#e8eef5;border:1px solid #d3dfec;border-radius:8px 8px 0 0;padding:5px 8px;font-size:11px;font-weight:950;color:#334155;min-height:24px;display:flex;align-items:center}.cde-row-line{border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px;font-weight:800;min-height:24px;display:flex;align-items:center;background:#fff}.stButton>button{min-height:24px;padding:2px 8px;font-size:11px;border-radius:8px}.cde-env-compact{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px;font-size:11.5px;color:#334155;font-weight:850;line-height:1.3}.cde-env-compact b{font-weight:950;color:#0f172a}.cde-risk-card{position:relative}.cde-risk-flex{display:grid;grid-template-columns:1fr 66px;gap:4px;align-items:center}.cde-risk-left .cde-main-value{font-size:25px}.cde-risk-left .cde-card-sub{margin-top:2px}.cde-risk-gauge-side{height:38px;display:flex;align-items:center;justify-content:flex-end;overflow:hidden}.cde-risk-gauge-side svg{display:none}.cde-risk-mini-meter{width:56px;height:26px;position:relative;display:flex;align-items:flex-end;justify-content:center}.cde-risk-mini-arc{width:50px;height:25px;border-radius:58px 58px 0 0;background:conic-gradient(from 270deg,#22c55e 0deg,#22c55e 54deg,#facc15 54deg,#facc15 108deg,#f97316 108deg,#ef4444 180deg,transparent 180deg);position:absolute;bottom:0}.cde-risk-mini-arc:after{content:"";position:absolute;left:7px;right:7px;bottom:0;height:18px;background:#fff;border-radius:42px 42px 0 0}.cde-risk-mini-needle{position:absolute;bottom:0;left:50%;width:2px;height:21px;background:#0f172a;transform:rotate(var(--needle));transform-origin:bottom center;border-radius:2px}.cde-command-row{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-watch-card,.cde-action-card{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:10px 12px}.cde-watch-title,.cde-action-title{font-size:15px;font-weight:950;color:#0f172a;margin-bottom:2px}.cde-watch-sub,.cde-action-sub{font-size:10.5px;color:#64748b;font-weight:760;margin-bottom:8px}.cde-watch-item{display:grid;grid-template-columns:1fr .8fr .55fr;gap:6px;border-bottom:1px solid #eef2f7;padding:6px 0;font-size:11.5px;font-weight:850;color:#334155}.cde-watch-item:last-child{border-bottom:0}.cde-action-top{display:grid;grid-template-columns:1.15fr .9fr 1.05fr .85fr .7fr;gap:8px}.cde-command-mini{border-left:1px solid #e2e8f0;padding-left:8px;min-height:40px}.cde-command-mini:first-child{border-left:0;padding-left:0}.cde-command-target{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:10px;padding:7px 8px}.cde-command-label{font-size:8.8px;color:#475569;font-weight:950;text-transform:uppercase;letter-spacing:.02em}.cde-command-value{font-size:16px;font-weight:950;color:#0f172a;line-height:1.1;margin-top:2px}.cde-command-note{font-size:9px;color:#64748b;font-weight:760;margin-top:1px}.cde-action-bottom{display:grid;grid-template-columns:.85fr 1.25fr;gap:8px;margin-top:8px}.cde-command-panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-command-next{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}@media(max-width:900px){.cde-command-row,.cde-action-top,.cde-action-bottom,.cde-risk-flex{grid-template-columns:1fr}.cde-command-mini{border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:8px}.cde-command-mini:first-child{border-top:0;padding-top:0}}.cde-env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cde-env-grid b{display:block;font-size:14px;font-weight:950}.cde-env-grid span{font-size:10.5px;color:#64748b;font-weight:800}.cde-section-title{font-size:21px;font-weight:950;color:#111827}.cde-section-sub{font-size:12.5px;color:#52657a;font-weight:760;margin-bottom:11px}.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:20px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:11px 13px;font-size:12px;font-weight:950}.cde-table td{padding:12px 13px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}.cde-ladder-row{display:grid;grid-template-columns:1.1fr 58px 1fr;gap:8px;font-size:12.5px;margin:7px 0;font-weight:800}.cde-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1}.cde-dot.active{background:#f97316}.cde-donut{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}.cde-donut:before{content:attr(data-label);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:950;color:#0f2e5d;font-size:12px}.cde-allocation{display:grid;grid-template-columns:105px 1fr;gap:14px;align-items:center}.cde-mini-metrics{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}.cde-takeaway{display:flex;gap:14px;align-items:center}.cde-icon{width:42px;height:42px;border-radius:50%;background:#dcfce7;color:#059669;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:950}@media(max-width:900px){.cde-hero{display:block}.cde-kpi-grid,.cde-three-grid,.cde-bottom-grid{grid-template-columns:1fr}.cde-title{font-size:30px}.cde-card{min-height:auto}.cde-env-grid{grid-template-columns:repeat(2,1fr)}}
+
+.cde-kpi-grid .cde-card{height:154px;min-height:154px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.cde-kpi-grid .cde-card-title{min-height:26px}.cde-kpi-grid .cde-main-value{line-height:1.05}.cde-env-compact{margin-top:4px!important}.cde-section-note{font-size:12px;color:#64748b;font-weight:750;margin:-6px 0 12px}.cde-soft-title{font-size:14px;font-weight:950;color:#0f172a;margin-bottom:7px}.cde-nav-group-caption{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 8px}.cde-card+.cde-card{margin-top:12px}.cde-command-capital-grid{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-dcc-section-grid{display:grid;grid-template-columns:1.25fr 1fr 1.1fr;gap:14px}.cde-dcc-panel{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;min-height:148px}.cde-dcc-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.cde-dcc-mini{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-dcc-mini span{display:block;font-size:9.8px;color:#64748b;font-weight:900;letter-spacing:.02em}.cde-dcc-mini b{display:block;font-size:16px;color:#0f172a;margin-top:2px}.cde-capital-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.cde-capital-row div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-capital-row b{display:block;font-size:17px;color:#059669}.cde-capital-row span{font-size:10.5px;color:#64748b;font-weight:850}.cde-market-exposure{margin-top:8px;border-top:1px solid #e5e7eb;padding-top:7px;font-size:11.2px;color:#475569;font-weight:850}.cde-market-exposure-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eef2f7;padding:3px 0}.cde-small-action-button{display:inline-block;border:1px solid #d3dfec;border-radius:999px;padding:6px 10px;font-size:11.5px;font-weight:900;color:#2563eb;background:#fff;margin-top:6px}
+
 </style>
 ''', unsafe_allow_html=True)
 
@@ -2924,7 +2926,15 @@ def render_executive():
     total_cap=float(st.session_state.get('total_investible_capital_input', total_available if 'total_available' in globals() else cash_balance))
     best_deploy_pct=safe_float(best.get('Deploy %'),0)
     system_deployed_amt=total_cap*best_deploy_pct
-    deployed_amt=float(st.session_state.get('current_allocated_amount_input', system_deployed_amt))
+    manual_deployed=float(st.session_state.get('current_allocated_amount_input', system_deployed_amt))
+    trade_df_exec=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
+    if isinstance(trade_df_exec,pd.DataFrame) and not trade_df_exec.empty and 'Base Currency Equivalent' in trade_df_exec.columns:
+        executed_base=trade_df_exec[trade_df_exec['Status'].astype(str).str.lower().eq('executed')].copy()
+        if 'Base Currency' in executed_base.columns:
+            executed_base=executed_base[executed_base['Base Currency'].astype(str).str.upper().eq(currency_code)]
+        deployed_amt=float(pd.to_numeric(executed_base.get('Base Currency Equivalent',0),errors='coerce').fillna(0).sum()) if not executed_base.empty else manual_deployed
+    else:
+        deployed_amt=manual_deployed
     if deployed_amt < 0: deployed_amt=0.0
     if deployed_amt > total_cap: deployed_amt=total_cap
     remaining_amt=max(total_cap-deployed_amt,0)
@@ -2935,6 +2945,19 @@ def render_executive():
     coverage_ratio=(remaining_amt/next_deploy_amt) if next_deploy_amt>0 else 0
     coverage_text='Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x coverage'
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
+    market_exposure_html=''
+    try:
+        if isinstance(trade_df_exec,pd.DataFrame) and not trade_df_exec.empty and 'Base Currency Equivalent' in trade_df_exec.columns:
+            executed_view=trade_df_exec[trade_df_exec['Status'].astype(str).str.lower().eq('executed')].copy()
+            if 'Base Currency' in executed_view.columns:
+                executed_view=executed_view[executed_view['Base Currency'].astype(str).str.upper().eq(currency_code)]
+            if not executed_view.empty:
+                gp=executed_view.groupby('Market')['Base Currency Equivalent'].sum().sort_values(ascending=False).head(4)
+                market_exposure_html='<div class="cde-market-exposure">' + ''.join([f'<div class="cde-market-exposure-row"><span>{hesc(str(k))}</span><b>{fmt_sgd_html(v)}</b></div>' for k,v in gp.items()]) + '</div>'
+    except Exception:
+        market_exposure_html=''
+    if not market_exposure_html:
+        market_exposure_html=f'<div class="cde-market-exposure"><div class="cde-market-exposure-row"><span>{hesc(best["Market"])}</span><b>{fmt_sgd_html(deployed_amt)}</b></div></div>'
     active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
     confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
     edge=cde_historical_edge_all_markets()
@@ -2959,7 +2982,7 @@ def render_executive():
     watch_items=sorted(watch_items,key=lambda x:x['DistanceNum'])[:3]
     watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span>{hesc(w['Distance'])} away</span><em>{hesc(w['Trigger'])}</em></div>''' for w in watch_items])
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"When {best['Market']} drawdown reaches {next_trigger}"
-    st.markdown(f'''<div class="cde-section-title">Deployment Command Centre</div><div class="cde-section-sub">Next trigger monitoring and consolidated deployment, funding and capital exposure view.</div><section class="cde-command-capital-grid"><div class="cde-watch-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div class="cde-action-card"><div class="cde-action-title">Deployment & Capital Command Centre</div><div class="cde-action-sub">Primary deployment action, funding readiness and capital exposure consolidated into one card.</div><div class="cde-dcc-section-grid"><div><div class="cde-soft-title">1. Action Target</div><div class="cde-action-grid"><div class="cde-target-box"><span>TARGET MARKET</span><b>{market_label_html(best['Market'])}</b></div><div><span>TRIGGER LEVEL</span><b>{hesc(next_trigger)}</b></div><div><span>CURRENT DRAWDOWN</span><b>{best['Drawdown']:.1f}%</b><small>{hesc(active_tier)}</small></div><div><span>DISTANCE</span><b>{hesc(distance)}</b></div><div><span>CONFIDENCE</span><b>{hesc(confidence_label)}</b></div></div></div><div><div class="cde-soft-title">2. Next Deployment</div><div class="cde-card-sub"><b style="font-size:20px;color:#0f172a">{fmt_sgd_html(next_deploy_amt)}</b><br>{next_increment:.0%} incremental<br>Condition: {hesc(condition_text)}<br>Funding readiness: {fmt_sgd_html(remaining_amt)} · {hesc(coverage_text)}</div></div><div><div class="cde-soft-title">3. Capital Exposure</div><div class="cde-capital-row"><div><b>{fmt_sgd_html(total_cap)}</b><span>Total Capital</span></div><div><b>{fmt_sgd_html(deployed_amt)}</b><span>Current Allocated</span></div><div><b>{fmt_sgd_html(remaining_amt)}</b><span>Available Dry Powder</span></div></div><div class="cde-card-sub" style="margin-top:8px">Current allocated / deployed by market is maintained in Portfolio Overview → Trade Journal.</div></div></div></div></section>''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="cde-section-title">Deployment & Capital Command Centre</div><div class="cde-section-sub">Next trigger monitoring, next deployment and capital exposure.</div><section class="cde-command-capital-grid"><div class="cde-watch-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div class="cde-action-card"><div class="cde-dcc-section-grid"><div class="cde-dcc-panel"><div class="cde-soft-title">1. Action Target</div><div class="cde-dcc-mini-grid"><div class="cde-dcc-mini"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div><div class="cde-dcc-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-dcc-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div><div class="cde-dcc-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-dcc-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div></div><div class="cde-dcc-panel"><div class="cde-soft-title">2. Next Deployment</div><div class="cde-card-sub"><b style="font-size:22px;color:#0f172a">{fmt_sgd_html(next_deploy_amt)}</b><br><b>{next_increment:.0%} incremental</b><br>Condition: {hesc(condition_text)}<br>Available dry powder: {fmt_sgd_html(remaining_amt)}<br>Coverage: {hesc(coverage_text)}</div></div><div class="cde-dcc-panel"><div class="cde-soft-title">3. Capital Exposure</div><div class="cde-capital-row"><div><b>{fmt_sgd_html(total_cap)}</b><span>Total Capital</span></div><div><b>{fmt_sgd_html(deployed_amt)}</b><span>Allocated</span></div><div><b>{fmt_sgd_html(remaining_amt)}</b><span>Dry Powder</span></div></div>{market_exposure_html}<div class="cde-card-sub" style="margin-top:8px">Exposure is normalised to base currency and grouped by market where trade entries exist.</div></div></div></div></section>''', unsafe_allow_html=True)
     if st.button('Portfolio & Trade Log →', key='dcc_portfolio_trade_log_button', use_container_width=False):
         st.session_state.active_section='📒 Trade Journal'
         st.rerun()
@@ -3663,132 +3686,153 @@ def render_market_deep_dive(expanded=True):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LP-R1 remaining scope — Capital, Trade Entry and Portfolio / Trade Journal
+# LP-R1 remaining scope — FX-normalised capital, Trade Entry and Portfolio Journal
 # ─────────────────────────────────────────────────────────────────────────────
 TRADE_LOG_FILE = Path('cde_trade_log.csv')
-TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Net Amount','Trigger Level','Notes','Created At']
+TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Created At']
+
+def fetch_fx_rate_yahoo(from_ccy, to_ccy):
+    from_ccy=str(from_ccy or '').upper().strip(); to_ccy=str(to_ccy or '').upper().strip()
+    if not from_ccy or not to_ccy or from_ccy==to_ccy:
+        return 1.0, 'Same currency', datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')
+    candidates=[(f'{from_ccy}{to_ccy}=X', False), (f'{to_ccy}{from_ccy}=X', True)]
+    # If direct pair is unavailable, try cross via USD.
+    for ticker,invert in candidates:
+        try:
+            df=hist(ticker, '2026-01-01')
+            if df is not None and not df.empty:
+                px=safe_float(df.Close.iloc[-1], None)
+                if px and px>0:
+                    rate=(1/px) if invert else px
+                    return float(rate), f'Yahoo Finance {ticker}' + (' inverse' if invert else ''), pd.Timestamp(df.index[-1]).strftime('%Y-%m-%d')
+        except Exception:
+            pass
+    try:
+        if from_ccy!='USD' and to_ccy!='USD':
+            r1,src1,dt1=fetch_fx_rate_yahoo(from_ccy,'USD'); r2,src2,dt2=fetch_fx_rate_yahoo('USD',to_ccy)
+            if r1 and r2: return float(r1*r2), f'{src1} × {src2}', dt2
+    except Exception:
+        pass
+    return 1.0, 'Manual fallback required', datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')
 
 def _load_trade_log():
     try:
         if TRADE_LOG_FILE.exists():
-            df = pd.read_csv(TRADE_LOG_FILE)
+            df=pd.read_csv(TRADE_LOG_FILE)
             for c in TRADE_LOG_COLUMNS:
-                if c not in df.columns: df[c] = ''
+                if c not in df.columns: df[c]=''
             return df[TRADE_LOG_COLUMNS]
     except Exception:
         pass
     return pd.DataFrame(columns=TRADE_LOG_COLUMNS)
 
 def _save_trade_log(df):
-    try:
-        df.to_csv(TRADE_LOG_FILE, index=False); return True
-    except Exception as e:
-        st.warning(f'Could not save trade log: {e}'); return False
+    try: df.to_csv(TRADE_LOG_FILE,index=False); return True
+    except Exception as e: st.warning(f'Could not save trade log: {e}'); return False
 
 def _append_trade_row(row):
     df=_load_trade_log(); df=pd.concat([df,pd.DataFrame([row])],ignore_index=True); return _save_trade_log(df)
 
+def _trade_log_with_numeric():
+    df=_load_trade_log()
+    for c in ['Quantity','Price','Fees','Gross Amount','FX Rate to Base','Base Currency Equivalent']:
+        if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0.0)
+    return df
+
 def _trade_entry_form(prefix='trade_entry', compact=False):
-    market_options=list(INDEX_TICKERS.keys())
+    market_options=list(INDEX_TICKERS.keys()); ccy_options=list(CURRENCY_SYMBOL_MAP.keys())
     default_market=st.session_state.get('selected_market_name','STI')
     if default_market not in market_options: default_market='STI' if 'STI' in market_options else market_options[0]
+    base_ccy=st.session_state.get('base_capital_currency','SGD')
     with st.form(prefix+'_form', clear_on_submit=True):
-        c1,c2,c3=st.columns([1,1,1])
+        c1,c2,c3,c4=st.columns([.9,1,1,.75])
         trade_date=c1.date_input('Trade Date', value=datetime.now().date(), key=prefix+'_date')
         market=c2.selectbox('Market', market_options, index=market_options.index(default_market), key=prefix+'_market')
         ticker=c3.text_input('Ticker / Instrument', value=INDEX_TICKERS.get(market,''), key=prefix+'_ticker')
-        c4,c5,c6,c7=st.columns([.75,.85,.85,.85])
-        side=c4.selectbox('Side',['BUY','SELL'],index=0,key=prefix+'_side')
-        quantity=c5.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
-        price=c6.number_input('Price',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
-        fees=c7.number_input('Fees',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
-        c8,c9=st.columns([1,1])
-        status=c8.selectbox('Status',['Executed','Pending','Watchlist'],index=0,key=prefix+'_status')
-        trigger_level=c9.text_input('Trigger Level / Rule',value='',placeholder='e.g. BUY -15% / manual',key=prefix+'_trigger')
+        trade_ccy=c4.selectbox('Trade Currency', ccy_options, index=ccy_options.index(MARKET_CURRENCY_MAP.get(market,base_ccy)) if MARKET_CURRENCY_MAP.get(market,base_ccy) in ccy_options else ccy_options.index(base_ccy), key=prefix+'_trade_ccy')
+        c5,c6,c7,c8=st.columns([.75,.85,.85,.85])
+        side=c5.selectbox('Side',['BUY','SELL'],index=0,key=prefix+'_side')
+        quantity=c6.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
+        price=c7.number_input(f'Price ({trade_ccy})',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
+        fees=c8.number_input(f'Fees ({trade_ccy})',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
+        fx_default,fx_src,fx_dt=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
+        c9,c10=st.columns([1,1])
+        fx_rate=c9.number_input(f'FX Rate {trade_ccy} → {base_ccy}',min_value=0.0,value=float(fx_default or 1.0),step=0.0001,format='%.6f',key=prefix+'_fx_rate')
+        status=c10.selectbox('Status',['Executed','Pending','Watchlist'],index=0,key=prefix+'_status')
+        trigger_level=st.text_input('Trigger Level / Rule',value='',placeholder='e.g. BUY -15% / manual',key=prefix+'_trigger')
         notes=st.text_area('Notes',value='',height=80 if not compact else 60,key=prefix+'_notes')
+        gross=float(quantity)*float(price); base_equiv=(gross+float(fees) if side=='BUY' else gross-float(fees))*float(fx_rate or 0)
+        st.caption(f'Base-currency equivalent preview: {CURRENCY_SYMBOL_MAP.get(base_ccy,base_ccy)}{base_equiv:,.2f} · FX source: {fx_src} · {fx_dt}')
         submitted=st.form_submit_button('Save Trade Entry',use_container_width=True)
     if submitted:
-        gross=float(quantity)*float(price); net=gross+float(fees) if side=='BUY' else gross-float(fees)
-        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Net Amount':net,'Trigger Level':trigger_level,'Notes':notes,'Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
-        if not row['Ticker'] or quantity<=0 or price<=0: st.warning('Please enter ticker, quantity and price before saving.')
-        elif _append_trade_row(row): st.success(f'Trade entry saved: {row["Side"]} {row["Quantity"]:,.0f} {row["Ticker"]} @ {row["Price"]:,.2f}.'); st.rerun()
+        gross=float(quantity)*float(price); net_trade=gross+float(fees) if side=='BUY' else gross-float(fees); base_equiv=net_trade*float(fx_rate or 0)
+        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Trade Currency':trade_ccy,'FX Rate to Base':float(fx_rate or 0),'Base Currency':base_ccy,'Base Currency Equivalent':base_equiv,'FX Source':fx_src,'FX Timestamp':fx_dt,'Trigger Level':trigger_level,'Notes':notes,'Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
+        if not row['Ticker'] or quantity<=0 or price<=0 or fx_rate<=0: st.warning('Please enter ticker, quantity, price and FX rate before saving.')
+        elif _append_trade_row(row): st.success(f'Trade saved. Base equivalent: {CURRENCY_SYMBOL_MAP.get(base_ccy,base_ccy)}{base_equiv:,.2f}.'); st.rerun()
 
 def render_trade_entry_modal_button():
     if hasattr(st,'dialog'):
         @st.dialog('Quick Trade Entry')
-        def _quick_trade_dialog():
-            st.caption('Pop-up quick entry. Saved rows flow into Portfolio Overview → Trade Journal.'); _trade_entry_form('quick_trade_modal',compact=True)
+        def _quick_trade_dialog(): st.caption('Pop-up quick entry. Saved rows flow into Portfolio Overview → Trade Journal.'); _trade_entry_form('quick_trade_modal',compact=True)
         if st.button('➕ Pop-up Trade Entry Form',use_container_width=True,key='open_quick_trade_entry_modal'): _quick_trade_dialog()
     else:
-        with st.expander('➕ Pop-up Trade Entry Form',expanded=False):
-            st.caption('Dialog unavailable in this runtime; quick entry is shown as an expandable modal-style panel.'); _trade_entry_form('quick_trade_fallback',compact=True)
-
-def _trade_log_with_numeric():
-    df=_load_trade_log()
-    for c in ['Quantity','Price','Fees','Gross Amount','Net Amount']:
-        if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0.0)
-    return df
+        with st.expander('➕ Pop-up Trade Entry Form',expanded=False): st.caption('Dialog unavailable in this runtime; quick entry is shown as an expandable modal-style panel.'); _trade_entry_form('quick_trade_fallback',compact=True)
 
 def render_trade_entry_page(view='form'):
-    st.markdown('## 📝 Trade Entry'); st.caption('Quick trade input and order monitoring. Entries are saved into Portfolio Overview → Trade Journal.'); render_trade_entry_modal_button()
-    df=_trade_log_with_numeric()
+    st.markdown('## 📝 Trade Entry'); st.caption('Trade entries capture transaction currency, FX rate and base-currency equivalent for funding readiness.'); render_trade_entry_modal_button(); df=_trade_log_with_numeric()
     if view=='pending':
-        st.markdown('### ⏳ Pending Orders'); pending=df[df['Status'].astype(str).str.lower().eq('pending')].copy() if not df.empty else df
-        st.info('No pending orders recorded yet.') if pending.empty else st.dataframe(pending,use_container_width=True,hide_index=True); return
+        st.markdown('### ⏳ Pending Orders'); pending=df[df['Status'].astype(str).str.lower().eq('pending')].copy() if not df.empty else df; st.info('No pending orders recorded yet.') if pending.empty else st.dataframe(pending,use_container_width=True,hide_index=True); return
     if view=='trigger':
-        st.markdown('### 🎯 Trigger Monitor'); cols=['Trade Date','Status','Market','Ticker','Side','Trigger Level','Notes']; trig=df[df['Trigger Level'].astype(str).str.strip().ne('')][cols].copy() if not df.empty else pd.DataFrame(columns=cols)
-        st.info('No trigger-linked trade entries recorded yet.') if trig.empty else st.dataframe(trig,use_container_width=True,hide_index=True); return
+        st.markdown('### 🎯 Trigger Monitor'); cols=['Trade Date','Status','Market','Ticker','Side','Trigger Level','Notes']; trig=df[df['Trigger Level'].astype(str).str.strip().ne('')][cols].copy() if not df.empty else pd.DataFrame(columns=cols); st.info('No trigger-linked trade entries recorded yet.') if trig.empty else st.dataframe(trig,use_container_width=True,hide_index=True); return
     st.markdown('### Full Trade Entry Form'); _trade_entry_form('full_trade_entry')
 
 def render_portfolio_trade_journal(view='journal'):
-    st.markdown('## 📒 Portfolio Overview / Trade Journal'); st.caption('Consolidated page for Portfolio Summary, Holdings & Exposure, Full Trade Log and Performance Attribution.')
+    st.markdown('## 📒 Portfolio Overview / Trade Journal'); st.caption('Portfolio summary, holdings/exposure, full trade log and performance attribution.')
     df=_trade_log_with_numeric()
     if df.empty: st.info('No trade entries recorded yet. Use Trade Entry → Trade Entry Form or the pop-up quick entry.'); return
-    executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy(); buy=executed[executed['Side'].astype(str).str.upper().eq('BUY')]; sell=executed[executed['Side'].astype(str).str.upper().eq('SELL')]
-    net_invested=float(buy['Net Amount'].sum())-float(sell['Net Amount'].sum()) if not executed.empty else 0.0; open_pending=int(df['Status'].astype(str).str.lower().eq('pending').sum())
-    k1,k2,k3,k4=st.columns(4); k1.metric('Recorded Trades',len(df)); k2.metric('Executed Net Invested',fmt_sgd(net_invested)); k3.metric('Pending Orders',open_pending); k4.metric('Markets Covered',df['Market'].nunique())
-    st.markdown('### Portfolio Summary'); st.markdown('<div class="cde-soft-card"><div class="cde-soft-title">Current recorded basis</div><div class="cde-soft-sub">Net invested amount is based on saved executed trade entries only. Market-value revaluation can be added later once live holding valuation is locked.</div></div>',unsafe_allow_html=True)
-    st.markdown('### Holdings & Exposure')
+    base_ccy=st.session_state.get('base_capital_currency','SGD'); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
+    if 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_ccy)]
+    net_invested=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
+    k1,k2,k3,k4=st.columns(4); k1.metric('Recorded Trades',len(df)); k2.metric('Executed Base Equivalent',fmt_sgd(net_invested)); k3.metric('Pending Orders',int(df['Status'].astype(str).str.lower().eq('pending').sum())); k4.metric('Markets Covered',df['Market'].nunique())
+    st.markdown('### Holdings & Exposure by Market')
     if executed.empty: st.info('No executed trades available for holdings/exposure summary.')
     else:
-        signed=executed.copy(); signed['Signed Quantity']=np.where(signed['Side'].astype(str).str.upper().eq('BUY'),signed['Quantity'],-signed['Quantity']); signed['Signed Net Amount']=np.where(signed['Side'].astype(str).str.upper().eq('BUY'),signed['Net Amount'],-signed['Net Amount'])
-        exposure=signed.groupby(['Market','Ticker'],dropna=False).agg(Quantity=('Signed Quantity','sum'),Net_Invested=('Signed Net Amount','sum'),Trades=('Ticker','count')).reset_index(); exposure['Avg Cost Basis']=exposure.apply(lambda r:(r['Net_Invested']/r['Quantity']) if r['Quantity'] else np.nan,axis=1); st.dataframe(exposure,use_container_width=True,hide_index=True)
+        exp=executed.groupby(['Market','Ticker','Base Currency'],dropna=False).agg(Quantity=('Quantity','sum'),Base_Equivalent=('Base Currency Equivalent','sum'),Trades=('Ticker','count')).reset_index(); st.dataframe(exp,use_container_width=True,hide_index=True)
     st.markdown('### Full Trade Log'); st.dataframe(df,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Trade Journal CSV',df.to_csv(index=False),file_name='cde_trade_journal.csv',mime='text/csv',use_container_width=True)
-    st.markdown('### Performance Attribution')
-    if executed.empty: st.info('Performance attribution is awaiting executed trades.')
-    else: st.dataframe(executed.groupby(['Market','Side'],dropna=False).agg(Trades=('Ticker','count'),Gross_Amount=('Gross Amount','sum'),Fees=('Fees','sum'),Net_Amount=('Net Amount','sum')).reset_index(),use_container_width=True,hide_index=True)
+    st.markdown('### Performance Attribution'); st.dataframe(executed.groupby(['Market','Side'],dropna=False).agg(Trades=('Ticker','count'),Base_Equivalent=('Base Currency Equivalent','sum')).reset_index() if not executed.empty else pd.DataFrame(),use_container_width=True,hide_index=True)
 
 def render_capital_management_page(view='overview'):
     st.markdown('## 💰 Capital Management'); st.caption('Base-currency capital, funding readiness, allocation rules and safeguards.')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
-    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency')
-    base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
     total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input')
-    current_allocated=b3.number_input(f'Current Allocated / Deployed Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
+    manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     if base_currency == 'SGD':
         st.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
         st.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
-    st.caption('Use one base capital currency for the platform. SRS/CPF-OA appear only when base currency is SGD. Converted allocation amounts can be recorded in Trade Entry / Trade Journal.')
+    st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
     include_srs_local=bool(st.session_state.get('include_srs_sti',False)) if base_currency=='SGD' else False; include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False)) if base_currency=='SGD' else False
-    srs_local=float(st.session_state.get('investible_srs_input',0.0)) if include_srs_local else 0.0; cpf_raw_local=float(st.session_state.get('cpf_oa_balance_input',0.0)) if include_cpf_local else 0.0; preserve_cpf_local=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False; cpf_available_local=max(cpf_raw_local-(20000 if preserve_cpf_local else 0),0) if include_cpf_local else 0.0
-    total_local=float(total_input); deployed_local=min(max(float(current_allocated),0.0),total_local); remaining_local=max(total_local-deployed_local,0); active_tier_local=(deployed_local/total_local) if total_local else 0.0
-    funding_parts=[f'{base_symbol} Base Capital']
+    srs_local=float(st.session_state.get('investible_srs_input',0.0)) if include_srs_local else 0.0; cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0)) if include_cpf_local else 0.0; preserve=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False; cpf_available=max(cpf_raw-(20000 if preserve else 0),0) if include_cpf_local else 0.0
+    df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
+    if not executed.empty and 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
+    trade_deployed=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
+    deployed_local=trade_deployed if trade_deployed>0 else min(max(float(manual_override),0.0),float(total_input)); remaining_local=max(float(total_input)-deployed_local,0); active_tier=(deployed_local/float(total_input)) if total_input else 0
+    funding_parts=[f'{base_symbol} Base Capital'];
     if include_srs_local: funding_parts.append('SRS')
     if include_cpf_local: funding_parts.append('CPF-OA')
-    st.session_state.funding_profile=' + '.join(funding_parts); funding_profile_local=st.session_state.funding_profile
-    c1,c2,c3,c4=st.columns(4); c1.metric('Total Investible Capital',f'{base_symbol}{total_local:,.0f}'); c2.metric('Current Allocation',f'{active_tier_local:.0%}'); c3.metric('Funding Readiness',f'{base_symbol}{remaining_local:,.0f}'); c4.metric('Funding Profile',funding_profile_local)
+    st.session_state.funding_profile=' + '.join(funding_parts)
+    c1,c2,c3,c4=st.columns(4); c1.metric('Total Capital',f'{base_symbol}{float(total_input):,.0f}'); c2.metric('Current Allocation',f'{active_tier:.0%}'); c3.metric('Funding Readiness',f'{base_symbol}{remaining_local:,.0f}'); c4.metric('Funding Profile',st.session_state.funding_profile)
     if view=='investible':
-        st.markdown('### Capital & Safeguards '+tooltip_html('Safeguards',[('Base currency','Single platform-level capital currency'),('Current allocation','User-input deployed amount used for funding readiness'),('SRS / CPF-OA','Shown only when base currency is SGD')],'Capital inputs feed Suggested Deploy and Funding Readiness.'),unsafe_allow_html=True)
+        st.markdown('### Capital & Safeguards '+tooltip_html('Safeguards',[('Base currency','Single platform-level capital currency'),('Allocation logic','Executed trades are converted to base currency before allocation calculations'),('SRS / CPF-OA','Shown only when base currency is SGD')],'Capital inputs feed Suggested Deploy and Funding Readiness.'),unsafe_allow_html=True)
         st.markdown(f'<div class="currency-pill">{base_symbol} &nbsp; {CURRENCY_NAME_MAP.get(base_currency,base_currency)}</div>',unsafe_allow_html=True)
         if include_srs_local: st.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
         if include_cpf_local: st.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input'); st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
-        st.info('Total amount, current allocated amount, base currency, and SGD-only SRS/CPF options are now consolidated at the top.')
+        st.info('Funding readiness now uses base-currency equivalents. USD 10k and HKD 10k are no longer treated as equal.')
     elif view=='rules':
         st.markdown('### Allocation Rules'); st.dataframe(pd.DataFrame([{'Zone':'HOLD / NO DEPLOYMENT','Trigger':'Above -8% drawdown','Cumulative Deploy':'0%'},{'Zone':'INITIAL BUY','Trigger':'-8% drawdown','Cumulative Deploy':'10%'},{'Zone':'BUY','Trigger':'-15% drawdown','Cumulative Deploy':'25%'},{'Zone':'STRONG BUY','Trigger':'-25% drawdown','Cumulative Deploy':'50%'},{'Zone':'CRISIS BUY','Trigger':'-35% drawdown','Cumulative Deploy':'75%'},{'Zone':'MAX CRISIS BUY','Trigger':'-50% drawdown','Cumulative Deploy':'100%'}]),use_container_width=True,hide_index=True)
-    elif view=='funding': st.markdown('### Funding Plan'); st.info('Funding plan uses the platform base currency. Converted allocation amounts can be captured later in Trade Entry / Trade Journal.')
-    else:
-        st.markdown('### Capital Overview'); st.dataframe(pd.DataFrame([{'Source':'Base Capital','Available':total_local},{'Source':'Current Allocated / Deployed','Available':deployed_local},{'Source':'Funding Readiness / Remaining','Available':remaining_local},{'Source':'SRS Additional Tag','Available':srs_local},{'Source':'CPF-OA after safeguard','Available':cpf_available_local}]),use_container_width=True,hide_index=True)
+    elif view=='funding': st.markdown('### Funding Plan'); st.info('Funding plan uses base-currency equivalents from executed trade entries. Manual override is fallback only.')
+    else: st.markdown('### Capital Overview'); st.dataframe(pd.DataFrame([{'Source':'Base Capital','Available':float(total_input)},{'Source':'Executed Trades Base Equivalent','Available':trade_deployed},{'Source':'Manual Override Used if No Trades','Available':manual_override},{'Source':'Funding Readiness / Remaining','Available':remaining_local},{'Source':'CPF-OA after safeguard','Available':cpf_available}]),use_container_width=True,hide_index=True)
 
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('investible'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('overview'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('funding'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
 
