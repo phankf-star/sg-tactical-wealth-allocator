@@ -28,6 +28,7 @@ st.markdown('''
 <style>
 .cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px}.cde-logo-card{background:#fff;border:1px solid #dbe4ee;border-radius:14px;padding:10px;margin-bottom:14px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 8px rgba(15,23,42,.08)}.cde-logo-mark{width:44px;height:44px;border-radius:50%;border:2px solid #e2e8f0;background:linear-gradient(135deg,#fff,#f8fafc);flex:0 0 44px;position:relative;box-shadow:inset 0 0 0 1px rgba(148,163,184,.12)}.cde-logo-mark:before{content:'';position:absolute;left:11px;top:16px;width:4px;height:17px;background:#ff4444;border-radius:2px;box-shadow:8px 6px 0 #ff4444}.cde-logo-mark:after{content:'';position:absolute;left:15px;top:25px;width:28px;height:5px;background:#ff4444;transform:rotate(-43deg);border-radius:3px;box-shadow:22px -18px 0 #22c55e}.cde-logo-main{color:#0f172a;font-size:15.5px;font-weight:950;line-height:1.02;letter-spacing:.2px}.cde-logo-sub{color:#334155;font-size:9.5px;font-weight:950;line-height:1.05;margin-top:1px}.cde-logo-tag{color:#475569;font-size:6.8px;font-weight:850;margin-top:5px;white-space:nowrap}.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 20px}.cde-title{font-size:38px;font-weight:950;color:#0f172a}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-refresh-box{text-align:right;font-size:12px;color:#64748b;font-weight:800}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px}.cde-grid{display:grid;gap:16px;margin-bottom:22px}.cde-kpi-grid{grid-template-columns:1fr 1fr 1fr 1.18fr 1.12fr}.cde-three-grid{grid-template-columns:1fr 1fr 1fr}.cde-bottom-grid{grid-template-columns:1.08fr .92fr}.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:118px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:10px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750}.cde-green{color:#059669}.cde-orange{color:#f97316}.cde-blue{color:#2563eb}.cde-flag-circle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:8px;font-size:11px;line-height:1;background:#fff;border:1px solid #d3dfec;vertical-align:-3px;box-shadow:0 1px 1px rgba(15,23,42,.08)}.cde-card-title{font-size:15px}.cde-main-value{font-size:30px}.cde-card-sub{font-size:12.5px}.cde-row-head{background:#e8eef5;border:1px solid #d3dfec;border-radius:8px 8px 0 0;padding:5px 8px;font-size:11px;font-weight:950;color:#334155;min-height:24px;display:flex;align-items:center}.cde-row-line{border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px;font-weight:800;min-height:24px;display:flex;align-items:center;background:#fff}.stButton>button{min-height:24px;padding:2px 8px;font-size:11px;border-radius:8px}.cde-env-compact{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px;font-size:11.5px;color:#334155;font-weight:850;line-height:1.3}.cde-env-compact b{font-weight:950;color:#0f172a}.cde-risk-card{position:relative}.cde-risk-flex{display:grid;grid-template-columns:1fr 66px;gap:4px;align-items:center}.cde-risk-left .cde-main-value{font-size:25px}.cde-risk-left .cde-card-sub{margin-top:2px}.cde-risk-gauge-side{height:38px;display:flex;align-items:center;justify-content:flex-end;overflow:hidden}.cde-risk-gauge-side svg{display:none}.cde-risk-mini-meter{width:56px;height:26px;position:relative;display:flex;align-items:flex-end;justify-content:center}.cde-risk-mini-arc{width:50px;height:25px;border-radius:58px 58px 0 0;background:conic-gradient(from 270deg,#22c55e 0deg,#22c55e 54deg,#facc15 54deg,#facc15 108deg,#f97316 108deg,#ef4444 180deg,transparent 180deg);position:absolute;bottom:0}.cde-risk-mini-arc:after{content:"";position:absolute;left:7px;right:7px;bottom:0;height:18px;background:#fff;border-radius:42px 42px 0 0}.cde-risk-mini-needle{position:absolute;bottom:0;left:50%;width:2px;height:21px;background:#0f172a;transform:rotate(var(--needle));transform-origin:bottom center;border-radius:2px}.cde-command-row{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-watch-card,.cde-action-card{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:10px 12px}.cde-watch-title,.cde-action-title{font-size:15px;font-weight:950;color:#0f172a;margin-bottom:2px}.cde-watch-sub,.cde-action-sub{font-size:10.5px;color:#64748b;font-weight:760;margin-bottom:8px}.cde-watch-item{display:grid;grid-template-columns:1fr .8fr .55fr;gap:6px;border-bottom:1px solid #eef2f7;padding:6px 0;font-size:11.5px;font-weight:850;color:#334155}.cde-watch-item:last-child{border-bottom:0}.cde-action-top{display:grid;grid-template-columns:1.15fr .9fr 1.05fr .85fr .7fr;gap:8px}.cde-command-mini{border-left:1px solid #e2e8f0;padding-left:8px;min-height:40px}.cde-command-mini:first-child{border-left:0;padding-left:0}.cde-command-target{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:10px;padding:7px 8px}.cde-command-label{font-size:8.8px;color:#475569;font-weight:950;text-transform:uppercase;letter-spacing:.02em}.cde-command-value{font-size:16px;font-weight:950;color:#0f172a;line-height:1.1;margin-top:2px}.cde-command-note{font-size:9px;color:#64748b;font-weight:760;margin-top:1px}.cde-action-bottom{display:grid;grid-template-columns:.85fr 1.25fr;gap:8px;margin-top:8px}.cde-command-panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-command-next{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}@media(max-width:900px){.cde-command-row,.cde-action-top,.cde-action-bottom,.cde-risk-flex{grid-template-columns:1fr}.cde-command-mini{border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:8px}.cde-command-mini:first-child{border-top:0;padding-top:0}}.cde-env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cde-env-grid b{display:block;font-size:14px;font-weight:950}.cde-env-grid span{font-size:10.5px;color:#64748b;font-weight:800}.cde-section-title{font-size:21px;font-weight:950;color:#111827}.cde-section-sub{font-size:12.5px;color:#52657a;font-weight:760;margin-bottom:11px}.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:20px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:11px 13px;font-size:12px;font-weight:950}.cde-table td{padding:12px 13px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}.cde-ladder-row{display:grid;grid-template-columns:1.1fr 58px 1fr;gap:8px;font-size:12.5px;margin:7px 0;font-weight:800}.cde-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1}.cde-dot.active{background:#f97316}.cde-donut{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}.cde-donut:before{content:attr(data-label);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:950;color:#0f2e5d;font-size:12px}.cde-allocation{display:grid;grid-template-columns:105px 1fr;gap:14px;align-items:center}.cde-mini-metrics{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}.cde-takeaway{display:flex;gap:14px;align-items:center}.cde-icon{width:42px;height:42px;border-radius:50%;background:#dcfce7;color:#059669;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:950}@media(max-width:900px){.cde-hero{display:block}.cde-kpi-grid,.cde-three-grid,.cde-bottom-grid{grid-template-columns:1fr}.cde-title{font-size:30px}.cde-card{min-height:auto}.cde-env-grid{grid-template-columns:repeat(2,1fr)}}
 .cde-section-note{font-size:12px;color:#64748b;font-weight:750;margin:-6px 0 12px}.cde-soft-card{background:#fff;border:1px solid #dbe4ee;border-radius:12px;padding:12px;margin:8px 0}.cde-soft-title{font-size:14px;font-weight:950;color:#0f172a;margin-bottom:4px}.cde-soft-sub{font-size:12px;color:#64748b;font-weight:750}.cde-side-help{font-size:11.5px;color:#64748b;line-height:1.35;margin:4px 0 8px}.cde-nav-group-caption{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 8px}
+.cde-card+.cde-card{margin-top:12px}
 </style>
 ''', unsafe_allow_html=True)
 
@@ -2780,28 +2781,25 @@ with st.sidebar:
             st.session_state.active_section='🧾 Funding Plan'; st.rerun()
         if _nav_button('🧮 Allocation Rules'):
             st.session_state.active_section='🧮 Allocation Rules'; st.rerun()
-        st.markdown('---')
-        st.markdown('### 💰 Investible Capital & Safeguards ' + tooltip_html('Safeguards', [('Emergency buffer','Excluded from investible capital'),('CPF-OA floor','Optional S$20k exclusion for STI'),('Purpose','Decision-support capital base only')], 'Capital inputs feed Suggested Deploy and Funding Readiness.'), unsafe_allow_html=True)
-        st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
-        if sel == 'STI':
-            include_srs=st.toggle('Include SRS in investible capital',value=False,key='include_srs_sti')
-            include_cpf_oa=st.toggle('Include CPF-OA in investible capital',value=False,key='include_cpf_oa_sti')
-            funding_parts=['S$ Cash']
-            if include_srs: funding_parts.append('SRS')
-            if include_cpf_oa: funding_parts.append('CPF-OA')
-            funding_profile=' + '.join(funding_parts); st.caption(f'Funding Profile: {funding_profile}')
-            cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
-            srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
-            if include_srs:
-                srs_balance=st.number_input('Investible SRS (S$)',0.0,value=35000.0,step=5000.0)
-            if include_cpf_oa:
-                cpf_oa_balance=st.number_input('CPF-OA Balance (S$)',0.0,value=180000.0,step=5000.0)
-                preserve_cpf=st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=True)
-        else:
-            funding_profile=f'{currency_symbol} Investible Cash'; st.caption(f'Funding Profile: {funding_profile}')
-            cash_balance=st.number_input(f'Investible Cash ({currency_symbol})',0.0,value=100000.0,step=5000.0)
-            srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
-        emergency_buffer=0.0; st.session_state.funding_profile=funding_profile
+
+    # Capital values are controlled on Capital Management → Investible Capital.
+    # Keep calculations available globally without duplicating the input form in the sidebar.
+    if sel == 'STI':
+        include_srs=bool(st.session_state.get('include_srs_sti', False))
+        include_cpf_oa=bool(st.session_state.get('include_cpf_oa_sti', False))
+        funding_parts=['S$ Cash']
+        if include_srs: funding_parts.append('SRS')
+        if include_cpf_oa: funding_parts.append('CPF-OA')
+        funding_profile=' + '.join(funding_parts)
+        cash_balance=float(st.session_state.get('investible_cash_input', 100000.0))
+        srs_balance=float(st.session_state.get('investible_srs_input', 35000.0 if include_srs else 0.0)) if include_srs else 0.0
+        cpf_oa_balance=float(st.session_state.get('cpf_oa_balance_input', 180000.0 if include_cpf_oa else 0.0)) if include_cpf_oa else 0.0
+        preserve_cpf=bool(st.session_state.get('preserve_cpf_floor_input', True)) if include_cpf_oa else False
+    else:
+        funding_profile=f'{currency_symbol} Investible Cash'
+        cash_balance=float(st.session_state.get('investible_cash_input', 100000.0))
+        srs_balance=0.0; cpf_oa_balance=0.0; preserve_cpf=False
+    emergency_buffer=0.0; st.session_state.funding_profile=funding_profile
 
     with st.expander('Portfolio Overview', expanded=False):
         st.markdown('<div class="cde-nav-group-caption">Portfolio summary, exposure, full trade log and attribution</div>', unsafe_allow_html=True)
@@ -2954,29 +2952,36 @@ def render_executive():
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"When {best['Market']} drawdown reaches {next_trigger}"
     st.markdown(f'''<div class="cde-section-title">Deployment Command Centre</div><div class="cde-section-sub">Next trigger monitoring and primary deployment action. Figures are system-calculated.</div><div class="cde-command-row"><div class="cde-watch-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div class="cde-action-card"><div class="cde-action-title">Primary Deployment Action</div><div class="cde-action-sub">Top next-trigger market shown as the action target.</div><div class="cde-action-top"><div class="cde-command-target"><div class="cde-command-label">Target Market</div><div class="cde-command-value">{market_label_html(best['Market'])}</div></div><div class="cde-command-mini"><div class="cde-command-label">Trigger Level</div><div class="cde-command-value">{hesc(next_trigger)}</div></div><div class="cde-command-mini"><div class="cde-command-label">Current Drawdown</div><div class="cde-command-value">{best['Drawdown']:.1f}%</div><div class="cde-command-note">{hesc(active_tier)}</div></div><div class="cde-command-mini"><div class="cde-command-label">Distance</div><div class="cde-command-value">{hesc(distance)}</div></div><div class="cde-command-mini"><div class="cde-command-label">Confidence</div><div class="cde-command-value">{hesc(confidence_label)}</div></div></div><div class="cde-action-bottom"><div class="cde-command-next"><div class="cde-command-label">Next Deployment Amount</div><div class="cde-command-value">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-command-note">{next_increment:.0%} incremental<br>{hesc(condition_text)}</div></div><div class="cde-command-panel"><div class="cde-card-title">Allocation</div><div class="cde-card-sub">Cash available {fmt_sgd_html(remaining_amt)} · Deployed {fmt_sgd_html(deployed_amt)} · Other funds {fmt_sgd_html(0)}</div></div></div></div></div>''', unsafe_allow_html=True)
 
-    # Market Opportunity Overview compact layout with per-market Deep Dive buttons.
-    st.markdown(f'''<div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
-    header_cols=st.columns([0.42,1.38,1.05,.82,.65,.78,.78])
-    header_labels=['Rank','Market','Index / ETF','Drawdown',f'Score {score_tip}','Signal','Deep Dive']
-    for _col,_label in zip(header_cols,header_labels):
-        _col.markdown(f'<div class="cde-row-head">{_label}</div>', unsafe_allow_html=True)
-    for i,r in enumerate(rows,1):
-        row_cols=st.columns([0.42,1.38,1.05,.82,.65,.78,.78])
-        row_cols[0].markdown(f'<div class="cde-row-line">{i}</div>', unsafe_allow_html=True)
-        row_cols[1].markdown(f'<div class="cde-row-line">{market_label_html(r["Market"])}</div>', unsafe_allow_html=True)
-        row_cols[2].markdown(f'<div class="cde-row-line">{hesc(r["Index / ETF"])}</div>', unsafe_allow_html=True)
-        row_cols[3].markdown(f'<div class="cde-row-line cde-orange">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
-        row_cols[4].markdown(f'<div class="cde-row-line">{r["Score"]}</div>', unsafe_allow_html=True)
-        sig_class='buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'
-        row_cols[5].markdown(f'<div class="cde-row-line"><span class="cde-sig {sig_class}">{hesc(r["Signal"])}</span></div>', unsafe_allow_html=True)
-        if row_cols[6].button('Deep Dive →', key='lp_r1_01_deep_dive_'+re.sub(r'[^A-Za-z0-9]+','_',r['Market']), use_container_width=True):
-            st.session_state.active_section='▣ Market Deep Dive'
-            st.session_state.asset_group_selection='Market / Equity Index'
-            st.session_state.selected_market_name=r['Market']
-            st.rerun()
+    # Portfolio & Capital Management card restored without Trade Journal preview.
+    portfolio_capital_tip=tooltip_html('Portfolio & Capital Management',[('Capital Summary','Selected investible capital and active deployment tier'),('Funding Readiness','Available dry powder after active tier'),('Deployment Exposure','Recorded deployment exposure from the current best opportunity tier')],'Trade Journal preview is intentionally not shown here. Full trade log is under Portfolio Overview → Trade Journal.')
+    st.markdown(f'''<section class="cde-grid cde-three-grid"><div class="cde-card"><div class="cde-card-title">Portfolio & Capital Management {portfolio_capital_tip}</div><div class="cde-mini-metrics"><div><b>{fmt_sgd_html(total_cap)}</b><span>Capital Summary</span></div><div><b>{fmt_sgd_html(remaining_amt)}</b><span>Funding Readiness</span></div><div><b>{best_deploy_pct:.0%}</b><span>Deployment Exposure</span></div></div></div><div class="cde-card"><div class="cde-card-title">Capital Flow</div><div class="cde-card-sub">Deployed {fmt_sgd_html(deployed_amt)} · Available {fmt_sgd_html(remaining_amt)}<br>Funding profile: {hesc(st.session_state.get('funding_profile','Investible Cash'))}</div></div><div class="cde-card"><div class="cde-card-title">Trade Workflow</div><div class="cde-card-sub">Use Trade Entry for quick input and Portfolio Overview → Trade Journal for portfolio summary, holdings, full trade log and attribution.</div></div></section>''', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
-    st.markdown(f'''<section class="cde-grid cde-bottom-grid"><div class="cde-card"><div class="cde-card-title">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div><div class="cde-card cde-takeaway"><div class="cde-icon">✓</div><div><div class="cde-card-title">System Status</div><div class="cde-card-sub">All systems operational<br>Data quality: High<br>Model confidence: Good</div></div></div></section>''', unsafe_allow_html=True)
+
+    # Market Opportunity Overview with Historical Edge and System Status aligned at the same visual level.
+    opp_col, status_col = st.columns([2.25, .95], gap='large')
+    with opp_col:
+        st.markdown(f'''<div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
+        header_cols=st.columns([0.42,1.38,1.05,.82,.65,.78,.78])
+        header_labels=['Rank','Market','Index / ETF','Drawdown',f'Score {score_tip}','Signal','Deep Dive']
+        for _col,_label in zip(header_cols,header_labels):
+            _col.markdown(f'<div class="cde-row-head">{_label}</div>', unsafe_allow_html=True)
+        for i,r in enumerate(rows,1):
+            row_cols=st.columns([0.42,1.38,1.05,.82,.65,.78,.78])
+            row_cols[0].markdown(f'<div class="cde-row-line">{i}</div>', unsafe_allow_html=True)
+            row_cols[1].markdown(f'<div class="cde-row-line">{market_label_html(r["Market"])}</div>', unsafe_allow_html=True)
+            row_cols[2].markdown(f'<div class="cde-row-line">{hesc(r["Index / ETF"])}</div>', unsafe_allow_html=True)
+            row_cols[3].markdown(f'<div class="cde-row-line cde-orange">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
+            row_cols[4].markdown(f'<div class="cde-row-line">{r["Score"]}</div>', unsafe_allow_html=True)
+            sig_class='buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'
+            row_cols[5].markdown(f'<div class="cde-row-line"><span class="cde-sig {sig_class}">{hesc(r["Signal"])}</span></div>', unsafe_allow_html=True)
+            if row_cols[6].button('Deep Dive →', key='lp_r1_01_deep_dive_'+re.sub(r'[^A-Za-z0-9]+','_',r['Market']), use_container_width=True):
+                st.session_state.active_section='▣ Market Deep Dive'
+                st.session_state.asset_group_selection='Market / Equity Index'
+                st.session_state.selected_market_name=r['Market']
+                st.rerun()
+    with status_col:
+        st.markdown(f'''<div class="cde-section-title">Landing Support</div><div class="cde-section-sub">Same-level context beside Market Opportunity Overview.</div><div class="cde-card"><div class="cde-card-title">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div><div class="cde-card cde-takeaway"><div class="cde-icon">✓</div><div><div class="cde-card-title">System Status</div><div class="cde-card-sub">All systems operational<br>Data quality: High<br>Model confidence: Good</div></div></div>''', unsafe_allow_html=True)
 
 def render_market_deep_dive_summary():
     display_dd=min(dd,0.0)
@@ -3815,18 +3820,49 @@ def render_portfolio_trade_journal(view='journal'):
 def render_capital_management_page(view='overview'):
     st.markdown('## 💰 Capital Management')
     st.caption('Investible capital, funding readiness, allocation rules and safeguards.')
-    available_cash_local=max(cash_balance,0)
-    available_srs_local=srs_balance if 'srs_balance' in globals() else 0.0
-    available_cpf_local=max(cpf_oa_balance-(20000 if preserve_cpf else 0),0) if 'cpf_oa_balance' in globals() else 0.0
-    total_local=available_cash_local+available_srs_local+available_cpf_local
+
+    # Current values are sourced from session state so the input page is the single source of truth.
+    include_srs_local=bool(st.session_state.get('include_srs_sti', False)) if sel == 'STI' else False
+    include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti', False)) if sel == 'STI' else False
+    cash_local=float(st.session_state.get('investible_cash_input', 100000.0))
+    srs_local=float(st.session_state.get('investible_srs_input', 35000.0 if include_srs_local else 0.0)) if include_srs_local else 0.0
+    cpf_raw_local=float(st.session_state.get('cpf_oa_balance_input', 180000.0 if include_cpf_local else 0.0)) if include_cpf_local else 0.0
+    preserve_cpf_local=bool(st.session_state.get('preserve_cpf_floor_input', True)) if include_cpf_local else False
+    cpf_available_local=max(cpf_raw_local-(20000 if preserve_cpf_local else 0),0) if include_cpf_local else 0.0
+    total_local=cash_local+srs_local+cpf_available_local
     deployed_local=total_local*deploy_pct if 'deploy_pct' in globals() else 0.0
     remaining_local=max(total_local-deployed_local,0)
+    funding_profile_local=st.session_state.get('funding_profile','S$ Cash' if sel == 'STI' else f'{currency_symbol} Investible Cash')
+
     c1,c2,c3,c4=st.columns(4)
     c1.metric('Total Investible Capital', fmt_sgd(total_local))
     c2.metric('Active Deployment Tier', f'{deploy_pct:.0%}' if 'deploy_pct' in globals() else '0%')
     c3.metric('Funding Readiness', fmt_sgd(remaining_local))
-    c4.metric('Funding Profile', st.session_state.get('funding_profile','Investible Cash'))
-    if view == 'rules':
+    c4.metric('Funding Profile', funding_profile_local)
+
+    if view == 'investible':
+        st.markdown('### 💰 Investible Capital & Safeguards ' + tooltip_html('Safeguards', [('Emergency buffer','Excluded from investible capital'),('CPF-OA floor','Optional S$20k exclusion for STI'),('Purpose','Decision-support capital base only')], 'Capital inputs feed Suggested Deploy and Funding Readiness.'), unsafe_allow_html=True)
+        st.markdown(f'<div class="currency-pill">{currency_symbol} &nbsp; {currency_name}</div>', unsafe_allow_html=True)
+        if sel == 'STI':
+            st.toggle('Include SRS in investible capital', value=include_srs_local, key='include_srs_sti')
+            st.toggle('Include CPF-OA in investible capital', value=include_cpf_local, key='include_cpf_oa_sti')
+            funding_parts=['S$ Cash']
+            if st.session_state.get('include_srs_sti', False): funding_parts.append('SRS')
+            if st.session_state.get('include_cpf_oa_sti', False): funding_parts.append('CPF-OA')
+            st.session_state.funding_profile=' + '.join(funding_parts)
+            st.caption(f'Funding Profile: {st.session_state.funding_profile}')
+            st.number_input(f'Investible Cash ({currency_symbol})', 0.0, value=float(st.session_state.get('investible_cash_input', cash_local)), step=5000.0, key='investible_cash_input')
+            if st.session_state.get('include_srs_sti', False):
+                st.number_input('Investible SRS (S$)', 0.0, value=float(st.session_state.get('investible_srs_input', 35000.0)), step=5000.0, key='investible_srs_input')
+            if st.session_state.get('include_cpf_oa_sti', False):
+                st.number_input('CPF-OA Balance (S$)', 0.0, value=float(st.session_state.get('cpf_oa_balance_input', 180000.0)), step=5000.0, key='cpf_oa_balance_input')
+                st.checkbox('Exclude S$20k CPF-OA Minimum Floor', value=bool(st.session_state.get('preserve_cpf_floor_input', True)), key='preserve_cpf_floor_input')
+        else:
+            st.session_state.funding_profile=f'{currency_symbol} Investible Cash'
+            st.caption(f'Funding Profile: {st.session_state.funding_profile}')
+            st.number_input(f'Investible Cash ({currency_symbol})', 0.0, value=float(st.session_state.get('investible_cash_input', cash_local)), step=5000.0, key='investible_cash_input')
+        st.info('This page is now the single place to edit Investible Capital & Safeguards. The sidebar only navigates here, to avoid duplicate or misleading inputs.')
+    elif view == 'rules':
         st.markdown('### Allocation Rules')
         st.dataframe(pd.DataFrame([
             {'Zone':'HOLD / NO DEPLOYMENT','Trigger':'Above -8% drawdown','Cumulative Deploy':'0%'},
@@ -3838,18 +3874,16 @@ def render_capital_management_page(view='overview'):
         ]), use_container_width=True, hide_index=True)
     elif view == 'funding':
         st.markdown('### Funding Plan')
-        st.info('Funding plan uses sidebar capital inputs. For STI, SRS and CPF-OA can be included, with optional CPF-OA floor protection.')
-    elif view == 'investible':
-        st.markdown('### Investible Capital')
-        st.info('Edit investible capital and safeguards in the Capital Management sidebar group.')
+        st.info('Funding plan uses the single-source input from Capital Management → Investible Capital. For STI, SRS and CPF-OA can be included, with optional CPF-OA floor protection.')
     else:
         st.markdown('### Capital Overview')
         st.dataframe(pd.DataFrame([
-            {'Source':'Cash','Available':available_cash_local},
-            {'Source':'SRS','Available':available_srs_local},
-            {'Source':'CPF-OA after safeguard','Available':available_cpf_local},
+            {'Source':'Cash','Available':cash_local},
+            {'Source':'SRS','Available':srs_local},
+            {'Source':'CPF-OA after safeguard','Available':cpf_available_local},
             {'Source':'Total','Available':total_local},
         ]), use_container_width=True, hide_index=True)
+
 
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('investible'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('overview'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('funding'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
 
