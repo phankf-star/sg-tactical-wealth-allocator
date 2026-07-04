@@ -2710,6 +2710,9 @@ def add_performance_and_gap(rows,market_name):
         out.append(row)
     return pd.DataFrame(out)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# CDE CAP-003 / Point A-B: persistent portfolio capital + market budgets
+# ─────────────────────────────────────────────────────────────────────────────
 CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
 CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','Bitcoin','Gold','DJIA','A-Share']
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
@@ -2724,9 +2727,7 @@ def _load_capital_settings():
             raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
             if isinstance(raw,dict):
                 data.update({k:v for k,v in raw.items() if k in data})
-            if not isinstance(data.get('market_allocation_budget_pct'),dict):
-                data['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
-            elif len(data.get('market_allocation_budget_pct',{}))==0:
+            if not isinstance(data.get('market_allocation_budget_pct'),dict) or len(data.get('market_allocation_budget_pct',{}))==0:
                 data['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
     except Exception:
         pass
@@ -2745,16 +2746,16 @@ def _save_capital_settings():
 
 def _init_capital_settings():
     data=_load_capital_settings()
-    for k,v in data.items():
-        if k not in st.session_state:
-            st.session_state[k]=v
-    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict):
-        st.session_state['market_allocation_budget_pct']={}
+    for key,val in data.items():
+        if key not in st.session_state:
+            st.session_state[key]=val
+    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict) or len(st.session_state.get('market_allocation_budget_pct',{}))==0:
+        st.session_state['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
 
 def _market_allocation_pct(market):
     _init_capital_settings()
     try:
-        return max(0,min(100,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0))))/100
+        return max(0.0,min(100.0,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0.0))))/100.0
     except Exception:
         return 0.0
 
@@ -2767,24 +2768,23 @@ def _executed_base_exposure_by_market(base_currency):
     df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
     if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns:
         return {},0.0
-    ex=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-    if 'Base Currency' in ex.columns:
-        ex=ex[ex['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
-    if ex.empty:
+    executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
+    if 'Base Currency' in executed.columns:
+        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
+    if executed.empty:
         return {},0.0
-    gp=ex.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in ex.columns else pd.Series(dtype=float)
-    by={str(k):float(v) for k,v in gp.items()}
-    return by,float(sum(by.values()))
+    gp=executed.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in executed.columns else pd.Series(dtype=float)
+    by_market={str(k):float(v) for k,v in gp.items()}
+    return by_market,float(sum(by_market.values()))
 
 def _actual_deployed_base_amount(base_currency):
-    by,total=_executed_base_exposure_by_market(base_currency)
+    by_market,total=_executed_base_exposure_by_market(base_currency)
     if total>0:
-        return total,by,'trade_log'
+        return total,by_market,'trade_log'
     manual=max(float(st.session_state.get('current_allocated_amount_input',0.0) or 0),0.0)
     return manual,{},'manual_override' if manual>0 else 'none'
 
-
-def render_market_allocation_budget_ui(base_symbol, total_input, compact=False):
+def render_market_allocation_budget_ui(base_symbol,total_input,compact=False):
     st.markdown('### Market Allocation Budget')
     st.caption('Select interested markets and assign % of total portfolio capital to each market. Total assigned should not exceed 100%; unassigned capital remains portfolio dry powder.')
     alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {})
@@ -2813,7 +2813,6 @@ def render_market_allocation_budget_ui(base_symbol, total_input, compact=False):
     if not compact:
         st.dataframe(pd.DataFrame(alloc_rows),use_container_width=True,hide_index=True)
     return alloc_rows,total_assigned,unassigned
-
 
 # ------------------------- app state/load -------------------------
 with st.spinner('Loading market data...'):
@@ -3050,7 +3049,7 @@ def render_executive():
     next_deploy_amt=max(next_target_amt-best_market_actual,0)
     next_increment=(next_deploy_amt/best_market_budget) if best_market_budget else 0
     available_for_next=min(remaining_amt,best_market_remaining) if best_market_budget>0 else 0.0
-    coverage_ratio=(available_for_next/next_deploy_amt) if next_deploy_amt>0 else 0
+    coverage_ratio=(remaining_amt/next_deploy_amt) if next_deploy_amt>0 else 0
     coverage_text='Assign market budget' if best_market_budget<=0 else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x coverage')
     funding_ready = (next_deploy_amt <= 0) or (remaining_amt >= next_deploy_amt)
     funding_status = 'READY ✓' if funding_ready else 'INSUFFICIENT ✗'
@@ -3076,7 +3075,7 @@ def render_executive():
     active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
     confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
     edge=cde_historical_edge_all_markets()
-    edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
+    edge_html=f'''<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-end;margin-top:4px;"><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['success'])}</b><div style="font-size:9px;color:#475569;font-weight:700;">Success</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['avg3y'])}</b><div style="font-size:9px;color:#475569;font-weight:700;">Avg 3Y</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['recovery'])}</b><div style="font-size:9px;color:#475569;font-weight:700;">Recovery</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['worst3y'])}</b><div style="font-size:9px;color:#475569;font-weight:700;">Worst 3Y</div></div></div>'''
 
     score_tip=tooltip_html('Market Opportunity Score',[('Definition','Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only.'),('Key takeaway','Opportunities are ranked across all supported equity markets. Single-market execution and original detail remain inside Market Deep Dive.')],'Not a return forecast and not a detailed Market Deep Dive score.')
     global_macro_tip=tooltip_html('Global Macro Risk Regime',[('Scope','Consolidated all-market macro-risk view'),('Average Score',f'{global_risk_score:.0f}/100'),('Regime',global_regime)],'This is not the selected-market Macro Risk Score. Selected-market score remains inside Market Deep Dive.')
@@ -3106,7 +3105,7 @@ def render_executive():
         with action_col:
             st.markdown(f'''<div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><b>{hesc(funding_status)}</b><span>{fmt_sgd_html(remaining_amt)} available · next deploy {fmt_sgd_html(next_deploy_amt)} · {hesc(coverage_text)}</span></div></div></div>''', unsafe_allow_html=True)
         with watch_col:
-            st.markdown(f'''<div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div class="cde-card cde-edge-compact" style="margin-top:10px;padding:12px 14px;"><div class="cde-card-title">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div>''', unsafe_allow_html=True)
+            st.markdown(f'''<div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div style="margin-top:8px;padding:8px 12px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;"><div style="font-size:12px;font-weight:800;color:#0F172A;line-height:1.05;">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div>''', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
     # Market Opportunity Overview with Capital / Exposure Control aligned beside it.
@@ -3141,7 +3140,7 @@ def render_executive():
         if st.button('Portfolio & Trade Log →', key='control_portfolio_trade_log_button', use_container_width=True):
             st.session_state.active_section='📒 Trade Journal'
             st.rerun()
-        st.markdown(f'''<div class="cde-card cde-system-compact" style="margin-top:10px;padding:10px 14px;"><div class="cde-card-title">✓ System Status</div><div class="cde-card-sub">Systems OK · Data quality High · Model confidence Good</div></div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div style="margin-top:8px;padding:8px 12px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;"><div style="font-size:12px;font-weight:800;color:#0F172A;line-height:1.05;">✓ System Status</div><div style="font-size:11px;color:#475569;font-weight:700;line-height:1.25;margin-top:4px;">Systems OK · Data quality High · Model confidence Good</div></div>''', unsafe_allow_html=True)
 
 def render_market_deep_dive_summary():
     display_dd=min(dd,0.0)
@@ -3930,6 +3929,8 @@ def render_capital_management_page(view='overview'):
     base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
     total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input')
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
+    total_input=float(st.session_state.get('total_investible_capital_input',total_input) or 0)
+    manual_override=float(st.session_state.get('current_allocated_amount_input',manual_override) or 0)
     _save_capital_settings()
     if base_currency == 'SGD':
         st.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
@@ -3952,9 +3953,9 @@ def render_capital_management_page(view='overview'):
         if include_srs_local: st.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
         if include_cpf_local: st.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input'); st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
         st.info('Funding readiness now uses base-currency equivalents. USD 10k and HKD 10k are no longer treated as equal.')
-        render_market_allocation_budget_ui(base_symbol, total_input, compact=False)
+        render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
     elif view=='rules':
-        render_market_allocation_budget_ui(base_symbol, total_input, compact=False)
+        render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
         st.markdown('### Deployment Ladder')
         st.dataframe(pd.DataFrame([{'Zone':'HOLD / NO DEPLOYMENT','Trigger':'Above -8% drawdown','Cumulative Deploy':'0%'},{'Zone':'INITIAL BUY','Trigger':'-8% drawdown','Cumulative Deploy':'10%'},{'Zone':'BUY','Trigger':'-15% drawdown','Cumulative Deploy':'25%'},{'Zone':'STRONG BUY','Trigger':'-25% drawdown','Cumulative Deploy':'50%'},{'Zone':'CRISIS BUY','Trigger':'-35% drawdown','Cumulative Deploy':'75%'},{'Zone':'MAX CRISIS BUY','Trigger':'-50% drawdown','Cumulative Deploy':'100%'}]),use_container_width=True,hide_index=True)
     elif view=='funding': st.markdown('### Funding Plan'); st.info('Funding plan uses base-currency equivalents from executed trade entries and market allocation budgets. Manual override is portfolio-level actual exposure fallback only.')
