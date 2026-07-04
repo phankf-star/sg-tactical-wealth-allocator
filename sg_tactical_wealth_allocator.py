@@ -2792,9 +2792,9 @@ def render_market_allocation_budget_ui(base_symbol,total_input,compact=False):
     for mk in CDE_ALLOCATABLE_MARKETS:
         existing=float(alloc.get(mk,0.0) or 0.0)
         row_cols=st.columns([.16,1.0,.55,.8])
-        enabled=row_cols[0].checkbox('',value=existing>0,key='alloc_enable_'+re.sub(r'[^A-Za-z0-9]+','_',mk))
+        enabled=row_cols[0].checkbox('',value=existing>0,key='alloc_enable_'+re.sub(r'[^A-Za-z0-9]+','_',mk),on_change=_save_capital_settings)
         row_cols[1].markdown(f'<div class="cde-row-line"><b>{hesc(mk)}</b></div>',unsafe_allow_html=True)
-        pct=row_cols[2].number_input('% of total capital',min_value=0.0,max_value=100.0,value=existing if enabled else 0.0,step=1.0,key='alloc_pct_'+re.sub(r'[^A-Za-z0-9]+','_',mk),label_visibility='collapsed')
+        pct=row_cols[2].number_input('% of total capital',min_value=0.0,max_value=100.0,value=existing if enabled else 0.0,step=1.0,key='alloc_pct_'+re.sub(r'[^A-Za-z0-9]+','_',mk),label_visibility='collapsed',on_change=_save_capital_settings)
         if not enabled:
             pct=0.0
         alloc[mk]=float(pct)
@@ -3074,7 +3074,6 @@ def render_executive():
     active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
     confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
     edge=cde_historical_edge_all_markets()
-    edge_html=f'''<div style="display:grid;grid-template-columns:repeat(4,1fr);column-gap:6px;text-align:center;margin-top:4px;width:100%;"><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['success'])}</b><div style="font-size:9px;color:#475569;font-weight:700;line-height:1.1;">Success</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['avg3y'])}</b><div style="font-size:9px;color:#475569;font-weight:700;line-height:1.1;">Avg 3Y</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['recovery'])}</b><div style="font-size:9px;color:#475569;font-weight:700;line-height:1.1;">Recovery</div></div><div><b style="font-size:18px;color:#059669;line-height:1;">{hesc(edge['worst3y'])}</b><div style="font-size:9px;color:#475569;font-weight:700;line-height:1.1;">Worst 3Y</div></div></div>'''
 
     score_tip=tooltip_html('Market Opportunity Score',[('Definition','Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only.'),('Key takeaway','Opportunities are ranked across all supported equity markets. Single-market execution and original detail remain inside Market Deep Dive.')],'Not a return forecast and not a detailed Market Deep Dive score.')
     global_macro_tip=tooltip_html('Global Macro Risk Regime',[('Scope','Consolidated all-market macro-risk view'),('Average Score',f'{global_risk_score:.0f}/100'),('Regime',global_regime)],'This is not the selected-market Macro Risk Score. Selected-market score remains inside Market Deep Dive.')
@@ -3104,10 +3103,18 @@ def render_executive():
         with action_col:
             st.markdown(f'''<div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><b>{hesc(funding_status)}</b><span>{fmt_sgd_html(remaining_amt)} available · next deploy {fmt_sgd_html(next_deploy_amt)} · {hesc(coverage_text)}</span></div></div></div>''', unsafe_allow_html=True)
         with watch_col:
-            st.markdown(f'''<div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div><div style="margin-top:8px;padding:7px 10px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;overflow:hidden;"><div style="font-size:12px;font-weight:800;color:#0F172A;line-height:1.05;">Historical Edge — All Markets {edge_tip}</div>{edge_html}</div>''', unsafe_allow_html=True)
+            st.markdown(f'''<div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div>''', unsafe_allow_html=True)
+            with st.container(border=True):
+                st.markdown(f'<div style="font-size:12px;font-weight:800;line-height:1.05;margin-bottom:2px;">Historical Edge — All Markets {edge_tip}</div>', unsafe_allow_html=True)
+                he_cols=st.columns(4, gap='small')
+                he_items=[('Success',edge.get('success','N/A')),('Avg 3Y',edge.get('avg3y','N/A')),('Recovery',edge.get('recovery','N/A')),('Worst 3Y',edge.get('worst3y','N/A'))]
+                for he_col,(he_label,he_value) in zip(he_cols,he_items):
+                    he_col.markdown(f'<div style="text-align:center;line-height:1.05;"><div style="font-size:18px;font-weight:900;color:#059669;">{hesc(he_value)}</div><div style="font-size:9px;font-weight:700;color:#475569;">{hesc(he_label)}</div></div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # Market Opportunity Overview with Capital / Exposure Control aligned beside it.
+    edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
+
+    # Market Opportunity Overview with Historical Edge and System Status aligned beside it.
     opp_col, status_col = st.columns([2.25, .95], gap='large')
     with opp_col:
         try:
@@ -3925,8 +3932,8 @@ def render_capital_management_page(view='overview'):
     st.markdown('## 💰 Capital Management'); st.caption('Base-currency capital, funding readiness, allocation rules and safeguards.')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
-    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
-    total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input')
+    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency',on_change=_save_capital_settings); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input',on_change=_save_capital_settings)
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     total_input=float(st.session_state.get('total_investible_capital_input',total_input) or 0)
     manual_override=float(st.session_state.get('current_allocated_amount_input',manual_override) or 0)
