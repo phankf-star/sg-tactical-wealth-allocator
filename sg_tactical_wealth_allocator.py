@@ -2725,62 +2725,57 @@ def _load_capital_settings():
     try:
         if CAPITAL_SETTINGS_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
-            if isinstance(raw,dict):
-                data.update({k:v for k,v in raw.items() if k in data})
-            if not isinstance(data.get('market_allocation_budget_pct'),dict) or len(data.get('market_allocation_budget_pct',{}))==0:
+            if isinstance(raw,dict): data.update({k:v for k,v in raw.items() if k in data})
+            if not isinstance(data.get('market_allocation_budget_pct'),dict) or not data.get('market_allocation_budget_pct'):
                 data['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
-    except Exception:
-        pass
+    except Exception: pass
     return data
 
-def _save_capital_settings():
+def _save_capital_settings_values(base_currency=None,total_capital=None,manual_allocated=None,market_alloc=None):
     try:
-        data={'base_capital_currency':st.session_state.get('base_capital_currency','SGD'),
-              'total_investible_capital_input':float(st.session_state.get('total_investible_capital_input',100000.0) or 0),
-              'current_allocated_amount_input':float(st.session_state.get('current_allocated_amount_input',0.0) or 0),
-              'market_allocation_budget_pct':st.session_state.get('market_allocation_budget_pct',{})}
+        data={
+            'base_capital_currency': base_currency if base_currency is not None else st.session_state.get('base_capital_currency','SGD'),
+            'total_investible_capital_input': float(total_capital if total_capital is not None else st.session_state.get('total_investible_capital_input',100000.0) or 0),
+            'current_allocated_amount_input': float(manual_allocated if manual_allocated is not None else st.session_state.get('current_allocated_amount_input',0.0) or 0),
+            'market_allocation_budget_pct': market_alloc if market_alloc is not None else st.session_state.get('market_allocation_budget_pct',{}),
+        }
         CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
         return True
     except Exception:
         return False
 
+def _save_capital_settings():
+    return _save_capital_settings_values()
+
 def _init_capital_settings():
     data=_load_capital_settings()
     for key,val in data.items():
-        if key not in st.session_state:
-            st.session_state[key]=val
-    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict) or len(st.session_state.get('market_allocation_budget_pct',{}))==0:
+        if key not in st.session_state: st.session_state[key]=val
+    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict) or not st.session_state.get('market_allocation_budget_pct'):
         st.session_state['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
 
 def _market_allocation_pct(market):
     _init_capital_settings()
-    try:
-        return max(0.0,min(100.0,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0.0))))/100.0
-    except Exception:
-        return 0.0
+    try: return max(0.0,min(100.0,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0.0))))/100.0
+    except Exception: return 0.0
 
 def _market_budget_amount(market,total_cap=None):
-    if total_cap is None:
-        total_cap=float(st.session_state.get('total_investible_capital_input',100000.0) or 0)
+    if total_cap is None: total_cap=float(st.session_state.get('total_investible_capital_input',100000.0) or 0)
     return float(total_cap)*_market_allocation_pct(market)
 
 def _executed_base_exposure_by_market(base_currency):
     df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
-    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns:
-        return {},0.0
+    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns: return {},0.0
     executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-    if 'Base Currency' in executed.columns:
-        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
-    if executed.empty:
-        return {},0.0
+    if 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
+    if executed.empty: return {},0.0
     gp=executed.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in executed.columns else pd.Series(dtype=float)
     by_market={str(k):float(v) for k,v in gp.items()}
     return by_market,float(sum(by_market.values()))
 
 def _actual_deployed_base_amount(base_currency):
     by_market,total=_executed_base_exposure_by_market(base_currency)
-    if total>0:
-        return total,by_market,'trade_log'
+    if total>0: return total,by_market,'trade_log'
     manual=max(float(st.session_state.get('current_allocated_amount_input',0.0) or 0),0.0)
     return manual,{},'manual_override' if manual>0 else 'none'
 
@@ -2792,26 +2787,19 @@ def render_market_allocation_budget_ui(base_symbol,total_input,compact=False):
     for mk in CDE_ALLOCATABLE_MARKETS:
         existing=float(alloc.get(mk,0.0) or 0.0)
         row_cols=st.columns([.16,1.0,.55,.8])
-        enabled=row_cols[0].checkbox('',value=existing>0,key='alloc_enable_'+re.sub(r'[^A-Za-z0-9]+','_',mk),on_change=_save_capital_settings)
+        enabled=row_cols[0].checkbox('',value=existing>0,key='alloc_enable_'+re.sub(r'[^A-Za-z0-9]+','_',mk))
         row_cols[1].markdown(f'<div class="cde-row-line"><b>{hesc(mk)}</b></div>',unsafe_allow_html=True)
-        pct=row_cols[2].number_input('% of total capital',min_value=0.0,max_value=100.0,value=existing if enabled else 0.0,step=1.0,key='alloc_pct_'+re.sub(r'[^A-Za-z0-9]+','_',mk),label_visibility='collapsed',on_change=_save_capital_settings)
-        if not enabled:
-            pct=0.0
+        pct=row_cols[2].number_input('% of total capital',min_value=0.0,max_value=100.0,value=existing if enabled else 0.0,step=1.0,key='alloc_pct_'+re.sub(r'[^A-Za-z0-9]+','_',mk),label_visibility='collapsed')
+        if not enabled: pct=0.0
         alloc[mk]=float(pct)
         row_cols[3].markdown(f'<div class="cde-row-line">{base_symbol}{float(total_input)*float(pct)/100:,.0f}</div>',unsafe_allow_html=True)
         alloc_rows.append({'Market':mk,'Selected':'Yes' if enabled and pct>0 else 'No','Allocation %':pct,'Market Budget':float(total_input)*float(pct)/100})
-    total_assigned=sum(float(v or 0) for v in alloc.values())
     st.session_state['market_allocation_budget_pct']=alloc
-    _save_capital_settings()
-    unassigned=max(100.0-total_assigned,0.0)
-    a1,a2,a3=st.columns(3)
-    a1.metric('Total Assigned',f'{total_assigned:.0f}%')
-    a2.metric('Unassigned Dry Powder',f'{unassigned:.0f}%')
-    a3.metric('Unassigned Amount',f'{base_symbol}{float(total_input)*unassigned/100:,.0f}')
-    if total_assigned>100.0:
-        st.error('Total assigned allocation exceeds 100%. Please reduce one or more market allocations.')
-    if not compact:
-        st.dataframe(pd.DataFrame(alloc_rows),use_container_width=True,hide_index=True)
+    _save_capital_settings_values(total_capital=total_input,market_alloc=alloc)
+    total_assigned=sum(float(v or 0) for v in alloc.values()); unassigned=max(100.0-total_assigned,0.0)
+    a1,a2,a3=st.columns(3); a1.metric('Total Assigned',f'{total_assigned:.0f}%'); a2.metric('Unassigned Dry Powder',f'{unassigned:.0f}%'); a3.metric('Unassigned Amount',f'{base_symbol}{float(total_input)*unassigned/100:,.0f}')
+    if total_assigned>100.0: st.error('Total assigned allocation exceeds 100%. Please reduce one or more market allocations.')
+    if not compact: st.dataframe(pd.DataFrame(alloc_rows),use_container_width=True,hide_index=True)
     return alloc_rows,total_assigned,unassigned
 
 # ------------------------- app state/load -------------------------
@@ -2849,9 +2837,9 @@ with st.sidebar:
     with st.expander('Navigation', expanded=True):
         st.markdown('<div class="cde-nav-group-caption">Core dashboard routes</div>', unsafe_allow_html=True)
         if _nav_button('🧠 Executive Centre'):
-            st.session_state.active_section='🧠 Executive Centre'; st.rerun()
+            st.session_state.active_section='🧠 Executive Centre'
         if _nav_button('▣ Market Deep Dive'):
-            st.session_state.active_section='▣ Market Deep Dive'; st.rerun()
+            st.session_state.active_section='▣ Market Deep Dive'
         if st.session_state.active_section == '▣ Market Deep Dive':
             st.markdown('<div class="cde-subpanel">', unsafe_allow_html=True)
             ag_options=list(ASSET_GROUPS.keys())
@@ -2875,7 +2863,7 @@ with st.sidebar:
             if sel not in group_items:
                 sel='STI' if 'STI' in group_items else group_items[0]; st.session_state.selected_market_name=sel
         if _nav_button('🏆 Crash Analytics'):
-            st.session_state.active_section='🏆 Crash Analytics'; st.rerun()
+            st.session_state.active_section='🏆 Crash Analytics'
 
     active_section=st.session_state.active_section
     market_currency_code,market_currency_symbol,market_currency_html,market_currency_name=market_currency_info(sel)
@@ -2889,13 +2877,13 @@ with st.sidebar:
     with st.expander('Capital Management', expanded=True):
         st.markdown('<div class="cde-nav-group-caption">Capital input, funding plan and safeguard rules</div>', unsafe_allow_html=True)
         if _nav_button('💰 Investible Capital'):
-            st.session_state.active_section='💰 Investible Capital'; st.rerun()
+            st.session_state.active_section='💰 Investible Capital'
         if _nav_button('📊 Capital Overview'):
-            st.session_state.active_section='📊 Capital Overview'; st.rerun()
+            st.session_state.active_section='📊 Capital Overview'
         if _nav_button('🧾 Funding Plan'):
-            st.session_state.active_section='🧾 Funding Plan'; st.rerun()
+            st.session_state.active_section='🧾 Funding Plan'
         if _nav_button('🧮 Allocation Rules'):
-            st.session_state.active_section='🧮 Allocation Rules'; st.rerun()
+            st.session_state.active_section='🧮 Allocation Rules'
 
     total_investible_state=float(st.session_state.get('total_investible_capital_input', 100000.0))
     if base_currency_code == 'SGD':
@@ -2918,24 +2906,24 @@ with st.sidebar:
     with st.expander('Portfolio Overview', expanded=False):
         st.markdown('<div class="cde-nav-group-caption">Portfolio summary, exposure, full trade log and attribution</div>', unsafe_allow_html=True)
         if _nav_button('📌 Portfolio Summary'):
-            st.session_state.active_section='📌 Portfolio Summary'; st.rerun()
+            st.session_state.active_section='📌 Portfolio Summary'
         if _nav_button('📦 Holdings & Exposure'):
-            st.session_state.active_section='📦 Holdings & Exposure'; st.rerun()
+            st.session_state.active_section='📦 Holdings & Exposure'
         if _nav_button('📒 Trade Journal'):
-            st.session_state.active_section='📒 Trade Journal'; st.rerun()
+            st.session_state.active_section='📒 Trade Journal'
 
     with st.expander('Trade Entry', expanded=False):
         st.markdown('<div class="cde-nav-group-caption">Quick trade entry, pending orders and trigger monitor</div>', unsafe_allow_html=True)
         if _nav_button('📝 Trade Entry Form'):
-            st.session_state.active_section='📝 Trade Entry Form'; st.rerun()
+            st.session_state.active_section='📝 Trade Entry Form'
         if _nav_button('⏳ Pending Orders'):
-            st.session_state.active_section='⏳ Pending Orders'; st.rerun()
+            st.session_state.active_section='⏳ Pending Orders'
         if _nav_button('🎯 Trigger Monitor'):
-            st.session_state.active_section='🎯 Trigger Monitor'; st.rerun()
+            st.session_state.active_section='🎯 Trigger Monitor'
 
     with st.expander('Audit, Methodology & Export', expanded=False):
         if _nav_button('📡 Audit, Methodology & Export'):
-            st.session_state.active_section='📡 Audit, Methodology & Export'; st.rerun()
+            st.session_state.active_section='📡 Audit, Methodology & Export'
 
     st.markdown('---')
     if st.button('🔄 Refresh Market Data',use_container_width=True):
@@ -3043,12 +3031,10 @@ def render_executive():
     best_market_actual=max(float(actual_by_market.get(best['Market'],0.0)),0.0)
     if deployed_source=='manual_override' and best_market_actual<=0:
         best_market_actual=0.0
-    best_market_remaining=max(best_market_budget-best_market_actual,0)
     next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown'])
     next_target_amt=best_market_budget*safe_float(next_pct,best_deploy_pct)
     next_deploy_amt=max(next_target_amt-best_market_actual,0)
     next_increment=(next_deploy_amt/best_market_budget) if best_market_budget else 0
-    available_for_next=min(remaining_amt,best_market_remaining) if best_market_budget>0 else 0.0
     coverage_ratio=(remaining_amt/next_deploy_amt) if next_deploy_amt>0 else 0
     coverage_text='Assign market budget' if best_market_budget<=0 else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x coverage')
     funding_ready = (next_deploy_amt <= 0) or (remaining_amt >= next_deploy_amt)
@@ -3932,12 +3918,13 @@ def render_capital_management_page(view='overview'):
     st.markdown('## 💰 Capital Management'); st.caption('Base-currency capital, funding readiness, allocation rules and safeguards.')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
-    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency',on_change=_save_capital_settings); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
-    total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input',on_change=_save_capital_settings)
+    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input')
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
-    total_input=float(st.session_state.get('total_investible_capital_input',total_input) or 0)
-    manual_override=float(st.session_state.get('current_allocated_amount_input',manual_override) or 0)
-    _save_capital_settings()
+    total_input=float(total_input or 0); manual_override=float(manual_override or 0)
+    _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{}))
+    if st.button('Apply Capital Settings', key='apply_capital_settings_button', use_container_width=True):
+        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
     if base_currency == 'SGD':
         st.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
         st.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
