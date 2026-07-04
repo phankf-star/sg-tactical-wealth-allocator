@@ -2710,6 +2710,77 @@ def add_performance_and_gap(rows,market_name):
         out.append(row)
     return pd.DataFrame(out)
 
+CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
+CDE_ALLOCATABLE_MARKETS = ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','Gold','Bitcoin']
+
+def _default_capital_settings():
+    return {'base_capital_currency':'SGD','total_investible_capital_input':100000.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{}}
+
+def _load_capital_settings():
+    data=_default_capital_settings()
+    try:
+        if CAPITAL_SETTINGS_FILE.exists():
+            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
+            if isinstance(raw,dict):
+                data.update({k:v for k,v in raw.items() if k in data})
+            if not isinstance(data.get('market_allocation_budget_pct'),dict):
+                data['market_allocation_budget_pct']={}
+    except Exception:
+        pass
+    return data
+
+def _save_capital_settings():
+    try:
+        data={'base_capital_currency':st.session_state.get('base_capital_currency','SGD'),
+              'total_investible_capital_input':float(st.session_state.get('total_investible_capital_input',100000.0) or 0),
+              'current_allocated_amount_input':float(st.session_state.get('current_allocated_amount_input',0.0) or 0),
+              'market_allocation_budget_pct':st.session_state.get('market_allocation_budget_pct',{})}
+        CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
+        return True
+    except Exception:
+        return False
+
+def _init_capital_settings():
+    data=_load_capital_settings()
+    for k,v in data.items():
+        if k not in st.session_state:
+            st.session_state[k]=v
+    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict):
+        st.session_state['market_allocation_budget_pct']={}
+
+def _market_allocation_pct(market):
+    _init_capital_settings()
+    try:
+        return max(0,min(100,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0))))/100
+    except Exception:
+        return 0.0
+
+def _market_budget_amount(market,total_cap=None):
+    if total_cap is None:
+        total_cap=float(st.session_state.get('total_investible_capital_input',100000.0) or 0)
+    return float(total_cap)*_market_allocation_pct(market)
+
+def _executed_base_exposure_by_market(base_currency):
+    df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
+    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns:
+        return {},0.0
+    ex=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
+    if 'Base Currency' in ex.columns:
+        ex=ex[ex['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
+    if ex.empty:
+        return {},0.0
+    gp=ex.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in ex.columns else pd.Series(dtype=float)
+    by={str(k):float(v) for k,v in gp.items()}
+    return by,float(sum(by.values()))
+
+def _actual_deployed_base_amount(base_currency):
+    by,total=_executed_base_exposure_by_market(base_currency)
+    if total>0:
+        return total,by,'trade_log'
+    manual=max(float(st.session_state.get('current_allocated_amount_input',0.0) or 0),0.0)
+    return manual,{},'manual_override' if manual>0 else 'none'
+
+
 # ------------------------- app state/load -------------------------
 with st.spinner('Loading market data...'):
     m=market_data()
@@ -3708,76 +3779,6 @@ def render_market_deep_dive(expanded=True):
 # ─────────────────────────────────────────────────────────────────────────────
 # LP-R1 remaining scope — FX-normalised capital, Trade Entry and Portfolio Journal
 # ─────────────────────────────────────────────────────────────────────────────
-CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
-CDE_ALLOCATABLE_MARKETS = ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','Gold','Bitcoin']
-
-def _default_capital_settings():
-    return {'base_capital_currency':'SGD','total_investible_capital_input':100000.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{}}
-
-def _load_capital_settings():
-    data=_default_capital_settings()
-    try:
-        if CAPITAL_SETTINGS_FILE.exists():
-            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
-            if isinstance(raw,dict):
-                data.update({k:v for k,v in raw.items() if k in data})
-            if not isinstance(data.get('market_allocation_budget_pct'),dict):
-                data['market_allocation_budget_pct']={}
-    except Exception:
-        pass
-    return data
-
-def _save_capital_settings():
-    try:
-        data={'base_capital_currency':st.session_state.get('base_capital_currency','SGD'),
-              'total_investible_capital_input':float(st.session_state.get('total_investible_capital_input',100000.0) or 0),
-              'current_allocated_amount_input':float(st.session_state.get('current_allocated_amount_input',0.0) or 0),
-              'market_allocation_budget_pct':st.session_state.get('market_allocation_budget_pct',{})}
-        CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
-        return True
-    except Exception:
-        return False
-
-def _init_capital_settings():
-    data=_load_capital_settings()
-    for k,v in data.items():
-        if k not in st.session_state:
-            st.session_state[k]=v
-    if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict):
-        st.session_state['market_allocation_budget_pct']={}
-
-def _market_allocation_pct(market):
-    _init_capital_settings()
-    try:
-        return max(0,min(100,float((st.session_state.get('market_allocation_budget_pct',{}) or {}).get(market,0))))/100
-    except Exception:
-        return 0.0
-
-def _market_budget_amount(market,total_cap=None):
-    if total_cap is None:
-        total_cap=float(st.session_state.get('total_investible_capital_input',100000.0) or 0)
-    return float(total_cap)*_market_allocation_pct(market)
-
-def _executed_base_exposure_by_market(base_currency):
-    df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
-    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns:
-        return {},0.0
-    ex=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-    if 'Base Currency' in ex.columns:
-        ex=ex[ex['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
-    if ex.empty:
-        return {},0.0
-    gp=ex.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in ex.columns else pd.Series(dtype=float)
-    by={str(k):float(v) for k,v in gp.items()}
-    return by,float(sum(by.values()))
-
-def _actual_deployed_base_amount(base_currency):
-    by,total=_executed_base_exposure_by_market(base_currency)
-    if total>0:
-        return total,by,'trade_log'
-    manual=max(float(st.session_state.get('current_allocated_amount_input',0.0) or 0),0.0)
-    return manual,{},'manual_override' if manual>0 else 'none'
-
 TRADE_LOG_FILE = Path('cde_trade_log.csv')
 TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Created At']
 
