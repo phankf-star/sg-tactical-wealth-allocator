@@ -1,2 +1,3 @@
 ﻿run_utc,market,indicator,reason
-2026-06-28T00:20:22Z,MY,Unemployment,"OpenDOSM unemployment fetch failed: Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']"
+2026-07-05T09:48:40Z,MY,Unemployment,"OpenDOSM unemployment fetch failed: Could not identify unemployment date/value columns; columns=['lf', 'date', 'p_rate', 'u_rate', 'ep_ratio', 'lf_outside', 'lf_employed', 'lf_unemployed']"
+2026-07-05T09:48:41Z,MY,PMI,Malaysia PMI parser failed: Could not parse Malaysia Manufacturing PMI
