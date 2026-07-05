@@ -2765,11 +2765,18 @@ def _market_budget_amount(market,total_cap=None):
 
 def _executed_base_exposure_by_market(base_currency):
     df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
-    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns: return {},0.0
+    if not isinstance(df,pd.DataFrame) or df.empty or 'Base Currency Equivalent' not in df.columns:
+        return {},0.0
+    if 'Entry Status' in df.columns:
+        df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
     executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-    if 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
-    if executed.empty: return {},0.0
-    gp=executed.groupby('Market')['Base Currency Equivalent'].sum() if 'Market' in executed.columns else pd.Series(dtype=float)
+    if 'Base Currency' in executed.columns:
+        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(str(base_currency).upper())]
+    if executed.empty:
+        return {},0.0
+    side=executed['Side'].astype(str).str.upper() if 'Side' in executed.columns else pd.Series(['BUY']*len(executed),index=executed.index)
+    executed['_Signed Base Equivalent']=np.where(side.eq('SELL'),-executed['Base Currency Equivalent'].astype(float),executed['Base Currency Equivalent'].astype(float))
+    gp=executed.groupby('Market')['_Signed Base Equivalent'].sum() if 'Market' in executed.columns else pd.Series(dtype=float)
     by_market={str(k):float(v) for k,v in gp.items()}
     return by_market,float(sum(by_market.values()))
 
@@ -3035,11 +3042,26 @@ def render_executive():
     next_target_amt=best_market_budget*safe_float(next_pct,best_deploy_pct)
     next_deploy_amt=max(next_target_amt-best_market_actual,0)
     next_increment=(next_deploy_amt/best_market_budget) if best_market_budget else 0
-    coverage_ratio=(remaining_amt/next_deploy_amt) if next_deploy_amt>0 else 0
-    coverage_text='Assign market budget' if best_market_budget<=0 else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x coverage')
-    funding_ready = (next_deploy_amt <= 0) or (remaining_amt >= next_deploy_amt)
+    active_trade_df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
+    if isinstance(active_trade_df,pd.DataFrame) and not active_trade_df.empty and 'Entry Status' in active_trade_df.columns:
+        active_trade_df=active_trade_df[~active_trade_df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
+    pending_by_market={}
+    if isinstance(active_trade_df,pd.DataFrame) and not active_trade_df.empty and 'Base Currency Equivalent' in active_trade_df.columns:
+        pending_df=active_trade_df[active_trade_df['Status'].astype(str).str.lower().eq('pending')].copy()
+        if 'Base Currency' in pending_df.columns:
+            pending_df=pending_df[pending_df['Base Currency'].astype(str).str.upper().eq(str(currency_code).upper())]
+        if not pending_df.empty and 'Market' in pending_df.columns:
+            pending_by_market={str(k):float(v) for k,v in pending_df.groupby('Market')['Base Currency Equivalent'].sum().items()}
+    best_market_pending=max(float(pending_by_market.get(best['Market'],0.0)),0.0)
+    best_market_available=max(best_market_budget-best_market_actual-best_market_pending,0.0)
+    coverage_ratio=(best_market_available/next_deploy_amt) if next_deploy_amt>0 else 0
+    coverage_text='Assign market budget' if best_market_budget<=0 else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x market coverage')
+    funding_ready = (next_deploy_amt <= 0) or (best_market_available >= next_deploy_amt)
     funding_status = 'READY ✓' if funding_ready else 'INSUFFICIENT ✗'
     funding_status_class = 'cde-funding-ready' if funding_ready else 'cde-funding-insufficient'
+    top_funding_ready = (remaining_amt > 0) or (next_deploy_amt <= 0)
+    top_funding_status = 'READY ✓' if top_funding_ready else 'INSUFFICIENT ✗'
+    top_funding_status_class = 'cde-funding-ready' if top_funding_ready else 'cde-funding-insufficient'
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
     market_rows=[]
     try:
@@ -3071,7 +3093,7 @@ def render_executive():
     env_html=f'''<div class="cde-env-compact"><div><b>Volatility:</b> {hesc(vol_value)}</div><div><b>Credit:</b> Tightening</div><div><b>Liquidity:</b> Neutral</div><div><b>Growth:</b> Moderate</div></div>'''
 
     # Top layer locked.
-    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-funding-status {funding_status_class}">{hesc(funding_status)}</div><div class="cde-funding-amount">{fmt_sgd_html(remaining_amt)} available</div><div class="cde-card-sub">Next deploy {fmt_sgd_html(next_deploy_amt)} · {hesc(coverage_text)}</div></div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div><div class="cde-refresh-box">Market data as of<br><span class="cde-pill">{datetime.now().strftime('%d %b %Y %H:%M SGT')}</span></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-funding-status {top_funding_status_class}">{hesc(top_funding_status)}</div><div class="cde-funding-amount">{fmt_sgd_html(remaining_amt)} available</div><div class="cde-card-sub">Portfolio-level dry powder</div></div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
 
     # Deployment & Capital Command Centre — Primary Deployment Action first, Watchlist second.
     watch_items=[]
@@ -3082,12 +3104,12 @@ def render_executive():
     watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span>{hesc(w['Distance'])} away</span><em>{hesc(w['Trigger'])}</em></div>''' for w in watch_items])
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
 
-    st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div><div class="cde-dcc-sub">Primary deployment action first; trigger watchlist as supporting monitor.</div>', unsafe_allow_html=True)
+    st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
     st.markdown('<div class="cde-dcc-parent">', unsafe_allow_html=True)
     with st.container(border=True):
         action_col, watch_col = st.columns([0.71,0.29], gap='small')
         with action_col:
-            st.markdown(f'''<div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><b>{hesc(funding_status)}</b><span>{fmt_sgd_html(remaining_amt)} available · next deploy {fmt_sgd_html(next_deploy_amt)} · {hesc(coverage_text)}</span></div></div></div>''', unsafe_allow_html=True)
+            st.markdown(f'''<div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best['Market'])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best['Drawdown']:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><b>{hesc(funding_status)}</b><span>{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available · {hesc(coverage_text)}</span></div></div></div>''', unsafe_allow_html=True)
         with watch_col:
             st.markdown(f'''<div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div>''', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
@@ -3123,7 +3145,7 @@ def render_executive():
                     st.rerun()
     with status_col:
         st.markdown(f'''<div style="margin-bottom:8px;padding:8px 10px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;"><div style="font-size:12px;font-weight:800;line-height:1.05;margin-bottom:4px;">Historical Edge — All Markets {edge_tip}</div><table style="width:100%;border-collapse:collapse;table-layout:fixed;text-align:center;"><tr><td><div style="font-size:18px;font-weight:900;color:#059669;line-height:1;">{hesc(edge['success'])}</div><div style="font-size:9px;font-weight:700;color:#475569;line-height:1.1;">Success</div></td><td><div style="font-size:18px;font-weight:900;color:#059669;line-height:1;">{hesc(edge['avg3y'])}</div><div style="font-size:9px;font-weight:700;color:#475569;line-height:1.1;">Avg 3Y</div></td><td><div style="font-size:18px;font-weight:900;color:#059669;line-height:1;">{hesc(edge['recovery'])}</div><div style="font-size:9px;font-weight:700;color:#475569;line-height:1.1;">Recovery</div></td><td><div style="font-size:18px;font-weight:900;color:#059669;line-height:1;">{hesc(edge['worst3y'])}</div><div style="font-size:9px;font-weight:700;color:#475569;line-height:1.1;">Worst 3Y</div></td></tr></table></div>''', unsafe_allow_html=True)
-        st.markdown(f'''<div class="cde-control-card"><div class="cde-control-title">Capital Control</div><div class="cde-control-row"><span>Total Capital</span><b>{fmt_sgd_html(total_cap)}</b><em>100%</em></div><div class="cde-control-row"><span>Actual Allocated</span><b>{fmt_sgd_html(deployed_amt)}</b><em>{alloc_pct:.0%}</em></div><div class="cde-control-row"><span>Dry Powder</span><b>{fmt_sgd_html(remaining_amt)}</b><em>{dry_pct:.0%}</em></div><div class="cde-control-row"><span>{hesc(best['Market'])} Budget</span><b>{fmt_sgd_html(best_market_budget)}</b><em>{_market_allocation_pct(best['Market']):.0%}</em></div></div><div style="margin-top:8px;padding:8px 12px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;"><div style="font-size:12px;font-weight:800;color:#0F172A;line-height:1.05;">Actual Exposure</div><div style="margin-top:4px;">{market_exposure_html}</div></div></div>''', unsafe_allow_html=True)
+        st.markdown(f'''<div class="cde-control-card"><div class="cde-control-title">Capital Position</div><div class="cde-control-row"><span>Total Capital</span><b>{fmt_sgd_html(total_cap)}</b><em>100%</em></div><div class="cde-control-row"><span>Actual Deployed</span><b>{fmt_sgd_html(deployed_amt)}</b><em>{alloc_pct:.0%}</em></div><div class="cde-control-row"><span>Dry Powder</span><b>{fmt_sgd_html(remaining_amt)}</b><em>{dry_pct:.0%}</em></div><div class="cde-control-row"><span>{hesc(best['Market'])} Budget</span><b>{fmt_sgd_html(best_market_budget)}</b><em>{_market_allocation_pct(best['Market']):.0%}</em></div></div><div style="margin-top:8px;padding:8px 12px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;"><div style="font-size:12px;font-weight:800;color:#0F172A;line-height:1.05;">Actual Exposure</div><div style="margin-top:4px;">{market_exposure_html}</div></div></div>''', unsafe_allow_html=True)
         if st.button('Portfolio & Trade Log →', key='control_portfolio_trade_log_button', use_container_width=True):
             st.session_state.active_section='📒 Trade Journal'
             st.rerun()
@@ -3799,7 +3821,7 @@ def render_market_deep_dive(expanded=True):
 # LP-R1 remaining scope — FX-normalised capital, Trade Entry and Portfolio Journal
 # ─────────────────────────────────────────────────────────────────────────────
 TRADE_LOG_FILE = Path('cde_trade_log.csv')
-TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Created At']
+TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Entry Status','Void Reason','Voided At','Created At']
 
 def fetch_fx_rate_yahoo(from_ccy, to_ccy):
     from_ccy=str(from_ccy or '').upper().strip(); to_ccy=str(to_ccy or '').upper().strip()
@@ -3873,7 +3895,7 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
         submitted=st.form_submit_button('Save Trade Entry',use_container_width=True)
     if submitted:
         gross=float(quantity)*float(price); net_trade=gross+float(fees) if side=='BUY' else gross-float(fees); base_equiv=net_trade*float(fx_rate or 0)
-        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Trade Currency':trade_ccy,'FX Rate to Base':float(fx_rate or 0),'Base Currency':base_ccy,'Base Currency Equivalent':base_equiv,'FX Source':fx_src,'FX Timestamp':fx_dt,'Trigger Level':trigger_level,'Notes':notes,'Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
+        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Trade Currency':trade_ccy,'FX Rate to Base':float(fx_rate or 0),'Base Currency':base_ccy,'Base Currency Equivalent':base_equiv,'FX Source':fx_src,'FX Timestamp':fx_dt,'Trigger Level':trigger_level,'Notes':notes,'Entry Status':'Active','Void Reason':'','Voided At':'','Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
         if not row['Ticker'] or quantity<=0 or price<=0 or fx_rate<=0: st.warning('Please enter ticker, quantity, price and FX rate before saving.')
         elif _append_trade_row(row): st.success(f'Trade saved. Base equivalent: {CURRENCY_SYMBOL_MAP.get(base_ccy,base_ccy)}{base_equiv:,.2f}.'); st.rerun()
 
@@ -3894,19 +3916,166 @@ def render_trade_entry_page(view='form'):
     st.markdown('### Full Trade Entry Form'); _trade_entry_form('full_trade_entry')
 
 def render_portfolio_trade_journal(view='journal'):
-    st.markdown('## 📒 Portfolio Overview / Trade Journal'); st.caption('Portfolio summary, holdings/exposure, full trade log and performance attribution.')
+    st.markdown('## \U0001f4d2 Portfolio Overview / Trade Journal')
+    st.caption('One consolidated portfolio page with Portfolio Summary, Holdings & Exposure, full Trade Journal and portfolio-performance attribution.')
     df=_trade_log_with_numeric()
-    if df.empty: st.info('No trade entries recorded yet. Use Trade Entry → Trade Entry Form or the pop-up quick entry.'); return
-    base_ccy=st.session_state.get('base_capital_currency','SGD'); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-    if 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_ccy)]
-    net_invested=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
-    k1,k2,k3,k4=st.columns(4); k1.metric('Recorded Trades',len(df)); k2.metric('Executed Base Equivalent',fmt_sgd(net_invested)); k3.metric('Pending Orders',int(df['Status'].astype(str).str.lower().eq('pending').sum())); k4.metric('Markets Covered',df['Market'].nunique())
-    st.markdown('### Holdings & Exposure by Market')
-    if executed.empty: st.info('No executed trades available for holdings/exposure summary.')
+    if df.empty:
+        st.info('No trade entries recorded yet. Use Trade Entry -> Trade Entry Form or the pop-up quick entry.')
+        return
+    for c in ['Entry Status','Void Reason','Voided At']:
+        if c not in df.columns:
+            df[c]=''
+    df['Entry Status']=df['Entry Status'].replace('', 'Active').fillna('Active')
+    base_ccy=st.session_state.get('base_capital_currency','SGD')
+
+    active_df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
+    market_options=sorted([x for x in active_df.get('Market',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
+    ticker_options=sorted([x for x in active_df.get('Ticker',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
+    f1,f2=st.columns([1,1])
+    selected_markets=f1.multiselect('Market filter',market_options,default=[],key='portfolio_market_filter')
+    selected_tickers=f2.multiselect('Ticker filter',ticker_options,default=[],key='portfolio_ticker_filter')
+    def _apply_filters(src_df):
+        out=src_df.copy()
+        if selected_markets and 'Market' in out.columns:
+            out=out[out['Market'].astype(str).isin(selected_markets)]
+        if selected_tickers and 'Ticker' in out.columns:
+            out=out[out['Ticker'].astype(str).isin(selected_tickers)]
+        return out
+    active_filtered=_apply_filters(active_df)
+    df_filtered=_apply_filters(df)
+    executed=active_filtered[active_filtered['Status'].astype(str).str.lower().eq('executed')].copy() if not active_filtered.empty else pd.DataFrame()
+    if not executed.empty and 'Base Currency' in executed.columns:
+        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_ccy)]
+    side=executed['Side'].astype(str).str.upper() if not executed.empty and 'Side' in executed.columns else pd.Series(dtype=str)
+    if not executed.empty:
+        executed['_Signed Quantity']=np.where(side.eq('SELL'),-executed['Quantity'].astype(float),executed['Quantity'].astype(float))
+        executed['_Signed Base Equivalent']=np.where(side.eq('SELL'),-executed['Base Currency Equivalent'].astype(float),executed['Base Currency Equivalent'].astype(float))
+    net_invested=float(executed['_Signed Base Equivalent'].sum()) if not executed.empty and '_Signed Base Equivalent' in executed.columns else 0.0
+
+    k1,k2,k3,k4=st.columns(4)
+    k1.metric('Recorded Trades',len(active_df))
+    k2.metric('Executed Base Equivalent',fmt_sgd(net_invested))
+    k3.metric('Pending Orders',int(active_df['Status'].astype(str).str.lower().eq('pending').sum()) if not active_df.empty else 0)
+    k4.metric('Markets Covered',active_df['Market'].nunique() if 'Market' in active_df.columns else 0)
+
+    default_section={'summary':'Portfolio Summary','holdings':'Holdings & Exposure','journal':'Trade Journal'}.get(view,'Trade Journal')
+    sections=['Portfolio Summary','Holdings & Exposure','Trade Journal']
+    section=st.radio('Portfolio section',sections,index=sections.index(default_section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
+
+    def _latest_price_and_value(row):
+        ticker=str(row.get('Ticker','')).strip().upper()
+        trade_ccy=str(row.get('Trade Currency','')).strip().upper() or base_ccy
+        qty=safe_float(row.get('Net Quantity'),0.0)
+        if not ticker or qty==0:
+            return pd.Series({'Current Price':np.nan,'Current Value Base':np.nan,'Unrealised P/L':np.nan})
+        try:
+            px_df=hist(ticker,'2026-01-01')
+            if px_df is None or px_df.empty:
+                px_df=hist(ticker,'2020-01-01')
+            if px_df is None or px_df.empty:
+                return pd.Series({'Current Price':np.nan,'Current Value Base':np.nan,'Unrealised P/L':np.nan})
+            latest_px=safe_float(px_df.Close.iloc[-1],np.nan)
+            fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
+            current_value=qty*latest_px*float(fx or 0)
+            pnl=current_value-safe_float(row.get('Base Cost'),0.0)
+            return pd.Series({'Current Price':latest_px,'Current Value Base':current_value,'Unrealised P/L':pnl})
+        except Exception:
+            return pd.Series({'Current Price':np.nan,'Current Value Base':np.nan,'Unrealised P/L':np.nan})
+
+    def _build_holdings():
+        if executed.empty:
+            return pd.DataFrame()
+        grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(
+            **{'Net Quantity':('_Signed Quantity','sum'),'Base Cost':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}
+        ).reset_index()
+        if grp.empty:
+            return grp
+        val=grp.apply(_latest_price_and_value,axis=1)
+        grp=pd.concat([grp,val],axis=1)
+        total_current=pd.to_numeric(grp['Current Value Base'],errors='coerce').sum()
+        total_cost=pd.to_numeric(grp['Base Cost'],errors='coerce').sum()
+        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value Base']/total_current*100,np.nan)
+        grp['Contribution to Portfolio P/L %']=np.where(total_cost!=0,grp['Unrealised P/L']/abs(total_cost)*100,np.nan)
+        return grp
+
+    holdings=_build_holdings()
+
+    if section=='Portfolio Summary':
+        st.markdown('### Portfolio Summary')
+        total_cap=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0)
+        dry_powder=max(total_cap-net_invested,0.0) if total_cap else 0.0
+        s1,s2,s3,s4=st.columns(4)
+        s1.metric('Total Capital',fmt_sgd(total_cap))
+        s2.metric('Actual Deployed',fmt_sgd(net_invested))
+        s3.metric('Dry Powder',fmt_sgd(dry_powder))
+        s4.metric('Deployment %',f'{(net_invested/total_cap*100):.0f}%' if total_cap else 'N/A')
+        st.markdown('### Market Allocation Usage')
+        alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {})
+        usage_rows=[]
+        deployed_by_market=executed.groupby('Market')['_Signed Base Equivalent'].sum().to_dict() if not executed.empty and 'Market' in executed.columns else {}
+        for mk,pct in alloc.items():
+            pct=float(pct or 0)
+            if pct<=0 and mk not in deployed_by_market:
+                continue
+            budget=total_cap*pct/100 if total_cap else 0.0
+            actual=float(deployed_by_market.get(mk,0.0))
+            usage_rows.append({'Market':mk,'Budget %':pct,'Market Budget':budget,'Actual Deployed':actual,'Remaining Budget':max(budget-actual,0.0),'Usage %':(actual/budget*100) if budget else 0.0})
+        if usage_rows:
+            st.dataframe(pd.DataFrame(usage_rows),use_container_width=True,hide_index=True)
+        else:
+            st.info('No market allocation budget or deployed exposure available yet.')
+        st.markdown('### Performance Attribution')
+        if holdings.empty:
+            st.info('No executed active holdings available for attribution.')
+        else:
+            attr=holdings.groupby('Market',dropna=False).agg(**{'Base Cost':('Base Cost','sum'),'Current Value Base':('Current Value Base','sum'),'Unrealised P/L':('Unrealised P/L','sum')}).reset_index()
+            total_cost=abs(pd.to_numeric(attr['Base Cost'],errors='coerce').sum())
+            total_current=pd.to_numeric(attr['Current Value Base'],errors='coerce').sum()
+            attr['Portfolio Weight %']=np.where(total_current>0,attr['Current Value Base']/total_current*100,np.nan)
+            attr['Contribution to Portfolio P/L %']=np.where(total_cost>0,attr['Unrealised P/L']/total_cost*100,np.nan)
+            st.dataframe(attr,use_container_width=True,hide_index=True)
+    elif section=='Holdings & Exposure':
+        st.markdown('### Holdings & Exposure by Market / Ticker')
+        if holdings.empty:
+            st.info('No executed active trades available for holdings/exposure summary.')
+        else:
+            st.dataframe(holdings,use_container_width=True,hide_index=True)
     else:
-        exp=executed.groupby(['Market','Ticker','Base Currency'],dropna=False).agg(Quantity=('Quantity','sum'),Base_Equivalent=('Base Currency Equivalent','sum'),Trades=('Ticker','count')).reset_index(); st.dataframe(exp,use_container_width=True,hide_index=True)
-    st.markdown('### Full Trade Log'); st.dataframe(df,use_container_width=True,hide_index=True); st.download_button('⬇️ Export Trade Journal CSV',df.to_csv(index=False),file_name='cde_trade_journal.csv',mime='text/csv',use_container_width=True)
-    st.markdown('### Performance Attribution'); st.dataframe(executed.groupby(['Market','Side'],dropna=False).agg(Trades=('Ticker','count'),Base_Equivalent=('Base Currency Equivalent','sum')).reset_index() if not executed.empty else pd.DataFrame(),use_container_width=True,hide_index=True)
+        st.markdown('### Full Trade Log')
+        st.caption('Void keeps an audit trail and excludes the entry from portfolio calculations. Remove deletes the selected row from the active CSV log.')
+        st.dataframe(df_filtered,use_container_width=True,hide_index=True)
+        if not df_filtered.empty:
+            options=[]
+            for idx,row in df_filtered.iterrows():
+                options.append((idx,f"{idx} | {row.get('Trade Date','')} | {row.get('Market','')} | {row.get('Ticker','')} | {row.get('Side','')} | {row.get('Entry Status','Active')} | {base_ccy}{safe_float(row.get('Base Currency Equivalent'),0):,.0f}"))
+            option_label=[x[1] for x in options]
+            chosen=st.selectbox('Select entry for correction',option_label,key='trade_journal_entry_action_select')
+            chosen_idx=options[option_label.index(chosen)][0]
+            reason=st.text_input('Void / remove reason',value='',placeholder='e.g. Wrong entry / duplicate / testing row',key='trade_journal_void_reason')
+            a1,a2=st.columns(2)
+            if a1.button('Void selected entry',use_container_width=True,key='void_selected_trade_entry'):
+                original=_load_trade_log()
+                for c in ['Entry Status','Void Reason','Voided At']:
+                    if c not in original.columns:
+                        original[c]=''
+                original.loc[chosen_idx,'Entry Status']='Voided'
+                original.loc[chosen_idx,'Void Reason']=reason or 'Voided by user'
+                original.loc[chosen_idx,'Voided At']=datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')
+                if _save_trade_log(original):
+                    st.success('Selected trade entry voided and excluded from portfolio calculations.')
+                    st.rerun()
+            if a2.button('Remove selected entry',use_container_width=True,key='remove_selected_trade_entry'):
+                original=_load_trade_log()
+                original=original.drop(index=chosen_idx).reset_index(drop=True)
+                if _save_trade_log(original):
+                    st.success('Selected trade entry removed from the trade log.')
+                    st.rerun()
+        st.download_button('⬇️ Export Trade Journal CSV',df.to_csv(index=False),file_name='cde_trade_journal.csv',mime='text/csv',use_container_width=True)
+        st.markdown('### Performance Attribution')
+        if holdings.empty:
+            st.info('No executed active holdings available for attribution.')
+        else:
+            st.dataframe(holdings[['Market','Ticker','Base Cost','Current Value Base','Unrealised P/L','Portfolio Weight %','Contribution to Portfolio P/L %']],use_container_width=True,hide_index=True)
 
 def render_capital_management_page(view='overview'):
     _init_capital_settings()
