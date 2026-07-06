@@ -126,6 +126,97 @@ st.markdown('''
 .cde-action-status-box span{white-space:normal!important;line-height:1.45!important;}
 @media (max-width:900px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-next-action-grid{grid-template-columns:1fr!important;}}
 
+
+
+/* CDE LP final correction 2026-07-06: Primary left 71%, Watchlist right 29%, softer Next Deployment. */
+.cde-dcc-parent{width:100%!important;overflow:visible!important;}
+.cde-command-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,71fr) minmax(280px,29fr)!important;
+  grid-template-areas:"primary watch"!important;
+  gap:16px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.cde-command-grid>.cde-primary-action-card{
+  grid-area:primary!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  order:0!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
+.cde-command-grid>.cde-watch-panel-card{
+  grid-area:watch!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  order:0!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+  overflow:visible!important;
+}
+.cde-primary-action-card{display:flex!important;flex-direction:column!important;gap:0!important;}
+.cde-action-row{position:relative!important;z-index:2!important;margin-bottom:12px!important;}
+.cde-next-action-grid{
+  position:relative!important;
+  z-index:1!important;
+  margin-top:8px!important;
+  clear:both!important;
+  display:grid!important;
+  grid-template-columns:minmax(240px,.95fr) minmax(260px,1.25fr)!important;
+  gap:12px!important;
+  align-items:stretch!important;
+}
+.cde-next-deployment-hero{
+  position:relative!important;
+  z-index:1!important;
+  min-height:82px!important;
+  padding:10px 14px!important;
+  border:1px solid #cfe0f5!important;
+  border-left:3px solid #3b82f6!important;
+  border-radius:13px!important;
+  background:#f8fbff!important;
+  box-shadow:none!important;
+}
+.cde-next-deployment-hero .cde-dcc-section-title{
+  font-size:13.5px!important;
+  line-height:1.1!important;
+  margin-bottom:5px!important;
+}
+.cde-next-deployment-hero .cde-next-amount{
+  font-size:clamp(22px,2.05vw,30px)!important;
+  line-height:1.02!important;
+  font-weight:900!important;
+  letter-spacing:-.02em!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+  white-space:normal!important;
+}
+.cde-next-deployment-hero .cde-action-line{
+  margin-top:5px!important;
+  font-size:11px!important;
+  line-height:1.2!important;
+}
+.cde-action-status-box{
+  height:auto!important;
+  min-height:82px!important;
+  padding:11px 13px!important;
+  overflow:visible!important;
+  white-space:normal!important;
+  background:#f8fafc!important;
+  box-shadow:none!important;
+}
+.cde-action-status-box b{font-size:16px!important;line-height:1.1!important;}
+.cde-action-status-box span{font-size:10.5px!important;line-height:1.45!important;white-space:normal!important;}
+@media (max-width:900px){
+  .cde-command-grid{grid-template-columns:1fr!important;grid-template-areas:"primary" "watch"!important;}
+  .cde-next-action-grid{grid-template-columns:1fr!important;}
+}
+
 </style>
 ''', unsafe_allow_html=True)
 
