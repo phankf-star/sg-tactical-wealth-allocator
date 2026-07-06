@@ -399,6 +399,7 @@ st.markdown("""
 .cde-kpi-grid .cde-card{min-height:132px !important;height:100% !important;box-sizing:border-box !important;}
 .cde-flag-circle{width:18px !important;height:18px !important;min-width:18px !important;display:inline-flex !important;align-items:center !important;justify-content:center !important;margin-right:8px !important;vertical-align:-2px !important;line-height:1 !important;font-size:14px !important;border-radius:999px !important;background:#f8fafc !important;border:1px solid #e2e8f0 !important;}
 .cde-row-line .cde-flag-circle,.cde-action-mini .cde-flag-circle,.cde-watch-row .cde-flag-circle{width:16px !important;height:16px !important;min-width:16px !important;font-size:12px !important;margin-right:6px !important;}
+.cde-flag-img{display:inline-block!important;width:18px!important;height:18px!important;min-width:18px!important;border-radius:999px!important;object-fit:cover!important;margin-right:8px!important;vertical-align:-3px!important;border:1px solid #d3dfec!important;background:#fff!important;box-shadow:0 1px 1px rgba(15,23,42,.08)!important}.cde-main-value .cde-flag-img{width:22px!important;height:22px!important;min-width:22px!important;vertical-align:-4px!important}.cde-row-line .cde-flag-img,.cde-action-mini .cde-flag-img,.cde-watch-item .cde-flag-img{width:16px!important;height:16px!important;min-width:16px!important;margin-right:6px!important;vertical-align:-3px!important}.xec-title .cde-flag-img{width:24px!important;height:24px!important;min-width:24px!important;margin:0 8px 0 4px!important;vertical-align:-5px!important}.xec-eyebrow .cde-flag-img{width:17px!important;height:17px!important;min-width:17px!important;margin-right:6px!important;vertical-align:-3px!important}
 .cde-dcc-parent{margin-top:8px !important;margin-bottom:22px !important;}
 .cde-command-grid{display:grid !important;grid-template-columns:minmax(250px,29%) minmax(0,71%) !important;gap:16px !important;align-items:stretch !important;border:1px solid #d3dfec !important;border-radius:14px !important;padding:12px !important;background:#fff !important;box-sizing:border-box !important;}
 .cde-command-grid .cde-watch-panel-card,.cde-command-grid .cde-primary-action-card{height:100% !important;min-height:190px !important;box-sizing:border-box !important;}
@@ -1757,6 +1758,44 @@ if 'pmi_history' not in st.session_state: st.session_state.pmi_history = {}
 
 def hesc(v):
     return str(v).replace('&','&amp;').replace('<','&lt;').replace('>','&gt;').replace('"','&quot;').replace("'",'&#39;')
+
+
+# Fixed flag assets: stable rendering independent of browser emoji support.
+MARKET_FLAG_ASSET_MAP = {
+    'HSI': 'assets/flags/hk.svg',
+    'S&P 500': 'assets/flags/us.svg',
+    'Nasdaq': 'assets/flags/us.svg',
+    'DJIA': 'assets/flags/us.svg',
+    'STI': 'assets/flags/sg.svg',
+    'KLSE': 'assets/flags/my.svg',
+    'Nikkei 225': 'assets/flags/jp.svg',
+    'A-Share': 'assets/flags/cn.svg',
+    'Gold': 'assets/flags/us.svg',
+    'Bitcoin': 'assets/flags/us.svg',
+}
+
+def _flag_svg_data_uri(asset_path):
+    """Return an inline SVG data URI so Streamlit HTML can render local repo assets reliably."""
+    try:
+        fp = Path(asset_path)
+        if not fp.exists():
+            return ''
+        svg = fp.read_text(encoding='utf-8').strip()
+        if not svg:
+            return ''
+        return 'data:image/svg+xml;utf8,' + urllib.parse.quote(svg)
+    except Exception:
+        return ''
+
+def market_flag_asset_html(market_name, class_name='cde-flag-img'):
+    asset_path = MARKET_FLAG_ASSET_MAP.get(str(market_name), '')
+    uri = _flag_svg_data_uri(asset_path) if asset_path else ''
+    if not uri:
+        return ''
+    return f'<img class="{class_name}" src="{uri}" alt="" aria-hidden="true" />'
+
+def market_label_with_flag_html(market_name):
+    return f'{market_flag_asset_html(market_name)}{hesc(market_name)}'
 
 def kv(label, value, colour=TEXT):
     return f'<div class="kv"><div class="kv-label">{label}</div><div class="kv-value" style="color:{colour};">{value}</div></div>'
@@ -3267,9 +3306,8 @@ def render_executive():
         st.info('All-market landing data is unavailable. Try Refresh Market Data.')
         return
 
-    flag_map={'HSI':'🇭🇰','KLSE':'🇲🇾','STI':'🇸🇬','A-Share':'🇨🇳','Nasdaq':'🇺🇸','S&P 500':'🇺🇸','DJIA':'🇺🇸','Nikkei 225':'🇯🇵'}
     def market_label_html(market_name):
-        return f'<span class="cde-flag-circle">{hesc(flag_map.get(market_name,""))}</span>{hesc(market_name)}'
+        return market_label_with_flag_html(market_name)
     def distance_num(distance_text):
         try:
             return safe_float(str(distance_text).replace('%','').replace('N/A','999'),999)
@@ -3454,10 +3492,7 @@ def render_market_deep_dive_summary():
     market_funding_status = 'READY ✓' if market_funding_ready else 'INSUFFICIENT ✕'
     market_funding_caption = 'within market allocation budget' if market_funding_ready else 'exceeds remaining market allocation budget'
     market_funding_class = 'ready' if market_funding_ready else 'insufficient'
-    selected_market_flag_map={'HSI':'🇭🇰','KLSE':'🇲🇾','STI':'🇸🇬','A-Share':'🇨🇳','Nasdaq':'🇺🇸','S&P 500':'🇺🇸','DJIA':'🇺🇸','Nikkei 225':'🇯🇵','Bitcoin':'₿','Gold':'🟡'}
-    selected_market_flag=selected_market_flag_map.get(index_label,'')
-    selected_market_title=f'{selected_market_flag} {index_label}'.strip()
-    selected_market_title_html=(f'<span class="cde-flag-circle">{hesc(selected_market_flag)}</span>{hesc(index_label)}' if selected_market_flag else hesc(index_label))
+    selected_market_title_html = market_label_with_flag_html(index_label)
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
     st.markdown(f'''<div class="xec-title">Deployment Centre — {selected_market_title_html}</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision — {selected_market_title_html} {tooltip_html('Crash-Buy Decision',[('Decision Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone)),('Confidence',conf_label)],'Diagnosis above; execution details below.')}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)}</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-title">Suggested Deploy {tooltip_html('Suggested Deploy',[('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],'Capital base: selected investible capital only.')}</div><div class="xec-deploy-amount">{fmt_sgd_html(deploy)}</div><div class="xec-deploy-percent">additional deploy now · towards {deploy_pct:.0%} allocated target</div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger:<br><b>{hesc(next_trigger_card_label(zone))}</b></span><span>Cumulative deploy:<br><b>{deploy_pct:.0%}</b></span></div></div><div class="xec-card xec-funding-card"><div class="xec-funding-title">Funding Readiness {tooltip_html('Funding Readiness',[('Allocated Capital','Selected market allocation budget'),('Available Funds','Allocated capital less executed and pending base-currency exposure for this market'),('Readiness Test','Suggested Deploy must be less than or equal to Available Funds')],'Funding readiness is calculated against the selected market allocation budget, not total portfolio capital.')}</div><div class="xec-funding-status-hero {market_funding_class}">{hesc(market_funding_status)}</div><div class="xec-funding-caption">{hesc(market_funding_caption)}</div><div class="xec-funding-lines"><div class="xec-funding-line"><span>Allocated</span><b>{fmt_sgd_html(selected_market_budget)}</b></div><div class="xec-funding-line"><span>Available</span><b>{fmt_sgd_html(selected_market_available)}</b></div></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Conditions Snapshot {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Active Buy' if deploy>0 else 'Capital Preserved'}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{fmt_sgd_html(deploy)} · {deploy_pct:.0%}</b></div></div></section>''', unsafe_allow_html=True)
 
