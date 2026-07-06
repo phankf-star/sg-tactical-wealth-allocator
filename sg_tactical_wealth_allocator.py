@@ -41,7 +41,7 @@ st.markdown('''
 .stApp,section.main,div[data-testid="stAppViewContainer"],div[data-testid="block-container"],div[data-testid="stVerticalBlock"],div[data-testid="stHorizontalBlock"],div[data-testid="column"],.element-container,.cde-grid,.cde-kpi-grid,.cde-kpi-grid .cde-card,.cde-card,.cde-dcc-parent,.cde-command-grid{overflow:visible!important;}
 .cde-kpi-grid,.cde-kpi-grid .cde-card,.exec-info-dot,.exec-tooltip-wrap{position:relative!important;}
 .exec-info-dot{z-index:20!important;}.exec-tooltip{z-index:999999!important;max-width:min(360px,78vw)!important;white-space:normal!important;pointer-events:none!important;}.cde-kpi-grid .cde-card:hover,.cde-card:hover{z-index:50!important;}
-.cde-command-grid{grid-template-columns:minmax(0,71fr) minmax(250px,29fr)!important;align-items:stretch!important;}
+.cde-command-grid{grid-template-columns:minmax(0,65fr) minmax(320px,35fr)!important;align-items:stretch!important;}
 .cde-command-grid .cde-primary-action-card{order:1!important;height:auto!important;min-height:214px!important;max-height:none!important;overflow:visible!important;}
 .cde-command-grid .cde-watch-panel-card{order:2!important;display:flex!important;flex-direction:column!important;gap:8px!important;height:auto!important;min-height:214px!important;max-height:none!important;overflow:visible!important;}
 .cde-watch-panel-card .cde-watch-item{padding:6px 0!important;}
@@ -58,6 +58,14 @@ st.markdown('''
 .cde-risk-flex{grid-template-columns:minmax(0,1fr) 72px!important;gap:8px!important;align-items:center!important;}.cde-risk-left .cde-main-value{font-size:24px!important;line-height:1.05!important;}.cde-risk-gauge-side{height:48px!important;justify-content:center!important;overflow:visible!important;}.cde-risk-mini-meter{width:64px!important;height:34px!important;}.cde-risk-mini-arc{width:60px!important;height:30px!important;}.cde-risk-mini-arc:after{left:8px!important;right:8px!important;height:20px!important;}.cde-risk-mini-needle{height:25px!important;}
 @media (max-width:1200px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{order:1!important;}.cde-command-grid .cde-watch-panel-card{order:2!important;}}
 @media (max-width:900px){.cde-next-action-grid{grid-template-columns:1fr!important;}.cde-watch-edge-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;}}
+
+
+
+/* CDE LP final order fix 2026-07-06: Primary left 65%, Watchlist right 35%. */
+.cde-command-grid{grid-template-columns:minmax(0,65fr) minmax(320px,35fr)!important;}
+.cde-command-grid .cde-primary-action-card{order:1!important;grid-column:1!important;}
+.cde-command-grid .cde-watch-panel-card{order:2!important;grid-column:2!important;}
+@media (max-width:1200px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{grid-column:auto!important;order:1!important;}.cde-command-grid .cde-watch-panel-card{grid-column:auto!important;order:2!important;}}
 
 </style>
 ''', unsafe_allow_html=True)
