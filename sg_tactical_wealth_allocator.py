@@ -56,7 +56,7 @@ st.markdown('''
 .cde-next-deployment-hero .cde-dcc-section-title{margin-bottom:6px!important;}.cde-next-deployment-hero .cde-next-amount{font-size:clamp(28px,3.1vw,40px)!important;line-height:.98!important;font-weight:950!important;letter-spacing:-.035em!important;color:#0f172a!important;}.cde-next-deployment-hero .cde-action-line{margin-top:7px!important;color:#334155!important;}
 .cde-action-status-box{background:#f8fafc!important;border:1px solid #dbe4ee!important;box-shadow:none!important;}.cde-action-status-box b{font-size:18px!important;color:#059669!important;}.cde-action-status-box span{font-size:11px!important;color:#64748b!important;}
 .cde-risk-flex{grid-template-columns:minmax(0,1fr) 72px!important;gap:8px!important;align-items:center!important;}.cde-risk-left .cde-main-value{font-size:24px!important;line-height:1.05!important;}.cde-risk-gauge-side{height:48px!important;justify-content:center!important;overflow:visible!important;}.cde-risk-mini-meter{width:64px!important;height:34px!important;}.cde-risk-mini-arc{width:60px!important;height:30px!important;}.cde-risk-mini-arc:after{left:8px!important;right:8px!important;height:20px!important;}.cde-risk-mini-needle{height:25px!important;}
-@media (max-width:1200px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{order:1!important;}.cde-command-grid .cde-watch-panel-card{order:2!important;}}
+@media (max-width:900px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{order:1!important;}.cde-command-grid .cde-watch-panel-card{order:2!important;}}
 @media (max-width:900px){.cde-next-action-grid{grid-template-columns:1fr!important;}.cde-watch-edge-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important;}}
 
 
@@ -65,7 +65,50 @@ st.markdown('''
 .cde-command-grid{grid-template-columns:minmax(0,65fr) minmax(320px,35fr)!important;}
 .cde-command-grid .cde-primary-action-card{order:1!important;grid-column:1!important;}
 .cde-command-grid .cde-watch-panel-card{order:2!important;grid-column:2!important;}
-@media (max-width:1200px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{grid-column:auto!important;order:1!important;}.cde-command-grid .cde-watch-panel-card{grid-column:auto!important;order:2!important;}}
+@media (max-width:900px){.cde-command-grid{grid-template-columns:1fr!important;}.cde-command-grid .cde-primary-action-card{grid-column:auto!important;order:1!important;}.cde-command-grid .cde-watch-panel-card{grid-column:auto!important;order:2!important;}}
+
+
+
+/* CDE LP Streamlit grid hard-fix 2026-07-06
+   Reason: Streamlit/container responsive wrappers can make CSS order/grid-column unreliable.
+   This uses named grid areas and delays stacking until tablet/mobile width. */
+.cde-dcc-parent{width:100%!important;overflow:visible!important;}
+.cde-command-grid{
+  display:grid!important;
+  grid-template-columns:minmax(0,65fr) minmax(340px,35fr)!important;
+  grid-template-areas:"primary watch"!important;
+  gap:16px!important;
+  align-items:stretch!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+.cde-command-grid>.cde-primary-action-card{
+  grid-area:primary!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  order:0!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+}
+.cde-command-grid>.cde-watch-panel-card{
+  grid-area:watch!important;
+  grid-column:auto!important;
+  grid-row:auto!important;
+  order:0!important;
+  min-width:0!important;
+  width:100%!important;
+  max-width:none!important;
+}
+.cde-action-row{grid-template-columns:repeat(5,minmax(0,1fr))!important;}
+.cde-next-action-grid{grid-template-columns:minmax(240px,1fr) minmax(260px,1.08fr)!important;}
+.cde-action-status-box{height:auto!important;min-height:82px!important;white-space:normal!important;overflow:visible!important;}
+.cde-action-status-box span{white-space:normal!important;line-height:1.45!important;}
+@media (max-width:900px){
+  .cde-command-grid{grid-template-columns:1fr!important;grid-template-areas:"primary" "watch"!important;}
+  .cde-next-action-grid{grid-template-columns:1fr!important;}
+  .cde-action-row{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+}
 
 </style>
 ''', unsafe_allow_html=True)
