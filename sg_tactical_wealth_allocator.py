@@ -3120,7 +3120,14 @@ with st.sidebar:
         st.image(str(logo_asset), use_container_width=True)
     else:
         st.markdown('''<div class="cde-logo-card"><div class="cde-logo-mark"></div><div><div class="cde-logo-main">CRASH</div><div class="cde-logo-sub">DEPLOYMENT ENGINE</div><div class="cde-logo-tag">Turning Market Crash into Opportunities</div></div></div>''', unsafe_allow_html=True)
-    st.markdown(f'''<div style="font-size:11px;font-weight:700;color:#64748B;line-height:1.1;margin:6px 0 12px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Market data: {datetime.now().strftime('%d %b %Y %H:%M SGT')}</div>''', unsafe_allow_html=True)
+    st.markdown(f'''<div style="font-size:11px;font-weight:700;color:#64748B;line-height:1.1;margin:6px 0 10px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Market data: {datetime.now().strftime('%d %b %Y %H:%M SGT')}</div>''', unsafe_allow_html=True)
+    st.markdown('''<style>
+    section[data-testid="stSidebar"] .stButton>button{min-height:26px!important;padding:2px 8px!important;font-size:12px!important}
+    section[data-testid="stSidebar"] div[data-testid="stSelectbox"]{margin-bottom:4px!important}
+    section[data-testid="stSidebar"] label{font-size:12px!important;margin-bottom:2px!important}
+    section[data-testid="stSidebar"] .st-emotion-cache-16txtl3{padding-top:.6rem!important}
+    .cde-subpanel{padding:5px 0 6px 9px!important;margin:0 0 6px 8px!important}
+    </style>''', unsafe_allow_html=True)
 
     def _nav_key(label):
         return 'nav_' + re.sub(r'[^A-Za-z0-9]+', '_', label)
@@ -3142,14 +3149,14 @@ with st.sidebar:
             current_ag=st.session_state.get('asset_group_selection','Market / Equity Index')
             if current_ag not in ag_options:
                 current_ag='Market / Equity Index'; st.session_state.asset_group_selection=current_ag
-            asset_group=st.selectbox('Asset Group',ag_options,index=ag_options.index(current_ag),key='sidebar_mdd_asset_group')
+            asset_group=st.selectbox('Asset',ag_options,index=ag_options.index(current_ag),key='sidebar_mdd_asset_group')
             st.session_state.asset_group_selection=asset_group
             group_items=ASSET_GROUPS[asset_group]
             default_item='STI' if asset_group=='Market / Equity Index' and 'STI' in group_items else group_items[0]
             current_sel=st.session_state.get('selected_market_name',default_item)
             if current_sel not in group_items:
                 current_sel=default_item; st.session_state.selected_market_name=current_sel
-            sel=st.selectbox('Selected Market' if asset_group=='Market / Equity Index' else 'Selected Alternative Asset',group_items,index=group_items.index(current_sel),key='sidebar_mdd_selected_market')
+            sel=st.selectbox('Market' if asset_group=='Market / Equity Index' else 'Asset',group_items,index=group_items.index(current_sel),key='sidebar_mdd_selected_market')
             st.session_state.selected_market_name=sel
             st.markdown('</div>', unsafe_allow_html=True)
         else:
@@ -3518,9 +3525,12 @@ def render_suggested(expanded=False):
     suggested_title='Deployment & Execution Plan'
     def _render_suggested_content():
         show_srs_row=(sel=='STI' and available_srs>0); show_cpf_row=(sel=='STI' and available_cpf>0)
-        if show_srs_row and show_cpf_row: buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
-        elif show_srs_row: buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
-        else: buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
+        if show_srs_row and show_cpf_row:
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS + CPF-OA'; initial_reason='INITIAL BUY zone uses investible cash first; SRS/CPF-OA are preserved for deeper drawdowns.'
+        elif show_srs_row:
+            buy_label='25% cumulative · cash then SRS'; strong_label='50% cumulative · cash + SRS'; initial_reason='INITIAL BUY zone uses investible cash first; SRS is preserved for deeper drawdowns.'
+        else:
+            buy_label='25% cumulative · cash first'; strong_label='50% cumulative · cash first'; initial_reason='INITIAL BUY zone uses investible cash first; other funding sources are not included in the selected profile.'
         display_reason=initial_reason if zone=='INITIAL BUY' else capital_reason
         capital_rows=kv('Funding Source',funding_source,GREEN if cash_deploy>0 else SLATE)+kv('Cash Deployment',fmt_sgd(cash_deploy),GREEN)
         if show_srs_row: capital_rows+=kv('SRS Deployment',fmt_sgd(srs_deploy),SLATE)
@@ -3528,10 +3538,63 @@ def render_suggested(expanded=False):
         capital_source_tip=tooltip_html('Capital Source Rules',[('Funding Priority','BUY zone uses investible cash first, then SRS if cash is insufficient'),('CPF-OA','CPF-OA remains reserved')],display_reason)
         ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'Cumulative deployment percentages by drawdown zone.')
         if deploy<=0:
-            action_title='Deployment Plan & Capital Source'; action_class='xec-card xec-action-card compact'; action_html='<div>'+kv('Deploy now',fmt_sgd(0),SLATE)+kv('Capital stance','Preserved',GREEN)+kv('Next trigger',next_trigger,ORANGE)+kv('Action note','No active tranche until trigger conditions are met.',SLATE)+'</div>'
+            action_html='<div>'+kv('Deploy now',fmt_sgd(0),SLATE)+kv('Capital stance','Preserved',GREEN)+kv('Next trigger',next_trigger,ORANGE)+kv('Action note','No active tranche until trigger conditions are met.',SLATE)+'</div>'
         else:
-            action_title='Deployment Plan & Capital Source'; action_class='xec-card xec-action-card'; action_html='<div>'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>'
-        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis ⓘ</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital × Deployment Rule - Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.0f} × {deploy_pct:.0%} - {current_currency_html()}{_selected_market_actual_for_rule:,.0f}</div></div><div class="xec-card xec-action-card"><h4>Current Holdings</h4><div class="xec-sub">Selected-market active holdings are included in Actual Deployed using base-currency cost base. If live price is unavailable, price/value/P&L display as N/A.</div></div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Deployment Plan & Capital Source ⓘ</h4>{action_html}<div style="margin-top:8px;">{capital_rows}</div></div><div class="xec-card xec-action-card"><h4>Deployment Ladder</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
+            action_html='<div>'+kv('Tranche 1 — Deploy now',fmt_sgd(deploy*.5),AMBER)+kv('Tranche 2 — If drawdown deepens',fmt_sgd(deploy*.25),ORANGE)+kv('Tranche 3 — If stabilisation appears',fmt_sgd(deploy*.25),BLUE)+'</div>'
+        def _current_holdings_html():
+            try:
+                df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
+                if df is None or df.empty:
+                    return '<div class="xec-sub">No current holding recorded for this market.</div>'
+                if 'Entry Status' in df.columns:
+                    df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
+                if 'Status' in df.columns:
+                    df=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
+                if 'Market' in df.columns:
+                    df=df[df['Market'].astype(str).eq(str(sel))].copy()
+                if df.empty:
+                    return '<div class="xec-sub">No current holding recorded for this market.</div>'
+                side=df['Side'].astype(str).str.upper() if 'Side' in df.columns else pd.Series(['BUY']*len(df),index=df.index)
+                df['_Qty']=np.where(side.eq('SELL'),-pd.to_numeric(df.get('Quantity',0),errors='coerce').fillna(0),pd.to_numeric(df.get('Quantity',0),errors='coerce').fillna(0))
+                df['_BaseCost']=np.where(side.eq('SELL'),-pd.to_numeric(df.get('Base Currency Equivalent',0),errors='coerce').fillna(0),pd.to_numeric(df.get('Base Currency Equivalent',0),errors='coerce').fillna(0))
+                grp=df.groupby(['Ticker','Trade Currency'],dropna=False).agg(**{'Qty':('_Qty','sum'),'Cost Base':('_BaseCost','sum')}).reset_index()
+                suffix=ETF_MARKET_SUFFIX_HINTS.get(sel,'') if 'ETF_MARKET_SUFFIX_HINTS' in globals() else ''
+                rows=[]
+                for _,r in grp.iterrows():
+                    ticker_raw=str(r.get('Ticker','')).strip().upper(); qty=safe_float(r.get('Qty'),0.0); cost=safe_float(r.get('Cost Base'),0.0)
+                    price_txt='N/A'; value_txt='N/A'; pnl_txt='N/A'; price_status='Price unavailable'
+                    trade_ccy=str(r.get('Trade Currency','')).strip().upper() or currency_code
+                    candidates=[ticker_raw]
+                    if suffix and '.' not in ticker_raw:
+                        candidates.append(ticker_raw+suffix)
+                        if suffix=='.HK' and ticker_raw.isdigit() and len(ticker_raw)<5: candidates.append(ticker_raw.zfill(5)+suffix)
+                    for cand in candidates:
+                        try:
+                            px_df=hist(cand,'2026-01-01')
+                            if px_df is None or px_df.empty: px_df=hist(cand,'2020-01-01')
+                            if px_df is not None and not px_df.empty:
+                                px=safe_float(px_df.Close.iloc[-1],np.nan)
+                                if pd.notna(px) and px>0:
+                                    fx,_,_=fetch_fx_rate_yahoo(trade_ccy,currency_code) if 'fetch_fx_rate_yahoo' in globals() else (1.0,'','')
+                                    cur_val=qty*px*float(fx or 0); pnl=cur_val-cost
+                                    price_txt=f'{px:,.2f}'; value_txt=fmt_sgd(cur_val); pnl_txt=fmt_sgd(pnl); price_status='Live' if cand==ticker_raw else f'Live via {cand}'; break
+                        except Exception: pass
+                    rows.append(f'<div class="cde-market-exposure-row"><span>{hesc(ticker_raw)} · Qty {qty:,.0f}<br><small>Cost {fmt_sgd(cost)} · Price {hesc(price_txt)} · Value {hesc(value_txt)} · P/L {hesc(pnl_txt)}</small></span><b>{hesc(price_status)}</b></div>')
+                rows.append('<div class="cde-market-exposure-row"><span></span><b>View selected-market holdings →</b></div>')
+                return ''.join(rows)
+            except Exception:
+                return '<div class="xec-sub">Current holdings unavailable.</div>'
+        current_holdings_html=_current_holdings_html()
+        calc_tip=tooltip_html('Calculation Basis',[('Formula','Suggested Deploy = Allocated Market Capital × Deployment Rule − Actual Deployed')],'Source: selected price data, structural drawdown formula, selected market allocation budget and executed market exposure. This is the calculation basis, not a buy call.')
+        current_holdings_tip=tooltip_html('Current Holdings',[('Price Fetch','CDE attempts live price fetch for all active holdings, including tickers not in the recommended list'),('Fallback','If price is unavailable, cost base still counts as Actual Deployed')],'Unavailable price displays as N/A, not None.')
+        action_with_capital_html=action_html+'<div style="margin-top:8px;">'+capital_rows+'</div>'
+        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis {calc_tip}</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital × Deployment Rule − Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.0f} × {deploy_pct:.0%} − {current_currency_html()}{_selected_market_actual_for_rule:,.0f}</div></div><div class="xec-card xec-action-card compact"><h4>Deployment Plan & Capital Source {capital_source_tip}</h4>{action_with_capital_html}</div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Current Holdings {current_holdings_tip}</h4><div>{current_holdings_html}</div></div><div class="xec-card xec-action-card"><h4>Deployment Ladder {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY · -8%','10% cumulative · cash first',BLUE)+kv('BUY · -15%',buy_label,AMBER)+kv('STRONG BUY · -25%',strong_label,ORANGE)+kv('CRISIS BUY · -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY · -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
+        if st.button('View selected-market holdings →', key='selected_market_holdings_link_'+re.sub(r'[^A-Za-z0-9]+','_',str(sel)), use_container_width=True):
+            st.session_state.active_section='📦 Holdings & Exposure'
+            st.session_state['_portfolio_requested_view']='holdings'
+            st.session_state['portfolio_overview_section_buttons']='Holdings & Exposure'
+            st.session_state['portfolio_market_filter']=[sel]
+            st.rerun()
         if sel in ETF_UNIVERSE:
             st.markdown('#### 🎯 Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -4200,6 +4263,15 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
     if default_market not in market_options:
         default_market='STI' if 'STI' in market_options else market_options[0]
     base_ccy=st.session_state.get('base_capital_currency','SGD')
+    sections=['Portfolio Summary','Holdings & Exposure','Trade Journal']
+    default_section={'summary':'Portfolio Summary','holdings':'Holdings & Exposure','journal':'Trade Journal'}.get(view,'Trade Journal')
+    if st.session_state.get('_portfolio_requested_view') != view:
+        st.session_state['_portfolio_requested_view']=view
+        st.session_state['portfolio_overview_section_buttons']=default_section
+    section=st.session_state.get('portfolio_overview_section_buttons',default_section)
+    if section not in sections:
+        section=default_section
+    section=st.radio('Portfolio section',sections,index=sections.index(section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
 
     # IMPORTANT: market and currency selectors must sit outside st.form.
     # Streamlit forms batch widget changes until submit, so labels like Price (HKD), Fees (HKD)
@@ -4284,8 +4356,8 @@ def render_portfolio_trade_journal(view='journal'):
     market_options=sorted([x for x in active_df.get('Market',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
     ticker_options=sorted([x for x in active_df.get('Ticker',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
     f1,f2=st.columns([1,1])
-    selected_markets=f1.multiselect('Market filter',market_options,default=[],key='portfolio_market_filter')
-    selected_tickers=f2.multiselect('Ticker filter',ticker_options,default=[],key='portfolio_ticker_filter')
+    selected_markets=f1.multiselect('Market filter',market_options,default=st.session_state.get('portfolio_market_filter',[]),key='portfolio_market_filter')
+    selected_tickers=f2.multiselect('Ticker filter',ticker_options,default=st.session_state.get('portfolio_ticker_filter',[]),key='portfolio_ticker_filter')
     def _apply_filters(src_df):
         out=src_df.copy()
         if selected_markets and 'Market' in out.columns:
@@ -4306,44 +4378,45 @@ def render_portfolio_trade_journal(view='journal'):
     deploy_pct=(net_invested/total_cap*100) if total_cap else None
     recorded=len(active_filtered); pending=int(active_filtered['Status'].astype(str).str.lower().eq('pending').sum()) if not active_filtered.empty and 'Status' in active_filtered.columns else 0
     covered=active_filtered['Market'].nunique() if not active_filtered.empty and 'Market' in active_filtered.columns else 0
-    sections=['Portfolio Summary','Holdings & Exposure','Trade Journal']
-    default_section={'summary':'Portfolio Summary','holdings':'Holdings & Exposure','journal':'Trade Journal'}.get(view,'Trade Journal')
-    if st.session_state.get('_portfolio_requested_view') != view:
-        st.session_state['_portfolio_requested_view']=view
-        st.session_state['portfolio_overview_section_buttons']=default_section
-    section=st.session_state.get('portfolio_overview_section_buttons',default_section)
-    if section not in sections:
-        section=default_section
-    compact_summary = section in ['Holdings & Exposure','Trade Journal']
     st.markdown('### Portfolio Position Summary')
-    if compact_summary:
-        cards=[('Total Capital',fmt_sgd(total_cap)),('Actual Deployed',fmt_sgd(net_invested)),('Dry Powder',fmt_sgd(dry)),('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A'),('Recorded Trades',recorded),('Pending Orders',pending),('Markets Covered',covered)]
-        html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b>{hesc(v)}</b></div>' for k,v in cards])
-        st.markdown(f'<div class="cde-compact-metric-grid">{html}</div>',unsafe_allow_html=True)
-    else:
-        s1,s2,s3,s4=st.columns(4)
-        s1.metric('Total Capital',fmt_sgd(total_cap)); s2.metric('Actual Deployed',fmt_sgd(net_invested)); s3.metric('Dry Powder',fmt_sgd(dry)); s4.metric('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A')
-        t1,t2,t3=st.columns(3)
-        t1.metric('Recorded Trades',recorded); t2.metric('Pending Orders',pending); t3.metric('Markets Covered',covered)
-    section=st.radio('Portfolio section',sections,index=sections.index(section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
+    cards=[('Total Capital',fmt_sgd(total_cap)),('Actual Deployed',fmt_sgd(net_invested)),('Dry Powder',fmt_sgd(dry)),('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A'),('Recorded Trades',recorded),('Pending Orders',pending)]
+    html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b>{hesc(v)}</b></div>' for k,v in cards])
+    st.markdown(f'<div class="cde-compact-metric-grid">{html}</div>',unsafe_allow_html=True)
+    def _candidate_tickers_for_price(ticker, market):
+        raw=str(ticker or '').strip().upper()
+        cands=[raw] if raw else []
+        suffix=ETF_MARKET_SUFFIX_HINTS.get(str(market), '') if 'ETF_MARKET_SUFFIX_HINTS' in globals() else ''
+        if suffix and raw and '.' not in raw:
+            cands.append(raw+suffix)
+            if suffix=='.HK' and raw.isdigit() and len(raw)<5:
+                cands.append(raw.zfill(5)+suffix)
+        return list(dict.fromkeys(cands))
     def _build_holdings():
         if executed.empty: return pd.DataFrame()
         grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(**{'Net Quantity':('_Signed Quantity','sum'),'Cost Base':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}).reset_index()
         vals=[]
         for _,r in grp.iterrows():
-            ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
-            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0); cur_px=np.nan; cur_val=np.nan; pnl=np.nan
-            try:
-                px_df=hist(ticker,'2026-01-01')
-                if px_df is None or px_df.empty: px_df=hist(ticker,'2020-01-01')
-                if px_df is not None and not px_df.empty:
-                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy); cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
-            except Exception: pass
-            vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl})
+            market=str(r.get('Market','')).strip(); ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
+            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0)
+            cur_px=np.nan; cur_val=np.nan; pnl=np.nan; status='Price unavailable'
+            for cand in _candidate_tickers_for_price(ticker, market):
+                try:
+                    px_df=hist(cand,'2026-01-01')
+                    if px_df is None or px_df.empty: px_df=hist(cand,'2020-01-01')
+                    if px_df is not None and not px_df.empty:
+                        px=safe_float(px_df.Close.iloc[-1],np.nan)
+                        if pd.notna(px) and px>0:
+                            cur_px=px; fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy); cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost; status='Live' if cand==ticker else f'Live via {cand}'; break
+                except Exception: pass
+            vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl,'Price Status':status})
         grp=pd.concat([grp,pd.DataFrame(vals)],axis=1)
         total_current=pd.to_numeric(grp['Current Value'],errors='coerce').sum(); total_cost=abs(pd.to_numeric(grp['Cost Base'],errors='coerce').sum())
         grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan); grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
-        return grp
+        display=grp.copy()
+        for c in ['Current Price','Current Value','Unrealised P/L','Portfolio Weight %','P/L Contribution %']:
+            if c in display.columns:
+                display[c]=display[c].apply(lambda x: 'N/A' if pd.isna(x) else x)
+        return display
     def _round(src_df,dec=2):
         out=src_df.copy()
         for col in out.columns:
