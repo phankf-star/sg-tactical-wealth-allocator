@@ -3427,7 +3427,7 @@ def render_executive():
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
 
     st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><div style="font-size:13px;font-weight:950;color:#0F172A;margin-bottom:6px;">Funding Readiness — {market_label_html(best["Market"])}</div><b>{hesc(funding_status)}</b><span>• {fmt_sgd_html(best_market_available)} {hesc(best["Market"])} allocation available<br>• {hesc(coverage_text)}</span></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><div style="font-size:13px;font-weight:950;color:#0F172A;margin-bottom:6px;">Funding Readiness — {market_label_html(best["Market"])}</div><div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;"><b style="display:inline-block;margin:0;white-space:nowrap;">{hesc(funding_status)}</b><span style="display:inline-block;line-height:1.4;">• {fmt_sgd_html(best_market_available)} {hesc(best["Market"])} allocation available<br>• {hesc(coverage_text)}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
 
@@ -4400,23 +4400,46 @@ def render_portfolio_trade_journal(view='journal'):
     cards=[('Total Capital',fmt_sgd(total_cap)),('Actual Deployed',fmt_sgd(net_invested)),('Dry Powder',fmt_sgd(dry)),('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A'),('Recorded Trades',recorded),('Pending Orders',pending)]
     html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b>{hesc(v)}</b></div>' for k,v in cards])
     st.markdown(f'<div class="cde-compact-metric-grid">{html}</div>',unsafe_allow_html=True)
+    def _candidate_tickers_for_price(ticker, market):
+        raw=str(ticker or '').strip().upper()
+        cands=[raw] if raw else []
+        suffix=ETF_MARKET_SUFFIX_HINTS.get(str(market), '') if 'ETF_MARKET_SUFFIX_HINTS' in globals() else ''
+        # For user-entered portfolio holdings, recommended-list membership is not required.
+        # Try raw ticker first, then market suffix, then HK zero-padded suffix.
+        if suffix and raw and '.' not in raw and not raw.startswith('^'):
+            cands.append(raw + suffix)
+            if suffix == '.HK' and raw.isdigit() and len(raw) < 5:
+                cands.append(raw.zfill(5) + suffix)
+        return list(dict.fromkeys(cands))
     def _build_holdings():
         if executed.empty: return pd.DataFrame()
         grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(**{'Net Quantity':('_Signed Quantity','sum'),'Cost Base':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}).reset_index()
         vals=[]
         for _,r in grp.iterrows():
-            ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
-            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0); cur_px=np.nan; cur_val=np.nan; pnl=np.nan
-            try:
-                px_df=hist(ticker,'2026-01-01')
-                if px_df is None or px_df.empty: px_df=hist(ticker,'2020-01-01')
-                if px_df is not None and not px_df.empty:
-                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy); cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
-            except Exception: pass
-            vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl})
+            market=str(r.get('Market','')).strip(); ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
+            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0)
+            cur_px=np.nan; cur_val=np.nan; pnl=np.nan; price_status='Price unavailable'
+            for cand in _candidate_tickers_for_price(ticker, market):
+                try:
+                    px_df=hist(cand,'2026-01-01')
+                    if px_df is None or px_df.empty:
+                        px_df=hist(cand,'2020-01-01')
+                    if px_df is not None and not px_df.empty:
+                        px=safe_float(px_df.Close.iloc[-1],np.nan)
+                        if pd.notna(px) and px>0:
+                            cur_px=px
+                            fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
+                            cur_val=qty*cur_px*float(fx or 0)
+                            pnl=cur_val-cost
+                            price_status='Live' if cand==ticker else f'Live via {cand}'
+                            break
+                except Exception:
+                    pass
+            vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl,'Price Status':price_status})
         grp=pd.concat([grp,pd.DataFrame(vals)],axis=1)
         total_current=pd.to_numeric(grp['Current Value'],errors='coerce').sum(); total_cost=abs(pd.to_numeric(grp['Cost Base'],errors='coerce').sum())
-        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan); grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
+        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan)
+        grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
         return grp
     def _round(src_df,dec=2):
         out=src_df.copy()
@@ -4449,7 +4472,7 @@ def render_portfolio_trade_journal(view='journal'):
             st.dataframe(_round(attr,2),use_container_width=True,hide_index=True)
     elif section=='Holdings & Exposure':
         st.markdown('### Holdings & Exposure by Market / Ticker')
-        st.dataframe(_round(holdings,2),use_container_width=True,hide_index=True) if not holdings.empty else st.info('No executed active trades available for holdings/exposure summary.')
+        st.dataframe(_round(holdings,2).replace({np.nan:'N/A'}),use_container_width=True,hide_index=True) if not holdings.empty else st.info('No executed active trades available for holdings/exposure summary.')
     else:
         st.markdown('### Full Trade Log')
         st.caption('Void keeps an audit trail and excludes the entry from portfolio calculations. Remove deletes the selected row from the active CSV log.')
