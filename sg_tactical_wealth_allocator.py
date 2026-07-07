@@ -26,6 +26,14 @@ import yfinance as yf
 st.set_page_config(page_title='Crash Deployment Engine v38af', layout='wide', initial_sidebar_state='expanded')
 st.markdown('''
 <style>
+.cde-compact-metric-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;margin:4px 0 12px;}
+.cde-compact-metric{border:1px solid #E2E8F0;border-radius:12px;background:#FFFFFF;padding:9px 11px;box-shadow:0 4px 12px rgba(15,23,42,.04);min-height:58px;}
+.cde-compact-metric span{display:block;font-size:.70rem;color:#64748B;font-weight:750;margin-bottom:4px;}
+.cde-compact-metric b{display:block;font-size:1.02rem;line-height:1.08;color:#0F172A;font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cde-table-head{font-size:.72rem;color:#64748B;font-weight:850;text-transform:uppercase;letter-spacing:.03em;margin:0 0 4px;}
+.cde-alloc-budget{font-weight:850;color:#0F172A;background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:8px 10px;min-height:38px;}
+@media(max-width:1100px){.cde-compact-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+
 .cde-nav-active{background:#fff;border-left:4px solid #16a34a;padding:8px 10px;margin:4px 0;font-weight:900;color:#111827}.cde-subpanel{background:#f8fafc;border-left:2px solid #e2e8f0;margin:0 0 8px 10px;padding:8px 0 10px 12px}.cde-logo-card{background:#fff;border:1px solid #dbe4ee;border-radius:14px;padding:10px;margin-bottom:14px;display:flex;align-items:center;gap:9px;box-shadow:0 2px 8px rgba(15,23,42,.08)}.cde-logo-mark{width:44px;height:44px;border-radius:50%;border:2px solid #e2e8f0;background:linear-gradient(135deg,#fff,#f8fafc);flex:0 0 44px;position:relative;box-shadow:inset 0 0 0 1px rgba(148,163,184,.12)}.cde-logo-mark:before{content:'';position:absolute;left:11px;top:16px;width:4px;height:17px;background:#ff4444;border-radius:2px;box-shadow:8px 6px 0 #ff4444}.cde-logo-mark:after{content:'';position:absolute;left:15px;top:25px;width:28px;height:5px;background:#ff4444;transform:rotate(-43deg);border-radius:3px;box-shadow:22px -18px 0 #22c55e}.cde-logo-main{color:#0f172a;font-size:15.5px;font-weight:950;line-height:1.02;letter-spacing:.2px}.cde-logo-sub{color:#334155;font-size:9.5px;font-weight:950;line-height:1.05;margin-top:1px}.cde-logo-tag{color:#475569;font-size:6.8px;font-weight:850;margin-top:5px;white-space:nowrap}.cde-hero{display:flex;justify-content:space-between;gap:18px;margin:0 0 20px}.cde-title{font-size:38px;font-weight:950;color:#0f172a}.cde-subtitle{font-size:16px;color:#475569;font-weight:800}.cde-page-label{font-size:22px;color:#334155;font-weight:900}.cde-refresh-box{text-align:right;font-size:12px;color:#64748b;font-weight:800}.cde-pill{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:999px;padding:5px 10px;margin-top:4px}.cde-grid{display:grid;gap:16px;margin-bottom:22px}.cde-kpi-grid{grid-template-columns:1fr 1fr 1fr 1.18fr 1.12fr;align-items:stretch}.cde-three-grid{grid-template-columns:1fr 1fr 1fr}.cde-bottom-grid{grid-template-columns:1.08fr .92fr}.cde-card{background:#f9fbfd;border:1px solid #d3dfec;border-radius:14px;padding:17px 18px;min-height:118px}.cde-card-title{font-size:14px;color:#334155;font-weight:950;margin-bottom:10px}.cde-main-value{font-size:28px;font-weight:950;color:#0f172a}.cde-card-sub{font-size:12.5px;color:#64748b;font-weight:750}.cde-green{color:#059669}.cde-orange{color:#f97316}.cde-blue{color:#2563eb}.cde-flag-circle{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;margin-right:8px;font-size:11px;line-height:1;background:#fff;border:1px solid #d3dfec;vertical-align:-3px;box-shadow:0 1px 1px rgba(15,23,42,.08)}.cde-card-title{font-size:15px}.cde-main-value{font-size:30px}.cde-card-sub{font-size:12.5px}.cde-row-head{background:#e8eef5;border:1px solid #d3dfec;border-radius:8px 8px 0 0;padding:5px 8px;font-size:11px;font-weight:950;color:#334155;min-height:24px;display:flex;align-items:center}.cde-row-line{border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;padding:3px 8px;font-size:11.5px;font-weight:800;min-height:24px;display:flex;align-items:center;background:#fff}.stButton>button{min-height:24px;padding:2px 8px;font-size:11px;border-radius:8px}.cde-env-compact{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;margin-top:9px;font-size:11.5px;color:#334155;font-weight:850;line-height:1.3}.cde-env-compact b{font-weight:950;color:#0f172a}.cde-risk-card{position:relative}.cde-risk-flex{display:grid;grid-template-columns:1fr 66px;gap:4px;align-items:center}.cde-risk-left .cde-main-value{font-size:25px}.cde-risk-left .cde-card-sub{margin-top:2px}.cde-risk-gauge-side{height:38px;display:flex;align-items:center;justify-content:flex-end;overflow:hidden}.cde-risk-gauge-side svg{display:none}.cde-risk-mini-meter{width:56px;height:26px;position:relative;display:flex;align-items:flex-end;justify-content:center}.cde-risk-mini-arc{width:50px;height:25px;border-radius:58px 58px 0 0;background:conic-gradient(from 270deg,#22c55e 0deg,#22c55e 54deg,#facc15 54deg,#facc15 108deg,#f97316 108deg,#ef4444 180deg,transparent 180deg);position:absolute;bottom:0}.cde-risk-mini-arc:after{content:"";position:absolute;left:7px;right:7px;bottom:0;height:18px;background:#fff;border-radius:42px 42px 0 0}.cde-risk-mini-needle{position:absolute;bottom:0;left:50%;width:2px;height:21px;background:#0f172a;transform:rotate(var(--needle));transform-origin:bottom center;border-radius:2px}.cde-command-row{display:grid;grid-template-columns:30% 70%;gap:12px;margin:8px 0 14px}.cde-watch-card,.cde-action-card{background:#fff;border:1px solid #d3dfec;border-radius:14px;padding:10px 12px}.cde-watch-title,.cde-action-title{font-size:15px;font-weight:950;color:#0f172a;margin-bottom:2px}.cde-watch-sub,.cde-action-sub{font-size:10.5px;color:#64748b;font-weight:760;margin-bottom:8px}.cde-watch-item{display:grid;grid-template-columns:1fr .8fr .55fr;gap:6px;border-bottom:1px solid #eef2f7;padding:6px 0;font-size:11.5px;font-weight:850;color:#334155}.cde-watch-item:last-child{border-bottom:0}.cde-action-top{display:grid;grid-template-columns:1.15fr .9fr 1.05fr .85fr .7fr;gap:8px}.cde-command-mini{border-left:1px solid #e2e8f0;padding-left:8px;min-height:40px}.cde-command-mini:first-child{border-left:0;padding-left:0}.cde-command-target{background:#ecfdf5;border:1px solid #bbf7d0;border-radius:10px;padding:7px 8px}.cde-command-label{font-size:8.8px;color:#475569;font-weight:950;text-transform:uppercase;letter-spacing:.02em}.cde-command-value{font-size:16px;font-weight:950;color:#0f172a;line-height:1.1;margin-top:2px}.cde-command-note{font-size:9px;color:#64748b;font-weight:760;margin-top:1px}.cde-action-bottom{display:grid;grid-template-columns:.85fr 1.25fr;gap:8px;margin-top:8px}.cde-command-panel{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-command-next{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px}@media(max-width:900px){.cde-command-row,.cde-action-top,.cde-action-bottom,.cde-risk-flex{grid-template-columns:1fr}.cde-command-mini{border-left:0;border-top:1px solid #e2e8f0;padding-left:0;padding-top:8px}.cde-command-mini:first-child{border-top:0;padding-top:0}}.cde-env-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.cde-env-grid b{display:block;font-size:14px;font-weight:950}.cde-env-grid span{font-size:10.5px;color:#64748b;font-weight:800}.cde-section-title{font-size:21px;font-weight:950;color:#111827}.cde-section-sub{font-size:12.5px;color:#52657a;font-weight:760;margin-bottom:11px}.cde-table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #d3dfec;border-radius:12px;overflow:hidden;margin-bottom:20px}.cde-table th{background:#e8eef5;color:#334155;text-align:left;padding:11px 13px;font-size:12px;font-weight:950}.cde-table td{padding:12px 13px;border-bottom:1px solid #e2e8f0;font-weight:800;font-size:12.5px}.cde-sig{border-radius:999px;padding:4px 9px;font-size:10.5px;font-weight:950}.cde-sig.buy{background:#dcfce7;color:#047857}.cde-sig.watch{background:#ffedd5;color:#c2410c}.cde-sig.hold{background:#e5e7eb;color:#374151}.cde-ladder-row{display:grid;grid-template-columns:1.1fr 58px 1fr;gap:8px;font-size:12.5px;margin:7px 0;font-weight:800}.cde-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:7px;background:#cbd5e1}.cde-dot.active{background:#f97316}.cde-donut{width:86px;height:86px;border-radius:50%;background:conic-gradient(#4f7bd9 var(--deg),#e2e8f0 0);display:flex;align-items:center;justify-content:center;margin:auto}.cde-donut:before{content:attr(data-label);width:54px;height:54px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:950;color:#0f2e5d;font-size:12px}.cde-allocation{display:grid;grid-template-columns:105px 1fr;gap:14px;align-items:center}.cde-mini-metrics{display:flex;gap:22px;align-items:flex-end;flex-wrap:wrap}.cde-mini-metrics b{display:block;font-size:24px;color:#059669;font-weight:950}.cde-mini-metrics span{font-size:11.5px;color:#64748b;font-weight:850}.cde-takeaway{display:flex;gap:14px;align-items:center}.cde-icon{width:42px;height:42px;border-radius:50%;background:#dcfce7;color:#059669;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:950}@media(max-width:900px){.cde-hero{display:block}.cde-kpi-grid,.cde-three-grid,.cde-bottom-grid{grid-template-columns:1fr}.cde-title{font-size:30px}.cde-card{min-height:auto}.cde-env-grid{grid-template-columns:repeat(2,1fr)}}
 
 .cde-kpi-grid .cde-card{height:154px;min-height:154px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}.cde-kpi-grid .cde-card-title{min-height:26px}.cde-kpi-grid .cde-main-value{line-height:1.05}.cde-nav-group-caption{font-size:11px;color:#64748b;font-weight:750;margin:2px 0 8px}.cde-dcc-title{font-size:19px;font-weight:950;color:#0f172a;margin:8px 0 2px}.cde-dcc-sub{font-size:12px;color:#475569;font-weight:800;margin-bottom:10px}.cde-dcc-section-title{font-size:14px;font-weight:950;color:#0f172a;margin:0 0 8px}.cde-dcc-mini{background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:10px 11px;min-height:78px;display:flex;flex-direction:column;justify-content:center}.cde-dcc-mini-target{background:#ecfdf5;border-color:#bbf7d0;align-items:flex-start}.cde-dcc-mini span{display:block;font-size:10.5px;color:#64748b;font-weight:950;letter-spacing:.01em;line-height:1.25;margin-bottom:6px}.cde-dcc-mini b{display:block;font-size:17px;color:#0f172a;line-height:1.2}.cde-dcc-mini-target b{font-size:18px;color:#047857}.cde-dcc-mini-target .cde-market-flag{margin-right:4px;vertical-align:middle}.cde-dcc-split{border-top:1px solid #e2e8f0;margin:13px 0 12px}.cde-dcc-line{font-size:12.5px;color:#334155;font-weight:800;margin:5px 0}.cde-dcc-line b{color:#0f172a}.cde-dcc-main-amount{font-size:24px;font-weight:950;color:#0f172a;margin-bottom:8px}.cde-market-exposure{margin-top:6px;font-size:12px;color:#334155;font-weight:800}.cde-market-exposure-row{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eef2f7;padding:4px 0}.cde-capital-summary-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:7px 0}.cde-capital-summary-row div{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px}.cde-capital-summary-row b{display:block;font-size:16px;color:#059669;line-height:1.1}.cde-capital-summary-row span{font-size:10.5px;color:#64748b;font-weight:850}.cde-dcc-outer [data-testid="stVerticalBlockBorderWrapper"]{border-color:#d3dfec!important;border-radius:14px!important}.cde-dcc-outer div[data-testid="column"]{align-self:stretch}.cde-dcc-outer div[data-testid="stButton"] button{border-radius:999px;border-color:#d3dfec;font-size:12px;font-weight:850;color:#2563eb;background:#fff;padding:6px 12px}.cde-dcc-outer div[data-testid="stButton"]{margin-top:8px}
@@ -3054,23 +3062,40 @@ def render_market_allocation_budget_ui(base_symbol,total_input,compact=False):
     st.markdown('### Market Allocation Budget')
     st.caption('Select interested markets and assign % of total portfolio capital to each market. Total assigned should not exceed 100%; unassigned capital remains portfolio dry powder.')
     alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {})
+    base_currency=st.session_state.get('base_capital_currency','SGD')
+    actual_by_market, _actual_total = _executed_base_exposure_by_market(base_currency)
     alloc_rows=[]
+    header_cols=st.columns([.16,.9,.48,.62,.62,.62])
+    for c,label in zip(header_cols,['','Market','Allocation %','Market Budget','Actual Deployed','Available Budget']):
+        c.markdown(f'<div class="cde-table-head">{label}</div>',unsafe_allow_html=True)
     for mk in CDE_ALLOCATABLE_MARKETS:
         existing=float(alloc.get(mk,0.0) or 0.0)
-        row_cols=st.columns([.16,1.0,.55,.8])
+        row_cols=st.columns([.16,.9,.48,.62,.62,.62])
         enabled=row_cols[0].checkbox('',value=existing>0,key='alloc_enable_'+re.sub(r'[^A-Za-z0-9]+','_',mk))
-        row_cols[1].markdown(f'<div class="cde-row-line"><b>{hesc(mk)}</b></div>',unsafe_allow_html=True)
+        row_cols[1].markdown(f'**{hesc(mk)}**',unsafe_allow_html=True)
         pct=row_cols[2].number_input('% of total capital',min_value=0.0,max_value=100.0,value=existing if enabled else 0.0,step=1.0,key='alloc_pct_'+re.sub(r'[^A-Za-z0-9]+','_',mk),label_visibility='collapsed')
-        if not enabled: pct=0.0
+        if not enabled:
+            pct=0.0
         alloc[mk]=float(pct)
-        row_cols[3].markdown(f'<div class="cde-row-line">{base_symbol}{float(total_input)*float(pct)/100:,.0f}</div>',unsafe_allow_html=True)
-        alloc_rows.append({'Market':mk,'Selected':'Yes' if enabled and pct>0 else 'No','Allocation %':pct,'Market Budget':float(total_input)*float(pct)/100})
+        budget=float(total_input)*float(pct)/100
+        actual=max(float(actual_by_market.get(mk,0.0)),0.0) if isinstance(actual_by_market,dict) else 0.0
+        available=max(budget-actual,0.0)
+        row_cols[3].markdown(f'<div class="cde-alloc-budget">{base_symbol}{budget:,.0f}</div>',unsafe_allow_html=True)
+        row_cols[4].markdown(f'<div class="cde-alloc-budget">{base_symbol}{actual:,.0f}</div>',unsafe_allow_html=True)
+        row_cols[5].markdown(f'<div class="cde-alloc-budget">{base_symbol}{available:,.0f}</div>',unsafe_allow_html=True)
+        alloc_rows.append({'Market':mk,'Selected':'Yes' if enabled and pct>0 else 'No','Allocation %':pct,'Market Budget':budget,'Actual Deployed':actual,'Available Budget':available})
     st.session_state['market_allocation_budget_pct']=alloc
     _save_capital_settings_values(total_capital=total_input,market_alloc=alloc)
     total_assigned=sum(float(v or 0) for v in alloc.values()); unassigned=max(100.0-total_assigned,0.0)
-    a1,a2,a3=st.columns(3); a1.metric('Total Assigned',f'{total_assigned:.0f}%'); a2.metric('Unassigned Dry Powder',f'{unassigned:.0f}%'); a3.metric('Unassigned Amount',f'{base_symbol}{float(total_input)*unassigned/100:,.0f}')
-    if total_assigned>100.0: st.error('Total assigned allocation exceeds 100%. Please reduce one or more market allocations.')
-    if not compact: st.dataframe(pd.DataFrame(alloc_rows),use_container_width=True,hide_index=True)
+    a1,a2,a3=st.columns(3)
+    a1.metric('Total Assigned',f'{total_assigned:.0f}%')
+    a2.metric('Unassigned Dry Powder',f'{unassigned:.0f}%')
+    a3.metric('Unassigned Amount',f'{base_symbol}{float(total_input)*unassigned/100:,.0f}')
+    if total_assigned>100.0:
+        st.error('Total assigned allocation exceeds 100%. Please reduce one or more market allocations.')
+    if not compact:
+        with st.expander('Allocation Audit Table', expanded=False):
+            st.dataframe(pd.DataFrame(alloc_rows),use_container_width=True,hide_index=True)
     return alloc_rows,total_assigned,unassigned
 
 # ------------------------- app state/load -------------------------
@@ -3146,15 +3171,11 @@ with st.sidebar:
     st.session_state.currency_text=currency_symbol; st.session_state.currency_html=currency_html
 
     with st.expander('Capital Management', expanded=True):
-        st.markdown('<div class="cde-nav-group-caption">Capital input, funding plan and safeguard rules</div>', unsafe_allow_html=True)
-        if _nav_button('💰 Investible Capital'):
-            st.session_state.active_section='💰 Investible Capital'
-        if _nav_button('📊 Capital Overview'):
-            st.session_state.active_section='📊 Capital Overview'
-        if _nav_button('🧾 Funding Plan'):
-            st.session_state.active_section='🧾 Funding Plan'
-        if _nav_button('🧮 Allocation Rules'):
-            st.session_state.active_section='🧮 Allocation Rules'
+        st.markdown('<div class="cde-nav-group-caption">Capital settings, methodology and safeguard rules</div>', unsafe_allow_html=True)
+        if _nav_button('💰 Capital Settings'):
+            st.session_state.active_section='💰 Capital Settings'
+        if _nav_button('🧭 Philosophy, Strategy & Allocation Rules'):
+            st.session_state.active_section='🧭 Philosophy, Strategy & Allocation Rules'
 
     total_investible_state=float(st.session_state.get('total_investible_capital_input', 100000.0))
     if base_currency_code == 'SGD':
@@ -4265,11 +4286,9 @@ def render_portfolio_trade_journal(view='journal'):
     active_df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
     market_options=sorted([x for x in active_df.get('Market',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
     ticker_options=sorted([x for x in active_df.get('Ticker',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
-
     f1,f2=st.columns([1,1])
     selected_markets=f1.multiselect('Market filter',market_options,default=[],key='portfolio_market_filter')
     selected_tickers=f2.multiselect('Ticker filter',ticker_options,default=[],key='portfolio_ticker_filter')
-
     def _apply_filters(src_df):
         out=src_df.copy()
         if selected_markets and 'Market' in out.columns:
@@ -4277,9 +4296,7 @@ def render_portfolio_trade_journal(view='journal'):
         if selected_tickers and 'Ticker' in out.columns:
             out=out[out['Ticker'].astype(str).isin(selected_tickers)]
         return out
-
-    active_filtered=_apply_filters(active_df)
-    df_filtered=_apply_filters(df)
+    active_filtered=_apply_filters(active_df); df_filtered=_apply_filters(df)
     executed=active_filtered[active_filtered['Status'].astype(str).str.lower().eq('executed')].copy() if not active_filtered.empty else pd.DataFrame()
     if not executed.empty and 'Base Currency' in executed.columns:
         executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_ccy)]
@@ -4288,138 +4305,124 @@ def render_portfolio_trade_journal(view='journal'):
         executed['_Signed Quantity']=np.where(side.eq('SELL'),-executed['Quantity'].astype(float),executed['Quantity'].astype(float))
         executed['_Signed Base Equivalent']=np.where(side.eq('SELL'),-executed['Base Currency Equivalent'].astype(float),executed['Base Currency Equivalent'].astype(float))
     net_invested=float(executed['_Signed Base Equivalent'].sum()) if not executed.empty and '_Signed Base Equivalent' in executed.columns else 0.0
-    total_cap=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0)
-    dry=max(total_cap-net_invested,0.0) if total_cap else 0.0
-    deployment_pct=(net_invested/total_cap*100) if total_cap else None
-    recorded_trades=len(active_filtered)
-    pending_orders=int(active_filtered['Status'].astype(str).str.lower().eq('pending').sum()) if not active_filtered.empty and 'Status' in active_filtered.columns else 0
-    markets_covered=active_filtered['Market'].nunique() if not active_filtered.empty and 'Market' in active_filtered.columns else 0
-
-    # Shared parent summary for Portfolio Summary / Holdings & Exposure / Trade Journal.
-    st.markdown('### Portfolio Position Summary')
-    s1,s2,s3,s4=st.columns(4)
-    s1.metric('Total Capital',fmt_sgd(total_cap))
-    s2.metric('Actual Deployed',fmt_sgd(net_invested))
-    s3.metric('Dry Powder',fmt_sgd(dry))
-    s4.metric('Deployment %',f'{deployment_pct:.0f}%' if deployment_pct is not None else 'N/A')
-    t1,t2,t3=st.columns(3)
-    t1.metric('Recorded Trades',recorded_trades)
-    t2.metric('Pending Orders',pending_orders)
-    t3.metric('Markets Covered',markets_covered)
-
+    total_cap=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0); dry=max(total_cap-net_invested,0.0) if total_cap else 0.0
+    deploy_pct=(net_invested/total_cap*100) if total_cap else None
+    recorded=len(active_filtered); pending=int(active_filtered['Status'].astype(str).str.lower().eq('pending').sum()) if not active_filtered.empty and 'Status' in active_filtered.columns else 0
+    covered=active_filtered['Market'].nunique() if not active_filtered.empty and 'Market' in active_filtered.columns else 0
     sections=['Portfolio Summary','Holdings & Exposure','Trade Journal']
     default_section={'summary':'Portfolio Summary','holdings':'Holdings & Exposure','journal':'Trade Journal'}.get(view,'Trade Journal')
-    # Sidebar clicks should set the active internal section; manual toggles remain stable during rerun.
     if st.session_state.get('_portfolio_requested_view') != view:
         st.session_state['_portfolio_requested_view']=view
         st.session_state['portfolio_overview_section_buttons']=default_section
-    section=st.radio('Portfolio section',sections,index=sections.index(default_section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
-
+    section=st.session_state.get('portfolio_overview_section_buttons',default_section)
+    if section not in sections:
+        section=default_section
+    compact_summary = section in ['Holdings & Exposure','Trade Journal']
+    st.markdown('### Portfolio Position Summary')
+    if compact_summary:
+        cards=[('Total Capital',fmt_sgd(total_cap)),('Actual Deployed',fmt_sgd(net_invested)),('Dry Powder',fmt_sgd(dry)),('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A'),('Recorded Trades',recorded),('Pending Orders',pending),('Markets Covered',covered)]
+        html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b>{hesc(v)}</b></div>' for k,v in cards])
+        st.markdown(f'<div class="cde-compact-metric-grid">{html}</div>',unsafe_allow_html=True)
+    else:
+        s1,s2,s3,s4=st.columns(4)
+        s1.metric('Total Capital',fmt_sgd(total_cap)); s2.metric('Actual Deployed',fmt_sgd(net_invested)); s3.metric('Dry Powder',fmt_sgd(dry)); s4.metric('Deployment %',f'{deploy_pct:.0f}%' if deploy_pct is not None else 'N/A')
+        t1,t2,t3=st.columns(3)
+        t1.metric('Recorded Trades',recorded); t2.metric('Pending Orders',pending); t3.metric('Markets Covered',covered)
+    section=st.radio('Portfolio section',sections,index=sections.index(section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
     def _build_holdings():
-        if executed.empty:
-            return pd.DataFrame()
+        if executed.empty: return pd.DataFrame()
         grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(**{'Net Quantity':('_Signed Quantity','sum'),'Cost Base':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}).reset_index()
         vals=[]
         for _,r in grp.iterrows():
             ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
-            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0)
-            cur_px=np.nan; cur_val=np.nan; pnl=np.nan
+            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0); cur_px=np.nan; cur_val=np.nan; pnl=np.nan
             try:
                 px_df=hist(ticker,'2026-01-01')
-                if px_df is None or px_df.empty:
-                    px_df=hist(ticker,'2020-01-01')
+                if px_df is None or px_df.empty: px_df=hist(ticker,'2020-01-01')
                 if px_df is not None and not px_df.empty:
-                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
-                    cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
-            except Exception:
-                pass
+                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy); cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
+            except Exception: pass
             vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl})
         grp=pd.concat([grp,pd.DataFrame(vals)],axis=1)
         total_current=pd.to_numeric(grp['Current Value'],errors='coerce').sum(); total_cost=abs(pd.to_numeric(grp['Cost Base'],errors='coerce').sum())
-        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan)
-        grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
+        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan); grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
         return grp
-
-    def _round_numeric_cols(src_df, decimals=2):
+    def _round(src_df,dec=2):
         out=src_df.copy()
         for col in out.columns:
-            if pd.api.types.is_numeric_dtype(out[col]):
-                out[col]=out[col].round(decimals)
+            if pd.api.types.is_numeric_dtype(out[col]): out[col]=out[col].round(dec)
         return out
-
     holdings=_build_holdings()
-
     if section=='Portfolio Summary':
         st.markdown('### Market Budget Usage by Market')
-        alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {})
-        usage=[]
+        alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {}); usage=[]
         deployed_by=executed.groupby('Market')['_Signed Base Equivalent'].sum().to_dict() if not executed.empty and 'Market' in executed.columns else {}
         for mk,pct in alloc.items():
             pct=float(pct or 0)
-            if pct<=0 and mk not in deployed_by:
-                continue
-            budget=total_cap*pct/100 if total_cap else 0.0
-            actual=float(deployed_by.get(mk,0.0))
-            usage_pct=(actual/budget*100) if budget else 0.0
+            if pct<=0 and mk not in deployed_by: continue
+            budget=total_cap*pct/100 if total_cap else 0.0; actual=float(deployed_by.get(mk,0.0)); usage_pct=(actual/budget*100) if budget else 0.0
             status='EXCEEDED' if usage_pct>100 else 'NEAR LIMIT' if usage_pct>=90 else 'WATCH' if usage_pct>=70 else 'READY'
             usage.append({'Market':mk,'Budget %':pct,'Market Budget':budget,'Actual Deployed':actual,'Remaining Budget':max(budget-actual,0.0),'Usage %':usage_pct,'Status':status})
         usage_df=pd.DataFrame(usage)
-        if usage_df.empty:
-            st.info('No market allocation budget or deployed exposure available yet.')
+        if usage_df.empty: st.info('No market allocation budget or deployed exposure available yet.')
         else:
-            chart_df=usage_df.sort_values('Usage %',ascending=True)
-            colours=['#DC2626' if v>90 else '#F59E0B' if v>=70 else '#16A34A' for v in chart_df['Usage %']]
+            chart_df=usage_df.sort_values('Usage %',ascending=True); colours=['#DC2626' if v>90 else '#F59E0B' if v>=70 else '#16A34A' for v in chart_df['Usage %']]
             fig=go.Figure(go.Bar(x=chart_df['Usage %'],y=chart_df['Market'],orientation='h',marker_color=colours,text=[f'{v:.1f}%' for v in chart_df['Usage %']],textposition='outside',hovertemplate='%{y}<br>Usage: %{x:.1f}%<extra></extra>'))
             fig.update_layout(height=max(260,42*len(chart_df)+80),margin=dict(l=10,r=30,t=30,b=35),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,xaxis_title='Usage %',yaxis_title='',xaxis=dict(range=[0,max(100,float(chart_df['Usage %'].max())*1.15)]))
             st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
-            st.markdown('### Market Allocation Usage')
-            st.dataframe(_round_numeric_cols(usage_df,2),use_container_width=True,hide_index=True)
+            st.markdown('### Market Allocation Usage'); st.dataframe(_round(usage_df,2),use_container_width=True,hide_index=True)
         st.markdown('### Performance Attribution')
-        if holdings.empty:
-            st.info('No executed active holdings available for attribution.')
+        if holdings.empty: st.info('No executed active holdings available for attribution.')
         else:
             attr=holdings.groupby('Market',dropna=False).agg(**{'Cost Base':('Cost Base','sum'),'Current Value':('Current Value','sum'),'Unrealised P/L':('Unrealised P/L','sum'),'Portfolio Weight %':('Portfolio Weight %','sum'),'P/L Contribution %':('P/L Contribution %','sum')}).reset_index()
-            st.dataframe(_round_numeric_cols(attr,2),use_container_width=True,hide_index=True)
+            st.dataframe(_round(attr,2),use_container_width=True,hide_index=True)
     elif section=='Holdings & Exposure':
         st.markdown('### Holdings & Exposure by Market / Ticker')
-        if holdings.empty:
-            st.info('No executed active trades available for holdings/exposure summary.')
-        else:
-            st.dataframe(_round_numeric_cols(holdings,2),use_container_width=True,hide_index=True)
+        st.dataframe(_round(holdings,2),use_container_width=True,hide_index=True) if not holdings.empty else st.info('No executed active trades available for holdings/exposure summary.')
     else:
         st.markdown('### Full Trade Log')
         st.caption('Void keeps an audit trail and excludes the entry from portfolio calculations. Remove deletes the selected row from the active CSV log.')
-        st.dataframe(_round_numeric_cols(df_filtered,4),use_container_width=True,hide_index=True)
+        st.dataframe(_round(df_filtered,4),use_container_width=True,hide_index=True)
         if not df_filtered.empty:
             opts=[(idx,f"{idx} | {row.get('Trade Date','')} | {row.get('Market','')} | {row.get('Ticker','')} | {row.get('Side','')} | {row.get('Entry Status','Active')} | {base_ccy}{safe_float(row.get('Base Currency Equivalent'),0):,.0f}") for idx,row in df_filtered.iterrows()]
-            labels=[x[1] for x in opts]
-            chosen=st.selectbox('Select entry for correction',labels,key='trade_journal_entry_action_select')
-            chosen_idx=opts[labels.index(chosen)][0]
+            labels=[x[1] for x in opts]; chosen=st.selectbox('Select entry for correction',labels,key='trade_journal_entry_action_select'); chosen_idx=opts[labels.index(chosen)][0]
             reason=st.text_input('Void / remove reason',value='',placeholder='e.g. Wrong entry / duplicate / testing row',key='trade_journal_void_reason')
             a1,a2=st.columns(2)
             if a1.button('Void selected entry',use_container_width=True,key='void_selected_trade_entry'):
                 original=_load_trade_log()
                 for c in ['Entry Status','Void Reason','Voided At']:
-                    if c not in original.columns:
-                        original[c]=''
+                    if c not in original.columns: original[c]=''
                 original.loc[chosen_idx,'Entry Status']='Voided'; original.loc[chosen_idx,'Void Reason']=reason or 'Voided by user'; original.loc[chosen_idx,'Voided At']=datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')
-                if _save_trade_log(original):
-                    st.success('Selected trade entry voided and excluded from portfolio calculations.'); st.rerun()
+                if _save_trade_log(original): st.success('Selected trade entry voided and excluded from portfolio calculations.'); st.rerun()
             if a2.button('Remove selected entry',use_container_width=True,key='remove_selected_trade_entry'):
                 original=_load_trade_log().drop(index=chosen_idx).reset_index(drop=True)
-                if _save_trade_log(original):
-                    st.success('Selected trade entry removed from the trade log.'); st.rerun()
+                if _save_trade_log(original): st.success('Selected trade entry removed from the trade log.'); st.rerun()
         st.download_button('⬇️ Export Trade Journal CSV',df.to_csv(index=False),file_name='cde_trade_journal.csv',mime='text/csv',use_container_width=True)
-        st.markdown('### Performance Attribution')
-        if holdings.empty:
-            st.info('No executed active holdings available for attribution.')
-        else:
-            trade_attr=holdings[['Market','Ticker','Cost Base','Current Value','Unrealised P/L','Portfolio Weight %','P/L Contribution %']]
-            st.dataframe(_round_numeric_cols(trade_attr,2),use_container_width=True,hide_index=True)
 
-def render_capital_management_page(view='overview'):
+def render_capital_management_page(view='settings'):
     _init_capital_settings()
-    st.markdown('## 💰 Capital Management'); st.caption('Base-currency capital, funding readiness, allocation rules and safeguards.')
+    if view=='rules':
+        st.markdown('## 🧭 Philosophy, Strategy & Allocation Rules')
+        st.caption('Read-only strategy, allocation methodology, deployment ladder and guardrails. Editable market budgets remain only under Capital Settings.')
+        st.markdown('### Investment Philosophy')
+        st.markdown('- Market crashes create staged deployment opportunities.\n- Capital preservation remains the default stance until trigger levels are reached.\n- Deployment is rules-based, not emotion-based.\n- Each market deploys only from its assigned market allocation budget.\n- Funding readiness must be checked before deployment.')
+        st.markdown('### Strategy Framework')
+        st.markdown('- Structural drawdown drives the deployment tier.\n- Valuation, macro risk and trend are supporting context.\n- Suggested Deploy is calculated from the selected market allocation budget.\n- Executed trades reduce available market budget.\n- All executed trades are normalised to base currency before portfolio and funding checks.')
+        st.markdown('### Allocation Rules')
+        rules=pd.DataFrame([
+            {'Rule':'Market Allocation Rule','Methodology':'Each selected market deploys only from its user-assigned market allocation budget.'},
+            {'Rule':'Suggested Deploy Formula','Methodology':'Suggested Deploy = Market Budget × Active Deployment Tier − Actual Deployed.'},
+            {'Rule':'Funding Readiness Rule','Methodology':'READY if Suggested Deploy is less than or equal to Available Market Budget.'},
+            {'Rule':'FX Normalisation Rule','Methodology':'Trade currency amounts are converted to base currency before deployment and exposure calculations.'},
+            {'Rule':'Safeguard Rule','Methodology':'SRS / CPF-OA are only included when enabled and only when base currency is SGD.'},
+        ])
+        st.dataframe(rules,use_container_width=True,hide_index=True)
+        st.markdown('### Deployment Ladder')
+        st.dataframe(pd.DataFrame([{'Zone':'HOLD / NO DEPLOYMENT','Trigger':'Above -8% drawdown','Cumulative Deploy':'0%'},{'Zone':'INITIAL BUY','Trigger':'-8% drawdown','Cumulative Deploy':'10%'},{'Zone':'BUY','Trigger':'-15% drawdown','Cumulative Deploy':'25%'},{'Zone':'STRONG BUY','Trigger':'-25% drawdown','Cumulative Deploy':'50%'},{'Zone':'CRISIS BUY','Trigger':'-35% drawdown','Cumulative Deploy':'75%'},{'Zone':'MAX CRISIS BUY','Trigger':'-50% drawdown','Cumulative Deploy':'100%'}]),use_container_width=True,hide_index=True)
+        return
+
+    st.markdown('## 💰 Capital Settings')
+    st.caption('Base-currency capital, source breakdown, market allocation budget, funding readiness and safeguards.')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
     base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
@@ -4433,33 +4436,49 @@ def render_capital_management_page(view='overview'):
         st.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
         st.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
     st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
-    include_srs_local=bool(st.session_state.get('include_srs_sti',False)) if base_currency=='SGD' else False; include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False)) if base_currency=='SGD' else False
-    srs_local=float(st.session_state.get('investible_srs_input',0.0)) if include_srs_local else 0.0; cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0)) if include_cpf_local else 0.0; preserve=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False; cpf_available=max(cpf_raw-(20000 if preserve else 0),0) if include_cpf_local else 0.0
+    include_srs_local=bool(st.session_state.get('include_srs_sti',False)) if base_currency=='SGD' else False
+    include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False)) if base_currency=='SGD' else False
+    srs_local=float(st.session_state.get('investible_srs_input',0.0)) if include_srs_local else 0.0
+    cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0)) if include_cpf_local else 0.0
+    preserve=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False
+    cpf_available=max(cpf_raw-(20000 if preserve else 0),0) if include_cpf_local else 0.0
     df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
-    if not executed.empty and 'Base Currency' in executed.columns: executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
+    if not executed.empty and 'Base Currency' in executed.columns:
+        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
     trade_deployed=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
-    deployed_local=trade_deployed if trade_deployed>0 else min(max(float(manual_override),0.0),float(total_input)); remaining_local=max(float(total_input)-deployed_local,0); active_tier=(deployed_local/float(total_input)) if total_input else 0
+    deployed_local=trade_deployed if trade_deployed>0 else min(max(float(manual_override),0.0),float(total_input))
+    remaining_local=max(float(total_input)-deployed_local,0)
+    deployed_pct=(deployed_local/float(total_input)) if total_input else 0
     funding_parts=[f'{base_symbol} Base Capital']
     if include_srs_local: funding_parts.append('SRS')
     if include_cpf_local: funding_parts.append('CPF-OA')
     st.session_state.funding_profile=' + '.join(funding_parts)
-    c1,c2,c3,c4=st.columns(4); c1.metric('Total Capital',f'{base_symbol}{float(total_input):,.0f}'); c2.metric('Current Allocation',f'{active_tier:.0%}'); c3.metric('Funding Readiness',f'{base_symbol}{remaining_local:,.0f}'); c4.metric('Funding Profile',st.session_state.funding_profile)
-    if view=='investible':
-        render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
-        st.markdown('---')
-        st.markdown('### Capital & Safeguards '+tooltip_html('Safeguards',[('Base currency','Single platform-level capital currency'),('Allocation logic','Executed trades are converted to base currency before allocation calculations'),('SRS / CPF-OA','Shown only when base currency is SGD')],'Capital inputs feed Suggested Deploy and Funding Readiness.'),unsafe_allow_html=True)
-        st.markdown(f'<div class="currency-pill">{base_symbol} &nbsp; {CURRENCY_NAME_MAP.get(base_currency,base_currency)}</div>',unsafe_allow_html=True)
-        if include_srs_local: st.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
-        if include_cpf_local: st.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input'); st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
-        st.info('Funding readiness now uses base-currency equivalents. USD 10k and HKD 10k are no longer treated as equal.')
-    elif view=='rules':
-        render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
-        st.markdown('### Deployment Ladder')
-        st.dataframe(pd.DataFrame([{'Zone':'HOLD / NO DEPLOYMENT','Trigger':'Above -8% drawdown','Cumulative Deploy':'0%'},{'Zone':'INITIAL BUY','Trigger':'-8% drawdown','Cumulative Deploy':'10%'},{'Zone':'BUY','Trigger':'-15% drawdown','Cumulative Deploy':'25%'},{'Zone':'STRONG BUY','Trigger':'-25% drawdown','Cumulative Deploy':'50%'},{'Zone':'CRISIS BUY','Trigger':'-35% drawdown','Cumulative Deploy':'75%'},{'Zone':'MAX CRISIS BUY','Trigger':'-50% drawdown','Cumulative Deploy':'100%'}]),use_container_width=True,hide_index=True)
-    elif view=='funding': st.markdown('### Funding Plan'); st.info('Funding plan uses base-currency equivalents from executed trade entries and market allocation budgets. Manual override is portfolio-level actual exposure fallback only.')
-    else: st.markdown('### Capital Overview'); st.dataframe(pd.DataFrame([{'Source':'Base Capital','Available':float(total_input)},{'Source':'Executed Trades Base Equivalent','Available':trade_deployed},{'Source':'Manual Override Used if No Trades','Available':manual_override},{'Source':'Funding Readiness / Remaining','Available':remaining_local},{'Source':'CPF-OA after safeguard','Available':cpf_available}]),use_container_width=True,hide_index=True)
+    st.markdown('### Capital Position & Funding Summary')
+    c1,c2,c3,c4=st.columns(4)
+    c1.metric('Total Capital',f'{base_symbol}{float(total_input):,.0f}')
+    c2.metric('Actual Deployed',f'{base_symbol}{deployed_local:,.0f}')
+    c3.metric('Funding Readiness',f'{base_symbol}{remaining_local:,.0f}')
+    c4.metric('Funding Profile',st.session_state.funding_profile)
+    a1,a2,a3=st.columns(3)
+    total_assigned=sum(float(v or 0) for v in (st.session_state.get('market_allocation_budget_pct',{}) or {}).values())
+    unassigned=max(100.0-total_assigned,0.0)
+    a1.metric('Total Assigned',f'{total_assigned:.0f}%')
+    a2.metric('Unassigned Dry Powder',f'{unassigned:.0f}%')
+    a3.metric('Unassigned Amount',f'{base_symbol}{float(total_input)*unassigned/100:,.0f}')
+    st.markdown('### Capital Source Breakdown')
+    st.dataframe(pd.DataFrame([{'Source':'Base Capital','Available':float(total_input)},{'Source':'Executed Trades Base Equivalent','Available':trade_deployed},{'Source':'Manual Override Used if No Trades','Available':manual_override},{'Source':'Funding Readiness / Remaining','Available':remaining_local},{'Source':'CPF-OA after safeguard','Available':cpf_available}]),use_container_width=True,hide_index=True)
+    render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
+    st.markdown('---')
+    st.markdown('### Capital & Safeguards '+tooltip_html('Safeguards',[('Base currency','Single platform-level capital currency'),('Allocation logic','Executed trades are converted to base currency before allocation calculations'),('SRS / CPF-OA','Shown only when base currency is SGD')],'Capital inputs feed Suggested Deploy and Funding Readiness.'),unsafe_allow_html=True)
+    st.markdown(f'<span class="source-pill source-official">{base_symbol}   {CURRENCY_NAME_MAP.get(base_currency,base_currency)}</span>',unsafe_allow_html=True)
+    if include_srs_local:
+        st.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
+    if include_cpf_local:
+        st.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
+        st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
+    st.info('Funding readiness now uses base-currency equivalents. USD 10k and HKD 10k are no longer treated as equal.')
 
-RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('investible'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('overview'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('funding'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
+RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Capital Settings':lambda expanded=True: render_capital_management_page('settings'),'🧭 Philosophy, Strategy & Allocation Rules':lambda expanded=True: render_capital_management_page('rules'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('settings'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('settings'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('settings'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
 
 def run_render_loop():
     """Locked CDE router: Executive Centre landing only; Market Deep Dive owns old selected-market page."""
