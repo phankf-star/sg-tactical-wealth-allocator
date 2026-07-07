@@ -3380,12 +3380,12 @@ def render_executive():
     best_market_overallocated=best_market_over_amount>0
     best_market_available=max(best_market_available_raw,0.0)
     coverage_ratio=(best_market_available/next_deploy_amt) if next_deploy_amt>0 else 0
-    coverage_text='Assign market budget' if best_market_budget<=0 else ('Over allocated' if best_market_overallocated else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x market coverage'))
+    coverage_text='Assign market budget' if best_market_budget<=0 else ('Over-Deployed' if best_market_overallocated else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x market coverage'))
     funding_ready = (not best_market_overallocated) and ((next_deploy_amt <= 0) or (best_market_available >= next_deploy_amt))
-    funding_status = 'OVER-ALLOCATED \u2715' if best_market_overallocated else ('READY \u2713' if funding_ready else 'INSUFFICIENT \u2715')
+    funding_status = 'OVER-DEPLOYED ✕' if best_market_overallocated else ('READY ✓' if funding_ready else 'INSUFFICIENT ✕')
     funding_status_class = 'cde-funding-insufficient' if best_market_overallocated else ('cde-funding-ready' if funding_ready else 'cde-funding-insufficient')
     top_funding_ready = (not best_market_overallocated) and ((remaining_amt > 0) or (next_deploy_amt <= 0))
-    top_funding_status = 'OVER-ALLOCATED \u2715' if best_market_overallocated else ('READY \u2713' if top_funding_ready else 'INSUFFICIENT \u2715')
+    top_funding_status = 'OVER-DEPLOYED ✕' if best_market_overallocated else ('READY ✓' if top_funding_ready else 'INSUFFICIENT ✕')
     top_funding_status_class = 'cde-funding-ready' if top_funding_ready else 'cde-funding-insufficient'
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
     market_rows=[]
@@ -3428,6 +3428,12 @@ def render_executive():
     watch_items=sorted(watch_items,key=lambda x:x['DistanceNum'])[:3]
     watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span>{hesc(w['Distance'])} away</span><em>{hesc(w['Trigger'])}</em></div>''' for w in watch_items])
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
+    if best_market_overallocated:
+        next_deploy_amt=0.0
+        condition_text=f"{best['Market']} already above allocated deployment budget"
+        funding_detail_inline=f"{fmt_sgd_html(best_market_over_amount)} above {hesc(best['Market'])} allocation budget"
+    else:
+        funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available · {hesc(coverage_text)}"
 
     st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
     st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box"><div style="font-size:13px;font-weight:950;color:#0F172A;margin-bottom:6px;">Funding Readiness — {market_label_html(best["Market"])}</div><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;line-height:1.35;"><b style="display:inline-block;margin:0;white-space:nowrap;">{hesc(funding_status)}</b><span style="display:inline-block;line-height:1.35;">· {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
@@ -3526,7 +3532,7 @@ def render_market_deep_dive_summary():
     selected_market_overallocated = selected_market_over_amount > 0
     selected_market_available = max(selected_market_available_raw, 0.0)
     market_funding_ready = (not selected_market_overallocated) and ((deploy <= 0) or (selected_market_available >= float(deploy)))
-    market_funding_status = 'OVER-ALLOCATED \u2715' if selected_market_overallocated else ('READY \u2713' if market_funding_ready else 'INSUFFICIENT \u2715')
+    market_funding_status = 'OVER-DEPLOYED ✕' if selected_market_overallocated else ('READY ✓' if market_funding_ready else 'INSUFFICIENT ✕')
     market_funding_caption = (f'{fmt_sgd(selected_market_over_amount)} above market allocation budget' if selected_market_overallocated else ('within market allocation budget' if market_funding_ready else 'exceeds remaining market allocation budget'))
     market_funding_class = 'insufficient' if selected_market_overallocated else ('ready' if market_funding_ready else 'insufficient')
     selected_market_title_html = market_label_with_flag_html(index_label)
@@ -3548,10 +3554,10 @@ def render_suggested(expanded=False):
         calc_tip=tooltip_html('Calculation Basis',[('Formula','Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed')],'Source: selected price data, structural drawdown formula, selected market allocation budget and executed market exposure. This is the calculation basis, not a buy call.')
         holdings_tip=tooltip_html('Current Holdings',[('Price Fetch','Attempts live price fetch for all active holdings, including tickers outside recommended list'),('Fallback','If price is unavailable, cost base still counts as Actual Deployed')],'Unavailable price/value/P&L displays as N/A, not None.')
         ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'Cumulative deployment percentages by drawdown zone.')
-        overallocated_flag = bool(globals().get('selected_market_overallocated', False))
-        over_amount = float(globals().get('selected_market_over_amount', 0.0) or 0.0)
-        calc_warning = f'<div class="xec-note" style="color:#DC2626;font-weight:950;margin-top:8px;">Over allocated by {fmt_sgd_html(over_amount)} above selected-market allocation budget.</div>' if overallocated_flag else ''
-        plan_html=(f'<div class="cde-mini-plan"><span>Deploy now</span><b class="red">{fmt_sgd(0)}</b><span>Capital stance</span><b class="red">Over allocated</b><span>Budget excess</span><b class="red">{fmt_sgd(over_amount)}</b></div>') if overallocated_flag else ((f'<div class="cde-mini-plan"><span>Tranche 1</span><b class="orange">{fmt_sgd(deploy*.5)}</b><span>Tranche 2</span><b class="orange">{fmt_sgd(deploy*.25)}</b><span>Tranche 3</span><b class="blue">{fmt_sgd(deploy*.25)}</b><span>Funding Source</span><b class="green">{hesc(funding_source)}</b><span>Cash Deployment</span><b class="green">{fmt_sgd(cash_deploy)}</b></div>') if deploy>0 else (f'<div class="cde-mini-plan"><span>Deploy now</span><b>{fmt_sgd(0)}</b><span>Capital stance</span><b class="green">Preserved</b><span>Next trigger</span><b class="orange">{hesc(next_trigger)}</b></div>'))
+        overallocated_flag = bool(selected_market_overallocated)
+        over_amount = float(selected_market_over_amount or 0.0)
+        calc_warning = f'<div class="xec-note" style="color:#DC2626;font-weight:950;margin-top:8px;">Over-Deployed by {fmt_sgd_html(over_amount)} above selected-market allocation budget.</div>' if overallocated_flag else ''
+        plan_html=(f'<div class="cde-mini-plan"><span>Deploy now</span><b class="red">{fmt_sgd(0)}</b><span>Capital stance</span><b class="red">Over-Deployed</b><span>Budget excess</span><b class="red">{fmt_sgd(over_amount)}</b></div>') if overallocated_flag else ((f'<div class="cde-mini-plan"><span>Tranche 1</span><b class="orange">{fmt_sgd(deploy*.5)}</b><span>Tranche 2</span><b class="orange">{fmt_sgd(deploy*.25)}</b><span>Tranche 3</span><b class="blue">{fmt_sgd(deploy*.25)}</b><span>Funding Source</span><b class="green">{hesc(funding_source)}</b><span>Cash Deployment</span><b class="green">{fmt_sgd(cash_deploy)}</b></div>') if deploy>0 else (f'<div class="cde-mini-plan"><span>Deploy now</span><b>{fmt_sgd(0)}</b><span>Capital stance</span><b class="green">Preserved</b><span>Next trigger</span><b class="orange">{hesc(next_trigger)}</b></div>'))
         def _candidate_tickers_for_price(ticker, market):
             raw=str(ticker or '').strip().upper(); cands=[raw] if raw else []
             suffix=ETF_MARKET_SUFFIX_HINTS.get(str(market), '') if 'ETF_MARKET_SUFFIX_HINTS' in globals() else ''
@@ -4374,11 +4380,11 @@ def render_portfolio_trade_journal(view='journal'):
     st.markdown('<div style="display:flex;gap:8px;margin:8px 0 12px;">', unsafe_allow_html=True)
     t1,t2,t3=st.columns(3)
     if t1.button(('✓ ' if section=='Portfolio Summary' else '')+'Portfolio Summary', key='portfolio_tab_summary', use_container_width=True):
-        section='Portfolio Summary'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='summary'; st.rerun()
+        section='Portfolio Summary'; st.session_state.active_section='📌 Portfolio Summary'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='summary'; st.rerun()
     if t2.button(('✓ ' if section=='Holdings & Exposure' else '')+'Holdings & Exposure', key='portfolio_tab_holdings', use_container_width=True):
-        section='Holdings & Exposure'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='holdings'; st.rerun()
+        section='Holdings & Exposure'; st.session_state.active_section='📦 Holdings & Exposure'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='holdings'; st.rerun()
     if t3.button(('✓ ' if section=='Trade Journal' else '')+'Trade Journal', key='portfolio_tab_journal', use_container_width=True):
-        section='Trade Journal'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='journal'; st.rerun()
+        section='Trade Journal'; st.session_state.active_section='📒 Trade Journal'; st.session_state['portfolio_overview_section_buttons']=section; st.session_state['_portfolio_requested_view']='journal'; st.rerun()
     active_df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
     market_options=sorted([x for x in active_df.get('Market',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
     ticker_options=sorted([x for x in active_df.get('Ticker',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
