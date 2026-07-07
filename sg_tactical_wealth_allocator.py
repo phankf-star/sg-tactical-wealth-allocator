@@ -4251,8 +4251,8 @@ def render_trade_entry_page(view='form'):
     st.markdown('### Full Trade Entry Form'); _trade_entry_form('full_trade_entry')
 
 def render_portfolio_trade_journal(view='journal'):
-    st.markdown('## 📒 Portfolio Overview / Trade Journal')
-    st.caption('One consolidated portfolio page with Portfolio Summary, Holdings & Exposure, full Trade Journal and portfolio-performance attribution.')
+    st.markdown('## 📒 Portfolio Overview')
+    st.caption('Portfolio summary, holdings exposure, full trade journal and portfolio-performance attribution.')
     df=_trade_log_with_numeric()
     if df.empty:
         st.info('No trade entries recorded yet. Use Trade Entry -> Trade Entry Form or the pop-up quick entry.')
@@ -4265,9 +4265,11 @@ def render_portfolio_trade_journal(view='journal'):
     active_df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
     market_options=sorted([x for x in active_df.get('Market',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
     ticker_options=sorted([x for x in active_df.get('Ticker',pd.Series(dtype=str)).astype(str).unique().tolist() if x and x.lower()!='nan'])
+
     f1,f2=st.columns([1,1])
     selected_markets=f1.multiselect('Market filter',market_options,default=[],key='portfolio_market_filter')
     selected_tickers=f2.multiselect('Ticker filter',ticker_options,default=[],key='portfolio_ticker_filter')
+
     def _apply_filters(src_df):
         out=src_df.copy()
         if selected_markets and 'Market' in out.columns:
@@ -4275,80 +4277,145 @@ def render_portfolio_trade_journal(view='journal'):
         if selected_tickers and 'Ticker' in out.columns:
             out=out[out['Ticker'].astype(str).isin(selected_tickers)]
         return out
-    active_filtered=_apply_filters(active_df); df_filtered=_apply_filters(df)
+
+    active_filtered=_apply_filters(active_df)
+    df_filtered=_apply_filters(df)
     executed=active_filtered[active_filtered['Status'].astype(str).str.lower().eq('executed')].copy() if not active_filtered.empty else pd.DataFrame()
     if not executed.empty and 'Base Currency' in executed.columns:
         executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_ccy)]
     if not executed.empty:
-        side=executed['Side'].astype(str).str.upper()
+        side=executed['Side'].astype(str).str.upper() if 'Side' in executed.columns else pd.Series(['BUY']*len(executed),index=executed.index)
         executed['_Signed Quantity']=np.where(side.eq('SELL'),-executed['Quantity'].astype(float),executed['Quantity'].astype(float))
         executed['_Signed Base Equivalent']=np.where(side.eq('SELL'),-executed['Base Currency Equivalent'].astype(float),executed['Base Currency Equivalent'].astype(float))
     net_invested=float(executed['_Signed Base Equivalent'].sum()) if not executed.empty and '_Signed Base Equivalent' in executed.columns else 0.0
-    k1,k2,k3,k4=st.columns(4)
-    k1.metric('Recorded Trades',len(active_df)); k2.metric('Executed Base Equivalent',fmt_sgd(net_invested)); k3.metric('Pending Orders',int(active_df['Status'].astype(str).str.lower().eq('pending').sum()) if not active_df.empty else 0); k4.metric('Markets Covered',active_df['Market'].nunique() if 'Market' in active_df.columns else 0)
+    total_cap=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0)
+    dry=max(total_cap-net_invested,0.0) if total_cap else 0.0
+    deployment_pct=(net_invested/total_cap*100) if total_cap else None
+    recorded_trades=len(active_filtered)
+    pending_orders=int(active_filtered['Status'].astype(str).str.lower().eq('pending').sum()) if not active_filtered.empty and 'Status' in active_filtered.columns else 0
+    markets_covered=active_filtered['Market'].nunique() if not active_filtered.empty and 'Market' in active_filtered.columns else 0
+
+    # Shared parent summary for Portfolio Summary / Holdings & Exposure / Trade Journal.
+    st.markdown('### Portfolio Position Summary')
+    s1,s2,s3,s4=st.columns(4)
+    s1.metric('Total Capital',fmt_sgd(total_cap))
+    s2.metric('Actual Deployed',fmt_sgd(net_invested))
+    s3.metric('Dry Powder',fmt_sgd(dry))
+    s4.metric('Deployment %',f'{deployment_pct:.0f}%' if deployment_pct is not None else 'N/A')
+    t1,t2,t3=st.columns(3)
+    t1.metric('Recorded Trades',recorded_trades)
+    t2.metric('Pending Orders',pending_orders)
+    t3.metric('Markets Covered',markets_covered)
+
     sections=['Portfolio Summary','Holdings & Exposure','Trade Journal']
     default_section={'summary':'Portfolio Summary','holdings':'Holdings & Exposure','journal':'Trade Journal'}.get(view,'Trade Journal')
+    # Sidebar clicks should set the active internal section; manual toggles remain stable during rerun.
+    if st.session_state.get('_portfolio_requested_view') != view:
+        st.session_state['_portfolio_requested_view']=view
+        st.session_state['portfolio_overview_section_buttons']=default_section
     section=st.radio('Portfolio section',sections,index=sections.index(default_section),horizontal=True,label_visibility='collapsed',key='portfolio_overview_section_buttons')
+
     def _build_holdings():
-        if executed.empty: return pd.DataFrame()
-        grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(**{'Net Quantity':('_Signed Quantity','sum'),'Base Cost':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}).reset_index()
+        if executed.empty:
+            return pd.DataFrame()
+        grp=executed.groupby(['Market','Ticker','Trade Currency','Base Currency'],dropna=False).agg(**{'Net Quantity':('_Signed Quantity','sum'),'Cost Base':('_Signed Base Equivalent','sum'),'Trades':('Ticker','count')}).reset_index()
         vals=[]
         for _,r in grp.iterrows():
-            ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy; qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Base Cost'),0.0)
+            ticker=str(r.get('Ticker','')).strip().upper(); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or base_ccy
+            qty=safe_float(r.get('Net Quantity'),0.0); cost=safe_float(r.get('Cost Base'),0.0)
             cur_px=np.nan; cur_val=np.nan; pnl=np.nan
             try:
                 px_df=hist(ticker,'2026-01-01')
-                if px_df is None or px_df.empty: px_df=hist(ticker,'2020-01-01')
+                if px_df is None or px_df.empty:
+                    px_df=hist(ticker,'2020-01-01')
                 if px_df is not None and not px_df.empty:
-                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy); cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
-            except Exception: pass
-            vals.append({'Current Price':cur_px,'Current Value Base':cur_val,'Unrealised P/L':pnl})
+                    cur_px=safe_float(px_df.Close.iloc[-1],np.nan); fx,_,_=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
+                    cur_val=qty*cur_px*float(fx or 0); pnl=cur_val-cost
+            except Exception:
+                pass
+            vals.append({'Current Price':cur_px,'Current Value':cur_val,'Unrealised P/L':pnl})
         grp=pd.concat([grp,pd.DataFrame(vals)],axis=1)
-        total_current=pd.to_numeric(grp['Current Value Base'],errors='coerce').sum(); total_cost=abs(pd.to_numeric(grp['Base Cost'],errors='coerce').sum())
-        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value Base']/total_current*100,np.nan)
-        grp['Contribution to Portfolio P/L %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
+        total_current=pd.to_numeric(grp['Current Value'],errors='coerce').sum(); total_cost=abs(pd.to_numeric(grp['Cost Base'],errors='coerce').sum())
+        grp['Portfolio Weight %']=np.where(total_current>0,grp['Current Value']/total_current*100,np.nan)
+        grp['P/L Contribution %']=np.where(total_cost>0,grp['Unrealised P/L']/total_cost*100,np.nan)
         return grp
+
+    def _round_numeric_cols(src_df, decimals=2):
+        out=src_df.copy()
+        for col in out.columns:
+            if pd.api.types.is_numeric_dtype(out[col]):
+                out[col]=out[col].round(decimals)
+        return out
+
     holdings=_build_holdings()
+
     if section=='Portfolio Summary':
-        st.markdown('### Portfolio Summary')
-        total_cap=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0); dry=max(total_cap-net_invested,0.0) if total_cap else 0.0
-        s1,s2,s3,s4=st.columns(4); s1.metric('Total Capital',fmt_sgd(total_cap)); s2.metric('Actual Deployed',fmt_sgd(net_invested)); s3.metric('Dry Powder',fmt_sgd(dry)); s4.metric('Deployment %',f'{net_invested/total_cap*100:.0f}%' if total_cap else 'N/A')
-        st.markdown('### Market Allocation Usage')
-        alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {}); usage=[]; deployed_by=executed.groupby('Market')['_Signed Base Equivalent'].sum().to_dict() if not executed.empty and 'Market' in executed.columns else {}
+        st.markdown('### Market Budget Usage by Market')
+        alloc=dict(st.session_state.get('market_allocation_budget_pct',{}) or {})
+        usage=[]
+        deployed_by=executed.groupby('Market')['_Signed Base Equivalent'].sum().to_dict() if not executed.empty and 'Market' in executed.columns else {}
         for mk,pct in alloc.items():
             pct=float(pct or 0)
-            if pct<=0 and mk not in deployed_by: continue
-            budget=total_cap*pct/100 if total_cap else 0.0; actual=float(deployed_by.get(mk,0.0))
-            usage.append({'Market':mk,'Budget %':pct,'Market Budget':budget,'Actual Deployed':actual,'Remaining Budget':max(budget-actual,0.0),'Usage %':actual/budget*100 if budget else 0.0})
-        st.dataframe(pd.DataFrame(usage),use_container_width=True,hide_index=True) if usage else st.info('No market allocation budget or deployed exposure available yet.')
+            if pct<=0 and mk not in deployed_by:
+                continue
+            budget=total_cap*pct/100 if total_cap else 0.0
+            actual=float(deployed_by.get(mk,0.0))
+            usage_pct=(actual/budget*100) if budget else 0.0
+            status='EXCEEDED' if usage_pct>100 else 'NEAR LIMIT' if usage_pct>=90 else 'WATCH' if usage_pct>=70 else 'READY'
+            usage.append({'Market':mk,'Budget %':pct,'Market Budget':budget,'Actual Deployed':actual,'Remaining Budget':max(budget-actual,0.0),'Usage %':usage_pct,'Status':status})
+        usage_df=pd.DataFrame(usage)
+        if usage_df.empty:
+            st.info('No market allocation budget or deployed exposure available yet.')
+        else:
+            chart_df=usage_df.sort_values('Usage %',ascending=True)
+            colours=['#DC2626' if v>90 else '#F59E0B' if v>=70 else '#16A34A' for v in chart_df['Usage %']]
+            fig=go.Figure(go.Bar(x=chart_df['Usage %'],y=chart_df['Market'],orientation='h',marker_color=colours,text=[f'{v:.1f}%' for v in chart_df['Usage %']],textposition='outside',hovertemplate='%{y}<br>Usage: %{x:.1f}%<extra></extra>'))
+            fig.update_layout(height=max(260,42*len(chart_df)+80),margin=dict(l=10,r=30,t=30,b=35),plot_bgcolor='white',paper_bgcolor='white',showlegend=False,xaxis_title='Usage %',yaxis_title='',xaxis=dict(range=[0,max(100,float(chart_df['Usage %'].max())*1.15)]))
+            st.plotly_chart(fig,use_container_width=True,config={'displayModeBar':False})
+            st.markdown('### Market Allocation Usage')
+            st.dataframe(_round_numeric_cols(usage_df,2),use_container_width=True,hide_index=True)
         st.markdown('### Performance Attribution')
-        if holdings.empty: st.info('No executed active holdings available for attribution.')
-        else: st.dataframe(holdings.groupby('Market',dropna=False).agg(**{'Base Cost':('Base Cost','sum'),'Current Value Base':('Current Value Base','sum'),'Unrealised P/L':('Unrealised P/L','sum'),'Portfolio Weight %':('Portfolio Weight %','sum'),'Contribution to Portfolio P/L %':('Contribution to Portfolio P/L %','sum')}).reset_index(),use_container_width=True,hide_index=True)
+        if holdings.empty:
+            st.info('No executed active holdings available for attribution.')
+        else:
+            attr=holdings.groupby('Market',dropna=False).agg(**{'Cost Base':('Cost Base','sum'),'Current Value':('Current Value','sum'),'Unrealised P/L':('Unrealised P/L','sum'),'Portfolio Weight %':('Portfolio Weight %','sum'),'P/L Contribution %':('P/L Contribution %','sum')}).reset_index()
+            st.dataframe(_round_numeric_cols(attr,2),use_container_width=True,hide_index=True)
     elif section=='Holdings & Exposure':
         st.markdown('### Holdings & Exposure by Market / Ticker')
-        st.dataframe(holdings,use_container_width=True,hide_index=True) if not holdings.empty else st.info('No executed active trades available for holdings/exposure summary.')
+        if holdings.empty:
+            st.info('No executed active trades available for holdings/exposure summary.')
+        else:
+            st.dataframe(_round_numeric_cols(holdings,2),use_container_width=True,hide_index=True)
     else:
         st.markdown('### Full Trade Log')
         st.caption('Void keeps an audit trail and excludes the entry from portfolio calculations. Remove deletes the selected row from the active CSV log.')
-        st.dataframe(df_filtered,use_container_width=True,hide_index=True)
+        st.dataframe(_round_numeric_cols(df_filtered,4),use_container_width=True,hide_index=True)
         if not df_filtered.empty:
             opts=[(idx,f"{idx} | {row.get('Trade Date','')} | {row.get('Market','')} | {row.get('Ticker','')} | {row.get('Side','')} | {row.get('Entry Status','Active')} | {base_ccy}{safe_float(row.get('Base Currency Equivalent'),0):,.0f}") for idx,row in df_filtered.iterrows()]
-            labels=[x[1] for x in opts]; chosen=st.selectbox('Select entry for correction',labels,key='trade_journal_entry_action_select'); chosen_idx=opts[labels.index(chosen)][0]
+            labels=[x[1] for x in opts]
+            chosen=st.selectbox('Select entry for correction',labels,key='trade_journal_entry_action_select')
+            chosen_idx=opts[labels.index(chosen)][0]
             reason=st.text_input('Void / remove reason',value='',placeholder='e.g. Wrong entry / duplicate / testing row',key='trade_journal_void_reason')
             a1,a2=st.columns(2)
             if a1.button('Void selected entry',use_container_width=True,key='void_selected_trade_entry'):
-                original=_load_trade_log();
+                original=_load_trade_log()
                 for c in ['Entry Status','Void Reason','Voided At']:
-                    if c not in original.columns: original[c]=''
+                    if c not in original.columns:
+                        original[c]=''
                 original.loc[chosen_idx,'Entry Status']='Voided'; original.loc[chosen_idx,'Void Reason']=reason or 'Voided by user'; original.loc[chosen_idx,'Voided At']=datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')
-                if _save_trade_log(original): st.success('Selected trade entry voided and excluded from portfolio calculations.'); st.rerun()
+                if _save_trade_log(original):
+                    st.success('Selected trade entry voided and excluded from portfolio calculations.'); st.rerun()
             if a2.button('Remove selected entry',use_container_width=True,key='remove_selected_trade_entry'):
                 original=_load_trade_log().drop(index=chosen_idx).reset_index(drop=True)
-                if _save_trade_log(original): st.success('Selected trade entry removed from the trade log.'); st.rerun()
+                if _save_trade_log(original):
+                    st.success('Selected trade entry removed from the trade log.'); st.rerun()
         st.download_button('⬇️ Export Trade Journal CSV',df.to_csv(index=False),file_name='cde_trade_journal.csv',mime='text/csv',use_container_width=True)
         st.markdown('### Performance Attribution')
-        if holdings.empty: st.info('No executed active holdings available for attribution.')
-        else: st.dataframe(holdings[['Market','Ticker','Base Cost','Current Value Base','Unrealised P/L','Portfolio Weight %','Contribution to Portfolio P/L %']],use_container_width=True,hide_index=True)
+        if holdings.empty:
+            st.info('No executed active holdings available for attribution.')
+        else:
+            trade_attr=holdings[['Market','Ticker','Cost Base','Current Value','Unrealised P/L','Portfolio Weight %','P/L Contribution %']]
+            st.dataframe(_round_numeric_cols(trade_attr,2),use_container_width=True,hide_index=True)
 
 def render_capital_management_page(view='overview'):
     _init_capital_settings()
