@@ -3471,8 +3471,8 @@ def render_executive():
             opp_box = st.container()
         with opp_box:
             st.markdown(f'''<style>
-            div[data-testid="stButton"] button{font-size:12px!important;padding:4px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:32px!important;}
-            div[data-testid="stButton"] button p{white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;}
+            div[data-testid="stButton"] button{{font-size:12px!important;padding:4px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:32px!important;}}
+            div[data-testid="stButton"] button p{{white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;}}
             </style><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
             header_cols=st.columns([0.34,1.18,.72,.52,.62,.72,.52,.52,.52,1.06])
             header_labels=['Rank','Market','Drawdown',f'Score {score_tip}','Signal','Price','1Y %','3Y %','5Y %','Deep Dive']
