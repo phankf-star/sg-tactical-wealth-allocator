@@ -3471,22 +3471,25 @@ def render_executive():
             opp_box = st.container()
         with opp_box:
             st.markdown(f'''<style>
-            div[data-testid="stButton"] button{{font-size:12px!important;padding:4px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:32px!important;}}
+            div[data-testid="stButton"] button{{font-size:12px!important;padding:3px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:30px!important;}}
             div[data-testid="stButton"] button p{{white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;}}
+            .cde-mo-sig{{display:flex!important;align-items:center!important;justify-content:center!important;height:30px!important;}}
+            .cde-mo-sig .cde-sig{{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:42px!important;height:22px!important;line-height:22px!important;padding:0 8px!important;margin:0!important;}}
+            .cde-mo-no{{text-align:center!important;}}
             </style><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
-            header_cols=st.columns([0.34,1.18,.72,.52,.62,.72,.52,.52,.52,1.06])
-            header_labels=['Rank','Market','Drawdown',f'Score {score_tip}','Signal','Price','1Y %','3Y %','5Y %','Deep Dive']
+            header_cols=st.columns([0.34,1.22,.78,.78,.52,.64,.56,.56,.56,1.04])
+            header_labels=['No.','Market','Price','Drawdown',f'Score {score_tip}','Signal','1Y %','3Y %','5Y %','Deep Dive']
             for _col,_label in zip(header_cols,header_labels):
                 _col.markdown(f'<div class="cde-row-head">{_label}</div>', unsafe_allow_html=True)
             for i,r in enumerate(rows,1):
-                row_cols=st.columns([0.34,1.18,.72,.52,.62,.72,.52,.52,.52,1.06])
-                row_cols[0].markdown(f'<div class="cde-row-line">{i}</div>', unsafe_allow_html=True)
+                row_cols=st.columns([0.34,1.22,.78,.78,.52,.64,.56,.56,.56,1.04])
+                row_cols[0].markdown(f'<div class="cde-row-line cde-mo-no">{i}</div>', unsafe_allow_html=True)
                 row_cols[1].markdown(f'<div class="cde-row-line">{market_label_html(r["Market"])}</div>', unsafe_allow_html=True)
-                row_cols[2].markdown(f'<div class="cde-row-line cde-orange">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
-                row_cols[3].markdown(f'<div class="cde-row-line">{r["Score"]}</div>', unsafe_allow_html=True)
+                row_cols[2].markdown(f'<div class="cde-row-line">{safe_float(r.get("Price"),0):,.0f}</div>', unsafe_allow_html=True)
+                row_cols[3].markdown(f'<div class="cde-row-line cde-orange">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
+                row_cols[4].markdown(f'<div class="cde-row-line">{r["Score"]}</div>', unsafe_allow_html=True)
                 sig_class='buy' if r['Signal']=='BUY' else 'watch' if r['Signal']=='WATCH' else 'hold'
-                row_cols[4].markdown(f'<div class="cde-row-line"><span class="cde-sig {sig_class}">{hesc(r["Signal"])}</span></div>', unsafe_allow_html=True)
-                row_cols[5].markdown(f'<div class="cde-row-line">{safe_float(r.get("Price"),0):,.0f}</div>', unsafe_allow_html=True)
+                row_cols[5].markdown(f'<div class="cde-row-line cde-mo-sig"><span class="cde-sig {sig_class}">{hesc(r["Signal"])}</span></div>', unsafe_allow_html=True)
                 row_cols[6].markdown(f'<div class="cde-row-line">{fmt_pct_cell(r.get("1Y %"))}</div>', unsafe_allow_html=True)
                 row_cols[7].markdown(f'<div class="cde-row-line">{fmt_pct_cell(r.get("3Y %"))}</div>', unsafe_allow_html=True)
                 row_cols[8].markdown(f'<div class="cde-row-line">{fmt_pct_cell(r.get("5Y %"))}</div>', unsafe_allow_html=True)
