@@ -3470,13 +3470,16 @@ def render_executive():
         except TypeError:
             opp_box = st.container()
         with opp_box:
-            st.markdown(f'''<div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
-            header_cols=st.columns([0.36,1.26,.78,.56,.68,.78,.56,.56,.56,.74])
+            st.markdown(f'''<style>
+            div[data-testid="stButton"] button{font-size:12px!important;padding:4px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:32px!important;}
+            div[data-testid="stButton"] button p{white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;}
+            </style><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
+            header_cols=st.columns([0.34,1.18,.72,.52,.62,.72,.52,.52,.52,1.06])
             header_labels=['Rank','Market','Drawdown',f'Score {score_tip}','Signal','Price','1Y %','3Y %','5Y %','Deep Dive']
             for _col,_label in zip(header_cols,header_labels):
                 _col.markdown(f'<div class="cde-row-head">{_label}</div>', unsafe_allow_html=True)
             for i,r in enumerate(rows,1):
-                row_cols=st.columns([0.36,1.26,.78,.56,.68,.78,.56,.56,.56,.74])
+                row_cols=st.columns([0.34,1.18,.72,.52,.62,.72,.52,.52,.52,1.06])
                 row_cols[0].markdown(f'<div class="cde-row-line">{i}</div>', unsafe_allow_html=True)
                 row_cols[1].markdown(f'<div class="cde-row-line">{market_label_html(r["Market"])}</div>', unsafe_allow_html=True)
                 row_cols[2].markdown(f'<div class="cde-row-line cde-orange">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
