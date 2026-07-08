@@ -3511,7 +3511,11 @@ def render_market_deep_dive_summary():
     pmi_sub=macro_visible_sub('PMI', pmi_res.get('sub','') if isinstance(pmi_res,dict) else '', pmi_res.get('source_type','Awaiting') if isinstance(pmi_res,dict) else 'Awaiting', pmi_res.get('date','') if isinstance(pmi_res,dict) else '') if pmi_applicable else 'N/A'
     pmi_src=pmi_res['source_type'] if isinstance(pmi_res,dict) else ('N/A' if not pmi_applicable else 'Awaiting')
     rate_label=rate_card_label(index_label)
-    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic','')),('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')),('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
+    cards=[('Inflation',inflation['display'],inflation['sub'],inflation['source_type'],inflation.get('diagnostic','')),('Unemployment',unemployment['display'],unemployment['sub'],unemployment['source_type'],unemployment.get('diagnostic','')), (rate_label,rates['display'],rates['sub'],rates['source_type'],rates.get('diagnostic',''))]
+    # Claims is a US-only labour-stress card. Hide it completely for non-US markets instead of showing N/A.
+    if index_label in US_MARKETS:
+        cards.append(('Claims',claims['display'],claims['sub'],claims['source_type'],claims.get('diagnostic','')))
+    cards += [('PMI',pmi_display,pmi_sub,pmi_src,''),('Yield Curve',_curve(curve_spread),curve_state,'Official API' if curve_spread is not None else 'Awaiting',''),('VIX',f'{vix:.1f}' if vix is not None else 'N/A','Stress input' if vix is not None else 'N/A','Official API' if vix is not None else 'Awaiting','')]
     def _source_class(src):
         badge=clean_macro_badge(src)
         return 'source-official' if badge=='Official' else 'source-upload' if badge=='Manual' else 'source-na' if badge=='N/A' else 'source-validation' if badge in ['Needs validation','Pending deployment'] else 'source-awaiting'
@@ -3579,7 +3583,7 @@ def render_suggested(expanded=False):
             over_amount=0.0; overdeployed_flag=False
         capital_source_tip=tooltip_html('Capital Source Rules',[('Funding Priority','BUY zone uses investible cash first, then SRS if cash is insufficient'),('CPF-OA','CPF-OA remains reserved')],display_reason)
         calc_tip=tooltip_html('Calculation Basis',[('Formula','Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed')],'Source: selected price data, structural drawdown formula, selected market allocation budget and executed market exposure. This is the calculation basis, not a buy call.')
-        holdings_tip=tooltip_html('Current Holdings',[('Price Fetch','Attempts live price fetch for all active holdings, including tickers outside recommended list'),('Fallback','If price is unavailable, cost base still counts as Actual Deployed')],'Unavailable price/value/P&L displays as N/A, not None.')
+        holdings_tip=tooltip_html('Top 10 Holdings',[('Scope','Shows the 10 largest selected-market holdings by base-currency market value'),('% Portfolio','Calculated against total portfolio market value'),('Top 10 Total','Combined % of displayed holdings only')],'Full holdings are available in Portfolio Overview. If price is unavailable, cost base is used as the % Portfolio fallback.')
         ladder_tip=tooltip_html('Deployment Ladder',[('Type','Cumulative deployment schedule'),('Trigger Basis','Active structural drawdown'),('Capital Base','Selected investible capital / dry powder')],'Cumulative deployment percentages by drawdown zone.')
         calc_warning=f'<div class="xec-note" style="color:#DC2626;font-weight:950;margin-top:8px;">Over-Deployed by {fmt_sgd_html(over_amount)} above selected-market allocation budget.</div>' if overdeployed_flag else ''
         if overdeployed_flag:
@@ -3596,44 +3600,85 @@ def render_suggested(expanded=False):
                 if suffix=='.HK' and raw.isdigit() and len(raw)<5:
                     cands.append(raw.zfill(5)+suffix)
             return list(dict.fromkeys(cands))
-        def _current_holdings_table_html():
+        def _portfolio_holding_rows_for_top10():
             try:
                 df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
-                if df is None or df.empty: return '<div class="xec-sub">No current holding recorded for this market.</div>'
-                if 'Entry Status' in df.columns: df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
-                if 'Status' in df.columns: df=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
-                if 'Market' in df.columns: df=df[df['Market'].astype(str).eq(str(sel))].copy()
-                if df.empty: return '<div class="xec-sub">No current holding recorded for this market.</div>'
+                if df is None or df.empty:
+                    return [],0.0
+                if 'Entry Status' in df.columns:
+                    df=df[~df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
+                if 'Status' in df.columns:
+                    df=df[df['Status'].astype(str).str.lower().eq('executed')].copy()
+                if 'Base Currency' in df.columns:
+                    df=df[df['Base Currency'].astype(str).str.upper().eq(str(currency_code).upper())].copy()
+                if df.empty:
+                    return [],0.0
                 side=df['Side'].astype(str).str.upper() if 'Side' in df.columns else pd.Series(['BUY']*len(df),index=df.index)
                 df['_Qty']=np.where(side.eq('SELL'),-pd.to_numeric(df.get('Quantity',0),errors='coerce').fillna(0),pd.to_numeric(df.get('Quantity',0),errors='coerce').fillna(0))
                 df['_BaseCost']=np.where(side.eq('SELL'),-pd.to_numeric(df.get('Base Currency Equivalent',0),errors='coerce').fillna(0),pd.to_numeric(df.get('Base Currency Equivalent',0),errors='coerce').fillna(0))
-                grp=df.groupby(['Ticker','Trade Currency'],dropna=False).agg(**{'Qty':('_Qty','sum'),'Cost':('_BaseCost','sum')}).reset_index()
-                trs=[]; total_cost=0.0; total_value=0.0; total_pnl=0.0; any_value=False; all_value=True
+                group_cols=['Market','Ticker','Trade Currency']
+                for col in group_cols:
+                    if col not in df.columns:
+                        df[col]=''
+                grp=df.groupby(group_cols,dropna=False).agg(**{'Qty':('_Qty','sum'),'Cost':('_BaseCost','sum')}).reset_index()
+                rows=[]; portfolio_total=0.0
                 for _,r in grp.iterrows():
-                    ticker_raw=str(r.get('Ticker','')).strip().upper(); qty=safe_float(r.get('Qty'),0.0); cost=safe_float(r.get('Cost'),0.0); trade_ccy=str(r.get('Trade Currency','')).strip().upper() or currency_code
-                    price_status='Price unavailable'; value_txt='N/A'; pnl_txt='N/A'; status_cls='cde-status-na'; mval=None; pnl=None
-                    for cand in _candidate_tickers_for_price(ticker_raw, sel):
+                    market=str(r.get('Market','')).strip(); ticker_raw=str(r.get('Ticker','')).strip().upper()
+                    qty=safe_float(r.get('Qty'),0.0); cost=safe_float(r.get('Cost'),0.0)
+                    trade_ccy=str(r.get('Trade Currency','')).strip().upper() or currency_code
+                    if abs(qty) <= 1e-9 and abs(cost) <= 1e-9:
+                        continue
+                    price_status='Price unavailable'; mval=None; pnl=None
+                    candidates=[]
+                    if market:
+                        candidates += _candidate_tickers_for_price(ticker_raw, market)
+                    candidates += _candidate_tickers_for_price(ticker_raw, sel)
+                    for cand in list(dict.fromkeys(candidates)):
                         try:
                             px_df=hist(cand,'2026-01-01')
-                            if px_df is None or px_df.empty: px_df=hist(cand,'2020-01-01')
+                            if px_df is None or px_df.empty:
+                                px_df=hist(cand,'2020-01-01')
                             if px_df is not None and not px_df.empty:
                                 px=safe_float(px_df.Close.iloc[-1],np.nan)
                                 if pd.notna(px) and px>0:
                                     fx,_,_=fetch_fx_rate_yahoo(trade_ccy,currency_code) if 'fetch_fx_rate_yahoo' in globals() else (1.0,'','')
                                     mval=qty*px*float(fx or 0); pnl=mval-cost
-                                    price_status='Live' if cand==ticker_raw else f'Live via {cand}'; status_cls='cde-status-live'; value_txt=fmt_sgd(mval); pnl_txt=fmt_sgd(pnl); any_value=True; break
-                        except Exception: pass
-                    total_cost+=cost
-                    if mval is None: all_value=False
-                    else: total_value+=mval; total_pnl+=pnl if pnl is not None else 0.0
-                    trs.append(f'<tr><td>{hesc(ticker_raw)}</td><td class="num">{qty:,.0f}</td><td class="num">{fmt_sgd(cost)}</td><td class="num">{hesc(value_txt)}</td><td class="num">{hesc(pnl_txt)}</td><td class="{status_cls}">{hesc(price_status)}</td></tr>')
+                                    price_status='Live' if cand==ticker_raw else f'Live via {cand}'
+                                    break
+                        except Exception:
+                            pass
+                    percent_basis = mval if mval is not None else cost
+                    portfolio_total += max(float(percent_basis or 0),0.0)
+                    rows.append({'Market':market,'Ticker':ticker_raw,'Qty':qty,'Cost':cost,'MarketValue':mval,'PnL':pnl,'Status':price_status,'PercentBasis':max(float(percent_basis or 0),0.0)})
+                return rows,portfolio_total
+            except Exception:
+                return [],0.0
+        def _current_holdings_table_html():
+            try:
+                rows,portfolio_total=_portfolio_holding_rows_for_top10()
+                selected_rows=[r for r in rows if str(r.get('Market','')).eq(str(sel))] if hasattr(str, 'eq') else [r for r in rows if str(r.get('Market',''))==str(sel)]
+                if not selected_rows:
+                    return '<div class="xec-sub">No current holding recorded for this market.</div>'
+                selected_rows=sorted(selected_rows,key=lambda r: r.get('PercentBasis',0.0),reverse=True)[:10]
+                trs=[]; total_cost=0.0; total_value=0.0; total_pnl=0.0; total_pct=0.0; any_value=False; all_value=True
+                for r in selected_rows:
+                    cost=safe_float(r.get('Cost'),0.0); mval=r.get('MarketValue'); pnl=r.get('PnL')
+                    pct=(safe_float(r.get('PercentBasis'),0.0)/portfolio_total*100.0) if portfolio_total>0 else 0.0
+                    total_cost+=cost; total_pct+=pct
+                    if mval is None:
+                        all_value=False; value_txt='N/A'; pnl_txt='N/A'
+                    else:
+                        any_value=True; total_value+=safe_float(mval,0.0); total_pnl+=safe_float(pnl,0.0); value_txt=fmt_sgd(mval); pnl_txt=fmt_sgd(pnl)
+                    status=str(r.get('Status','Price unavailable'))
+                    status_cls='cde-status-live' if status.startswith('Live') else 'cde-status-na'
+                    trs.append(f'<tr><td>{hesc(r.get("Ticker",""))}</td><td class="num">{safe_float(r.get("Qty"),0):,.0f}</td><td class="num">{fmt_sgd(cost)}</td><td class="num">{hesc(value_txt)}</td><td class="num">{hesc(pnl_txt)}</td><td class="num">{pct:.1f}%</td><td class="{status_cls}">{hesc(status)}</td></tr>')
                 total_value_txt=fmt_sgd(total_value) if any_value and all_value else ('N/A' if not all_value else fmt_sgd(total_value))
                 total_pnl_txt=fmt_sgd(total_pnl) if any_value and all_value else ('N/A' if not all_value else fmt_sgd(total_pnl))
-                return '<table class="cde-holdings-table"><thead><tr><th>Ticker</th><th>Qty</th><th>Cost</th><th>Market Value</th><th>Gain / Loss</th><th>Status</th></tr></thead><tbody>'+''.join(trs)+f'</tbody><tfoot><tr><td>Total</td><td></td><td class="num">{fmt_sgd(total_cost)}</td><td class="num">{total_value_txt}</td><td class="num">{total_pnl_txt}</td><td></td></tr></tfoot></table>'
+                return '<table class="cde-holdings-table"><thead><tr><th>Ticker</th><th>Qty</th><th>Cost</th><th>Market Value</th><th>Gain / Loss</th><th>% Portfolio</th><th>Status</th></tr></thead><tbody>'+''.join(trs)+f'</tbody><tfoot><tr><td>Top 10 Total</td><td></td><td class="num">{fmt_sgd(total_cost)}</td><td class="num">{total_value_txt}</td><td class="num">{total_pnl_txt}</td><td class="num">{total_pct:.1f}%</td><td></td></tr></tfoot></table>'
             except Exception:
-                return '<div class="xec-sub">Current holdings unavailable.</div>'
+                return '<div class="xec-sub">Top 10 holdings unavailable.</div>'
         current_holdings_html=_current_holdings_table_html()
-        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis {calc_tip}</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.0f} x {deploy_pct:.0%} - {current_currency_html()}{_selected_market_actual_for_rule:,.0f}</div>{calc_warning}</div><div class="xec-card xec-action-card compact"><h4>Deployment Plan & Capital Source {capital_source_tip}</h4>{plan_html}</div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Current Holdings {holdings_tip}</h4>{current_holdings_html}</div><div class="xec-card xec-action-card"><h4>Deployment Ladder {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY - -8%','10% cumulative - cash first',BLUE)+kv('BUY - -15%',buy_label,AMBER)+kv('STRONG BUY - -25%',strong_label,ORANGE)+kv('CRISIS BUY - -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY - -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
+        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis {calc_tip}</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.0f} x {deploy_pct:.0%} - {current_currency_html()}{_selected_market_actual_for_rule:,.0f}</div>{calc_warning}</div><div class="xec-card xec-action-card compact"><h4>Deployment Plan & Capital Source {capital_source_tip}</h4>{plan_html}</div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Top 10 Holdings {holdings_tip}</h4>{current_holdings_html}</div><div class="xec-card xec-action-card"><h4>Deployment Ladder {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY - -8%','10% cumulative - cash first',BLUE)+kv('BUY - -15%',buy_label,AMBER)+kv('STRONG BUY - -25%',strong_label,ORANGE)+kv('CRISIS BUY - -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY - -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
         hold_btn_col, hold_blank_col = st.columns([1,1])
         with hold_btn_col:
             if st.button('View selected-market holdings ->', key='selected_market_holdings_link_'+re.sub(r'[^A-Za-z0-9]+','_',str(sel)), use_container_width=True):
