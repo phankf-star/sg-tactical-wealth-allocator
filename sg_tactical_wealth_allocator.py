@@ -3447,14 +3447,15 @@ def render_executive():
         condition_text=f"{best['Market']} already above allocated deployment budget"
         funding_detail_inline=f"{fmt_sgd_html(best_market_over_amount)} above {hesc(best['Market'])} allocation budget"
     else:
-        funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available &middot; {hesc(coverage_text)}"
+        funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available<br><span class='cde-readiness-indent'>&middot; {hesc(coverage_text)}</span>"
 
     st.markdown('''<style>
     .cde-action-status-box.warning{background:#FEF2F2!important;border:1px solid #FECACA!important;box-shadow:none!important;}
     .cde-action-status-box .cde-action-status-title{font-size:13px!important;font-weight:950!important;color:#0F172A!important;margin-bottom:6px!important;line-height:1.15!important;}
     .cde-action-status-box .cde-action-status-line{display:flex!important;align-items:center!important;gap:10px!important;flex-wrap:wrap!important;line-height:1.35!important;}
     .cde-action-status-box .cde-overdeployed-status{display:inline-block!important;margin:0!important;white-space:nowrap!important;font-size:16px!important;font-weight:950!important;color:#059669!important;line-height:1.15!important;}
-    .cde-action-status-box .cde-overdeployed-detail{display:inline-block!important;line-height:1.35!important;font-size:10.5px!important;font-weight:850!important;color:#64748B!important;}
+    .cde-action-status-box .cde-overdeployed-detail{display:inline-block!important;line-height:1.35!important;font-size:10.5px!important;font-weight:800!important;color:#64748B!important;}
+    .cde-action-status-box .cde-readiness-indent{display:block!important;margin-top:2px!important;color:inherit!important;}
     .cde-action-status-box.warning .cde-overdeployed-status{color:#DC2626!important;}
     .cde-action-status-box.warning .cde-overdeployed-detail{color:#7F1D1D!important;}
     </style>''', unsafe_allow_html=True)
@@ -3475,35 +3476,38 @@ def render_executive():
             div[data-testid="stButton"] button{{font-size:12px!important;padding:3px 8px!important;white-space:nowrap!important;line-height:1.15!important;min-height:30px!important;}}
             div[data-testid="stButton"] button p{{white-space:nowrap!important;font-size:12px!important;line-height:1.15!important;}}
             .cde-mo-head{{height:32px!important;display:flex!important;align-items:center!important;padding:0 8px!important;background:#EAF0F7!important;border:1px solid #D7E3F3!important;border-radius:7px 7px 0 0!important;color:#0F172A!important;font-size:11.5px!important;font-weight:950!important;line-height:1!important;white-space:nowrap!important;}}
-            .cde-mo-cell{{min-height:34px!important;display:flex!important;align-items:center!important;padding:0 8px!important;background:#FFFFFF!important;border-left:1px solid #DDE7F3!important;border-right:1px solid #DDE7F3!important;border-bottom:1px solid #DDE7F3!important;color:#0F172A!important;font-size:12px!important;font-weight:850!important;line-height:1.05!important;box-sizing:border-box!important;}}
+            .cde-mo-cell{{min-height:34px!important;display:flex!important;align-items:center!important;padding:0 8px!important;background:#FFFFFF!important;border-left:1px solid #DDE7F3!important;border-right:1px solid #DDE7F3!important;border-bottom:1px solid #DDE7F3!important;color:#0F172A!important;font-size:12px!important;font-weight:700!important;line-height:1.05!important;box-sizing:border-box!important;}}
             .cde-mo-center{{justify-content:center!important;text-align:center!important;}}
-            .cde-mo-market{{gap:6px!important;}}
-            .cde-mo-drawdown{{color:#F97316!important;font-weight:950!important;}}
+            .cde-mo-market{{gap:6px!important;font-weight:900!important;}}
+            .cde-mo-price{{font-weight:700!important;}}
+            .cde-mo-perf{{font-weight:700!important;}}
+            .cde-mo-score{{font-weight:900!important;}}
+            .cde-mo-drawdown{{color:#F97316!important;font-weight:850!important;}}
             .cde-mo-sig{{justify-content:center!important;}}
-            .cde-mo-sig .cde-sig{{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:44px!important;height:22px!important;line-height:22px!important;padding:0 8px!important;margin:0!important;font-size:10.5px!important;font-weight:950!important;}}
+            .cde-mo-sig .cde-sig{{display:inline-flex!important;align-items:center!important;justify-content:center!important;min-width:46px!important;height:22px!important;line-height:22px!important;padding:0 8px!important;margin:0!important;font-size:10.5px!important;font-weight:950!important;}}
             .cde-exposure-card{{margin-top:8px;padding:8px 12px;border:1px solid #D7E3F3;border-radius:14px;background:#F8FBFF;min-height:0;height:auto;}}
             .cde-exposure-title{{font-size:12px;font-weight:900;color:#0F172A;line-height:1.05;margin-bottom:6px;}}
             .cde-exposure-card .cde-market-exposure-row{{display:grid!important;grid-template-columns:1fr auto!important;gap:8px!important;align-items:center!important;border-bottom:1px solid #E5EDF7!important;padding:6px 0!important;line-height:1.1!important;}}
             .cde-exposure-card .cde-market-exposure-row span{{font-size:11.5px!important;color:#334155!important;font-weight:850!important;}}
             .cde-exposure-card .cde-market-exposure-row b{{font-size:12px!important;color:#0F172A!important;font-weight:950!important;font-variant-numeric:tabular-nums!important;}}
             </style><div class="cde-section-title">Market Opportunity Overview</div><div class="cde-section-sub">Landing-level cross-market comparison. Full selected-market analysis is available through Market Deep Dive. Score {score_tip}</div>''', unsafe_allow_html=True)
-            header_cols=st.columns([0.34,1.22,.78,.78,.52,.64,.56,.56,.56,1.04])
+            header_cols=st.columns([0.34,1.22,.78,.78,.52,.68,.56,.56,.56,1.00])
             header_labels=['No.','Market','Price','Drawdown',f'Score {score_tip}',f'Signal {signal_tip}','1Y %','3Y %','5Y %','Deep Dive']
             for _col,_label in zip(header_cols,header_labels):
                 _label_class='cde-mo-head cde-mo-center' if str(_label).startswith(('No.','Price','Drawdown','Score','Signal','1Y','3Y','5Y','Deep')) else 'cde-mo-head'
                 _col.markdown(f'<div class="{_label_class}">{_label}</div>', unsafe_allow_html=True)
             for i,r in enumerate(rows,1):
-                row_cols=st.columns([0.34,1.22,.78,.78,.52,.64,.56,.56,.56,1.04])
+                row_cols=st.columns([0.34,1.22,.78,.78,.52,.68,.56,.56,.56,1.00])
                 row_cols[0].markdown(f'<div class="cde-mo-cell cde-mo-center">{i}</div>', unsafe_allow_html=True)
                 row_cols[1].markdown(f'<div class="cde-mo-cell cde-mo-market">{market_label_html(r["Market"])}</div>', unsafe_allow_html=True)
-                row_cols[2].markdown(f'<div class="cde-mo-cell cde-mo-center">{safe_float(r.get("Price"),0):,.0f}</div>', unsafe_allow_html=True)
+                row_cols[2].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-price">{safe_float(r.get("Price"),0):,.0f}</div>', unsafe_allow_html=True)
                 row_cols[3].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-drawdown">{r["Drawdown"]:.1f}%</div>', unsafe_allow_html=True)
-                row_cols[4].markdown(f'<div class="cde-mo-cell cde-mo-center">{r["Score"]}</div>', unsafe_allow_html=True)
+                row_cols[4].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-score">{r["Score"]}</div>', unsafe_allow_html=True)
                 sig_class='buy' if r['Signal'] in ['BUY','INITIAL'] else 'watch' if r['Signal'] in ['STRONG','CRISIS'] else 'hold'
                 row_cols[5].markdown(f'<div class="cde-mo-cell cde-mo-sig"><span class="cde-sig {sig_class}">{hesc(r["Signal"])}</span></div>', unsafe_allow_html=True)
-                row_cols[6].markdown(f'<div class="cde-mo-cell cde-mo-center">{fmt_pct_cell(r.get("1Y %"))}</div>', unsafe_allow_html=True)
-                row_cols[7].markdown(f'<div class="cde-mo-cell cde-mo-center">{fmt_pct_cell(r.get("3Y %"))}</div>', unsafe_allow_html=True)
-                row_cols[8].markdown(f'<div class="cde-mo-cell cde-mo-center">{fmt_pct_cell(r.get("5Y %"))}</div>', unsafe_allow_html=True)
+                row_cols[6].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-perf">{fmt_pct_cell(r.get("1Y %"))}</div>', unsafe_allow_html=True)
+                row_cols[7].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-perf">{fmt_pct_cell(r.get("3Y %"))}</div>', unsafe_allow_html=True)
+                row_cols[8].markdown(f'<div class="cde-mo-cell cde-mo-center cde-mo-perf">{fmt_pct_cell(r.get("5Y %"))}</div>', unsafe_allow_html=True)
                 if row_cols[9].button('Deep Dive →', key='lp_r1_01_deep_dive_'+re.sub(r'[^A-Za-z0-9]+','_',r['Market']), use_container_width=True):
                     st.session_state.active_section='▣ Market Deep Dive'
                     st.session_state.asset_group_selection='Market / Equity Index'
