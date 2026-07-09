@@ -2991,6 +2991,7 @@ CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','B
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
 def _blank_capital_settings():
+    # Safe state only when no saved config exists. Do not assume fake production capital.
     return {'base_capital_currency':'SGD','total_investible_capital_input':0.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS},'include_srs_sti':False,'investible_srs_input':0.0,'include_cpf_oa_sti':False,'cpf_oa_balance_input':0.0,'preserve_cpf_floor_input':True}
 
 def _default_capital_settings():
@@ -2999,27 +3000,25 @@ def _default_capital_settings():
 def _normalise_capital_settings(raw):
     data=_blank_capital_settings()
     if isinstance(raw,dict):
-        for k in data.keys():
-            if k in raw:
-                data[k]=raw[k]
+        for key in data.keys():
+            if key in raw:
+                data[key]=raw[key]
     if not isinstance(data.get('market_allocation_budget_pct'),dict):
         data['market_allocation_budget_pct']={mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS}
     for mk in CDE_ALLOCATABLE_MARKETS:
         data['market_allocation_budget_pct'].setdefault(mk,0.0)
-    for k in ['total_investible_capital_input','current_allocated_amount_input','investible_srs_input','cpf_oa_balance_input']:
-        try: data[k]=float(data.get(k,0.0) or 0.0)
-        except Exception: data[k]=0.0
+    for key in ['total_investible_capital_input','current_allocated_amount_input','investible_srs_input','cpf_oa_balance_input']:
+        try:
+            data[key]=float(data.get(key,0.0) or 0.0)
+        except Exception:
+            data[key]=0.0
     data['include_srs_sti']=bool(data.get('include_srs_sti',False))
     data['include_cpf_oa_sti']=bool(data.get('include_cpf_oa_sti',False))
     data['preserve_cpf_floor_input']=bool(data.get('preserve_cpf_floor_input',True))
     return data
 
 def _load_capital_settings():
-    # Previous working persistence model:
-    # 1) Runtime cde_capital_settings.json is a valid active source when present.
-    # 2) Optional committed config is used when runtime file is absent.
-    # 3) Only when both files are missing do we use safe blank settings and show warning.
-    source='missing'; missing=True; warning='Capital settings file missing. No default capital is assumed; import, apply, or commit config/cde_capital_settings.json before relying on funding readiness.'
+    source='missing'; missing=True; warning='Capital settings file missing. No default capital is assumed; Apply, Import, or commit config/cde_capital_settings.json before relying on funding readiness.'
     try:
         if CAPITAL_SETTINGS_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
@@ -3066,13 +3065,17 @@ def _save_capital_settings_values(base_currency=None,total_capital=None,manual_a
 def _save_capital_settings():
     return _save_capital_settings_values()
 
-def _init_capital_settings():
-    data=_load_capital_settings()
-    for key,val in data.items():
-        if key not in st.session_state:
+def _init_capital_settings(force_reload=False):
+    # Load from disk only once per Streamlit session. After that, widgets own session_state.
+    if force_reload or not st.session_state.get('_capital_settings_loaded',False):
+        data=_load_capital_settings()
+        for key,val in data.items():
             st.session_state[key]=val
+        st.session_state['_capital_settings_loaded']=True
     if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict):
         st.session_state['market_allocation_budget_pct']={mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS}
+    for mk in CDE_ALLOCATABLE_MARKETS:
+        st.session_state['market_allocation_budget_pct'].setdefault(mk,0.0)
 
 def _capital_settings_export_bytes(base_currency=None,total_capital=None,manual_allocated=None,market_alloc=None):
     return json.dumps(_capital_settings_payload(base_currency,total_capital,manual_allocated,market_alloc),indent=2,ensure_ascii=False).encode('utf-8')
@@ -3081,6 +3084,7 @@ def _apply_imported_capital_settings(raw):
     data=_normalise_capital_settings(raw)
     for key,val in data.items():
         st.session_state[key]=val
+    st.session_state['_capital_settings_loaded']=True
     ok=_save_capital_settings_values(data.get('base_capital_currency'),data.get('total_investible_capital_input'),data.get('current_allocated_amount_input'),data.get('market_allocation_budget_pct'))
     return ok,data
 
@@ -4689,7 +4693,7 @@ def render_capital_management_page(view='settings'):
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
     with st.expander('Capital Settings Import / Export', expanded=False):
-        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. Recommended committed path: config/cde_capital_settings.json.')
+        st.caption('Import/export JSON for backup or GitHub commit. Main settings form uses session_state keys directly to avoid rerun reset.')
         up=st.file_uploader('Import capital settings JSON',type=['json'],key='capital_settings_import_json')
         if up is not None:
             try:
@@ -4698,29 +4702,36 @@ def render_capital_management_page(view='settings'):
                 if ok: st.success('Capital settings imported and saved.'); st.rerun()
                 else: st.error('Capital settings import parsed but could not be saved.')
             except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
+        st.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
-    base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
-    total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',0.0)),step=5000.0,key='total_investible_capital_input')
-    manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
-    total_input=float(total_input or 0); manual_override=float(manual_override or 0)
+    b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency')
+    base_currency=st.session_state.get('base_capital_currency','SGD'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,step=5000.0,key='total_investible_capital_input')
+    b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,step=5000.0,key='current_allocated_amount_input')
+    total_input=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0); manual_override=float(st.session_state.get('current_allocated_amount_input',0.0) or 0.0)
     if st.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
-        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
+        _save_capital_settings_values(); st.success('Capital settings saved.')
     include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
     if base_currency == 'SGD':
         st.markdown('### CPF / SRS Funding Sources')
         srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
-        include_srs_local=srs_toggle_col.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
+        srs_toggle_col.toggle('Include SRS in investible capital',key='include_srs_sti')
+        include_srs_local=bool(st.session_state.get('include_srs_sti',False))
         if include_srs_local:
-            srs_local=srs_amount_col.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
+            srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='investible_srs_input')
+            srs_local=float(st.session_state.get('investible_srs_input',0.0) or 0.0)
         else:
             srs_amount_col.caption('Enable SRS to enter amount.')
         srs_blank_col.caption('')
         cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
-        include_cpf_local=cpf_toggle_col.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
+        cpf_toggle_col.toggle('Include CPF-OA in investible capital',key='include_cpf_oa_sti')
+        include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False))
         if include_cpf_local:
-            preserve=cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
-            cpf_raw=cpf_amount_col.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
+            cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='preserve_cpf_floor_input')
+            cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='cpf_oa_balance_input')
+            cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0) or 0.0)
+            preserve=bool(st.session_state.get('preserve_cpf_floor_input',True))
         else:
             cpf_amount_col.caption('Enable CPF-OA to enter balance.')
         cpf_blank_col.caption('')
