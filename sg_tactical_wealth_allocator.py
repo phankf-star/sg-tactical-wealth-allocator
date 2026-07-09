@@ -2991,25 +2991,14 @@ CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','B
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
 def _blank_capital_settings():
-    # Safe blank state used only when no runtime/committed capital config exists.
-    # This avoids silently operating on fake default capital after redeploy.
-    return {
-        'base_capital_currency':'SGD',
-        'total_investible_capital_input':0.0,
-        'current_allocated_amount_input':0.0,
-        'market_allocation_budget_pct':{mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS},
-        'include_srs_sti':False,
-        'investible_srs_input':0.0,
-        'include_cpf_oa_sti':False,
-        'cpf_oa_balance_input':0.0,
-        'preserve_cpf_floor_input':True,
-    }
+    # Safe blank state only. Do not assume fake production capital when config is missing.
+    return {'base_capital_currency':'SGD','total_investible_capital_input':0.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS},'include_srs_sti':False,'investible_srs_input':0.0,'include_cpf_oa_sti':False,'cpf_oa_balance_input':0.0,'preserve_cpf_floor_input':True}
 
 def _default_capital_settings():
     return _blank_capital_settings()
 
-def _normalise_capital_settings(raw, fallback_blank=False):
-    data=_blank_capital_settings() if fallback_blank else _blank_capital_settings()
+def _normalise_capital_settings(raw):
+    data=_blank_capital_settings()
     if isinstance(raw,dict):
         for k in data.keys():
             if k in raw:
@@ -3027,14 +3016,16 @@ def _normalise_capital_settings(raw, fallback_blank=False):
     return data
 
 def _load_capital_settings():
-    source='missing'; missing=True; warning='Capital settings file missing. No default capital is assumed; import, commit, or apply capital settings before relying on funding readiness.'
+    # Priority: committed production config first, then runtime local file, then safe blank state.
+    source='missing'; missing=True; warning='Capital settings config missing. No default capital is assumed; import, commit, or apply settings before relying on funding readiness.'
     try:
-        if CAPITAL_SETTINGS_FILE.exists():
-            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
-            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False; warning=''
-        elif CAPITAL_SETTINGS_COMMITTED_FILE.exists():
+        if CAPITAL_SETTINGS_COMMITTED_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_COMMITTED_FILE.read_text(encoding='utf-8'))
             data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_COMMITTED_FILE); missing=False; warning=''
+        elif CAPITAL_SETTINGS_FILE.exists():
+            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
+            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False
+            warning='Runtime-only capital settings loaded from cde_capital_settings.json. If this is stale, import/export the correct JSON or commit config/cde_capital_settings.json.'
         else:
             data=_blank_capital_settings()
     except Exception as e:
@@ -3066,7 +3057,7 @@ def _save_capital_settings_values(base_currency=None,total_capital=None,manual_a
         CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
         st.session_state['_capital_settings_source']=str(CAPITAL_SETTINGS_FILE)
         st.session_state['_capital_settings_missing']=False
-        st.session_state['_capital_settings_warning']=''
+        st.session_state['_capital_settings_warning']='Runtime-only capital settings saved. Export and commit this JSON to make it deployment-stable.'
         return True
     except Exception:
         return False
@@ -3093,41 +3084,23 @@ def _apply_imported_capital_settings(raw):
     return ok,data
 
 def _funding_readiness_matrix(required, market_budget, market_actual, market_pending, portfolio_dry_powder, market_name='Market'):
-    required=max(float(required or 0.0),0.0)
-    market_budget=max(float(market_budget or 0.0),0.0)
-    market_actual=max(float(market_actual or 0.0),0.0)
-    market_pending=max(float(market_pending or 0.0),0.0)
-    portfolio_dry_powder=max(float(portfolio_dry_powder or 0.0),0.0)
-    pre_pending_available=market_budget-market_actual
-    market_available_raw=market_budget-market_actual-market_pending
-    market_available=max(market_available_raw,0.0)
-    over_amount=max(-market_available_raw,0.0)
-    budget_assigned=market_budget>0
-    market_over=market_available_raw<0
-    portfolio_shortfall=max(required-portfolio_dry_powder,0.0)
-    portfolio_insufficient=required>0 and portfolio_shortfall>0
-    pending_blocks=required>0 and market_pending>0 and pre_pending_available>=required and market_available<required
+    required=max(float(required or 0.0),0.0); market_budget=max(float(market_budget or 0.0),0.0); market_actual=max(float(market_actual or 0.0),0.0); market_pending=max(float(market_pending or 0.0),0.0); portfolio_dry_powder=max(float(portfolio_dry_powder or 0.0),0.0)
+    pre_pending_available=market_budget-market_actual; market_available_raw=market_budget-market_actual-market_pending; market_available=max(market_available_raw,0.0); over_amount=max(-market_available_raw,0.0)
+    budget_assigned=market_budget>0; market_over=market_available_raw<0; portfolio_shortfall=max(required-portfolio_dry_powder,0.0); portfolio_insufficient=required>0 and portfolio_shortfall>0; pending_blocks=required>0 and market_pending>0 and pre_pending_available>=required and market_available<required
     if not budget_assigned:
-        code,label,cls='unconfigured','○ Unconfigured','neutral'
-        detail='Assign market budget before deployment readiness can be assessed.'
+        code,label,cls='unconfigured','○ Unconfigured','neutral'; detail='Assign market budget before deployment readiness can be assessed.'
     elif required<=0 and not market_over and not portfolio_insufficient:
-        code,label,cls='no_action','🔵 No Action','ready'
-        detail=f'{market_name} target allocation already met; no additional deployable amount required.'
+        code,label,cls='no_action','🔵 No Action','ready'; detail=f'{market_name} target allocation already met; no additional deployable amount required.'
     elif market_over and portfolio_insufficient:
-        code,label,cls='not_ready','❌ Not Ready','insufficient'
-        detail=f'{fmt_sgd(over_amount)} above {market_name} budget; portfolio funding shortfall {fmt_sgd(portfolio_shortfall)}.'
+        code,label,cls='not_ready','❌ Not Ready','insufficient'; detail=f'{fmt_sgd(over_amount)} above {market_name} budget; portfolio funding shortfall {fmt_sgd(portfolio_shortfall)}.'
     elif market_over:
-        code,label,cls='over_budget','⚠ Over Budget','insufficient'
-        detail=f'{fmt_sgd(over_amount)} above {market_name} allocation budget.'
+        code,label,cls='over_budget','⚠ Over Budget','insufficient'; detail=f'{fmt_sgd(over_amount)} above {market_name} allocation budget.'
     elif portfolio_insufficient:
-        code,label,cls='funding_action','⚠ Funding Action','insufficient'
-        detail=f'Portfolio funding shortfall: {fmt_sgd(portfolio_dry_powder)} dry powder vs {fmt_sgd(required)} required.'
+        code,label,cls='funding_action','⚠ Funding Action','insufficient'; detail=f'Portfolio funding shortfall: {fmt_sgd(portfolio_dry_powder)} dry powder vs {fmt_sgd(required)} required.'
     elif pending_blocks:
-        code,label,cls='reserved','🟡 Reserved','warning'
-        detail=f'{fmt_sgd(market_pending)} pending orders reserved; {fmt_sgd(market_available)} {market_name} allocation available.'
+        code,label,cls='reserved','🟡 Reserved','warning'; detail=f'{fmt_sgd(market_pending)} pending orders reserved; {fmt_sgd(market_available)} {market_name} allocation available.'
     else:
-        code,label,cls='ready','✅ Ready','ready'
-        detail=f'{fmt_sgd(market_available)} {market_name} allocation available; {fmt_sgd(portfolio_dry_powder)} portfolio dry powder available.'
+        code,label,cls='ready','✅ Ready','ready'; detail=f'{fmt_sgd(market_available)} {market_name} allocation available; {fmt_sgd(portfolio_dry_powder)} portfolio dry powder available.'
     return {'code':code,'label':label,'class':cls,'detail':detail,'required':required,'market_available':market_available,'market_available_raw':market_available_raw,'over_amount':over_amount,'portfolio_shortfall':portfolio_shortfall,'pending_blocks':pending_blocks}
 
 def _market_allocation_pct(market):
@@ -4710,23 +4683,20 @@ def render_capital_management_page(view='settings'):
 
     st.markdown('## 💰 Capital Settings')
     st.caption('Base-currency capital, source breakdown, market allocation budget, funding readiness and safeguards.')
-    if st.session_state.get('_capital_settings_missing',False):
-        st.warning(st.session_state.get('_capital_settings_warning','Capital settings file missing.'))
+    if st.session_state.get('_capital_settings_warning',''):
+        st.warning(st.session_state.get('_capital_settings_warning'))
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
     with st.expander('Capital Settings Import / Export', expanded=False):
-        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. This prevents silent fallback after redeploy.')
-        up=st.file_uploader('Import capital settings JSON', type=['json'], key='capital_settings_import_json')
+        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. This prevents stale or missing config after redeploy.')
+        up=st.file_uploader('Import capital settings JSON',type=['json'],key='capital_settings_import_json')
         if up is not None:
             try:
                 raw=json.loads(up.getvalue().decode('utf-8'))
                 ok,_=_apply_imported_capital_settings(raw)
-                if ok:
-                    st.success('Capital settings imported and saved to cde_capital_settings.json.'); st.rerun()
-                else:
-                    st.error('Capital settings import parsed but could not be saved.')
-            except Exception as e:
-                st.error(f'Could not import capital settings JSON: {e}')
+                if ok: st.success('Capital settings imported and saved.'); st.rerun()
+                else: st.error('Capital settings import parsed but could not be saved.')
+            except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
     base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
@@ -4734,25 +4704,26 @@ def render_capital_management_page(view='settings'):
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     total_input=float(total_input or 0); manual_override=float(manual_override or 0)
     a_apply,a_export=st.columns([1,1])
-    if a_apply.button('Apply Capital Settings', key='apply_capital_settings_button', use_container_width=True):
+    if a_apply.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
         _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
     a_export.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
     include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
     if base_currency == 'SGD':
         st.markdown('### CPF / SRS Funding Sources')
-        srs_toggle_col,srs_input_col=st.columns([.9,1.25])
+        srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
         include_srs_local=srs_toggle_col.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
         if include_srs_local:
-            srs_local=srs_input_col.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
+            srs_local=srs_amount_col.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
         else:
-            srs_input_col.caption('Enable SRS to enter SRS amount.')
-        cpf_toggle_col,cpf_input_col,cpf_floor_col=st.columns([.9,1.05,.95])
+            srs_amount_col.caption('Enable SRS to enter amount.')
+        srs_blank_col.caption('')
+        cpf_toggle_col,cpf_amount_col,cpf_floor_col=st.columns([1.05,1.05,1.05])
         include_cpf_local=cpf_toggle_col.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
         if include_cpf_local:
-            cpf_raw=cpf_input_col.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
+            cpf_raw=cpf_amount_col.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
             preserve=cpf_floor_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
         else:
-            cpf_input_col.caption('Enable CPF-OA to enter CPF-OA balance.')
+            cpf_amount_col.caption('Enable CPF-OA to enter balance.')
     st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
     cpf_available=max(float(cpf_raw)-(20000 if preserve else 0),0) if include_cpf_local else 0.0
     df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
