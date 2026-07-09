@@ -2987,11 +2987,11 @@ def add_performance_and_gap(rows,market_name):
 # ─────────────────────────────────────────────────────────────────────────────
 CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
 CAPITAL_SETTINGS_COMMITTED_FILE = Path('config/cde_capital_settings.json')
+CAPITAL_SETTINGS_STRICT_COMMITTED_MODE = True
 CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','Bitcoin','Gold','DJIA','A-Share']
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
 def _blank_capital_settings():
-    # Safe blank state only. Do not assume fake production capital when config is missing.
     return {'base_capital_currency':'SGD','total_investible_capital_input':0.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS},'include_srs_sti':False,'investible_srs_input':0.0,'include_cpf_oa_sti':False,'cpf_oa_balance_input':0.0,'preserve_cpf_floor_input':True}
 
 def _default_capital_settings():
@@ -3016,18 +3016,20 @@ def _normalise_capital_settings(raw):
     return data
 
 def _load_capital_settings():
-    # Priority: committed production config first, then runtime local file, then safe blank state.
-    source='missing'; missing=True; warning='Capital settings config missing. No default capital is assumed; import, commit, or apply settings before relying on funding readiness.'
+    source='missing'; missing=True; warning='Committed capital settings config missing. No default capital is assumed. Import settings and commit config/cde_capital_settings.json before relying on funding readiness.'
     try:
+        # Production source of truth: committed config first and only stable source.
         if CAPITAL_SETTINGS_COMMITTED_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_COMMITTED_FILE.read_text(encoding='utf-8'))
             data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_COMMITTED_FILE); missing=False; warning=''
-        elif CAPITAL_SETTINGS_FILE.exists():
+        elif (not CAPITAL_SETTINGS_STRICT_COMMITTED_MODE) and CAPITAL_SETTINGS_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
             data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False
-            warning='Runtime-only capital settings loaded from cde_capital_settings.json. If this is stale, import/export the correct JSON or commit config/cde_capital_settings.json.'
+            warning='Runtime-only capital settings loaded. Export and commit this JSON to config/cde_capital_settings.json for deployment-stable persistence.'
         else:
             data=_blank_capital_settings()
+            if CAPITAL_SETTINGS_FILE.exists():
+                warning='Runtime-only cde_capital_settings.json found but ignored in strict committed-config mode. Commit/import config/cde_capital_settings.json to activate persisted capital settings.'
     except Exception as e:
         data=_blank_capital_settings(); source='error'; missing=True; warning=f'Capital settings could not be loaded ({e}). No default capital is assumed.'
     try:
@@ -3056,8 +3058,8 @@ def _save_capital_settings_values(base_currency=None,total_capital=None,manual_a
         data=_capital_settings_payload(base_currency,total_capital,manual_allocated,market_alloc)
         CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
         st.session_state['_capital_settings_source']=str(CAPITAL_SETTINGS_FILE)
-        st.session_state['_capital_settings_missing']=False
-        st.session_state['_capital_settings_warning']='Runtime-only capital settings saved. Export and commit this JSON to make it deployment-stable.'
+        st.session_state['_capital_settings_missing']=True
+        st.session_state['_capital_settings_warning']='Capital settings saved to runtime JSON only. Export and commit as config/cde_capital_settings.json to remove fallback/stale-config risk.'
         return True
     except Exception:
         return False
@@ -4688,13 +4690,13 @@ def render_capital_management_page(view='settings'):
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
     with st.expander('Capital Settings Import / Export', expanded=False):
-        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. This prevents stale or missing config after redeploy.')
+        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. Recommended committed path: config/cde_capital_settings.json.')
         up=st.file_uploader('Import capital settings JSON',type=['json'],key='capital_settings_import_json')
         if up is not None:
             try:
                 raw=json.loads(up.getvalue().decode('utf-8'))
                 ok,_=_apply_imported_capital_settings(raw)
-                if ok: st.success('Capital settings imported and saved.'); st.rerun()
+                if ok: st.success('Capital settings imported and saved to runtime JSON. Export and commit it under config/cde_capital_settings.json.'); st.rerun()
                 else: st.error('Capital settings import parsed but could not be saved.')
             except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
     st.markdown('### Base Capital Setting')
@@ -4703,10 +4705,8 @@ def render_capital_management_page(view='settings'):
     total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',0.0)),step=5000.0,key='total_investible_capital_input')
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     total_input=float(total_input or 0); manual_override=float(manual_override or 0)
-    a_apply,a_export=st.columns([1,1])
-    if a_apply.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
-        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
-    a_export.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
+    if st.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
+        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved to runtime JSON. Export it from Import / Export and commit as config/cde_capital_settings.json for production persistence.')
     include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
     if base_currency == 'SGD':
         st.markdown('### CPF / SRS Funding Sources')
@@ -4717,13 +4717,14 @@ def render_capital_management_page(view='settings'):
         else:
             srs_amount_col.caption('Enable SRS to enter amount.')
         srs_blank_col.caption('')
-        cpf_toggle_col,cpf_amount_col,cpf_floor_col=st.columns([1.05,1.05,1.05])
+        cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
         include_cpf_local=cpf_toggle_col.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
         if include_cpf_local:
+            preserve=cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
             cpf_raw=cpf_amount_col.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
-            preserve=cpf_floor_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
         else:
             cpf_amount_col.caption('Enable CPF-OA to enter balance.')
+        cpf_blank_col.caption('')
     st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
     cpf_available=max(float(cpf_raw)-(20000 if preserve else 0),0) if include_cpf_local else 0.0
     df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
