@@ -2987,7 +2987,6 @@ def add_performance_and_gap(rows,market_name):
 # ─────────────────────────────────────────────────────────────────────────────
 CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
 CAPITAL_SETTINGS_COMMITTED_FILE = Path('config/cde_capital_settings.json')
-CAPITAL_SETTINGS_STRICT_COMMITTED_MODE = True
 CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','Bitcoin','Gold','DJIA','A-Share']
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
@@ -3016,20 +3015,20 @@ def _normalise_capital_settings(raw):
     return data
 
 def _load_capital_settings():
-    source='missing'; missing=True; warning='Committed capital settings config missing. No default capital is assumed. Import settings and commit config/cde_capital_settings.json before relying on funding readiness.'
+    # Previous working persistence model:
+    # 1) Runtime cde_capital_settings.json is a valid active source when present.
+    # 2) Optional committed config is used when runtime file is absent.
+    # 3) Only when both files are missing do we use safe blank settings and show warning.
+    source='missing'; missing=True; warning='Capital settings file missing. No default capital is assumed; import, apply, or commit config/cde_capital_settings.json before relying on funding readiness.'
     try:
-        # Production source of truth: committed config first and only stable source.
-        if CAPITAL_SETTINGS_COMMITTED_FILE.exists():
+        if CAPITAL_SETTINGS_FILE.exists():
+            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
+            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False; warning=''
+        elif CAPITAL_SETTINGS_COMMITTED_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_COMMITTED_FILE.read_text(encoding='utf-8'))
             data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_COMMITTED_FILE); missing=False; warning=''
-        elif (not CAPITAL_SETTINGS_STRICT_COMMITTED_MODE) and CAPITAL_SETTINGS_FILE.exists():
-            raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
-            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False
-            warning='Runtime-only capital settings loaded. Export and commit this JSON to config/cde_capital_settings.json for deployment-stable persistence.'
         else:
             data=_blank_capital_settings()
-            if CAPITAL_SETTINGS_FILE.exists():
-                warning='Runtime-only cde_capital_settings.json found but ignored in strict committed-config mode. Commit/import config/cde_capital_settings.json to activate persisted capital settings.'
     except Exception as e:
         data=_blank_capital_settings(); source='error'; missing=True; warning=f'Capital settings could not be loaded ({e}). No default capital is assumed.'
     try:
@@ -3058,8 +3057,8 @@ def _save_capital_settings_values(base_currency=None,total_capital=None,manual_a
         data=_capital_settings_payload(base_currency,total_capital,manual_allocated,market_alloc)
         CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
         st.session_state['_capital_settings_source']=str(CAPITAL_SETTINGS_FILE)
-        st.session_state['_capital_settings_missing']=True
-        st.session_state['_capital_settings_warning']='Capital settings saved to runtime JSON only. Export and commit as config/cde_capital_settings.json to remove fallback/stale-config risk.'
+        st.session_state['_capital_settings_missing']=False
+        st.session_state['_capital_settings_warning']=''
         return True
     except Exception:
         return False
@@ -4696,7 +4695,7 @@ def render_capital_management_page(view='settings'):
             try:
                 raw=json.loads(up.getvalue().decode('utf-8'))
                 ok,_=_apply_imported_capital_settings(raw)
-                if ok: st.success('Capital settings imported and saved to runtime JSON. Export and commit it under config/cde_capital_settings.json.'); st.rerun()
+                if ok: st.success('Capital settings imported and saved.'); st.rerun()
                 else: st.error('Capital settings import parsed but could not be saved.')
             except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
     st.markdown('### Base Capital Setting')
@@ -4706,7 +4705,7 @@ def render_capital_management_page(view='settings'):
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     total_input=float(total_input or 0); manual_override=float(manual_override or 0)
     if st.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
-        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved to runtime JSON. Export it from Import / Export and commit as config/cde_capital_settings.json for production persistence.')
+        _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
     include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
     if base_currency == 'SGD':
         st.markdown('### CPF / SRS Funding Sources')
