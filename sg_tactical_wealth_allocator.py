@@ -3159,18 +3159,10 @@ def _normalise_funding_source_series(series):
 
 
 def _fmt_money_display_df(df, cols, symbol=None):
-    out=df.copy()
-    sym=symbol if symbol is not None else current_currency_text()
+    out=df.copy(); sym=symbol if symbol is not None else current_currency_text()
     for c in cols:
         if c in out.columns:
             out[c]=pd.to_numeric(out[c],errors='coerce').map(lambda x: '' if pd.isna(x) else f'{sym}{x:,.2f}')
-    return out
-
-def _fmt_number_display_df(df, cols, decimals=2):
-    out=df.copy()
-    for c in cols:
-        if c in out.columns:
-            out[c]=pd.to_numeric(out[c],errors='coerce').map(lambda x: '' if pd.isna(x) else f'{x:,.{decimals}f}')
     return out
 
 def _cpf_oa_eligibility_warning_text(ticker, market):
@@ -3751,7 +3743,7 @@ def render_market_deep_dive_summary():
     portfolio_dry_powder_for_market=max(float(_capital_source_breakdown(currency_code).get('total',0.0))-float(actual_total_deployed),0.0)
     market_readiness=_funding_readiness_matrix(float(deploy),selected_market_budget,selected_market_deployed,selected_market_pending,portfolio_dry_powder_for_market,index_label)
     market_funding_status = market_readiness['label']
-    market_funding_caption = (f"{fmt_sgd(selected_market_available)} {index_label} allocation available" if market_readiness.get('code')=='ready' else market_readiness['detail'])
+    market_funding_caption = ('' if market_readiness.get('code')=='ready' else market_readiness['detail'])
     market_funding_class = 'ready' if market_readiness['class']=='ready' else 'insufficient' if market_readiness['class']=='insufficient' else 'warning'
     market_coverage_ratio=(min(selected_market_available,portfolio_dry_powder_for_market)/float(deploy)) if float(deploy)>0 else 0
     market_funding_tip=tooltip_html('Funding Readiness', _funding_breakdown_pairs(float(deploy),selected_market_available,portfolio_dry_powder_for_market,market_coverage_ratio,currency_code)+[('Allocated Capital','Selected market allocation budget'),('Readiness Test','Suggested Deploy must be less than or equal to both market available budget and portfolio cash available')], 'Funding readiness is calculated against the selected market allocation budget and portfolio-level available funding capacity.')
@@ -4818,44 +4810,47 @@ def render_capital_management_page(view='settings'):
         st.warning(st.session_state.get('_capital_settings_warning'))
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
-    with st.expander('Capital Settings Import / Export', expanded=False):
-        st.caption('Import/export JSON for backup or GitHub commit. Capital edits are applied transactionally through the form below.')
-        uploaded_capital_json=st.file_uploader('Import capital settings JSON',type=['json'],key='capital_settings_import_json')
-        if uploaded_capital_json is not None:
-            try:
-                raw=json.loads(uploaded_capital_json.getvalue().decode('utf-8'))
-                ok,_=_apply_imported_capital_settings(raw)
-                _capital_draft_defaults(force=True)
-                if ok: st.success('Capital settings imported and saved.'); st.rerun()
-                else: st.error('Capital settings import parsed but could not be saved.')
-            except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
-        st.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
     _capital_draft_defaults()
     st.markdown('### Base Capital Setting')
     cap_now=_capital_source_breakdown(st.session_state.get('base_capital_currency','SGD'))
     st.markdown(f"<div style='font-size:12px;color:#64748B;margin-bottom:8px;'>Cash: {fmt_sgd(cap_now['cash'])} · SRS: {fmt_sgd(cap_now['srs'])} · CPF-OA: {fmt_sgd(cap_now['cpf_available'])} · <b>Total: {fmt_sgd(cap_now['total'])}</b></div>", unsafe_allow_html=True)
     codes=list(CURRENCY_SYMBOL_MAP.keys())
-    with st.expander('Edit Base Capital Setting', expanded=bool(st.session_state.get('_capital_settings_warning',''))):
-        with st.form('capital_settings_form', clear_on_submit=False):
-            b1,b2,b3=st.columns([.9,1.2,1.2])
-            cur=st.session_state.get('draft_base_capital_currency','SGD')
-            b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='draft_base_capital_currency')
-            draft_base=st.session_state.get('draft_base_capital_currency','SGD')
-            draft_symbol=CURRENCY_SYMBOL_MAP.get(draft_base,'S$')
-            b2.number_input(f'Total Investible Amount ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_total_investible_capital')
-            b3.number_input(f'Manual Base-Currency Allocated Override ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_current_allocated_amount')
-            if draft_base == 'SGD':
-                st.markdown('### CPF / SRS Funding Sources')
-                srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
-                srs_toggle_col.checkbox('Include SRS in investible capital',key='draft_include_srs')
-                srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='draft_investible_srs',help='Always editable. Toggle controls inclusion, not field availability.')
-                srs_blank_col.caption('')
-                cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
-                cpf_toggle_col.checkbox('Include CPF-OA in investible capital',key='draft_include_cpf_oa')
-                cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='draft_preserve_cpf_floor',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
-                cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',help='Always editable. Toggle controls inclusion, not field availability.')
-                cpf_blank_col.caption('')
-            submitted=st.form_submit_button('Apply Capital Settings',use_container_width=True)
+    edit_col,io_col=st.columns([2.15,.85])
+    with edit_col:
+        with st.expander('Edit Base Capital Setting', expanded=bool(st.session_state.get('_capital_settings_warning',''))):
+            with st.form('capital_settings_form', clear_on_submit=False):
+                b1,b2,b3=st.columns([.9,1.2,1.2])
+                cur=st.session_state.get('draft_base_capital_currency','SGD')
+                b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='draft_base_capital_currency')
+                draft_base=st.session_state.get('draft_base_capital_currency','SGD')
+                draft_symbol=CURRENCY_SYMBOL_MAP.get(draft_base,'S$')
+                b2.number_input(f'Total Investible Amount ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_total_investible_capital')
+                b3.number_input(f'Manual Base-Currency Allocated Override ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_current_allocated_amount')
+                if draft_base == 'SGD':
+                    st.markdown('### CPF / SRS Funding Sources')
+                    srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
+                    srs_toggle_col.checkbox('Include SRS in investible capital',key='draft_include_srs')
+                    srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='draft_investible_srs',help='Always editable. Toggle controls inclusion, not field availability.')
+                    srs_blank_col.caption('')
+                    cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
+                    cpf_toggle_col.checkbox('Include CPF-OA in investible capital',key='draft_include_cpf_oa')
+                    cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='draft_preserve_cpf_floor',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
+                    cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',help='Always editable. Toggle controls inclusion, not field availability.')
+                    cpf_blank_col.caption('')
+                submitted=st.form_submit_button('Apply Capital Settings',use_container_width=True)
+    with io_col:
+        with st.expander('Import / Export', expanded=False):
+            st.caption('Backup or restore capital settings JSON.')
+            uploaded_capital_json=st.file_uploader('Import JSON',type=['json'],key='capital_settings_import_json')
+            if uploaded_capital_json is not None:
+                try:
+                    raw=json.loads(uploaded_capital_json.getvalue().decode('utf-8'))
+                    ok,_=_apply_imported_capital_settings(raw)
+                    _capital_draft_defaults(force=True)
+                    if ok: st.success('Capital settings imported and saved.'); st.rerun()
+                    else: st.error('Import parsed but could not be saved.')
+                except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
+            st.download_button('Export JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
     if submitted:
         _commit_capital_draft_to_state()
         if _save_capital_settings_values():
@@ -4883,11 +4878,9 @@ def render_capital_management_page(view='settings'):
     deployed_pct=(deployed_local/float(total_input)) if total_input else 0
     st.session_state.funding_profile=cap_summary.get('funding_profile','Cash')
     st.markdown('### Capital Position & Funding Summary')
-    c1,c2,c3,c4=st.columns(4)
-    c1.metric('Total Capital',f'{base_symbol}{float(total_input):,.2f}')
-    c2.metric('Actual Deployed',f'{base_symbol}{deployed_local:,.2f}')
-    c3.metric('Funding Readiness',f'{base_symbol}{remaining_local:,.2f}')
-    c4.markdown(f"<div class='cde-compact-metric'><span>Funding Profile</span><b style='font-size:17px;white-space:normal;line-height:1.2;'>{hesc(st.session_state.funding_profile)}</b></div>", unsafe_allow_html=True)
+    cap_cards=[('Total Capital',f'{base_symbol}{float(total_input):,.2f}'),('Actual Deployed',f'{base_symbol}{deployed_local:,.2f}'),('Funding Readiness',f'{base_symbol}{remaining_local:,.2f}'),('Funding Profile',st.session_state.funding_profile)]
+    cap_html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b style="white-space:normal;line-height:1.18;">{hesc(v)}</b></div>' for k,v in cap_cards])
+    st.markdown(f'<div class="cde-compact-metric-grid">{cap_html}</div>',unsafe_allow_html=True)
     total_assigned=sum(float(v or 0) for v in (st.session_state.get('market_allocation_budget_pct',{}) or {}).values())
     unassigned=max(100.0-total_assigned,0.0)
     st.markdown('### Capital Source Breakdown')
