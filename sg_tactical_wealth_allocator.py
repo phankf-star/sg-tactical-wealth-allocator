@@ -4418,7 +4418,7 @@ def render_market_deep_dive(expanded=True):
 # LP-R1 remaining scope — FX-normalised capital, Trade Entry and Portfolio Journal
 # ─────────────────────────────────────────────────────────────────────────────
 TRADE_LOG_FILE = Path('cde_trade_log.csv')
-TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Entry Status','Void Reason','Voided At','Created At']
+TRADE_LOG_COLUMNS = ['Trade Date','Status','Market','Ticker','Side','Funding Source','Quantity','Price','Fees','Gross Amount','Trade Currency','FX Rate to Base','Base Currency','Base Currency Equivalent','FX Source','FX Timestamp','Trigger Level','Notes','Entry Status','Void Reason','Voided At','Created At']
 
 def fetch_fx_rate_yahoo(from_ccy, to_ccy):
     from_ccy=str(from_ccy or '').upper().strip(); to_ccy=str(to_ccy or '').upper().strip()
@@ -4465,6 +4465,21 @@ def _trade_log_with_numeric():
         if c in df.columns: df[c]=pd.to_numeric(df[c],errors='coerce').fillna(0.0)
     return df
 
+
+def _cpf_oa_eligibility_warning_text(ticker, market):
+    """Return a governance warning when CPF-OA is selected as funding source.
+
+    CPF-OA eligibility is product-specific. The platform can detect obvious
+    non-SGX / non-Singapore-market cases, but it cannot certify CPFIS
+    instrument eligibility without an approved CPFIS instrument source.
+    """
+    raw=str(ticker or '').strip().upper()
+    mk=str(market or '').strip()
+    sgx_like = bool(raw.endswith('.SI') or raw.endswith('.SG') or mk == 'STI')
+    if not sgx_like:
+        return 'CPF-OA warning: this ticker/market does not look SGX-listed. CPF-OA should only be used for CPFIS / eligible SGX instruments. Please change Funding Source or verify eligibility before saving.'
+    return 'CPF-OA warning: SGX-style ticker detected, but CPFIS eligibility is instrument-specific. Please verify CPFIS eligibility before saving.'
+
 def _trade_entry_form(prefix='trade_entry', compact=False):
     market_options=list(INDEX_TICKERS.keys()); ccy_options=list(CURRENCY_SYMBOL_MAP.keys())
     default_market=st.session_state.get('selected_market_name','STI')
@@ -4497,11 +4512,14 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
     fx_default,fx_src,fx_dt=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
     fx_key=f'{prefix}_fx_rate_{trade_ccy}_{base_ccy}'
     with st.form(prefix+'_form', clear_on_submit=True):
-        c5,c6,c7,c8=st.columns([.75,.85,.85,.85])
+        c5,c6,c7,c8,c8b=st.columns([.62,.82,.78,.88,.88])
         side=c5.selectbox('Side',['BUY','SELL'],index=0,key=prefix+'_side')
-        quantity=c6.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
-        price=c7.number_input(f'Price ({trade_ccy})',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
-        fees=c8.number_input(f'Fees ({trade_ccy})',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
+        funding_source=c6.selectbox('Funding Source',['Cash','SRS','CPF-OA'],index=0,key=prefix+'_funding_source')
+        quantity=c7.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
+        price=c8.number_input(f'Price ({trade_ccy})',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
+        fees=c8b.number_input(f'Fees ({trade_ccy})',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
+        if funding_source=='CPF-OA':
+            st.warning(_cpf_oa_eligibility_warning_text(ticker, market))
         c9,c10=st.columns([1,1])
         fx_rate=c9.number_input(f'FX Rate {trade_ccy} -> {base_ccy}',min_value=0.0,value=float(fx_default or 1.0),step=0.0001,format='%.6f',key=fx_key)
         status=c10.selectbox('Status',['Executed','Pending','Watchlist'],index=0,key=prefix+'_status')
@@ -4516,7 +4534,7 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
         gross=float(quantity)*float(price)
         net_trade=gross+float(fees) if side=='BUY' else gross-float(fees)
         base_equiv=net_trade*float(fx_rate or 0)
-        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Trade Currency':trade_ccy,'FX Rate to Base':float(fx_rate or 0),'Base Currency':base_ccy,'Base Currency Equivalent':base_equiv,'FX Source':fx_src,'FX Timestamp':fx_dt,'Trigger Level':trigger_level,'Notes':notes,'Entry Status':'Active','Void Reason':'','Voided At':'','Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
+        row={'Trade Date':pd.Timestamp(trade_date).strftime('%Y-%m-%d'),'Status':status,'Market':market,'Ticker':ticker.strip().upper(),'Side':side,'Funding Source':funding_source,'Quantity':float(quantity),'Price':float(price),'Fees':float(fees),'Gross Amount':gross,'Trade Currency':trade_ccy,'FX Rate to Base':float(fx_rate or 0),'Base Currency':base_ccy,'Base Currency Equivalent':base_equiv,'FX Source':fx_src,'FX Timestamp':fx_dt,'Trigger Level':trigger_level,'Notes':notes,'Entry Status':'Active','Void Reason':'','Voided At':'','Created At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')}
         if not row['Ticker'] or quantity<=0 or price<=0 or fx_rate<=0:
             st.warning('Please enter ticker, quantity, price and FX rate before saving.')
         elif _append_trade_row(row):
@@ -4744,12 +4762,12 @@ def render_capital_management_page(view='settings'):
             st.markdown('### CPF / SRS Funding Sources')
             srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
             srs_toggle_col.checkbox('Include SRS in investible capital',key='draft_include_srs')
-            srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='draft_investible_srs',disabled=not bool(st.session_state.get('draft_include_srs',False)))
+            srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='draft_investible_srs',help='Always editable. The Include SRS toggle controls whether this amount is included in investible capital calculations.')
             srs_blank_col.caption('')
             cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
             cpf_toggle_col.checkbox('Include CPF-OA in investible capital',key='draft_include_cpf_oa')
             cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='draft_preserve_cpf_floor',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
-            cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
+            cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',help='Always editable. The Include CPF-OA toggle controls whether this balance is included in investible capital calculations.')
             cpf_blank_col.caption('')
         submitted=st.form_submit_button('Apply Capital Settings',use_container_width=True)
     if submitted:
