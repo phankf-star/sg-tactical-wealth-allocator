@@ -4811,12 +4811,31 @@ def render_capital_management_page(view='settings'):
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
     _capital_draft_defaults()
+    base_currency=st.session_state.get('base_capital_currency','SGD'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    cap_summary=_capital_source_breakdown(base_currency)
+    total_input=float(cap_summary.get('total',0.0) or 0.0)
+    base_cash=float(cap_summary.get('cash',0.0) or 0.0)
+    manual_override=float(st.session_state.get('current_allocated_amount_input',0.0) or 0.0)
+    include_srs_local=bool(cap_summary.get('include_srs',False))
+    include_cpf_local=bool(cap_summary.get('include_cpf',False))
+    srs_local=float(cap_summary.get('srs',0.0) or 0.0)
+    cpf_raw=float(cap_summary.get('cpf_raw',0.0) or 0.0)
+    cpf_available=float(cap_summary.get('cpf_available',0.0) or 0.0)
+    df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
+    if not executed.empty and 'Base Currency' in executed.columns:
+        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
+    trade_deployed=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
+    deployed_local=trade_deployed if trade_deployed>0 else min(max(float(manual_override),0.0),float(total_input))
+    remaining_local=max(float(total_input)-deployed_local,0)
+    deployed_pct=(deployed_local/float(total_input)) if total_input else 0
+    st.session_state.funding_profile=cap_summary.get('funding_profile','Cash')
+
     st.markdown('### Base Capital Setting')
     cap_now=_capital_source_breakdown(st.session_state.get('base_capital_currency','SGD'))
     st.markdown(f"<div style='font-size:12px;color:#64748B;margin-bottom:8px;'>Cash: {fmt_sgd(cap_now['cash'])} · SRS: {fmt_sgd(cap_now['srs'])} · CPF-OA: {fmt_sgd(cap_now['cpf_available'])} · <b>Total: {fmt_sgd(cap_now['total'])}</b></div>", unsafe_allow_html=True)
     codes=list(CURRENCY_SYMBOL_MAP.keys())
-    edit_col,io_col=st.columns([2.15,.85])
-    with edit_col:
+    left_col,right_col=st.columns([2.25,.95],gap='large')
+    with left_col:
         with st.expander('Edit Base Capital Setting', expanded=bool(st.session_state.get('_capital_settings_warning',''))):
             with st.form('capital_settings_form', clear_on_submit=False):
                 b1,b2,b3=st.columns([.9,1.2,1.2])
@@ -4838,10 +4857,9 @@ def render_capital_management_page(view='settings'):
                     cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',help='Always editable. Toggle controls inclusion, not field availability.')
                     cpf_blank_col.caption('')
                 submitted=st.form_submit_button('Apply Capital Settings',use_container_width=True)
-    with io_col:
-        with st.expander('Import / Export', expanded=False):
-            st.caption('Backup or restore capital settings JSON.')
-            uploaded_capital_json=st.file_uploader('Import JSON',type=['json'],key='capital_settings_import_json')
+            io_a,io_b=st.columns([1,1])
+            uploaded_capital_json=io_a.file_uploader('Import Capital Settings JSON',type=['json'],key='capital_settings_import_json_form',label_visibility='collapsed')
+            io_b.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json_form')
             if uploaded_capital_json is not None:
                 try:
                     raw=json.loads(uploaded_capital_json.getvalue().decode('utf-8'))
@@ -4850,7 +4868,11 @@ def render_capital_management_page(view='settings'):
                     if ok: st.success('Capital settings imported and saved.'); st.rerun()
                     else: st.error('Import parsed but could not be saved.')
                 except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
-            st.download_button('Export JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
+    with right_col:
+        st.markdown('### Capital Position & Funding Summary')
+        cap_summary_rows=[('Total Capital',f'{base_symbol}{float(total_input):,.2f}'),('Actual Deployed',f'{base_symbol}{deployed_local:,.2f}'),('Funding Readiness',f'{base_symbol}{remaining_local:,.2f}'),('Funding Profile',st.session_state.funding_profile)]
+        summary_html=''.join([f'<div style="padding:10px 12px;border-bottom:1px solid #E5E7EB;"><div style="font-size:11px;font-weight:800;color:#64748B;">{hesc(k)}</div><div style="font-size:20px;font-weight:950;color:#0F172A;line-height:1.15;white-space:normal;">{hesc(v)}</div></div>' for k,v in cap_summary_rows])
+        st.markdown(f'<div style="border:1px solid #D7E3F3;border-radius:14px;background:#FFFFFF;min-height:318px;overflow:hidden;">{summary_html}</div>',unsafe_allow_html=True)
     if submitted:
         _commit_capital_draft_to_state()
         if _save_capital_settings_values():
@@ -4858,33 +4880,13 @@ def render_capital_management_page(view='settings'):
             st.rerun()
         else:
             st.error('Capital settings could not be saved.')
-    base_currency=st.session_state.get('base_capital_currency','SGD'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
-    cap_summary=_capital_source_breakdown(base_currency)
-    total_input=float(cap_summary.get('total',0.0) or 0.0)
-    base_cash=float(cap_summary.get('cash',0.0) or 0.0)
-    manual_override=float(st.session_state.get('current_allocated_amount_input',0.0) or 0.0)
-    include_srs_local=bool(cap_summary.get('include_srs',False))
-    include_cpf_local=bool(cap_summary.get('include_cpf',False))
-    srs_local=float(cap_summary.get('srs',0.0) or 0.0)
-    cpf_raw=float(cap_summary.get('cpf_raw',0.0) or 0.0)
-    cpf_available=float(cap_summary.get('cpf_available',0.0) or 0.0)
     st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
-    df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
-    if not executed.empty and 'Base Currency' in executed.columns:
-        executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
-    trade_deployed=float(executed['Base Currency Equivalent'].sum()) if not executed.empty and 'Base Currency Equivalent' in executed.columns else 0.0
-    deployed_local=trade_deployed if trade_deployed>0 else min(max(float(manual_override),0.0),float(total_input))
-    remaining_local=max(float(total_input)-deployed_local,0)
-    deployed_pct=(deployed_local/float(total_input)) if total_input else 0
-    st.session_state.funding_profile=cap_summary.get('funding_profile','Cash')
-    st.markdown('### Capital Position & Funding Summary')
-    cap_cards=[('Total Capital',f'{base_symbol}{float(total_input):,.2f}'),('Actual Deployed',f'{base_symbol}{deployed_local:,.2f}'),('Funding Readiness',f'{base_symbol}{remaining_local:,.2f}'),('Funding Profile',st.session_state.funding_profile)]
-    cap_html=''.join([f'<div class="cde-compact-metric"><span>{hesc(k)}</span><b style="white-space:normal;line-height:1.18;">{hesc(v)}</b></div>' for k,v in cap_cards])
-    st.markdown(f'<div class="cde-compact-metric-grid">{cap_html}</div>',unsafe_allow_html=True)
     total_assigned=sum(float(v or 0) for v in (st.session_state.get('market_allocation_budget_pct',{}) or {}).values())
     unassigned=max(100.0-total_assigned,0.0)
     st.markdown('### Capital Source Breakdown')
-    cap_breakdown_df=pd.DataFrame([{'Source':'Cash / Base Capital','Available':base_cash},{'Source':'SRS included','Available':srs_local},{'Source':'CPF-OA after safeguard','Available':cpf_available},{'Source':'Total included funding capacity','Available':total_input},{'Source':'Executed Trades Base Equivalent','Available':trade_deployed},{'Source':'Manual Override Used if No Trades','Available':manual_override},{'Source':'Funding Readiness / Remaining Cash','Available':remaining_local}]); st.dataframe(_fmt_money_display_df(cap_breakdown_df,['Available'],base_symbol),use_container_width=True,hide_index=True)
+    compact_items=[('Cash / Base',base_cash),('SRS',srs_local),('CPF-OA',cpf_available),('Total capacity',total_input),('Executed trades',trade_deployed),('Remaining cash',remaining_local)]
+    item_html=''.join([f'<div style="display:flex;justify-content:space-between;gap:16px;padding:7px 10px;border-bottom:1px solid #E5E7EB;"><span style="font-size:12px;color:#334155;font-weight:800;">{hesc(k)}</span><b style="font-size:12px;color:#0F172A;font-variant-numeric:tabular-nums;">{base_symbol}{float(v or 0):,.2f}</b></div>' for k,v in compact_items])
+    st.markdown(f'<div style="max-width:760px;border:1px solid #D7E3F3;border-radius:12px;background:#FFFFFF;overflow:hidden;">{item_html}</div>',unsafe_allow_html=True)
     render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
     st.markdown('---')
     st.info('Funding readiness now uses base-currency equivalents and the readiness matrix checks market budget, portfolio cash, pending-order reserve and configuration state.')
