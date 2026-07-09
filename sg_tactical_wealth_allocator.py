@@ -2991,6 +2991,7 @@ CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','B
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
 def _blank_capital_settings():
+    # Safe blank state when no persisted config exists; never assume fake production capital.
     return {'base_capital_currency':'SGD','total_investible_capital_input':0.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':{mk:0.0 for mk in CDE_ALLOCATABLE_MARKETS},'include_srs_sti':False,'investible_srs_input':0.0,'include_cpf_oa_sti':False,'cpf_oa_balance_input':0.0,'preserve_cpf_floor_input':True}
 
 def _default_capital_settings():
@@ -3065,7 +3066,7 @@ def _save_capital_settings():
     return _save_capital_settings_values()
 
 def _init_capital_settings(force_reload=False):
-    # Load from disk only once. After first load, widgets/session_state are the source of truth.
+    # Load persisted settings once; canonical session_state stays the calculation source afterwards.
     if force_reload or not st.session_state.get('_capital_settings_loaded',False):
         data=_load_capital_settings()
         for key,val in data.items():
@@ -3087,38 +3088,30 @@ def _apply_imported_capital_settings(raw):
     ok=_save_capital_settings_values(data.get('base_capital_currency'),data.get('total_investible_capital_input'),data.get('current_allocated_amount_input'),data.get('market_allocation_budget_pct'))
     return ok,data
 
-def _sync_capital_widgets_from_state(force=False):
-    # Separate widget keys prevent Streamlit from visually resetting canonical capital values.
+def _capital_draft_defaults(force=False):
     mapping={
-        'base_capital_currency_widget':'base_capital_currency',
-        'total_investible_capital_widget':'total_investible_capital_input',
-        'current_allocated_amount_widget':'current_allocated_amount_input',
-        'include_srs_widget':'include_srs_sti',
-        'investible_srs_widget':'investible_srs_input',
-        'include_cpf_oa_widget':'include_cpf_oa_sti',
-        'cpf_oa_balance_widget':'cpf_oa_balance_input',
-        'preserve_cpf_floor_widget':'preserve_cpf_floor_input',
+        'draft_base_capital_currency':'base_capital_currency',
+        'draft_total_investible_capital':'total_investible_capital_input',
+        'draft_current_allocated_amount':'current_allocated_amount_input',
+        'draft_include_srs':'include_srs_sti',
+        'draft_investible_srs':'investible_srs_input',
+        'draft_include_cpf_oa':'include_cpf_oa_sti',
+        'draft_cpf_oa_balance':'cpf_oa_balance_input',
+        'draft_preserve_cpf_floor':'preserve_cpf_floor_input',
     }
-    for wk,ck in mapping.items():
-        if force or wk not in st.session_state:
-            st.session_state[wk]=st.session_state.get(ck,_blank_capital_settings().get(ck))
-    st.session_state['_capital_widget_seeded']=True
+    for draft_key, canonical_key in mapping.items():
+        if force or draft_key not in st.session_state:
+            st.session_state[draft_key]=st.session_state.get(canonical_key,_blank_capital_settings().get(canonical_key))
 
-def _commit_capital_widgets_to_state():
-    st.session_state['base_capital_currency']=st.session_state.get('base_capital_currency_widget','SGD')
-    st.session_state['total_investible_capital_input']=float(st.session_state.get('total_investible_capital_widget',0.0) or 0.0)
-    st.session_state['current_allocated_amount_input']=float(st.session_state.get('current_allocated_amount_widget',0.0) or 0.0)
-    st.session_state['include_srs_sti']=bool(st.session_state.get('include_srs_widget',False))
-    st.session_state['investible_srs_input']=float(st.session_state.get('investible_srs_widget',0.0) or 0.0)
-    st.session_state['include_cpf_oa_sti']=bool(st.session_state.get('include_cpf_oa_widget',False))
-    st.session_state['cpf_oa_balance_input']=float(st.session_state.get('cpf_oa_balance_widget',0.0) or 0.0)
-    st.session_state['preserve_cpf_floor_input']=bool(st.session_state.get('preserve_cpf_floor_widget',True))
-
-def _capital_widget_value(key, default=0.0):
-    try:
-        return float(st.session_state.get(key, default) or 0.0)
-    except Exception:
-        return float(default or 0.0)
+def _commit_capital_draft_to_state():
+    st.session_state['base_capital_currency']=st.session_state.get('draft_base_capital_currency','SGD')
+    st.session_state['total_investible_capital_input']=float(st.session_state.get('draft_total_investible_capital',0.0) or 0.0)
+    st.session_state['current_allocated_amount_input']=float(st.session_state.get('draft_current_allocated_amount',0.0) or 0.0)
+    st.session_state['include_srs_sti']=bool(st.session_state.get('draft_include_srs',False))
+    st.session_state['investible_srs_input']=float(st.session_state.get('draft_investible_srs',0.0) or 0.0)
+    st.session_state['include_cpf_oa_sti']=bool(st.session_state.get('draft_include_cpf_oa',False))
+    st.session_state['cpf_oa_balance_input']=float(st.session_state.get('draft_cpf_oa_balance',0.0) or 0.0)
+    st.session_state['preserve_cpf_floor_input']=bool(st.session_state.get('draft_preserve_cpf_floor',True))
 
 def _funding_readiness_matrix(required, market_budget, market_actual, market_pending, portfolio_dry_powder, market_name='Market'):
     required=max(float(required or 0.0),0.0); market_budget=max(float(market_budget or 0.0),0.0); market_actual=max(float(market_actual or 0.0),0.0); market_pending=max(float(market_pending or 0.0),0.0); portfolio_dry_powder=max(float(portfolio_dry_powder or 0.0),0.0)
@@ -4725,55 +4718,57 @@ def render_capital_management_page(view='settings'):
     else:
         st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
     with st.expander('Capital Settings Import / Export', expanded=False):
-        st.caption('Import/export JSON for backup or GitHub commit. Main form uses widget keys and commits into canonical session state to avoid rerun reset.')
+        st.caption('Import/export JSON for backup or GitHub commit. Capital edits are applied transactionally through the form below.')
         uploaded_capital_json=st.file_uploader('Import capital settings JSON',type=['json'],key='capital_settings_import_json')
         if uploaded_capital_json is not None:
             try:
                 raw=json.loads(uploaded_capital_json.getvalue().decode('utf-8'))
                 ok,_=_apply_imported_capital_settings(raw)
-                _sync_capital_widgets_from_state(force=True)
+                _capital_draft_defaults(force=True)
                 if ok: st.success('Capital settings imported and saved.'); st.rerun()
                 else: st.error('Capital settings import parsed but could not be saved.')
             except Exception as e: st.error(f'Could not import capital settings JSON: {e}')
         st.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
-    _sync_capital_widgets_from_state()
+    _capital_draft_defaults()
     st.markdown('### Base Capital Setting')
-    b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency_widget','SGD')
-    b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency_widget')
-    base_currency=st.session_state.get('base_capital_currency_widget','SGD'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
-    b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,step=5000.0,key='total_investible_capital_widget')
-    b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,step=5000.0,key='current_allocated_amount_widget')
-    total_input=_capital_widget_value('total_investible_capital_widget')
-    manual_override=_capital_widget_value('current_allocated_amount_widget')
-    if st.button('Apply Capital Settings',key='apply_capital_settings_button',use_container_width=True):
-        _commit_capital_widgets_to_state(); _save_capital_settings_values(); st.success('Capital settings saved.'); st.rerun()
-    # For live preview on this page, mirror widget values into local calculation variables.
-    st.session_state['_capital_settings_preview_total']=total_input
-    include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
-    if base_currency == 'SGD':
-        st.markdown('### CPF / SRS Funding Sources')
-        srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
-        srs_toggle_col.toggle('Include SRS in investible capital',key='include_srs_widget')
-        include_srs_local=bool(st.session_state.get('include_srs_widget',False))
-        if include_srs_local:
-            srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='investible_srs_widget')
-            srs_local=_capital_widget_value('investible_srs_widget')
+    codes=list(CURRENCY_SYMBOL_MAP.keys())
+    with st.form('capital_settings_form', clear_on_submit=False):
+        b1,b2,b3=st.columns([.9,1.2,1.2])
+        cur=st.session_state.get('draft_base_capital_currency','SGD')
+        b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='draft_base_capital_currency')
+        draft_base=st.session_state.get('draft_base_capital_currency','SGD')
+        draft_symbol=CURRENCY_SYMBOL_MAP.get(draft_base,'S$')
+        b2.number_input(f'Total Investible Amount ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_total_investible_capital')
+        b3.number_input(f'Manual Base-Currency Allocated Override ({draft_symbol})',min_value=0.0,step=5000.0,key='draft_current_allocated_amount')
+        if draft_base == 'SGD':
+            st.markdown('### CPF / SRS Funding Sources')
+            srs_toggle_col,srs_amount_col,srs_blank_col=st.columns([1.05,1.05,1.05])
+            srs_toggle_col.checkbox('Include SRS in investible capital',key='draft_include_srs')
+            srs_amount_col.number_input('SRS Amount (S$)',min_value=0.0,step=5000.0,key='draft_investible_srs',disabled=not bool(st.session_state.get('draft_include_srs',False)))
+            srs_blank_col.caption('')
+            cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
+            cpf_toggle_col.checkbox('Include CPF-OA in investible capital',key='draft_include_cpf_oa')
+            cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='draft_preserve_cpf_floor',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
+            cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
+            cpf_blank_col.caption('')
+        submitted=st.form_submit_button('Apply Capital Settings',use_container_width=True)
+    if submitted:
+        _commit_capital_draft_to_state()
+        if _save_capital_settings_values():
+            st.success('Capital settings saved.')
+            st.rerun()
         else:
-            srs_amount_col.caption('Enable SRS to enter amount.')
-        srs_blank_col.caption('')
-        cpf_toggle_col,cpf_amount_col,cpf_blank_col=st.columns([1.05,1.05,1.05])
-        cpf_toggle_col.toggle('Include CPF-OA in investible capital',key='include_cpf_oa_widget')
-        include_cpf_local=bool(st.session_state.get('include_cpf_oa_widget',False))
-        if include_cpf_local:
-            cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='preserve_cpf_floor_widget')
-            cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='cpf_oa_balance_widget')
-            cpf_raw=_capital_widget_value('cpf_oa_balance_widget')
-            preserve=bool(st.session_state.get('preserve_cpf_floor_widget',True))
-        else:
-            cpf_amount_col.caption('Enable CPF-OA to enter balance.')
-        cpf_blank_col.caption('')
-    st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
+            st.error('Capital settings could not be saved.')
+    base_currency=st.session_state.get('base_capital_currency','SGD'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
+    total_input=float(st.session_state.get('total_investible_capital_input',0.0) or 0.0)
+    manual_override=float(st.session_state.get('current_allocated_amount_input',0.0) or 0.0)
+    include_srs_local=bool(st.session_state.get('include_srs_sti',False)) if base_currency=='SGD' else False
+    include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False)) if base_currency=='SGD' else False
+    srs_local=float(st.session_state.get('investible_srs_input',0.0) or 0.0) if include_srs_local else 0.0
+    cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0) or 0.0) if include_cpf_local else 0.0
+    preserve=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False
     cpf_available=max(float(cpf_raw)-(20000 if preserve else 0),0) if include_cpf_local else 0.0
+    st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
     df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
     if not executed.empty and 'Base Currency' in executed.columns:
         executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
