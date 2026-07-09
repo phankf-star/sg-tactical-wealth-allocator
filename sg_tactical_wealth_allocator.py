@@ -2986,32 +2986,81 @@ def add_performance_and_gap(rows,market_name):
 # CDE CAP-003 / Point A-B: persistent portfolio capital + market budgets
 # ─────────────────────────────────────────────────────────────────────────────
 CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
+CAPITAL_SETTINGS_COMMITTED_FILE = Path('config/cde_capital_settings.json')
 CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','Bitcoin','Gold','DJIA','A-Share']
 DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
+# Capital Settings governance:
+# - Primary runtime file: cde_capital_settings.json
+# - Optional committed fallback: config/cde_capital_settings.json
+# - If neither exists, the app uses defaults but shows a visible warning instead of silently masking fallback.
 def _default_capital_settings():
-    return {'base_capital_currency':'SGD','total_investible_capital_input':100000.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)}
+    return {'base_capital_currency':'SGD','total_investible_capital_input':100000.0,'current_allocated_amount_input':0.0,'market_allocation_budget_pct':dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT),'include_srs_sti':False,'investible_srs_input':0.0,'include_cpf_oa_sti':False,'cpf_oa_balance_input':0.0,'preserve_cpf_floor_input':True}
+
+def _normalise_capital_settings(raw):
+    data=_default_capital_settings()
+    if isinstance(raw,dict):
+        for k in data.keys():
+            if k in raw:
+                data[k]=raw[k]
+    if not isinstance(data.get('market_allocation_budget_pct'),dict) or not data.get('market_allocation_budget_pct'):
+        data['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
+    for mk in CDE_ALLOCATABLE_MARKETS:
+        data['market_allocation_budget_pct'].setdefault(mk,0.0)
+    try: data['total_investible_capital_input']=float(data.get('total_investible_capital_input',0) or 0)
+    except Exception: data['total_investible_capital_input']=100000.0
+    try: data['current_allocated_amount_input']=float(data.get('current_allocated_amount_input',0) or 0)
+    except Exception: data['current_allocated_amount_input']=0.0
+    try: data['investible_srs_input']=float(data.get('investible_srs_input',0) or 0)
+    except Exception: data['investible_srs_input']=0.0
+    try: data['cpf_oa_balance_input']=float(data.get('cpf_oa_balance_input',0) or 0)
+    except Exception: data['cpf_oa_balance_input']=0.0
+    data['include_srs_sti']=bool(data.get('include_srs_sti',False))
+    data['include_cpf_oa_sti']=bool(data.get('include_cpf_oa_sti',False))
+    data['preserve_cpf_floor_input']=bool(data.get('preserve_cpf_floor_input',True))
+    return data
 
 def _load_capital_settings():
-    data=_default_capital_settings()
+    source='default'; missing=True; error=''
     try:
         if CAPITAL_SETTINGS_FILE.exists():
             raw=json.loads(CAPITAL_SETTINGS_FILE.read_text(encoding='utf-8'))
-            if isinstance(raw,dict): data.update({k:v for k,v in raw.items() if k in data})
-            if not isinstance(data.get('market_allocation_budget_pct'),dict) or not data.get('market_allocation_budget_pct'):
-                data['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
-    except Exception: pass
+            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_FILE); missing=False
+        elif CAPITAL_SETTINGS_COMMITTED_FILE.exists():
+            raw=json.loads(CAPITAL_SETTINGS_COMMITTED_FILE.read_text(encoding='utf-8'))
+            data=_normalise_capital_settings(raw); source=str(CAPITAL_SETTINGS_COMMITTED_FILE); missing=False
+        else:
+            data=_default_capital_settings(); error='Capital settings file missing; defaults are active until imported, committed, or applied.'
+    except Exception as e:
+        data=_default_capital_settings(); source='default'; missing=True; error=f'Capital settings load error: {e}. Defaults are active.'
+    try:
+        st.session_state['_capital_settings_source']=source
+        st.session_state['_capital_settings_missing']=bool(missing)
+        st.session_state['_capital_settings_warning']=error
+    except Exception:
+        pass
     return data
+
+def _capital_settings_payload(base_currency=None,total_capital=None,manual_allocated=None,market_alloc=None):
+    return _normalise_capital_settings({
+        'base_capital_currency': base_currency if base_currency is not None else st.session_state.get('base_capital_currency','SGD'),
+        'total_investible_capital_input': float(total_capital if total_capital is not None else st.session_state.get('total_investible_capital_input',100000.0) or 0),
+        'current_allocated_amount_input': float(manual_allocated if manual_allocated is not None else st.session_state.get('current_allocated_amount_input',0.0) or 0),
+        'market_allocation_budget_pct': market_alloc if market_alloc is not None else st.session_state.get('market_allocation_budget_pct',{}),
+        'include_srs_sti': bool(st.session_state.get('include_srs_sti',False)),
+        'investible_srs_input': float(st.session_state.get('investible_srs_input',0.0) or 0),
+        'include_cpf_oa_sti': bool(st.session_state.get('include_cpf_oa_sti',False)),
+        'cpf_oa_balance_input': float(st.session_state.get('cpf_oa_balance_input',0.0) or 0),
+        'preserve_cpf_floor_input': bool(st.session_state.get('preserve_cpf_floor_input',True)),
+    })
 
 def _save_capital_settings_values(base_currency=None,total_capital=None,manual_allocated=None,market_alloc=None):
     try:
-        data={
-            'base_capital_currency': base_currency if base_currency is not None else st.session_state.get('base_capital_currency','SGD'),
-            'total_investible_capital_input': float(total_capital if total_capital is not None else st.session_state.get('total_investible_capital_input',100000.0) or 0),
-            'current_allocated_amount_input': float(manual_allocated if manual_allocated is not None else st.session_state.get('current_allocated_amount_input',0.0) or 0),
-            'market_allocation_budget_pct': market_alloc if market_alloc is not None else st.session_state.get('market_allocation_budget_pct',{}),
-        }
+        data=_capital_settings_payload(base_currency,total_capital,manual_allocated,market_alloc)
         CAPITAL_SETTINGS_FILE.write_text(json.dumps(data,indent=2,ensure_ascii=False),encoding='utf-8')
+        st.session_state['_capital_settings_source']=str(CAPITAL_SETTINGS_FILE)
+        st.session_state['_capital_settings_missing']=False
+        st.session_state['_capital_settings_warning']=''
         return True
     except Exception:
         return False
@@ -3025,6 +3074,55 @@ def _init_capital_settings():
         if key not in st.session_state: st.session_state[key]=val
     if not isinstance(st.session_state.get('market_allocation_budget_pct'),dict) or not st.session_state.get('market_allocation_budget_pct'):
         st.session_state['market_allocation_budget_pct']=dict(DEFAULT_MARKET_ALLOCATION_BUDGET_PCT)
+
+def _capital_settings_export_bytes(base_currency=None,total_capital=None,manual_allocated=None,market_alloc=None):
+    data=_capital_settings_payload(base_currency,total_capital,manual_allocated,market_alloc)
+    return json.dumps(data,indent=2,ensure_ascii=False).encode('utf-8')
+
+def _apply_imported_capital_settings(raw):
+    data=_normalise_capital_settings(raw)
+    for key,val in data.items():
+        st.session_state[key]=val
+    ok=_save_capital_settings_values(data.get('base_capital_currency'),data.get('total_investible_capital_input'),data.get('current_allocated_amount_input'),data.get('market_allocation_budget_pct'))
+    return ok, data
+
+def _funding_readiness_matrix(required, market_budget, market_actual, market_pending, portfolio_dry_powder, market_name='Market'):
+    required=max(float(required or 0.0),0.0)
+    market_budget=max(float(market_budget or 0.0),0.0)
+    market_actual=max(float(market_actual or 0.0),0.0)
+    market_pending=max(float(market_pending or 0.0),0.0)
+    portfolio_dry_powder=max(float(portfolio_dry_powder or 0.0),0.0)
+    pre_pending_available=market_budget-market_actual
+    market_available_raw=market_budget-market_actual-market_pending
+    market_available=max(market_available_raw,0.0)
+    over_amount=max(-market_available_raw,0.0)
+    budget_assigned=market_budget>0
+    market_over=market_available_raw<0
+    portfolio_shortfall=max(required-portfolio_dry_powder,0.0)
+    portfolio_insufficient=required>0 and portfolio_shortfall>0
+    pending_blocks=required>0 and market_pending>0 and pre_pending_available>=required and market_available<required
+    if not budget_assigned:
+        code,label,cls='unconfigured','○ Unconfigured','neutral'
+        detail='Assign market budget before deployment readiness can be assessed.'
+    elif required<=0 and not market_over and not portfolio_insufficient:
+        code,label,cls='no_action','🔵 No Action','ready'
+        detail=f'{market_name} target allocation already met; no additional deployable amount required.'
+    elif market_over and portfolio_insufficient:
+        code,label,cls='not_ready','❌ Not Ready','insufficient'
+        detail=f'{fmt_sgd(over_amount)} above {market_name} budget; {fmt_sgd(portfolio_dry_powder)} portfolio dry powder available.'
+    elif market_over:
+        code,label,cls='over_budget','⚠ Over Budget','insufficient'
+        detail=f'{fmt_sgd(over_amount)} above {market_name} allocation budget.'
+    elif portfolio_insufficient:
+        code,label,cls='funding_action','⚠ Funding Action','insufficient'
+        detail=f'{fmt_sgd(portfolio_dry_powder)} portfolio dry powder available; {fmt_sgd(required)} required for next deployment.'
+    elif pending_blocks:
+        code,label,cls='reserved','🟡 Reserved','warning'
+        detail=f'{fmt_sgd(market_pending)} pending orders reserved; {fmt_sgd(market_available)} {market_name} allocation available.'
+    else:
+        code,label,cls='ready','✅ Ready','ready'
+        detail=f'{fmt_sgd(market_available)} {market_name} allocation available; {fmt_sgd(portfolio_dry_powder)} portfolio dry powder available.'
+    return {'code':code,'label':label,'class':cls,'detail':detail,'required':required,'market_available':market_available,'market_available_raw':market_available_raw,'over_amount':over_amount,'portfolio_shortfall':portfolio_shortfall,'pending_blocks':pending_blocks}
 
 def _market_allocation_pct(market):
     _init_capital_settings()
@@ -3085,7 +3183,11 @@ def render_market_allocation_budget_ui(base_symbol,total_input,compact=False):
         row_cols[5].markdown(f'<div class="cde-alloc-budget">{base_symbol}{available:,.0f}</div>',unsafe_allow_html=True)
         alloc_rows.append({'Market':mk,'Selected':'Yes' if enabled and pct>0 else 'No','Allocation %':pct,'Market Budget':budget,'Actual Deployed':actual,'Available Budget':available})
     st.session_state['market_allocation_budget_pct']=alloc
-    _save_capital_settings_values(total_capital=total_input,market_alloc=alloc)
+    # Governance: do not silently create a default capital-settings file on page render
+    # when the configured file is missing. The visible warning remains until user clicks Apply
+    # or imports/commits a configuration. Once a file exists, allocation edits persist normally.
+    if not st.session_state.get('_capital_settings_missing', False):
+        _save_capital_settings_values(total_capital=total_input,market_alloc=alloc)
     total_assigned=sum(float(v or 0) for v in alloc.values()); unassigned=max(100.0-total_assigned,0.0)
     a1,a2,a3=st.columns(3)
     a1.metric('Total Assigned',f'{total_assigned:.0f}%')
@@ -3390,16 +3492,16 @@ def render_executive():
     best_market_overdeployed=best_market_over_amount>0
     best_market_available=max(best_market_available_raw,0.0)
     coverage_ratio=(best_market_available/next_deploy_amt) if next_deploy_amt>0 else 0
-    coverage_text='Assign market budget' if best_market_budget<=0 else ('Over-Deployed' if best_market_overdeployed else ('Fully covered' if next_deploy_amt<=0 else f'{coverage_ratio:.1f}x market coverage'))
-    funding_ready = (not best_market_overdeployed) and ((next_deploy_amt <= 0) or (best_market_available >= next_deploy_amt))
-    funding_status = 'OVER-DEPLOYED ✕' if best_market_overdeployed else ('READY ✓' if funding_ready else 'INSUFFICIENT ✕')
-    funding_status_class = 'cde-funding-insufficient' if best_market_overdeployed else ('cde-funding-ready' if funding_ready else 'cde-funding-insufficient')
-    top_funding_ready = (remaining_amt > 0) or (next_deploy_amt <= 0)
-    top_funding_status = 'READY ✓' if top_funding_ready else 'INSUFFICIENT ✕'
-    top_funding_status_class = 'cde-funding-ready' if top_funding_ready else 'cde-funding-insufficient'
-    dry_powder_tip = tooltip_html('Portfolio-level dry powder', [('Available', fmt_sgd(remaining_amt)), ('Basis', 'Total capital less actual deployed capital')], 'Portfolio-level dry powder available; this is separate from selected-market allocation availability.')
-    target_overdeploy_tip = tooltip_html('Target market over-deployed', [('Market', best['Market']), ('Budget Excess', fmt_sgd(best_market_over_amount)), ('Portfolio Dry Powder', fmt_sgd(remaining_amt))], f"Target market OVER-DEPLOYED. {best['Market']} exposure exceeds its market allocation budget. Portfolio dry powder may still exist, but further {best['Market']} deployment is blocked until exposure is reduced or the {best['Market']} allocation budget is revised.") if best_market_overdeployed else ''
-    top_target_warning_html = f'<div style="font-size:11.5px;color:#DC2626;font-weight:950;line-height:1.2;margin-top:5px;white-space:nowrap;">⚠ {hesc(best["Market"])} over-deployed {target_overdeploy_tip}</div>' if best_market_overdeployed else ''
+    readiness_required=float(next_deploy_amt)
+    readiness=_funding_readiness_matrix(readiness_required,best_market_budget,best_market_actual,best_market_pending,remaining_amt,best['Market'])
+    coverage_text=readiness['detail']
+    funding_status=readiness['label']
+    funding_status_class='cde-funding-ready' if readiness['class']=='ready' else 'cde-funding-insufficient' if readiness['class']=='insufficient' else 'cde-funding-warning'
+    top_funding_status=funding_status
+    top_funding_status_class=funding_status_class
+    dry_powder_tip = tooltip_html('Portfolio-level dry powder', [('Available', fmt_sgd(remaining_amt)), ('Required', fmt_sgd(readiness_required)), ('Market Budget Available', fmt_sgd(best_market_available))], 'Ready only when both portfolio dry powder and selected-market allocation budget can fund the next deployment.')
+    target_overdeploy_tip = tooltip_html('Readiness status detail', [('Status', funding_status), ('Market', best['Market']), ('Required', fmt_sgd(readiness_required)), ('Market Available', fmt_sgd(best_market_available)), ('Portfolio Dry Powder', fmt_sgd(remaining_amt))], readiness['detail'])
+    top_target_warning_html = f'<div style="font-size:11.5px;color:#DC2626;font-weight:950;line-height:1.2;margin-top:5px;white-space:nowrap;">{hesc(readiness["detail"])} {target_overdeploy_tip}</div>' if readiness['code'] not in ['ready','no_action'] else ''
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
     market_rows=[]
     try:
@@ -3442,12 +3544,10 @@ def render_executive():
     watch_items=sorted(watch_items,key=lambda x:x['DistanceNum'])[:3]
     watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span>{hesc(w['Distance'])} away</span><em>{hesc(w['Trigger'])}</em></div>''' for w in watch_items])
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
-    if best_market_overdeployed:
+    if readiness['code'] in ['over_budget','not_ready']:
         next_deploy_amt=0.0
         condition_text=f"{best['Market']} already above allocated deployment budget"
-        funding_detail_inline=f"{fmt_sgd_html(best_market_over_amount)} above {hesc(best['Market'])} allocation budget"
-    else:
-        funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available<br><span class='cde-readiness-indent'>&middot; {hesc(coverage_text)}</span>"
+    funding_detail_inline=f"{hesc(readiness['detail'])}<br><span class='cde-readiness-indent'>&middot; Required: {fmt_sgd_html(readiness_required)}</span>"
 
     st.markdown('''<style>
     .cde-action-status-box.warning{background:#FEF2F2!important;border:1px solid #FECACA!important;box-shadow:none!important;}
@@ -3458,9 +3558,11 @@ def render_executive():
     .cde-action-status-box .cde-readiness-indent{display:block!important;margin-top:2px!important;color:inherit!important;}
     .cde-action-status-box.warning .cde-overdeployed-status{color:#DC2626!important;}
     .cde-action-status-box.warning .cde-overdeployed-detail{color:#7F1D1D!important;}
+    .cde-action-status-box .cde-overdeployed-status{color:#059669!important;}
+    .cde-action-status-box.warning .cde-overdeployed-status{color:#DC2626!important;}
     </style>''', unsafe_allow_html=True)
     st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if best_market_overdeployed else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(best["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if readiness['code'] not in ['ready','no_action'] else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(best["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Next Trigger Watchlist</div><div class="cde-watch-sub">Top nearby trigger levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
 
@@ -3579,10 +3681,11 @@ def render_market_deep_dive_summary():
     selected_market_over_amount = max(-selected_market_available_raw, 0.0)
     selected_market_overdeployed = selected_market_over_amount > 0
     selected_market_available = max(selected_market_available_raw, 0.0)
-    market_funding_ready = (not selected_market_overdeployed) and ((deploy <= 0) or (selected_market_available >= float(deploy)))
-    market_funding_status = 'OVER-DEPLOYED ✕' if selected_market_overdeployed else ('READY ✓' if market_funding_ready else 'INSUFFICIENT ✕')
-    market_funding_caption = (f'{fmt_sgd(selected_market_over_amount)} above market allocation budget' if selected_market_overdeployed else ('within market allocation budget' if market_funding_ready else 'exceeds remaining market allocation budget'))
-    market_funding_class = 'insufficient' if selected_market_overdeployed else ('ready' if market_funding_ready else 'insufficient')
+    portfolio_dry_powder_for_market=max(float(total_investible_state)-float(actual_total_deployed),0.0)
+    market_readiness=_funding_readiness_matrix(float(deploy),selected_market_budget,selected_market_deployed,selected_market_pending,portfolio_dry_powder_for_market,index_label)
+    market_funding_status = market_readiness['label']
+    market_funding_caption = market_readiness['detail']
+    market_funding_class = 'ready' if market_readiness['class']=='ready' else 'insufficient' if market_readiness['class']=='insufficient' else 'warning'
     selected_market_title_html = market_label_with_flag_html(index_label)
     risk_conf=f'{hesc(alert)} · {hesc(conf_label)} confidence'
     st.markdown(f'''<div class="xec-title">Deployment Centre — {selected_market_title_html}</div><section class="xec-grid xec-top-grid"><div class="xec-card xec-hero-card" style="--accent:{hero_border};background:linear-gradient(180deg,#FFFFFF 0%,{hero_bg} 100%);"><div class="xec-eyebrow">Crash-Buy Decision — {selected_market_title_html} {tooltip_html('Crash-Buy Decision',[('Decision Rule',f'{deploy_pct:.0%} cumulative deploy'),('Next Trigger',compact_next_trigger_label(zone)),('Confidence',conf_label)],'Diagnosis above; execution details below.')}</div><div class="xec-decision">{hesc(zone)} <small>{deploy_pct:.0%}</small></div><div class="xec-sub">{hesc(decision_line)}</div><div class="xec-pill-row">{stance_pill}<span class="xec-pill blue">Confidence: {hesc(conf_label)}</span><span class="xec-pill amber">Macro: {hesc(alert)}</span></div></div><div class="xec-card xec-deploy-card"><div class="xec-deploy-title">Suggested Deploy {tooltip_html('Suggested Deploy',[('Capital Base','Selected investible capital only'),('Cumulative Rule',f'{deploy_pct:.0%}'),('Funding',funding_source),('Next Trigger',compact_next_trigger_label(zone))],'Capital base: selected investible capital only.')}</div><div class="xec-deploy-amount">{fmt_sgd_html(deploy)}</div><div class="xec-deploy-percent">additional deploy now · towards {deploy_pct:.0%} allocated target</div><div class="xec-progress" style="--fill:{progress_fill:.0f}%;--marker:{marker_pos:.0f}%;"><div class="xec-progress-fill"></div><div class="xec-progress-marker">{hesc(marker_label)}</div></div><div class="xec-deploy-meta"><span>Next Trigger:<br><b>{hesc(next_trigger_card_label(zone))}</b></span><span>Cumulative deploy:<br><b>{deploy_pct:.0%}</b></span></div></div><div class="xec-card xec-funding-card"><div class="xec-funding-title">Funding Readiness {tooltip_html('Funding Readiness',[('Allocated Capital','Selected market allocation budget'),('Available Funds','Allocated capital less executed and pending base-currency exposure for this market'),('Readiness Test','Suggested Deploy must be less than or equal to Available Funds')],'Funding readiness is calculated against the selected market allocation budget, not total portfolio capital.')}</div><div class="xec-funding-status-hero {market_funding_class}">{hesc(market_funding_status)}</div><div class="xec-funding-caption">{hesc(market_funding_caption)}</div><div class="xec-funding-lines"><div class="xec-funding-line"><span>Allocated</span><b>{fmt_sgd_html(selected_market_budget)}</b></div><div class="xec-funding-line"><span>Available</span><b>{fmt_sgd_html(selected_market_available)}</b></div></div></div></section><section class="xec-grid xec-kpi-grid"><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">{hesc(ticker)} · Market Level {index_tip}</div><div class="xec-kpi-value">{close:,.0f}</div><div class="xec-kpi-sub">Latest available close</div><div class="xec-mini">{price_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Structural Drawdown {structural_tip}</div><div class="xec-kpi-value">{display_dd:.1f}%</div><div class="xec-kpi-sub">Peak: {struct_peak_date.strftime('%Y-%m-%d')} · Gap: {close-peak:,.0f}</div><div class="xec-mini">{drawdown_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Valuation Z-Score (OOS) {z_tip}</div><div class="xec-kpi-value {z_value_class}">{hesc(z_display)}</div><div class="xec-kpi-sub">{hesc(exec_valuation_zone)}</div><div class="xec-z-mini">{z_mini}</div></div><div class="xec-card xec-kpi-card"><div class="xec-kpi-label">Macro Risk Score {risk_tip}</div><div class="xec-kpi-value {risk_value_class}">{hesc(alert)}</div><div class="xec-kpi-sub">Score {live_score:.0f} / 100 · {'alternative price model' if sel in PMI_NA_MARKETS else 'equity macro model'}</div><div class="xec-risk-mini">{risk_mini}</div></div></section><section class="xec-card xec-macro-wrap"><div class="xec-section-label">Macro Conditions Snapshot {macro_tip}</div><div class="xec-grid xec-macro-grid">{macro_html}</div></section><section class="xec-summary"><div class="xec-summary-title">Strategy Execution Summary</div><div class="xec-summary-grid"><div class="xec-summary-chip"><span>Status</span><b>{'Over-Deployed' if selected_market_overdeployed else ('Active Buy' if deploy>0 else 'Capital Preserved')}</b></div><div class="xec-summary-chip"><span>Macro</span><b>{hesc(alert)}</b></div><div class="xec-summary-chip"><span>Trend</span><b>{'Weak / Below 200D' if trend_below else 'Improving / Stable'}</b></div><div class="xec-summary-chip"><span>Risk / Confidence</span><b>{risk_conf}</b></div><div class="xec-summary-chip"><span>Suggested Deploy</span><b>{('S$0 · No further deployment' if selected_market_overdeployed else (fmt_sgd(deploy)+' · '+str(int(deploy_pct*100))+'%'))}</b></div></div></section>''', unsafe_allow_html=True)
@@ -4591,7 +4694,7 @@ def render_capital_management_page(view='settings'):
         rules=pd.DataFrame([
             {'Rule':'Market Allocation Rule','Methodology':'Each selected market deploys only from its user-assigned market allocation budget.'},
             {'Rule':'Suggested Deploy Formula','Methodology':'Suggested Deploy = Market Budget × Active Deployment Tier − Actual Deployed.'},
-            {'Rule':'Funding Readiness Rule','Methodology':'READY if Suggested Deploy is less than or equal to Available Market Budget.'},
+            {'Rule':'Funding Readiness Rule','Methodology':'Ready only when market budget and portfolio dry powder can fund the next deployment; otherwise classify Unconfigured, No Action, Not Ready, Over Budget, Funding Action or Reserved.'},
             {'Rule':'FX Normalisation Rule','Methodology':'Trade currency amounts are converted to base currency before deployment and exposure calculations.'},
             {'Rule':'Safeguard Rule','Methodology':'SRS / CPF-OA are only included when enabled and only when base currency is SGD.'},
         ])
@@ -4602,25 +4705,51 @@ def render_capital_management_page(view='settings'):
 
     st.markdown('## 💰 Capital Settings')
     st.caption('Base-currency capital, source breakdown, market allocation budget, funding readiness and safeguards.')
+    if st.session_state.get('_capital_settings_missing',False):
+        st.warning(st.session_state.get('_capital_settings_warning','Capital settings file missing. Defaults are active until settings are imported, committed, or applied.'))
+    else:
+        st.caption(f"Capital settings source: {st.session_state.get('_capital_settings_source','runtime')}")
+    with st.expander('Capital Settings Import / Export', expanded=False):
+        st.caption('Export a JSON copy for GitHub commit or import a previously saved configuration. This prevents silent fallback after redeploy.')
+        up=st.file_uploader('Import capital settings JSON', type=['json'], key='capital_settings_import_json')
+        if up is not None:
+            try:
+                raw=json.loads(up.getvalue().decode('utf-8'))
+                ok,_=_apply_imported_capital_settings(raw)
+                if ok:
+                    st.success('Capital settings imported and saved to cde_capital_settings.json.'); st.rerun()
+                else:
+                    st.error('Capital settings import parsed but could not be saved.')
+            except Exception as e:
+                st.error(f'Could not import capital settings JSON: {e}')
     st.markdown('### Base Capital Setting')
     b1,b2,b3=st.columns([.9,1.2,1.2]); codes=list(CURRENCY_SYMBOL_MAP.keys()); cur=st.session_state.get('base_capital_currency','SGD')
     base_currency=b1.selectbox('Base Currency',codes,index=codes.index(cur) if cur in codes else codes.index('SGD'),key='base_capital_currency'); base_symbol=CURRENCY_SYMBOL_MAP.get(base_currency,'S$')
     total_input=b2.number_input(f'Total Investible Amount ({base_symbol})',min_value=0.0,value=float(st.session_state.get('total_investible_capital_input',100000.0)),step=5000.0,key='total_investible_capital_input')
     manual_override=b3.number_input(f'Manual Base-Currency Allocated Override ({base_symbol})',min_value=0.0,value=float(st.session_state.get('current_allocated_amount_input',0.0)),step=5000.0,key='current_allocated_amount_input')
     total_input=float(total_input or 0); manual_override=float(manual_override or 0)
-    _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{}))
-    if st.button('Apply Capital Settings', key='apply_capital_settings_button', use_container_width=True):
+    e1,e2=st.columns([1,1])
+    if e1.button('Apply Capital Settings', key='apply_capital_settings_button', use_container_width=True):
         _save_capital_settings_values(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})); st.success('Capital settings saved.')
+    e2.download_button('Export Capital Settings JSON',data=_capital_settings_export_bytes(base_currency,total_input,manual_override,st.session_state.get('market_allocation_budget_pct',{})),file_name='cde_capital_settings.json',mime='application/json',use_container_width=True,key='export_capital_settings_json')
+    include_srs_local=False; include_cpf_local=False; srs_local=0.0; cpf_raw=0.0; preserve=False
     if base_currency == 'SGD':
-        st.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
-        st.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
+        st.markdown('### CPF / SRS Funding Sources')
+        srs_toggle_col,srs_input_col=st.columns([.9,1.25])
+        include_srs_local=srs_toggle_col.toggle('Include SRS in investible capital',value=bool(st.session_state.get('include_srs_sti',False)),key='include_srs_sti')
+        if include_srs_local:
+            srs_local=srs_input_col.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
+        else:
+            srs_input_col.caption('Enable SRS to enter SRS amount.')
+        cpf_toggle_col,cpf_input_col,cpf_floor_col=st.columns([.9,1.05,.95])
+        include_cpf_local=cpf_toggle_col.toggle('Include CPF-OA in investible capital',value=bool(st.session_state.get('include_cpf_oa_sti',False)),key='include_cpf_oa_sti')
+        if include_cpf_local:
+            cpf_raw=cpf_input_col.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
+            preserve=cpf_floor_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
+        else:
+            cpf_input_col.caption('Enable CPF-OA to enter CPF-OA balance.'); preserve=False
     st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
-    include_srs_local=bool(st.session_state.get('include_srs_sti',False)) if base_currency=='SGD' else False
-    include_cpf_local=bool(st.session_state.get('include_cpf_oa_sti',False)) if base_currency=='SGD' else False
-    srs_local=float(st.session_state.get('investible_srs_input',0.0)) if include_srs_local else 0.0
-    cpf_raw=float(st.session_state.get('cpf_oa_balance_input',0.0)) if include_cpf_local else 0.0
-    preserve=bool(st.session_state.get('preserve_cpf_floor_input',True)) if include_cpf_local else False
-    cpf_available=max(cpf_raw-(20000 if preserve else 0),0) if include_cpf_local else 0.0
+    cpf_available=max(float(cpf_raw)-(20000 if preserve else 0),0) if include_cpf_local else 0.0
     df=_trade_log_with_numeric(); executed=df[df['Status'].astype(str).str.lower().eq('executed')].copy() if not df.empty else pd.DataFrame()
     if not executed.empty and 'Base Currency' in executed.columns:
         executed=executed[executed['Base Currency'].astype(str).str.upper().eq(base_currency)]
@@ -4648,14 +4777,7 @@ def render_capital_management_page(view='settings'):
     st.dataframe(pd.DataFrame([{'Source':'Base Capital','Available':float(total_input)},{'Source':'Executed Trades Base Equivalent','Available':trade_deployed},{'Source':'Manual Override Used if No Trades','Available':manual_override},{'Source':'Funding Readiness / Remaining','Available':remaining_local},{'Source':'CPF-OA after safeguard','Available':cpf_available}]),use_container_width=True,hide_index=True)
     render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
     st.markdown('---')
-    st.markdown('### Capital & Safeguards '+tooltip_html('Safeguards',[('Base currency','Single platform-level capital currency'),('Allocation logic','Executed trades are converted to base currency before allocation calculations'),('SRS / CPF-OA','Shown only when base currency is SGD')],'Capital inputs feed Suggested Deploy and Funding Readiness.'),unsafe_allow_html=True)
-    st.markdown(f'<span class="source-pill source-official">{base_symbol}   {CURRENCY_NAME_MAP.get(base_currency,base_currency)}</span>',unsafe_allow_html=True)
-    if include_srs_local:
-        st.number_input('SRS Amount (S$)',0.0,value=float(st.session_state.get('investible_srs_input',0.0)),step=5000.0,key='investible_srs_input')
-    if include_cpf_local:
-        st.number_input('CPF-OA Balance (S$)',0.0,value=float(st.session_state.get('cpf_oa_balance_input',0.0)),step=5000.0,key='cpf_oa_balance_input')
-        st.checkbox('Exclude S$20k CPF-OA Minimum Floor',value=bool(st.session_state.get('preserve_cpf_floor_input',True)),key='preserve_cpf_floor_input')
-    st.info('Funding readiness now uses base-currency equivalents. USD 10k and HKD 10k are no longer treated as equal.')
+    st.info('Funding readiness now uses base-currency equivalents and the readiness matrix checks market budget, portfolio dry powder, pending-order reserve and configuration state.')
 
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Capital Settings':lambda expanded=True: render_capital_management_page('settings'),'🧭 Philosophy, Strategy & Allocation Rules':lambda expanded=True: render_capital_management_page('rules'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('settings'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('settings'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('settings'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
 
