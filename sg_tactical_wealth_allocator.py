@@ -3157,6 +3157,13 @@ def _normalise_funding_source_series(series):
     s=s.replace({'':'Cash','None':'Cash','none':'Cash','nan':'Cash','NaN':'Cash','N/A':'Cash'})
     return s.where(s.isin(['Cash','SRS','CPF-OA']),'Cash')
 
+def _fmt_money_display_df(df, cols, symbol=None):
+    out=df.copy(); sym=symbol if symbol is not None else current_currency_text()
+    for c in cols:
+        if c in out.columns:
+            out[c]=pd.to_numeric(out[c],errors='coerce').map(lambda x: '' if pd.isna(x) else f'{sym}{x:,.2f}')
+    return out
+
 def _cpf_oa_eligibility_warning_text(ticker, market):
     raw=str(ticker or '').strip().upper(); mk=str(market or '').strip()
     sgx_like=bool(raw.endswith('.SI') or raw.endswith('.SG') or mk=='STI')
@@ -3782,7 +3789,7 @@ def render_suggested(expanded=False):
         if overdeployed_flag:
             plan_html=f'<div class="cde-mini-plan"><span>Deploy now</span><b class="red">{fmt_sgd(0)}</b><span>Capital stance</span><b class="red">Over-Deployed</b><span>Budget excess</span><b class="red">{fmt_sgd(over_amount)} above {hesc(index_label)} budget</b></div>'
         elif deploy>0:
-            plan_html=f'<div class="cde-mini-plan"><span>Tranche 1</span><b class="orange">{fmt_sgd(deploy*.5)}</b><span>Tranche 2</span><b class="orange">{fmt_sgd(deploy*.25)}</b><span>Tranche 3</span><b class="blue">{fmt_sgd(deploy*.25)}</b><span>Cash capacity</span><b class="green">{fmt_sgd(available_cash)}</b><span>SRS available</span><b class="green">{fmt_sgd(available_srs)}</b><span>CPF-OA available</span><b class="green">{fmt_sgd(available_cpf)}</b><span>Locked/Reserved Cash</span><b class="green">{fmt_sgd(cash_deploy)}</b><span>Proposed SRS</span><b class="green">{fmt_sgd(srs_deploy)}</b><span>Proposed CPF-OA</span><b class="green">{fmt_sgd(cpf_deploy)}</b></div>'
+            plan_html=f'<div class="cde-mini-plan"><span>Tranche 1</span><b class="orange">{fmt_sgd(deploy*.5)}</b><span>Tranche 2</span><b class="orange">{fmt_sgd(deploy*.25)}</b><span>Tranche 3</span><b class="blue">{fmt_sgd(deploy*.25)}</b><span>Cash capacity</span><b class="green">{fmt_sgd(available_cash)}</b><span>SRS available</span><b class="green">{fmt_sgd(available_srs)}</b><span>CPF-OA available</span><b class="green">{fmt_sgd(available_cpf)}</b><span>Reserved Cash</span><b class="green">{fmt_sgd(cash_deploy)}</b><span>Reserved SRS</span><b class="green">{fmt_sgd(srs_deploy)}</b><span>Reserved CPF-OA</span><b class="green">{fmt_sgd(cpf_deploy)}</b></div>'
         else:
             plan_html=f'<div class="cde-mini-plan"><span>Deploy now</span><b>{fmt_sgd(0)}</b><span>Capital stance</span><b class="green">Preserved</b><span>Next trigger</span><b class="orange">{hesc(next_trigger)}</b></div>'
         def _candidate_tickers_for_price(ticker, market):
@@ -3849,7 +3856,7 @@ def render_suggested(expanded=False):
             except Exception:
                 return '<div class="xec-sub">Top 10 Holdings unavailable.</div>'
         current_holdings_html=_current_holdings_table_html()
-        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis {calc_tip}</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.0f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.0f} x {deploy_pct:.0%} - {current_currency_html()}{_selected_market_actual_for_rule:,.0f}</div>{calc_warning}</div><div class="xec-card xec-action-card compact"><h4>Deployment Plan & Capital Source {capital_source_tip}</h4>{plan_html}</div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Top 10 Holdings {holdings_tip}</h4>{current_holdings_html}</div><div class="xec-card xec-action-card"><h4>Deployment Ladder {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY - -8%','10% cumulative - cash first',BLUE)+kv('BUY - -15%',buy_label,AMBER)+kv('STRONG BUY - -25%',strong_label,ORANGE)+kv('CRISIS BUY - -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY - -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
+        st.markdown(f'''<div class="xec-visible-section-title">{hesc(suggested_title)}</div><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Calculation Basis {calc_tip}</h4><div class="xec-sub">Suggested Deploy = Allocated Market Capital x Deployment Rule - Actual Deployed</div><div class="xec-formula">{current_currency_html()}{deploy:,.2f} =<br>{current_currency_html()}{_selected_market_budget_for_rule:,.2f} x {deploy_pct:.0%} - {current_currency_html()}{_selected_market_actual_for_rule:,.2f}</div>{calc_warning}</div><div class="xec-card xec-action-card compact"><h4>Deployment Plan & Capital Source {capital_source_tip}</h4>{plan_html}</div></section><section class="xec-action-grid"><div class="xec-card xec-action-card"><h4>Top 10 Holdings {holdings_tip}</h4>{current_holdings_html}</div><div class="xec-card xec-action-card"><h4>Deployment Ladder {ladder_tip}</h4><div>{kv('HOLD / NO DEPLOYMENT','0% cumulative deploy',SLATE)+kv('INITIAL BUY - -8%','10% cumulative - cash first',BLUE)+kv('BUY - -15%',buy_label,AMBER)+kv('STRONG BUY - -25%',strong_label,ORANGE)+kv('CRISIS BUY - -35%','75% cumulative deploy',RED)+kv('MAX CRISIS BUY - -50%','100% cumulative investible capital',PURPLE)+kv('Next Trigger',next_trigger,ORANGE)}</div></div></section>''', unsafe_allow_html=True)
         hold_btn_col, hold_blank_col = st.columns([1,1])
         with hold_btn_col:
             if st.button('View selected-market holdings ->', key='selected_market_holdings_link_'+re.sub(r'[^A-Za-z0-9]+','_',str(sel)), use_container_width=True):
@@ -4701,8 +4708,12 @@ def render_portfolio_trade_journal(view='journal'):
         for mk,pct in alloc.items():
             pct=float(pct or 0)
             if pct<=0 and mk not in deployed_by: continue
-            budget=total_cap*pct/100 if total_cap else 0.0; actual=float(deployed_by.get(mk,0.0)); usage_pct=(actual/budget*100) if budget else 0.0
-            status='EXCEEDED' if usage_pct>100 else 'NEAR LIMIT' if usage_pct>=90 else 'WATCH' if usage_pct>=70 else 'READY'
+            budget=total_cap*pct/100 if total_cap else 0.0; actual=float(deployed_by.get(mk,0.0))
+            if budget<=0 and actual>0:
+                usage_pct=np.nan; status='OVER-DEPLOYED'
+            else:
+                usage_pct=(actual/budget*100) if budget else 0.0
+                status='EXCEEDED' if usage_pct>100 else 'NEAR LIMIT' if usage_pct>=90 else 'WATCH' if usage_pct>=70 else 'READY'
             usage.append({'Market':mk,'Budget %':pct,'Market Budget':budget,'Actual Deployed':actual,'Remaining Budget':max(budget-actual,0.0),'Usage %':usage_pct,'Status':status})
         usage_df=pd.DataFrame(usage)
         if usage_df.empty:
@@ -4742,10 +4753,10 @@ def render_portfolio_trade_journal(view='journal'):
                 group=display_holdings[display_holdings['Funding Source'].astype(str).eq(source)].copy() if 'Funding Source' in display_holdings.columns else pd.DataFrame()
                 if group.empty: continue
                 st.markdown(f'#### Funding Source — {source}')
-                st.dataframe(group,use_container_width=True,hide_index=True)
                 raw_group=holdings[holdings['Funding Source'].astype(str).eq(source)].copy()
-                subtotal=pd.DataFrame([{'Funding Source':f'Subtotal — {source}','Market':'','Ticker':'','Trade Currency':'','Base Currency':base_ccy,'Net Quantity':pd.to_numeric(raw_group.get('Net Quantity'),errors='coerce').sum(),'Cost Base':pd.to_numeric(raw_group.get('Cost Base'),errors='coerce').sum(),'Trades':pd.to_numeric(raw_group.get('Trades'),errors='coerce').sum(),'Current Price':'','Current Value':pd.to_numeric(raw_group.get('Current Value'),errors='coerce').sum(),'Unrealised P/L':pd.to_numeric(raw_group.get('Unrealised P/L'),errors='coerce').sum(),'Price Status':'Subtotal','Portfolio Weight %':pd.to_numeric(raw_group.get('Portfolio Weight %'),errors='coerce').sum(),'P/L Contribution %':pd.to_numeric(raw_group.get('P/L Contribution %'),errors='coerce').sum()}])
-                st.dataframe(_round(subtotal,2).replace({np.nan:'N/A'}),use_container_width=True,hide_index=True)
+                subtotal=pd.DataFrame([{'Funding Source':f'Subtotal — {source}','Market':'','Ticker':'','Trade Currency':'','Base Currency':base_ccy,'Net Quantity':'','Cost Base':pd.to_numeric(raw_group.get('Cost Base'),errors='coerce').sum(),'Trades':pd.to_numeric(raw_group.get('Trades'),errors='coerce').sum(),'Current Price':'','Current Value':pd.to_numeric(raw_group.get('Current Value'),errors='coerce').sum(),'Unrealised P/L':pd.to_numeric(raw_group.get('Unrealised P/L'),errors='coerce').sum(),'Price Status':'Subtotal','Portfolio Weight %':pd.to_numeric(raw_group.get('Portfolio Weight %'),errors='coerce').sum(),'P/L Contribution %':pd.to_numeric(raw_group.get('P/L Contribution %'),errors='coerce').sum()}])
+                combined=pd.concat([group,_round(subtotal,2).replace({np.nan:'N/A'})],ignore_index=True)
+                st.dataframe(combined,use_container_width=True,hide_index=True)
     else:
         st.markdown('### Full Trade Log')
         st.caption('Void keeps an audit trail and excludes the entry from portfolio calculations. Remove deletes the selected row from the active CSV log.')
@@ -4812,7 +4823,6 @@ def render_capital_management_page(view='settings'):
     st.session_state.funding_profile=cap_summary.get('funding_profile','Cash')
 
     st.markdown('### Base Capital Setting')
-    st.markdown(f"<div style='font-size:12px;color:#64748B;margin-bottom:8px;'>Cash: {fmt_sgd(base_cash)} · SRS: {fmt_sgd(srs_local)} · CPF-OA: {fmt_sgd(cpf_available)} · <b>Total Capital: {fmt_sgd(total_input)}</b></div>", unsafe_allow_html=True)
     codes=list(CURRENCY_SYMBOL_MAP.keys())
     left_col,right_col=st.columns([2.25,.95],gap='large')
 
@@ -4836,7 +4846,10 @@ def render_capital_management_page(view='settings'):
                 cpf_toggle_col.checkbox('Exclude S$20k CPF-OA Minimum Floor',key='draft_preserve_cpf_floor',disabled=not bool(st.session_state.get('draft_include_cpf_oa',False)))
                 cpf_amount_col.number_input('CPF-OA Balance (S$)',min_value=0.0,step=5000.0,key='draft_cpf_oa_balance',help='Always editable. Toggle controls inclusion, not field availability.')
                 cpf_blank_col.caption('')
-            action_col,import_col,export_col=st.columns([1.55,.72,.72])
+            st.markdown("""<style>
+            div[data-testid="stButton"] button, div[data-testid="stDownloadButton"] button, div[data-testid="stPopover"] button {min-height:38px;height:38px;}
+            </style>""", unsafe_allow_html=True)
+            action_col,import_col,export_col=st.columns([1.52,.74,.74])
             submitted=action_col.button('Apply Capital Settings',use_container_width=True,key='apply_capital_settings_button')
             uploaded_capital_json=None
             if hasattr(st,'popover'):
@@ -4861,7 +4874,8 @@ def render_capital_management_page(view='settings'):
             ('SRS','Included only when SRS toggle is ON'),
             ('CPF-OA','Included only when CPF-OA toggle is ON; CPF floor applies when selected'),
             ('Actual Deployed','Executed trades in base currency'),
-            ('Funding Readiness','Total Capital minus Actual Deployed')
+            ('Funding Readiness','Total Capital minus Actual Deployed'),
+            ('FX treatment','Funding readiness uses base-currency equivalents; transaction currencies and FX rates are captured in Trade Entry')
         ])
         st.markdown(f"### Capital Position, Source & Profile {source_tip}",unsafe_allow_html=True)
         source_rows=[('Cash',base_cash),('SRS',srs_local),('CPF-OA',cpf_available)]
@@ -4888,10 +4902,8 @@ def render_capital_management_page(view='settings'):
         else:
             st.error('Capital settings could not be saved.')
 
-    st.caption('Funding readiness uses base-currency equivalents. SRS/CPF-OA appear only when base currency is SGD. Transaction currencies and FX rates are captured in Trade Entry.')
     render_market_allocation_budget_ui(base_symbol,total_input,compact=False)
     st.markdown('---')
-    st.info('Funding readiness now uses base-currency equivalents and the readiness matrix checks market budget, portfolio cash, pending-order reserve and configuration state.')
 
 RENDERERS={'▣ Market Deep Dive':render_market_deep_dive,'🏆 Crash Analytics':render_crash,'📡 Audit, Methodology & Export':render_audit,'📝 Trade Entry Form':lambda expanded=True: render_trade_entry_page('form'),'⏳ Pending Orders':lambda expanded=True: render_trade_entry_page('pending'),'🎯 Trigger Monitor':lambda expanded=True: render_trade_entry_page('trigger'),'📌 Portfolio Summary':lambda expanded=True: render_portfolio_trade_journal('summary'),'📦 Holdings & Exposure':lambda expanded=True: render_portfolio_trade_journal('holdings'),'📒 Trade Journal':lambda expanded=True: render_portfolio_trade_journal('journal'),'💰 Capital Settings':lambda expanded=True: render_capital_management_page('settings'),'🧭 Philosophy, Strategy & Allocation Rules':lambda expanded=True: render_capital_management_page('rules'),'💰 Investible Capital':lambda expanded=True: render_capital_management_page('settings'),'📊 Capital Overview':lambda expanded=True: render_capital_management_page('settings'),'🧾 Funding Plan':lambda expanded=True: render_capital_management_page('settings'),'🧮 Allocation Rules':lambda expanded=True: render_capital_management_page('rules')}
 
