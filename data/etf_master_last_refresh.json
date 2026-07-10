@@ -1,8 +1,7 @@
-
 {
-  "generated_at": null,
+  "generated_at": "2026-07-10T00:52:12.280886+00:00",
   "source_file": "data/etf_master.csv",
-  "records": 0,
-  "status": "not_generated"
+  "generated_file": "data/etf_master.json",
+  "records": 3,
+  "status": "generated"
 }
-
