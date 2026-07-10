@@ -10,6 +10,7 @@ on:
       - "data/etf_config.json"
       - "scripts/build_etf_master.py"
       - "scripts/validate_etf_master.py"
+      - "scripts/refresh_etf_v3_scores.py"
       - ".github/workflows/refresh_etf_master.yml"
 
 permissions:
@@ -30,16 +31,22 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Validate ETF master CSV
+      - name: Validate ETF master CSV before scoring
+        run: python scripts/validate_etf_master.py
+
+      - name: Refresh ETF v3 scores
+        run: python scripts/refresh_etf_v3_scores.py
+
+      - name: Validate ETF master CSV after scoring
         run: python scripts/validate_etf_master.py
 
       - name: Build ETF master JSON
         run: python scripts/build_etf_master.py
 
-      - name: Commit generated ETF master files
+      - name: Commit refreshed ETF master files
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add data/etf_master.json data/etf_master_last_refresh.json
-          git diff --cached --quiet || git commit -m "Refresh ETF master JSON"
+          git add data/etf_master.csv data/etf_master.json data/etf_master_last_refresh.json
+          git diff --cached --quiet || git commit -m "Refresh ETF master v3 scores"
           git push
