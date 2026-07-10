@@ -3036,7 +3036,7 @@ def _etf_eligibility_title(symbol, field_name):
 
 def _etf_eligibility_html(symbol, field_name):
     title=hesc(_etf_eligibility_title(symbol, field_name))
-    return f'<span title="{title}" style="display:inline-block;min-width:16px;text-align:center;font-weight:800;line-height:1;cursor:help;white-space:nowrap;">{hesc(symbol)}</span>'
+    return f'<span title="{title}" style="display:inline-block;min-width:14px;text-align:center;font-weight:800;font-size:12px;line-height:1;cursor:help;white-space:nowrap;">{hesc(symbol)}</span>'
 
 def _etf_eligibility_help():
     return _etf_mini_tip(
@@ -3056,7 +3056,7 @@ def _etf_mini_tip(title, rows=None, footer=None):
     return f'<span class="etf-mini-tip" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:999px;background:#DBEAFE;color:#1D4ED8;font-size:8px;font-weight:800;margin-left:3px;vertical-align:middle;cursor:help;">i<span class="exec-tooltip" style="font-size:10px;line-height:1.25;max-width:260px;font-weight:400;text-transform:none;letter-spacing:0;"><b style="font-size:10.5px;">{hesc(title)}</b>{row_html}{footer_html}</span></span>'
 
 def _etf_header_html(label, tip=''):
-    return f'<div class="cde-mo-head" style="white-space:nowrap;font-size:12px;line-height:1.1;font-weight:900;color:#111827;">{label}{tip}</div>'
+    return f'<div class="cde-mo-head etf-table-head" style="white-space:nowrap;font-size:13px;line-height:1.05;font-weight:900;color:#111827;">{label}{tip}</div>'
 
 def _etf_aum_display(row):
     value=row.get('AUM')
@@ -3085,6 +3085,16 @@ def _etf_display_cost(value):
 
 def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_add_entry_rows', allow_promote=True, rich=False):
     # Row-level ETF action table. Add Entry only pre-fills Trade Entry; it does not save/place a trade.
+    st.markdown('''
+    <style>
+      .etf-row-text {font-size:13px; line-height:1.05; margin:0; padding:0;}
+      .etf-table-head {font-size:13px !important; font-weight:900 !important; line-height:1.05 !important;}
+      .etf-mini-tip {transform:scale(.88); transform-origin:center;}
+      div[data-testid="stHorizontalBlock"] {margin-bottom:0.12rem !important;}
+      div.stButton > button {min-height:30px !important; padding:0.18rem 0.45rem !important; font-size:12px !important; line-height:1.05 !important;}
+      div[data-testid="stVerticalBlock"] > div:has(.etf-table-head) {margin-bottom:0.05rem !important;}
+    </style>
+    ''', unsafe_allow_html=True)
     if etf_df is None or etf_df.empty:
         st.info('No ETF rows available for this market/filter.')
         return None
@@ -3115,25 +3125,25 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
         price=_etf_display_num(row.get('Price'),2)
         score=_etf_display_num(row.get('Implementation Fit Score'),1)
         use_case=_etf_display_text(row.get('Use case'),'')
-        cols[0].markdown(f'<div style="white-space:nowrap;">{hesc(rank)}</div>', unsafe_allow_html=True)
-        cols[1].markdown(f'<div style="font-weight:400;line-height:1.2;">{hesc(instrument)}</div>', unsafe_allow_html=True)
-        cols[2].markdown(f'<div style="white-space:nowrap;">{hesc(ticker)}</div>', unsafe_allow_html=True)
-        cols[3].markdown(f'<div style="white-space:nowrap;">{hesc(role)}</div>', unsafe_allow_html=True)
-        cols[4].markdown(f'<div style="white-space:nowrap;">{hesc(ccy)}</div>', unsafe_allow_html=True)
+        cols[0].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(rank)}</div>', unsafe_allow_html=True)
+        cols[1].markdown(f'<div class="etf-row-text" style="font-weight:400;line-height:1.05;">{hesc(instrument)}</div>', unsafe_allow_html=True)
+        cols[2].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(ticker)}</div>', unsafe_allow_html=True)
+        cols[3].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(role)}</div>', unsafe_allow_html=True)
+        cols[4].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(ccy)}</div>', unsafe_allow_html=True)
         cols[5].markdown(_etf_eligibility_html(cpf,'CPF-OA'), unsafe_allow_html=True)
         cols[6].markdown(_etf_eligibility_html(srs,'SRS'), unsafe_allow_html=True)
-        cols[7].markdown(f'<div style="white-space:nowrap;">{hesc(price)}</div>', unsafe_allow_html=True)
+        cols[7].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(price)}</div>', unsafe_allow_html=True)
         if rich:
-            cols[8].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_aum_display(row))}</div>', unsafe_allow_html=True)
-            cols[9].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_cost(row.get("Expense Ratio")))}</div>', unsafe_allow_html=True)
-            cols[10].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("1Y %"),1))}</div>', unsafe_allow_html=True)
-            cols[11].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("3Y %"),1))}</div>', unsafe_allow_html=True)
-            cols[12].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("5Y %"),1))}</div>', unsafe_allow_html=True)
-            cols[13].markdown(f'<div style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
+            cols[8].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_aum_display(row))}</div>', unsafe_allow_html=True)
+            cols[9].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_cost(row.get("Expense Ratio")))}</div>', unsafe_allow_html=True)
+            cols[10].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("1Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[11].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("3Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[12].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("5Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[13].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
             promote_col_idx=14
             add_col_idx=15
         else:
-            cols[8].markdown(f'<div style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
+            cols[8].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
             cols[9].caption(use_case)
             promote_col_idx=10 if allow_promote else None
             add_col_idx=11 if allow_promote else 10
@@ -4483,7 +4493,7 @@ def render_performance(expanded=False):
             ],
             'ETF master rows are filtered by active/status first, price-validated second, then capped at Top 10 for the tracker. User-added ETFs are comparison items and do not affect Suggested Deploy.'
         )
-        st.markdown(f'<div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:8px 0 6px 0;">ETF comparison list {etf_hierarchy_tip}</div>', unsafe_allow_html=True)
+        st.markdown(f'<div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;margin:4px 0 4px 0;">ETF comparison list {etf_hierarchy_tip}</div>', unsafe_allow_html=True)
         etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
             etf_df=etf_df[etf_df['Data Status'].eq('OK')]
