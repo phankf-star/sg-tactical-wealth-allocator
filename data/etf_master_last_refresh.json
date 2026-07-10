@@ -1,1 +1,8 @@
-etf_master_last_refresh.json
+
+{
+  "generated_at": null,
+  "source_file": "data/etf_master.csv",
+  "records": 0,
+  "status": "not_generated"
+}
+
