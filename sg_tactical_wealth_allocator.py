@@ -2842,10 +2842,8 @@ def load_etf_master():
             return {}, {'ok': False, 'message': 'ETF master source is invalid. Expected JSON object lookup.'}
         refresh={}
         if ETF_MASTER_REFRESH_FILE.exists():
-            try:
-                refresh=json.loads(ETF_MASTER_REFRESH_FILE.read_text(encoding='utf-8'))
-            except Exception:
-                refresh={}
+            try: refresh=json.loads(ETF_MASTER_REFRESH_FILE.read_text(encoding='utf-8'))
+            except Exception: refresh={}
         return data, {'ok': True, 'message': f'ETF master loaded. Records: {len(data)}', 'refresh': refresh}
     except Exception as e:
         return {}, {'ok': False, 'message': f'ETF master source could not be loaded: {e}'}
@@ -2857,21 +2855,17 @@ def _etf_master_lookup_keys(ticker):
             stem=upper[:-3]
             if stem.isdigit():
                 keys.append(stem.zfill(5)+'.HK'); keys.append(str(int(stem))+'.HK')
-    except Exception:
-        pass
+    except Exception: pass
     out=[]
     for k in keys:
         if k and k not in out: out.append(k)
     return out
 
 def get_etf_master_record(ticker, etf_master=None):
-    if etf_master is None:
-        etf_master,_=load_etf_master()
-    if not isinstance(etf_master,dict) or not etf_master:
-        return {}
+    if etf_master is None: etf_master,_=load_etf_master()
+    if not isinstance(etf_master,dict) or not etf_master: return {}
     for key in _etf_master_lookup_keys(ticker):
-        if key in etf_master and isinstance(etf_master.get(key),dict):
-            return etf_master.get(key)
+        if key in etf_master and isinstance(etf_master.get(key),dict): return etf_master.get(key)
     return {}
 
 def format_etf_eligibility(value):
@@ -2893,16 +2887,12 @@ def enrich_etf_row_with_master(row, etf_master=None):
         row['ETF Master Status']='Not in master'
         row['CPF-OA']='Unknown ⓘ'
         row['SRS']='Unknown ⓘ'
-        row['ETF Master Name']=''
-        row['ETF Asset Class']=''
-        row['ETF Theme']=''
-        row['ETF Source Date']=''
+        row['ETF Master Name']=''; row['ETF Asset Class']=''; row['ETF Theme']=''; row['ETF Source Date']=''
     return row
 
 def etf_funding_source_warning_text(ticker, funding_source, market=''):
     source=str(funding_source or '').strip().upper()
-    if source not in ['SRS','CPF-OA','CPF OA','CPF']:
-        return ''
+    if source not in ['SRS','CPF-OA','CPF OA','CPF']: return ''
     master,status=load_etf_master()
     if not status.get('ok'):
         return status.get('message','ETF master source is unavailable. Please verify CPF/SRS eligibility before placing trade.')
@@ -2910,13 +2900,11 @@ def etf_funding_source_warning_text(ticker, funding_source, market=''):
     if not rec:
         return 'ETF master record not found for this ticker. CPF/SRS eligibility and ETF classification are unavailable; please verify before saving trade.'
     if source in ['CPF-OA','CPF OA','CPF']:
-        if rec.get('cpf_oa_eligible') is True:
-            return ''
+        if rec.get('cpf_oa_eligible') is True: return ''
         note=rec.get('cpf_note','')
         return 'CPF-OA eligibility is not confirmed for this ETF. Please verify with CPF Board, SGX or broker before placing trade.' + (f' {note}' if note else '')
     if source=='SRS':
-        if rec.get('srs_eligible') is True:
-            return ''
+        if rec.get('srs_eligible') is True: return ''
         note=rec.get('srs_note','')
         return 'SRS eligibility is not confirmed for this ETF. Please verify with broker/platform before placing trade.' + (f' {note}' if note else '')
     return ''
@@ -4625,16 +4613,20 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
         default_market='STI' if 'STI' in market_options else market_options[0]
     base_ccy=st.session_state.get('base_capital_currency','SGD')
 
-    # IMPORTANT: market and currency selectors must sit outside st.form.
-    # Streamlit forms batch widget changes until submit, so labels like Price (HKD), Fees (HKD)
-    # and FX Rate HKD -> SGD will not refresh immediately if these selectors stay inside the form.
+    # Market, ticker, currency, side and funding source sit outside st.form so Streamlit
+    # can refresh warning text immediately and does not show stale warnings after submit.
     market_key=prefix+'_market_picker'; ticker_key=prefix+'_ticker_picker'; ccy_key=prefix+'_trade_ccy_picker'
+    side_key=prefix+'_side_picker'; funding_key=prefix+'_funding_source_picker'
     if market_key not in st.session_state:
         st.session_state[market_key]=default_market
     if ticker_key not in st.session_state:
         st.session_state[ticker_key]=INDEX_TICKERS.get(st.session_state[market_key],'')
     if ccy_key not in st.session_state:
         st.session_state[ccy_key]=MARKET_CURRENCY_MAP.get(st.session_state[market_key],base_ccy)
+    if side_key not in st.session_state:
+        st.session_state[side_key]='BUY'
+    if funding_key not in st.session_state:
+        st.session_state[funding_key]='Cash'
 
     def _sync_trade_market():
         mk=st.session_state.get(market_key,default_market)
@@ -4647,18 +4639,20 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
     ticker=top3.text_input('Ticker / Instrument', value=st.session_state.get(ticker_key,INDEX_TICKERS.get(market,'')), key=ticker_key)
     trade_ccy=top4.selectbox('Trade Currency',ccy_options,index=ccy_options.index(st.session_state[ccy_key]) if st.session_state[ccy_key] in ccy_options else ccy_options.index(base_ccy),key=ccy_key)
 
+    meta1,meta2,meta3=st.columns([.62,.82,2.54])
+    side=meta1.selectbox('Side',['BUY','SELL'],index=['BUY','SELL'].index(st.session_state.get(side_key,'BUY')) if st.session_state.get(side_key,'BUY') in ['BUY','SELL'] else 0,key=side_key)
+    funding_source=meta2.selectbox('Funding Source',['Cash','SRS','CPF-OA'],index=['Cash','SRS','CPF-OA'].index(st.session_state.get(funding_key,'Cash')) if st.session_state.get(funding_key,'Cash') in ['Cash','SRS','CPF-OA'] else 0,key=funding_key)
+    funding_warning=etf_funding_source_warning_text(ticker, funding_source, market)
+    if funding_warning:
+        st.warning(funding_warning)
+
     fx_default,fx_src,fx_dt=fetch_fx_rate_yahoo(trade_ccy,base_ccy)
     fx_key=f'{prefix}_fx_rate_{trade_ccy}_{base_ccy}'
     with st.form(prefix+'_form', clear_on_submit=True):
-        c5,c6,c7,c8,c8b=st.columns([.62,.82,.78,.88,.88])
-        side=c5.selectbox('Side',['BUY','SELL'],index=0,key=prefix+'_side')
-        funding_source=c6.selectbox('Funding Source',['Cash','SRS','CPF-OA'],index=0,key=prefix+'_funding_source')
+        c7,c8,c8b=st.columns([.78,.88,.88])
         quantity=c7.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
         price=c8.number_input(f'Price ({trade_ccy})',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
         fees=c8b.number_input(f'Fees ({trade_ccy})',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
-        funding_warning=etf_funding_source_warning_text(ticker, funding_source, market)
-        if funding_warning:
-            st.warning(funding_warning)
         c9,c10=st.columns([1,1])
         fx_rate=c9.number_input(f'FX Rate {trade_ccy} -> {base_ccy}',min_value=0.0,value=float(fx_default or 1.0),step=0.0001,format='%.6f',key=fx_key)
         status=c10.selectbox('Status',['Executed','Pending','Watchlist'],index=0,key=prefix+'_status')
