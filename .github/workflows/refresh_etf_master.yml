@@ -1,1 +1,44 @@
 
+name: Refresh ETF Master
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "data/etf_master.csv"
+      - "data/etf_master_schema.json"
+      - "scripts/build_etf_master.py"
+      - "scripts/validate_etf_master.py"
+      - ".github/workflows/refresh_etf_master.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  refresh-etf-master:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate ETF master CSV
+        run: python scripts/validate_etf_master.py
+
+      - name: Build ETF master JSON
+        run: python scripts/build_etf_master.py
+
+      - name: Commit generated ETF master files
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data/etf_master.json data/etf_master_last_refresh.json
+          git diff --cached --quiet || git commit -m "Refresh ETF master JSON"
+          git push
