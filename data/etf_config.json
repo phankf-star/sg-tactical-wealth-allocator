@@ -1,0 +1,25 @@
+
+{
+  "max_options_per_market": 10,
+  "ranking_method": "rank_then_implementation_fit_score",
+  "default_sort": [
+    "rank",
+    "implementation_fit_score"
+  ],
+  "display_fields": [
+    "Instrument",
+    "Ticker",
+    "Role",
+    "Trade Currency",
+    "CPF-OA",
+    "SRS",
+    "Price",
+    "AUM",
+    "Expense Ratio",
+    "Dividend Yield",
+    "Implementation Fit Score",
+    "Use Case"
+  ],
+  "quick_trade_enabled": true,
+  "disclaimer": "Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation."
+}
