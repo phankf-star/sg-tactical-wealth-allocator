@@ -2821,6 +2821,8 @@ def _save_json_file(path,data):
 # ------------------------- Owner mode, ETF preferences & platform ETF overrides -------------------------
 ETF_PREFS_FILE = Path('user_etf_preferences.json')
 PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
+ETF_MASTER_FILE = Path('data/etf_master.json')
+ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
@@ -2828,6 +2830,96 @@ def _load_user_etf_preferences(): return _load_json_file(ETF_PREFS_FILE,{'prefer
 def _save_user_etf_preferences(data): return _save_json_file(ETF_PREFS_FILE,data)
 def _load_platform_etf_overrides(): return _load_json_file(PLATFORM_ETF_OVERRIDES_FILE,{'platform_default_etfs':{}})
 def _save_platform_etf_overrides(data): return _save_json_file(PLATFORM_ETF_OVERRIDES_FILE,data)
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_etf_master():
+    """Load ETF master JSON generated from data/etf_master.csv."""
+    if not ETF_MASTER_FILE.exists():
+        return {}, {'ok': False, 'message': 'ETF master source is missing. ETF metadata, CPF/SRS eligibility and ETF classification may be incomplete.'}
+    try:
+        data=json.loads(ETF_MASTER_FILE.read_text(encoding='utf-8'))
+        if not isinstance(data,dict):
+            return {}, {'ok': False, 'message': 'ETF master source is invalid. Expected JSON object lookup.'}
+        refresh={}
+        if ETF_MASTER_REFRESH_FILE.exists():
+            try:
+                refresh=json.loads(ETF_MASTER_REFRESH_FILE.read_text(encoding='utf-8'))
+            except Exception:
+                refresh={}
+        return data, {'ok': True, 'message': f'ETF master loaded. Records: {len(data)}', 'refresh': refresh}
+    except Exception as e:
+        return {}, {'ok': False, 'message': f'ETF master source could not be loaded: {e}'}
+
+def _etf_master_lookup_keys(ticker):
+    raw=str(ticker or '').strip(); upper=raw.upper(); keys=[raw,upper]
+    try:
+        if upper.endswith('.HK'):
+            stem=upper[:-3]
+            if stem.isdigit():
+                keys.append(stem.zfill(5)+'.HK'); keys.append(str(int(stem))+'.HK')
+    except Exception:
+        pass
+    out=[]
+    for k in keys:
+        if k and k not in out: out.append(k)
+    return out
+
+def get_etf_master_record(ticker, etf_master=None):
+    if etf_master is None:
+        etf_master,_=load_etf_master()
+    if not isinstance(etf_master,dict) or not etf_master:
+        return {}
+    for key in _etf_master_lookup_keys(ticker):
+        if key in etf_master and isinstance(etf_master.get(key),dict):
+            return etf_master.get(key)
+    return {}
+
+def format_etf_eligibility(value):
+    if value is True: return 'Eligible ✓'
+    if value is False: return 'Not eligible ✕'
+    return 'Unknown ⓘ'
+
+def enrich_etf_row_with_master(row, etf_master=None):
+    row=dict(row); rec=get_etf_master_record(row.get('Ticker'), etf_master)
+    if rec:
+        row['ETF Master Status']=rec.get('status','ACTIVE') or 'ACTIVE'
+        row['CPF-OA']=format_etf_eligibility(rec.get('cpf_oa_eligible'))
+        row['SRS']=format_etf_eligibility(rec.get('srs_eligible'))
+        row['ETF Master Name']=rec.get('etf_name','')
+        row['ETF Asset Class']=rec.get('asset_class','')
+        row['ETF Theme']=rec.get('theme','')
+        row['ETF Source Date']=rec.get('source_date','')
+    else:
+        row['ETF Master Status']='Not in master'
+        row['CPF-OA']='Unknown ⓘ'
+        row['SRS']='Unknown ⓘ'
+        row['ETF Master Name']=''
+        row['ETF Asset Class']=''
+        row['ETF Theme']=''
+        row['ETF Source Date']=''
+    return row
+
+def etf_funding_source_warning_text(ticker, funding_source, market=''):
+    source=str(funding_source or '').strip().upper()
+    if source not in ['SRS','CPF-OA','CPF OA','CPF']:
+        return ''
+    master,status=load_etf_master()
+    if not status.get('ok'):
+        return status.get('message','ETF master source is unavailable. Please verify CPF/SRS eligibility before placing trade.')
+    rec=get_etf_master_record(ticker,master)
+    if not rec:
+        return 'ETF master record not found for this ticker. CPF/SRS eligibility and ETF classification are unavailable; please verify before saving trade.'
+    if source in ['CPF-OA','CPF OA','CPF']:
+        if rec.get('cpf_oa_eligible') is True:
+            return ''
+        note=rec.get('cpf_note','')
+        return 'CPF-OA eligibility is not confirmed for this ETF. Please verify with CPF Board, SGX or broker before placing trade.' + (f' {note}' if note else '')
+    if source=='SRS':
+        if rec.get('srs_eligible') is True:
+            return ''
+        note=rec.get('srs_note','')
+        return 'SRS eligibility is not confirmed for this ETF. Please verify with broker/platform before placing trade.' + (f' {note}' if note else '')
+    return ''
 
 @st.cache_data(ttl=86400)
 def yahoo_ticker_name(ticker,fallback=''):
@@ -2949,13 +3041,17 @@ def classify_etf_role(role_text):
     return 'Satellite'
 def build_etf_reference_rows(market_name):
     code,_,_,_=market_currency_info(market_name); rows=[]
+    etf_master,_=load_etf_master()
     for item in enrich_platform_default_rows_for_market(market_name):
         if isinstance(item,dict) and _normalise_ticker(item.get('Ticker')):
             rows.append({'Source':'Platform default','Role':item.get('Role','Core'),'Instrument':preferred_instrument_name(item.get('Ticker'),item.get('Instrument')),'Ticker':_normalise_ticker(item.get('Ticker')),'Currency':item.get('Currency') or code,'Use case':item.get('Use case',f'Platform-promoted core ETF for {market_name}'),'Data Coverage':item.get('Data Coverage','')})
-    for role,name,tick,use in ETF_UNIVERSE.get(market_name,[]): rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
+    for role,name,tick,use in ETF_UNIVERSE.get(market_name,[]):
+        rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
     for r in enrich_user_etf_rows_for_market(market_name):
-        if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table': rows.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Use case':r.get('Use case','User-selected ETF / watchlist'),'Data Coverage':r.get('Data Coverage','')})
-    return rows
+        if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table':
+            rows.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Use case':r.get('Use case','User-selected ETF / watchlist'),'Data Coverage':r.get('Data Coverage','')})
+    return [enrich_etf_row_with_master(r, etf_master) for r in rows]
+
 def promote_label_for_row(row):
     src=row.get('Source')
     if src=='Platform default': return 'Default'
@@ -3165,11 +3261,10 @@ def _fmt_money_display_df(df, cols, symbol=None):
     return out
 
 def _cpf_oa_eligibility_warning_text(ticker, market):
-    raw=str(ticker or '').strip().upper(); mk=str(market or '').strip()
-    sgx_like=bool(raw.endswith('.SI') or raw.endswith('.SG') or mk=='STI')
-    if not sgx_like:
-        return 'CPF-OA warning: this ticker/market does not look SGX-listed. CPF-OA should only be used for CPFIS / eligible SGX instruments. Please verify eligibility before saving.'
-    return 'CPF-OA warning: SGX-style ticker detected, but CPFIS eligibility is instrument-specific. Please verify CPFIS eligibility before saving.'
+    warning=etf_funding_source_warning_text(ticker,'CPF-OA',market)
+    if warning:
+        return warning
+    return ''
 
 def _funding_readiness_matrix(required, market_budget, market_actual, market_pending, portfolio_dry_powder, market_name='Market'):
     required=max(float(required or 0.0),0.0); market_budget=max(float(market_budget or 0.0),0.0); market_actual=max(float(market_actual or 0.0),0.0); market_pending=max(float(market_pending or 0.0),0.0); portfolio_dry_powder=max(float(portfolio_dry_powder or 0.0),0.0)
@@ -4105,6 +4200,9 @@ def render_performance(expanded=False):
         role_label='Platform Owner' if is_platform_owner() else 'Visitor'
         st.markdown('## 📊 ETF Tracker')
         st.caption('Consolidated ETF implementation vehicles with user-selected promotion action in the main table. Implementation reference only — not a recommendation.')
+        etf_master,etf_master_status=load_etf_master()
+        if not etf_master_status.get('ok'):
+            st.warning(etf_master_status.get('message'))
         ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1.0,.78,.82,.65])
         market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
 
@@ -4153,12 +4251,12 @@ def render_performance(expanded=False):
             etf_df['_RoleOrder']=etf_df['Role'].map(role_order).fillna(9)
             etf_df=etf_df.sort_values(['_SourceOrder','_RoleOrder','Instrument','Ticker'],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
 
-            display_cols=['Instrument','Ticker','Promote','Role','Currency','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','Coverage']
+            display_cols=['Instrument','Ticker','Promote','Role','Currency','CPF-OA','SRS','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','ETF Master Status','Coverage']
             display_df=etf_df[[c for c in display_cols if c in etf_df.columns]].copy()
             eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
             if eligible_mask.any():
                 display_df['Request Promotion']=False
-                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','Coverage']
+                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','CPF-OA','SRS','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','ETF Master Status','Coverage']
                 editor_df=display_df[[c for c in action_cols if c in display_df.columns]].copy()
                 disabled_cols=[c for c in editor_df.columns if c!='Request Promotion']
                 edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.')},key=f'etf_implementation_unified_editor_{perf_market}')
@@ -4169,6 +4267,7 @@ def render_performance(expanded=False):
             else:
                 st.dataframe(display_df,use_container_width=True,hide_index=True)
 
+        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Eligibility is informational only and should be verified with CPF Board, SGX or broker before trade.')
         add_etf_tip=tooltip_html(
             'Add / Compare My Own ETF',
             [
@@ -4557,8 +4656,9 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
         quantity=c7.number_input('Quantity',min_value=0.0,value=0.0,step=1.0,key=prefix+'_qty')
         price=c8.number_input(f'Price ({trade_ccy})',min_value=0.0,value=0.0,step=0.01,key=prefix+'_price')
         fees=c8b.number_input(f'Fees ({trade_ccy})',min_value=0.0,value=0.0,step=1.0,key=prefix+'_fees')
-        if funding_source=='CPF-OA':
-            st.warning(_cpf_oa_eligibility_warning_text(ticker, market))
+        funding_warning=etf_funding_source_warning_text(ticker, funding_source, market)
+        if funding_warning:
+            st.warning(funding_warning)
         c9,c10=st.columns([1,1])
         fx_rate=c9.number_input(f'FX Rate {trade_ccy} -> {base_ccy}',min_value=0.0,value=float(fx_default or 1.0),step=0.0001,format='%.6f',key=fx_key)
         status=c10.selectbox('Status',['Executed','Pending','Watchlist'],index=0,key=prefix+'_status')
