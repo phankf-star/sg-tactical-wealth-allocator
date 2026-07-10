@@ -3066,7 +3066,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
       div[data-testid="stVerticalBlock"]{gap:0.16rem!important;}
       div[data-testid="stMarkdownContainer"] p{margin-bottom:0!important;}
       div[data-testid="stButton"]{margin-top:0!important;margin-bottom:0!important;}
-      div.stButton>button{min-height:24px!important;height:26px!important;min-width:30px!important;padding:0.02rem 0.34rem!important;font-size:15px!important;font-weight:800!important;line-height:1.0!important;border-radius:8px!important;}
+      div.stButton>button{min-height:24px!important;height:26px!important;min-width:72px!important;padding:0.02rem 0.58rem!important;font-size:11.5px!important;font-weight:800!important;line-height:1.0!important;border-radius:8px!important;white-space:nowrap!important;}
       div[data-testid="stCheckbox"]{margin-top:0!important;margin-bottom:0!important;}
     </style>''', unsafe_allow_html=True)
     selected_promotion_row = None
@@ -3074,13 +3074,13 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
     add_help = 'Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.'
 
     if rich:
-        widths = [.42,1.62,.62,.50,.42,.40,.40,.52,.62,.52,.46,.46,.46,.46,.46,.42]
+        widths = [.42,1.58,.62,.50,.42,.40,.40,.52,.62,.52,.46,.46,.46,.46,.46,.62]
         headers = ['Rank','Instrument','Ticker','Role','Ccy',f'CPF {eligibility_tip}',f'SRS {eligibility_tip}','Price','AUM','Cost %','1Y','3Y','5Y','Fit','Promote','Add']
     elif allow_promote:
-        widths = [.42,1.72,.70,.54,.46,.42,.42,.56,.62,1.06,.56,.42]
+        widths = [.42,1.68,.70,.54,.46,.42,.42,.56,.62,1.04,.56,.62]
         headers = ['Rank','Instrument','Ticker','Role','Ccy',f'CPF {eligibility_tip}',f'SRS {eligibility_tip}','Price','Fit','Use Case','Promote','Add']
     else:
-        widths = [.42,1.88,.72,.54,.46,.42,.42,.56,.62,1.18,.42]
+        widths = [.42,1.80,.72,.54,.46,.42,.42,.56,.62,1.18,.62]
         headers = ['Rank','Instrument','Ticker','Role','Ccy',f'CPF {eligibility_tip}',f'SRS {eligibility_tip}','Price','Fit','Use Case','Add']
 
     for col, label in zip(st.columns(widths), headers):
@@ -3125,7 +3125,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
                 selected_promotion_row = row.to_dict()
         elif allow_promote:
             cols[promote_col_idx].write('')
-        if cols[add_col_idx].button('+', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=False, help=add_help):
+        if cols[add_col_idx].button('Add Entry', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=False, help=add_help):
             prefill_trade_entry_from_etf(market_name, ticker, ccy)
             st.rerun()
     return selected_promotion_row
