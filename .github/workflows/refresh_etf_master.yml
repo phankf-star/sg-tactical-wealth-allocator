@@ -7,6 +7,7 @@ on:
     paths:
       - "data/etf_master.csv"
       - "data/etf_master_schema.json"
+      - "data/etf_config.json"
       - "scripts/build_etf_master.py"
       - "scripts/validate_etf_master.py"
       - ".github/workflows/refresh_etf_master.yml"
