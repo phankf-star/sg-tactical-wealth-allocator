@@ -2946,6 +2946,17 @@ def _etf_num(value, default=0.0):
     except Exception:
         return default
 
+def _etf_num_any(rec, keys, default=0.0, multiplier=1.0):
+    for key in keys:
+        if key in rec and rec.get(key) not in [None, '']:
+            val=_etf_num(rec.get(key), None)
+            if val is not None:
+                try:
+                    return float(val) * float(multiplier)
+                except Exception:
+                    return float(val)
+    return default
+
 def ranked_etf_master_rows_for_market(market_name, include_user=True):
     etf_master,status=load_etf_master()
     cfg,_=load_etf_config()
@@ -2960,8 +2971,13 @@ def ranked_etf_master_rows_for_market(market_name, include_user=True):
             rows.append({
                 'Source':'ETF master','Rank':int(_etf_num(rec.get('rank'),999)),'Role':rec.get('role') or 'Core','Instrument':rec.get('instrument') or rec.get('etf_name') or yahoo,'Ticker':yahoo,
                 'Currency':rec.get('trade_currency') or rec.get('currency') or rec.get('base_currency') or market_currency_info(market_name)[0],
-                'Asset Class':rec.get('asset_class',''),'AUM':_etf_num(rec.get('aum'),0.0),'AUM Currency':rec.get('aum_currency',''),'Expense Ratio':_etf_num(rec.get('expense_ratio'),0.0),
-                'Dividend Yield':_etf_num(rec.get('dividend_yield'),0.0),'Premium Discount':_etf_num(rec.get('premium_discount'),0.0),'Implementation Fit Score':_etf_num(rec.get('implementation_fit_score'),0.0),
+                'Asset Class':rec.get('asset_class',''),
+                'AUM':_etf_num_any(rec,['aum','aum_usd','aum_sgd','aum_hkd','assets_under_management','fund_aum','net_assets','total_assets'],0.0),
+                'AUM Currency':rec.get('aum_currency') or rec.get('aum_ccy') or rec.get('currency') or '',
+                'Expense Ratio':_etf_num_any(rec,['expense_ratio','expense_ratio_pct','ter','total_expense_ratio','cost','cost_pct'],0.0),
+                'Dividend Yield':_etf_num_any(rec,['dividend_yield','dividend_yield_pct','yield','yield_pct'],0.0),
+                'Premium Discount':_etf_num_any(rec,['premium_discount','premium_discount_pct'],0.0),
+                'Implementation Fit Score':_etf_num_any(rec,['implementation_fit_score','candidate_fit_score','fit_score'],0.0),
                 'Use case':rec.get('use_case') or rec.get('theme') or '','CPF-OA':format_etf_eligibility(rec.get('cpf_oa_eligible')),'SRS':format_etf_eligibility(rec.get('srs_eligible')),
                 'ETF Master Status':rec.get('status','ACTIVE'),'Data As Of':rec.get('data_as_of') or rec.get('source_date') or '','Data Coverage':'ETF master ranked universe'
             })
@@ -3005,11 +3021,22 @@ def _etf_display_num(value, decimals=1, fallback='—'):
 def _etf_eligibility_symbol(value):
     raw=str(value or '').strip()
     low=raw.lower()
-    if raw == '✓' or 'eligible ✓' in low or (low == 'eligible'):
+    if raw == '✓' or 'eligible ✓' in low or low == 'eligible':
         return '✓'
-    if raw == '✕' or raw == '×' or 'not eligible' in low:
+    if raw in ['✕','×'] or 'not eligible' in low:
         return '✕'
     return 'ⓘ'
+
+def _etf_eligibility_title(symbol, field_name):
+    if symbol == '✓':
+        return f'{field_name}: marked eligible in ETF master. Verify with the relevant broker/trading platform before using this funding source.'
+    if symbol == '✕':
+        return f'{field_name}: marked not eligible in ETF master. Verify with the relevant broker/trading platform before using this funding source.'
+    return f'{field_name}: eligibility not confirmed in ETF master. Please verify with the relevant broker, trading platform, CPF/SRS provider, or product issuer.'
+
+def _etf_eligibility_html(symbol, field_name):
+    title=hesc(_etf_eligibility_title(symbol, field_name))
+    return f'<span title="{title}" style="display:inline-block;min-width:16px;text-align:center;font-weight:800;line-height:1;cursor:help;white-space:nowrap;">{hesc(symbol)}</span>'
 
 def _etf_eligibility_help():
     return tooltip_html(
@@ -3021,6 +3048,9 @@ def _etf_eligibility_help():
         ],
         'Please verify eligibility with the relevant broker, trading platform, CPF/SRS provider, or product issuer before using CPF-OA or SRS funding.'
     )
+
+def _etf_header_html(label, tip=''):
+    return f'<div class="cde-mo-head" style="white-space:nowrap;font-size:11px;line-height:1.1;">{label}{tip}</div>'
 
 def _etf_aum_display(row):
     value=row.get('AUM')
@@ -3039,6 +3069,14 @@ def _etf_aum_display(row):
     except Exception:
         return '—'
 
+def _etf_display_cost(value):
+    try:
+        if value is None or pd.isna(value) or float(value)==0:
+            return '—'
+        return f'{float(value):.2f}'
+    except Exception:
+        return '—'
+
 def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_add_entry_rows', allow_promote=True, rich=False):
     # Row-level ETF action table. Add Entry only pre-fills Trade Entry; it does not save/place a trade.
     if etf_df is None or etf_df.empty:
@@ -3046,18 +3084,19 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
         return None
     selected_promotion_row=None
     elig_tip=_etf_eligibility_help()
+    add_help='Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.'
     if rich:
-        widths=[.32,1.42,.62,.52,.42,.46,.42,.52,.62,.52,.50,.50,.50,.48,.58,.70]
-        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','AUM','Cost %','1Y','3Y','5Y','Fit','Promote','Add Entry']
+        widths=[.42,1.62,.62,.50,.42,.40,.40,.52,.62,.52,.46,.46,.46,.46,.50,.62]
+        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','AUM','Cost %','1Y','3Y','5Y','Fit','Promote','Add']
     elif allow_promote:
-        widths=[.34,1.55,.72,.55,.48,.58,.54,.56,.70,1.15,.64,.78]
-        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','Fit','Use Case','Promote','Add Entry']
+        widths=[.42,1.72,.70,.54,.46,.42,.42,.56,.62,1.06,.56,.66]
+        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','Fit','Use Case','Promote','Add']
     else:
-        widths=[.34,1.65,.72,.55,.48,.58,.54,.56,.70,1.16,.78]
-        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','Fit','Use Case','Add Entry']
+        widths=[.42,1.88,.72,.54,.46,.42,.42,.56,.62,1.18,.68]
+        headers=['Rank','Instrument','Ticker','Role','Ccy',f'CPF {elig_tip}',f'SRS {elig_tip}','Price','Fit','Use Case','Add']
     header_cols=st.columns(widths)
     for col,label in zip(header_cols,headers):
-        col.markdown(f'<div class="cde-mo-head">{label}</div>', unsafe_allow_html=True)
+        col.markdown(_etf_header_html(label), unsafe_allow_html=True)
     for pos,(_,row) in enumerate(etf_df.iterrows(), start=1):
         cols=st.columns(widths)
         ticker=_etf_display_text(row.get('Ticker'))
@@ -3070,26 +3109,25 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
         price=_etf_display_num(row.get('Price'),2)
         score=_etf_display_num(row.get('Implementation Fit Score'),1)
         use_case=_etf_display_text(row.get('Use case'),'')
-        base_vals=[rank,instrument,ticker,role,ccy,cpf,srs,price]
-        cols[0].write(rank)
-        cols[1].markdown(f'**{hesc(instrument)}**', unsafe_allow_html=True)
-        cols[2].write(ticker)
-        cols[3].write(role)
-        cols[4].write(ccy)
-        cols[5].markdown(f'<div style="text-align:center;font-weight:800;">{cpf}</div>', unsafe_allow_html=True)
-        cols[6].markdown(f'<div style="text-align:center;font-weight:800;">{srs}</div>', unsafe_allow_html=True)
-        cols[7].write(price)
+        cols[0].markdown(f'<div style="white-space:nowrap;">{hesc(rank)}</div>', unsafe_allow_html=True)
+        cols[1].markdown(f'<div style="font-weight:700;line-height:1.2;">{hesc(instrument)}</div>', unsafe_allow_html=True)
+        cols[2].markdown(f'<div style="white-space:nowrap;">{hesc(ticker)}</div>', unsafe_allow_html=True)
+        cols[3].markdown(f'<div style="white-space:nowrap;">{hesc(role)}</div>', unsafe_allow_html=True)
+        cols[4].markdown(f'<div style="white-space:nowrap;">{hesc(ccy)}</div>', unsafe_allow_html=True)
+        cols[5].markdown(_etf_eligibility_html(cpf,'CPF-OA'), unsafe_allow_html=True)
+        cols[6].markdown(_etf_eligibility_html(srs,'SRS'), unsafe_allow_html=True)
+        cols[7].markdown(f'<div style="white-space:nowrap;">{hesc(price)}</div>', unsafe_allow_html=True)
         if rich:
-            cols[8].write(_etf_aum_display(row))
-            cols[9].write(_etf_display_num(row.get('Expense Ratio'),2))
-            cols[10].write(_etf_display_num(row.get('1Y %'),1))
-            cols[11].write(_etf_display_num(row.get('3Y %'),1))
-            cols[12].write(_etf_display_num(row.get('5Y %'),1))
-            cols[13].write(score)
+            cols[8].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_aum_display(row))}</div>', unsafe_allow_html=True)
+            cols[9].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_cost(row.get("Expense Ratio")))}</div>', unsafe_allow_html=True)
+            cols[10].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("1Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[11].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("3Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[12].markdown(f'<div style="white-space:nowrap;">{hesc(_etf_display_num(row.get("5Y %"),1))}</div>', unsafe_allow_html=True)
+            cols[13].markdown(f'<div style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
             promote_col_idx=14
             add_col_idx=15
         else:
-            cols[8].write(score)
+            cols[8].markdown(f'<div style="white-space:nowrap;">{hesc(score)}</div>', unsafe_allow_html=True)
             cols[9].caption(use_case)
             promote_col_idx=10 if allow_promote else None
             add_col_idx=11 if allow_promote else 10
@@ -3099,7 +3137,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
                 selected_promotion_row=row.to_dict()
         elif allow_promote:
             cols[promote_col_idx].write('')
-        if cols[add_col_idx].button('Add Entry →', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help='Pre-fills the Trade Entry Form only. No trade is placed or saved until Save Trade Entry is clicked.'):
+        if cols[add_col_idx].button('Add →', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help=add_help):
             prefill_trade_entry_from_etf(market_name, ticker, ccy)
             st.rerun()
     return selected_promotion_row
@@ -4150,6 +4188,7 @@ def render_suggested(expanded=False):
                     ('Price gate','Only ETFs with valid live/current price are displayed'),
                     ('Ranking','Sorted by ETF master rank and Implementation Fit Score after the price gate'),
                     ('Signal basis','Deployment signal remains based on the selected market index, not the ETF vehicle'),
+                    ('Add Entry','Pre-fills Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked'),
                 ],
                 'Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation.'
             )
@@ -4162,7 +4201,6 @@ def render_suggested(expanded=False):
                 st.info('No ETF candidates with valid live price are available for this market.')
             else:
                 render_etf_add_entry_rows(ranked_df, sel, market_currency_code, key_prefix='deep_dive_add_entry', allow_promote=False, rich=False)
-            st.caption('Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         elif sel in ETF_UNIVERSE:
             st.markdown('#### Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -4435,6 +4473,7 @@ def render_performance(expanded=False):
                 ('Signal basis','Deployment signal remains based on the selected market index, not the ETF vehicle'),
                 ('Currency','Currency conversion and base-currency reporting follow Capital Settings'),
                 ('1Y Gap','Compares ETF 1Y return with the selected market index where both are available'),
+                ('Add Entry','Pre-fills Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked'),
             ],
             'ETF master rows are filtered by active/status first, price-validated second, then capped at Top 10 for the tracker. User-added ETFs are comparison items and do not affect Suggested Deploy.'
         )
@@ -4463,7 +4502,6 @@ def render_performance(expanded=False):
             etf_df=etf_df.head(10)
             selected_promotion_row=render_etf_add_entry_rows(etf_df, perf_market, market_ccy, key_prefix='etf_tracker_add_entry', allow_promote=True, rich=True)
 
-        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. ETFs without valid live price are excluded before ranking display. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         add_etf_tip=tooltip_html(
             'Add / Compare My Own ETF',
             [
