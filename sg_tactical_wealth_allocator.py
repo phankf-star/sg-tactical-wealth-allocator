@@ -2965,7 +2965,8 @@ def ranked_etf_master_rows_for_market(market_name, include_user=True):
                 'ETF Master Status':rec.get('status','ACTIVE'),'Data As Of':rec.get('data_as_of') or rec.get('source_date') or '','Data Coverage':'ETF master ranked universe'
             })
     rows=sorted(rows,key=lambda r:(r.get('Rank',999), -float(r.get('Implementation Fit Score',0) or 0), str(r.get('Instrument',''))))
-    rows=rows[:int(cfg.get('max_options_per_market',10) or 10)]
+    # Display caps are applied only after the live-price gate.
+    # This prevents no-price ETFs from occupying top slots before exclusion.
     if include_user:
         code,_,_,_=market_currency_info(market_name)
         for r in enrich_user_etf_rows_for_market(market_name):
@@ -4083,10 +4084,26 @@ def render_suggested(expanded=False):
                 st.session_state.active_section='📦 Holdings & Exposure'; st.session_state['_portfolio_requested_view']='holdings'; st.session_state['portfolio_overview_section_buttons']='Holdings & Exposure'; st.session_state['portfolio_market_filter']=[sel]; st.rerun()
         ranked_rows,_ranked_status=ranked_etf_master_rows_for_market(sel, include_user=False)
         if ranked_rows:
-            st.markdown('#### Suggested Investment Options')
-            ranked_df=pd.DataFrame(ranked_rows)
-            render_etf_add_entry_rows(ranked_df, sel, market_currency_code, key_prefix='deep_dive_add_entry', allow_promote=False)
-            st.caption('Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
+            suggested_tip=tooltip_html(
+                'Suggested Investment Options',
+                [
+                    ('Scope',f'Top 3 {sel}-linked ETF implementation candidates'),
+                    ('Price gate','Only ETFs with valid live/current price are displayed'),
+                    ('Ranking','Sorted by ETF master rank and Implementation Fit Score after the price gate'),
+                    ('Signal basis','Deployment signal remains based on the selected market index, not the ETF vehicle'),
+                ],
+                'Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation.'
+            )
+            st.markdown(f'#### Top 3 {sel}-Linked ETF Options {suggested_tip}', unsafe_allow_html=True)
+            ranked_df=add_performance_and_gap(ranked_rows, sel)
+            if ranked_df is not None and not ranked_df.empty:
+                ranked_df=ranked_df[ranked_df['Data Status'].eq('OK')].copy()
+                ranked_df=ranked_df.sort_values(['Rank','Implementation Fit Score','Instrument','Ticker'],ascending=[True,False,True,True],kind='mergesort').head(3)
+            if ranked_df is None or ranked_df.empty:
+                st.info('No ETF candidates with valid live price are available for this market.')
+            else:
+                render_etf_add_entry_rows(ranked_df, sel, market_currency_code, key_prefix='deep_dive_add_entry', allow_promote=False)
+            st.caption('Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         elif sel in ETF_UNIVERSE:
             st.markdown('#### Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -4329,8 +4346,6 @@ def render_performance(expanded=False):
     with st.expander('📊 ETF Tracker', expanded=expanded):
         init_user_etf_preferences()
         role_label='Platform Owner' if is_platform_owner() else 'Visitor'
-        st.markdown('## 📊 ETF Tracker')
-        st.caption('Ranked implementation vehicles sourced from ETF master. Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation.')
         etf_master,etf_master_status=load_etf_master()
         etf_config,etf_config_status=load_etf_config()
         if not etf_master_status.get('ok'):
@@ -4352,21 +4367,19 @@ def render_performance(expanded=False):
         st.session_state.user_etf_remember=ctrl3.checkbox('Remember ETF list for next visit',value=st.session_state.get('user_etf_remember',False),key='remember_user_etf_checkbox')
         ctrl4.metric('Access',role_label)
         if st.session_state.get('user_etf_remember',False): persist_user_etf_preferences_if_enabled()
-        st.markdown(f"""<div class="soft-card"><div style="font-size:12px;color:{MUTED};font-weight:800;text-transform:uppercase;letter-spacing:.04em;">Selected Market Implementation Context</div><div style="font-size:22px;font-weight:900;color:{TEXT};margin-top:4px;">{perf_market}</div><div style="font-size:13px;color:{MUTED};margin-top:4px;">Default currency: <b>{market_symbol} / {market_ccy_name}</b> · Deployment signal remains based on the selected market index, not on any ETF vehicle.</div></div>""",unsafe_allow_html=True)
-
         etf_hierarchy_tip=tooltip_html(
-            'ETF Implementation Vehicles',
+            f'Top 10 {perf_market}-Linked ETFs',
             [
-                ('Table order','ETF master ranked rows → User-added'),
-                ('Platform default','Owner-approved ETFs shown first'),
-                ('System reference','Built-in reference ETFs shown next'),
-                ('User-added','Comparison items shown at the bottom'),
-                ('Since Listing %','Calculated from the first available Yahoo Finance historical price record to the latest available price'),
+                ('Scope',f'Top 10 ETF implementation candidates linked to {perf_market}'),
+                ('Price gate','Only ETFs with valid live/current price are displayed'),
+                ('Ranking','Sorted by ETF master rank and Implementation Fit Score after the price gate'),
+                ('Signal basis','Deployment signal remains based on the selected market index, not the ETF vehicle'),
+                ('Currency','Currency conversion and base-currency reporting follow Capital Settings'),
                 ('1Y Gap','Compares ETF 1Y return with the selected market index where both are available'),
             ],
-            'ETF master rows are filtered by active/status, ranked by Rank and Implementation Fit Score, then capped by etf_config.json. User-added ETFs are comparison items and do not affect Suggested Deploy.'
+            'ETF master rows are filtered by active/status first, price-validated second, then capped at Top 10 for the tracker. User-added ETFs are comparison items and do not affect Suggested Deploy.'
         )
-        st.markdown(f'### 1. Suggested Investment Options — {perf_market} {etf_hierarchy_tip}',unsafe_allow_html=True)
+        st.markdown(f'## 📊 Top 10 {perf_market}-Linked ETFs {etf_hierarchy_tip}', unsafe_allow_html=True)
         etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
             etf_df=etf_df[etf_df['Data Status'].eq('OK')]
@@ -4388,9 +4401,10 @@ def render_performance(expanded=False):
             if 'Implementation Fit Score' not in etf_df.columns:
                 etf_df['Implementation Fit Score']=0.0
             etf_df=etf_df.sort_values(['_SourceOrder','Rank','Implementation Fit Score','_RoleOrder','Instrument','Ticker'],ascending=[True,True,False,True,True,True],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
+            etf_df=etf_df.head(10)
             selected_promotion_row=render_etf_add_entry_rows(etf_df, perf_market, market_ccy, key_prefix='etf_tracker_add_entry', allow_promote=True)
 
-        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Ranking is implementation-fit only, not investment advice. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
+        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. ETFs without valid live price are excluded before ranking display. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         add_etf_tip=tooltip_html(
             'Add / Compare My Own ETF',
             [
