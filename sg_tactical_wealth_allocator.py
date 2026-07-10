@@ -3039,18 +3039,24 @@ def _etf_eligibility_html(symbol, field_name):
     return f'<span title="{title}" style="display:inline-block;min-width:16px;text-align:center;font-weight:800;line-height:1;cursor:help;white-space:nowrap;">{hesc(symbol)}</span>'
 
 def _etf_eligibility_help():
-    return tooltip_html(
+    return _etf_mini_tip(
         'CPF-OA / SRS Eligibility',
         [
-            ('✓','Marked eligible in ETF master'),
-            ('✕','Marked not eligible in ETF master'),
-            ('ⓘ','Unknown / not confirmed in ETF master'),
+            ('✓','Eligible'),
+            ('✕','Not eligible'),
+            ('ⓘ','Unknown / verify'),
         ],
-        'Please verify eligibility with the relevant broker, trading platform, CPF/SRS provider, or product issuer before using CPF-OA or SRS funding.'
+        'Verify with broker / platform / CPF-SRS provider before using this funding source.'
     )
 
+def _etf_mini_tip(title, rows=None, footer=None):
+    rows = rows or []
+    row_html = ''.join([f'<div style="display:flex;justify-content:space-between;gap:8px;margin:2px 0;"><span style="font-weight:700;">{hesc(k)}</span><span>{hesc(v)}</span></div>' for k,v in rows])
+    footer_html = f'<div style="margin-top:5px;color:#64748B;line-height:1.25;">{hesc(footer)}</div>' if footer else ''
+    return f'<span class="etf-mini-tip" style="display:inline-flex;align-items:center;justify-content:center;width:12px;height:12px;border-radius:999px;background:#DBEAFE;color:#1D4ED8;font-size:8px;font-weight:800;margin-left:3px;vertical-align:middle;cursor:help;">i<span class="exec-tooltip" style="font-size:10px;line-height:1.25;max-width:260px;font-weight:400;text-transform:none;letter-spacing:0;"><b style="font-size:10.5px;">{hesc(title)}</b>{row_html}{footer_html}</span></span>'
+
 def _etf_header_html(label, tip=''):
-    return f'<div class="cde-mo-head" style="white-space:nowrap;font-size:11px;line-height:1.1;">{label}{tip}</div>'
+    return f'<div class="cde-mo-head" style="white-space:nowrap;font-size:12px;line-height:1.1;font-weight:900;color:#111827;">{label}{tip}</div>'
 
 def _etf_aum_display(row):
     value=row.get('AUM')
@@ -3110,7 +3116,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
         score=_etf_display_num(row.get('Implementation Fit Score'),1)
         use_case=_etf_display_text(row.get('Use case'),'')
         cols[0].markdown(f'<div style="white-space:nowrap;">{hesc(rank)}</div>', unsafe_allow_html=True)
-        cols[1].markdown(f'<div style="font-weight:700;line-height:1.2;">{hesc(instrument)}</div>', unsafe_allow_html=True)
+        cols[1].markdown(f'<div style="font-weight:400;line-height:1.2;">{hesc(instrument)}</div>', unsafe_allow_html=True)
         cols[2].markdown(f'<div style="white-space:nowrap;">{hesc(ticker)}</div>', unsafe_allow_html=True)
         cols[3].markdown(f'<div style="white-space:nowrap;">{hesc(role)}</div>', unsafe_allow_html=True)
         cols[4].markdown(f'<div style="white-space:nowrap;">{hesc(ccy)}</div>', unsafe_allow_html=True)
@@ -3137,7 +3143,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
                 selected_promotion_row=row.to_dict()
         elif allow_promote:
             cols[promote_col_idx].write('')
-        if cols[add_col_idx].button('Add →', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help=add_help):
+        if cols[add_col_idx].button('Add', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help=add_help):
             prefill_trade_entry_from_etf(market_name, ticker, ccy)
             st.rerun()
     return selected_promotion_row
@@ -4181,7 +4187,7 @@ def render_suggested(expanded=False):
                 st.session_state.active_section='📦 Holdings & Exposure'; st.session_state['_portfolio_requested_view']='holdings'; st.session_state['portfolio_overview_section_buttons']='Holdings & Exposure'; st.session_state['portfolio_market_filter']=[sel]; st.rerun()
         ranked_rows,_ranked_status=ranked_etf_master_rows_for_market(sel, include_user=False)
         if ranked_rows:
-            suggested_tip=tooltip_html(
+            suggested_tip=_etf_mini_tip(
                 'Suggested Investment Options',
                 [
                     ('Scope',f'Top 3 {sel}-linked ETF implementation candidates'),
@@ -4464,7 +4470,7 @@ def render_performance(expanded=False):
         st.session_state.user_etf_remember=ctrl3.checkbox('Remember ETF list for next visit',value=st.session_state.get('user_etf_remember',False),key='remember_user_etf_checkbox')
         ctrl4.markdown(f'<div class="soft-card" style="padding:10px 12px;min-height:42px;font-size:12px;color:{MUTED};">Access: <b style="font-size:14px;color:{TEXT};">{hesc(role_label)}</b></div>', unsafe_allow_html=True)
         if st.session_state.get('user_etf_remember',False): persist_user_etf_preferences_if_enabled()
-        etf_hierarchy_tip=tooltip_html(
+        etf_hierarchy_tip=_etf_mini_tip(
             f'Top 10 {perf_market}-Linked ETFs',
             [
                 ('Scope',f'Top 10 ETF implementation candidates linked to {perf_market}'),
