@@ -2983,6 +2983,67 @@ def prefill_trade_entry_from_etf(market_name, ticker, trade_currency):
     st.session_state.active_section='📝 Trade Entry Form'
     return True
 
+def _etf_display_text(value, fallback='—'):
+    try:
+        if value is None or (isinstance(value, float) and pd.isna(value)):
+            return fallback
+        text=str(value).strip()
+        return text if text else fallback
+    except Exception:
+        return fallback
+
+def _etf_display_num(value, decimals=1, fallback='—'):
+    try:
+        if value is None or pd.isna(value):
+            return fallback
+        return f'{float(value):,.{decimals}f}'
+    except Exception:
+        return fallback
+
+def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_add_entry_rows', allow_promote=True):
+    # Row-level ETF action table. Add Entry only pre-fills Trade Entry; it does not save/place a trade.
+    if etf_df is None or etf_df.empty:
+        st.info('No ETF rows available for this market/filter.')
+        return None
+    selected_promotion_row=None
+    widths=[.34,1.55,.72,.55,.48,.68,.62,.56,.70,1.15,.64,.78]
+    headers=['Rank','Instrument','Ticker','Role','Ccy','CPF-OA','SRS','Price','Fit Score','Use Case','Promote','Add Entry']
+    header_cols=st.columns(widths)
+    for col,label in zip(header_cols,headers):
+        col.caption(label)
+    for pos,(_,row) in enumerate(etf_df.iterrows(), start=1):
+        cols=st.columns(widths)
+        ticker=_etf_display_text(row.get('Ticker'))
+        ccy=_etf_display_text(row.get('Currency'), market_ccy)
+        instrument=_etf_display_text(row.get('Instrument'))
+        rank=_etf_display_text(row.get('Rank'), str(pos))
+        role=_etf_display_text(row.get('Role'))
+        cpf=_etf_display_text(row.get('CPF-OA'))
+        srs=_etf_display_text(row.get('SRS'))
+        price=_etf_display_num(row.get('Price'),2)
+        score=_etf_display_num(row.get('Implementation Fit Score'),1)
+        use_case=_etf_display_text(row.get('Use case'),'')
+        cols[0].write(rank)
+        cols[1].markdown(f'**{hesc(instrument)}**', unsafe_allow_html=True)
+        cols[2].write(ticker)
+        cols[3].write(role)
+        cols[4].write(ccy)
+        cols[5].write(cpf)
+        cols[6].write(srs)
+        cols[7].write(price)
+        cols[8].write(score)
+        cols[9].caption(use_case)
+        promote_label=_etf_display_text(row.get('Promote'),'')
+        if allow_promote and promote_label=='Request':
+            if cols[10].checkbox('', key=f'{key_prefix}_promote_{market_name}_{ticker}_{pos}', help='Request owner-gated promotion to Platform Default ETF.'):
+                selected_promotion_row=row.to_dict()
+        else:
+            cols[10].write('')
+        if cols[11].button('Add Entry →', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help='Pre-fills the Trade Entry Form only. No trade is placed or saved until Save Trade Entry is clicked.'):
+            prefill_trade_entry_from_etf(market_name, ticker, ccy)
+            st.rerun()
+    return selected_promotion_row
+
 @st.cache_data(ttl=86400)
 def yahoo_ticker_name(ticker,fallback=''):
     ticker=_normalise_ticker(ticker); fallback=str(fallback or ticker or '').strip()
@@ -4024,9 +4085,8 @@ def render_suggested(expanded=False):
         if ranked_rows:
             st.markdown('#### Suggested Investment Options')
             ranked_df=pd.DataFrame(ranked_rows)
-            show_cols=['Rank','Role','Instrument','Ticker','Currency','CPF-OA','SRS','Implementation Fit Score','Use case','ETF Master Status']
-            st.dataframe(ranked_df[[c for c in show_cols if c in ranked_df.columns]],use_container_width=True,hide_index=True)
-            st.caption('Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation. Final ETF selection and CPF/SRS eligibility should be verified before trade.')
+            render_etf_add_entry_rows(ranked_df, sel, market_currency_code, key_prefix='deep_dive_add_entry', allow_promote=False)
+            st.caption('Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         elif sel in ETF_UNIVERSE:
             st.markdown('#### Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
@@ -4317,9 +4377,9 @@ def render_performance(expanded=False):
         if etf_df.empty:
             st.info('No ETF rows with usable price data are available for the selected filter. Add a valid ETF below, using the correct Yahoo Finance ticker format where needed.')
         else:
-            # Table order: Platform default -> System reference -> User-selected.
+            # Table order: ETF master ranked rows -> user-added rows.
             source_order={'ETF master':0,'Platform default':1,'System reference':2,'User-selected':3}
-            role_order={'Core':0,'Satellite':1,'Defensive':2,'Thematic':3}
+            role_order={'Core':0,'Defensive':1,'Satellite':2,'Thematic':3}
             etf_df=etf_df.copy()
             etf_df['_SourceOrder']=etf_df['Source'].map(source_order).fillna(9)
             etf_df['_RoleOrder']=etf_df['Role'].map(role_order).fillna(9)
@@ -4328,36 +4388,9 @@ def render_performance(expanded=False):
             if 'Implementation Fit Score' not in etf_df.columns:
                 etf_df['Implementation Fit Score']=0.0
             etf_df=etf_df.sort_values(['_SourceOrder','Rank','Implementation Fit Score','_RoleOrder','Instrument','Ticker'],ascending=[True,True,False,True,True,True],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
+            selected_promotion_row=render_etf_add_entry_rows(etf_df, perf_market, market_ccy, key_prefix='etf_tracker_add_entry', allow_promote=True)
 
-            display_cols=['Rank','Instrument','Ticker','Promote','Role','Currency','CPF-OA','SRS','Price','AUM','Expense Ratio','Dividend Yield','Implementation Fit Score','Use case','Source','ETF Master Status','Coverage']
-            display_df=etf_df[[c for c in display_cols if c in etf_df.columns]].copy()
-            eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
-            if eligible_mask.any():
-                display_df['Request Promotion']=False
-                action_cols=['Rank','Instrument','Ticker','Request Promotion','Role','Currency','CPF-OA','SRS','Price','AUM','Expense Ratio','Dividend Yield','Implementation Fit Score','Use case','Source','ETF Master Status','Coverage']
-                editor_df=display_df[[c for c in action_cols if c in display_df.columns]].copy()
-                disabled_cols=[c for c in editor_df.columns if c!='Request Promotion']
-                edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.')},key=f'etf_implementation_unified_editor_{perf_market}')
-                requested=edited_df[edited_df.get('Request Promotion',False)==True]
-                if not requested.empty:
-                    selected_ticker=requested.iloc[-1]['Ticker']; matches=etf_df[etf_df['Ticker'].eq(selected_ticker)].to_dict('records')
-                    selected_promotion_row=matches[-1] if matches else None
-            else:
-                st.dataframe(display_df,use_container_width=True,hide_index=True)
-
-        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Ranking is implementation-fit only, not investment advice.')
-        if etf_config.get('quick_trade_enabled', True) and not etf_df.empty:
-            qt_df=etf_df[etf_df['Ticker'].astype(str).str.strip().ne('')].copy()
-            if not qt_df.empty:
-                qtc1,qtc2,qtc3=st.columns([1.7,.72,1.58])
-                qt_options=[f"{r.get('Ticker')} — {r.get('Instrument')}" for _,r in qt_df.iterrows()]
-                qt_choice=qtc1.selectbox('Quick Trade prefill', qt_options, key=f'etf_quick_trade_select_{perf_market}', help='Prefills Trade Entry only. Review quantity, price, FX and funding source before saving.')
-                selected_qt=qt_df.iloc[qt_options.index(qt_choice)] if qt_options else None
-                qtc2.markdown('<div style="height:1.72rem"></div>', unsafe_allow_html=True)
-                if selected_qt is not None and qtc2.button('Quick Trade →', use_container_width=True, key=f'etf_quick_trade_button_{perf_market}'):
-                    prefill_trade_entry_from_etf(perf_market, str(selected_qt.get('Ticker','')), str(selected_qt.get('Currency',market_ccy)))
-                    st.rerun()
-                qtc3.caption('Quick Trade pre-fills Market, Ticker, Currency, BUY side and Cash funding source. It does not create a trade until the Trade Entry form is saved.')
+        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Ranking is implementation-fit only, not investment advice. Add Entry pre-fills the Trade Entry Form only; no trade is placed or saved until Save Trade Entry is clicked.')
         add_etf_tip=tooltip_html(
             'Add / Compare My Own ETF',
             [
@@ -4778,8 +4811,8 @@ def _trade_entry_form(prefix='trade_entry', compact=False):
 
 def render_trade_entry_modal_button():
     if hasattr(st,'dialog'):
-        @st.dialog('Quick Trade Entry')
-        def _quick_trade_dialog(): st.caption('Pop-up quick entry. Saved rows flow into Portfolio Overview → Trade Journal.'); _trade_entry_form('quick_trade_modal',compact=True)
+        @st.dialog('Add Entry Form')
+        def _quick_trade_dialog(): st.caption('Pop-up entry form. Saved rows flow into Portfolio Overview → Trade Journal.'); _trade_entry_form('quick_trade_modal',compact=True)
         if st.button('➕ Pop-up Trade Entry Form',use_container_width=True,key='open_quick_trade_entry_modal'): _quick_trade_dialog()
     else:
         with st.expander('➕ Pop-up Trade Entry Form',expanded=False): st.caption('Dialog unavailable in this runtime; quick entry is shown as an expandable modal-style panel.'); _trade_entry_form('quick_trade_fallback',compact=True)
