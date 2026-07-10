@@ -1,1 +1,31 @@
 
+{
+  "required_columns": [
+    "ticker",
+    "exchange",
+    "yahoo_symbol",
+    "etf_name",
+    "asset_class",
+    "region",
+    "market",
+    "trade_currency",
+    "cpf_oa_eligible",
+    "srs_eligible",
+    "status"
+  ],
+  "allowed_eligibility_values": [
+    "TRUE",
+    "FALSE",
+    "UNKNOWN"
+  ],
+  "allowed_status_values": [
+    "ACTIVE",
+    "WATCH",
+    "DELISTED",
+    "MANUAL_REVIEW"
+  ],
+  "lookup_key": "yahoo_symbol",
+  "source_of_truth": "data/etf_master.csv",
+  "generated_lookup": "data/etf_master.json"
+}
+
