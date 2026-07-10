@@ -3087,12 +3087,16 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
     # Row-level ETF action table. Add Entry only pre-fills Trade Entry; it does not save/place a trade.
     st.markdown('''
     <style>
-      .etf-row-text {font-size:13px; line-height:1.05; margin:0; padding:0;}
-      .etf-table-head {font-size:13px !important; font-weight:900 !important; line-height:1.05 !important;}
-      .etf-mini-tip {transform:scale(.88); transform-origin:center;}
-      div[data-testid="stHorizontalBlock"] {margin-bottom:0.12rem !important;}
-      div.stButton > button {min-height:30px !important; padding:0.18rem 0.45rem !important; font-size:12px !important; line-height:1.05 !important;}
-      div[data-testid="stVerticalBlock"] > div:has(.etf-table-head) {margin-bottom:0.05rem !important;}
+      .etf-row-text {font-size:13px; line-height:0.98; margin:0 !important; padding:0 !important;}
+      .etf-table-head {font-size:13px !important; font-weight:900 !important; line-height:1.0 !important; margin-bottom:0 !important;}
+      .etf-mini-tip {transform:scale(.86); transform-origin:center;}
+      div[data-testid="stHorizontalBlock"] {margin-bottom:0.02rem !important; gap:0.35rem !important;}
+      div[data-testid="stVerticalBlock"] {gap:0.05rem !important;}
+      div[data-testid="stMarkdownContainer"] p {margin-bottom:0 !important;}
+      div[data-testid="stButton"] {margin-top:-0.18rem !important; margin-bottom:-0.22rem !important;}
+      div.stButton > button {min-height:24px !important; height:26px !important; padding:0.05rem 0.42rem !important; font-size:12px !important; line-height:1.0 !important; border-radius:8px !important;}
+      div[data-testid="stCheckbox"] {margin-top:-0.20rem !important; margin-bottom:-0.20rem !important;}
+      div[data-testid="stVerticalBlock"] > div:has(.etf-table-head) {margin-bottom:0 !important;}
     </style>
     ''', unsafe_allow_html=True)
     if etf_df is None or etf_df.empty:
@@ -3153,7 +3157,7 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
                 selected_promotion_row=row.to_dict()
         elif allow_promote:
             cols[promote_col_idx].write('')
-        if cols[add_col_idx].button('Add', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=True, help=add_help):
+        if cols[add_col_idx].button('Add', key=f'{key_prefix}_entry_{market_name}_{ticker}_{pos}', use_container_width=False, help=add_help):
             prefill_trade_entry_from_etf(market_name, ticker, ccy)
             st.rerun()
     return selected_promotion_row
