@@ -2823,6 +2823,7 @@ ETF_PREFS_FILE = Path('user_etf_preferences.json')
 PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MASTER_FILE = Path('data/etf_master.json')
 ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
+ETF_CONFIG_FILE = Path('data/etf_config.json')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
@@ -2879,10 +2880,10 @@ def enrich_etf_row_with_master(row, etf_master=None):
         row['ETF Master Status']=rec.get('status','ACTIVE') or 'ACTIVE'
         row['CPF-OA']=format_etf_eligibility(rec.get('cpf_oa_eligible'))
         row['SRS']=format_etf_eligibility(rec.get('srs_eligible'))
-        row['ETF Master Name']=rec.get('etf_name','')
+        row['ETF Master Name']=rec.get('instrument') or rec.get('etf_name','')
         row['ETF Asset Class']=rec.get('asset_class','')
-        row['ETF Theme']=rec.get('theme','')
-        row['ETF Source Date']=rec.get('source_date','')
+        row['ETF Theme']=rec.get('theme') or rec.get('use_case','')
+        row['ETF Source Date']=rec.get('data_as_of') or rec.get('source_date','')
     else:
         row['ETF Master Status']='Not in master'
         row['CPF-OA']='Unknown ⓘ'
@@ -2908,6 +2909,79 @@ def etf_funding_source_warning_text(ticker, funding_source, market=''):
         note=rec.get('srs_note','')
         return 'SRS eligibility is not confirmed for this ETF. Please verify with broker/platform before placing trade.' + (f' {note}' if note else '')
     return ''
+
+@st.cache_data(ttl=300, show_spinner=False)
+def load_etf_config():
+    default={
+        'max_options_per_market':10,
+        'ranking_method':'rank_then_implementation_fit_score',
+        'display_fields':['Rank','Instrument','Ticker','Role','Currency','CPF-OA','SRS','Price','AUM','Expense Ratio','Dividend Yield','Implementation Fit Score','Use Case'],
+        'quick_trade_enabled':True,
+        'disclaimer':'Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation.'
+    }
+    try:
+        if ETF_CONFIG_FILE.exists():
+            data=json.loads(ETF_CONFIG_FILE.read_text(encoding='utf-8'))
+            if isinstance(data,dict):
+                cfg={**default, **data}
+                try: cfg['max_options_per_market']=int(cfg.get('max_options_per_market',10) or 10)
+                except Exception: cfg['max_options_per_market']=10
+                cfg['max_options_per_market']=max(1,min(25,cfg['max_options_per_market']))
+                return cfg, {'ok':True,'message':'ETF config loaded.'}
+        return default, {'ok':False,'message':'ETF config file is missing. Default ETF display/ranking settings are used.'}
+    except Exception as e:
+        return default, {'ok':False,'message':f'ETF config could not be loaded: {e}. Default ETF display/ranking settings are used.'}
+
+def _etf_bool_is_active(rec):
+    return bool(rec.get('active', True)) and str(rec.get('status','ACTIVE')).upper()=='ACTIVE'
+
+def _etf_market_match(rec, market_name):
+    return str(rec.get('market','')).strip().upper()==str(market_name or '').strip().upper()
+
+def _etf_num(value, default=0.0):
+    try:
+        if value is None or value=='': return default
+        return float(str(value).replace(',',''))
+    except Exception:
+        return default
+
+def ranked_etf_master_rows_for_market(market_name, include_user=True):
+    etf_master,status=load_etf_master()
+    cfg,_=load_etf_config()
+    rows=[]
+    if isinstance(etf_master,dict):
+        for key,rec in etf_master.items():
+            if not isinstance(rec,dict):
+                continue
+            if not _etf_bool_is_active(rec) or not _etf_market_match(rec,market_name):
+                continue
+            yahoo=str(rec.get('yahoo_symbol') or key or rec.get('ticker') or '').strip()
+            rows.append({
+                'Source':'ETF master','Rank':int(_etf_num(rec.get('rank'),999)),'Role':rec.get('role') or 'Core','Instrument':rec.get('instrument') or rec.get('etf_name') or yahoo,'Ticker':yahoo,
+                'Currency':rec.get('trade_currency') or rec.get('currency') or rec.get('base_currency') or market_currency_info(market_name)[0],
+                'Asset Class':rec.get('asset_class',''),'AUM':_etf_num(rec.get('aum'),0.0),'AUM Currency':rec.get('aum_currency',''),'Expense Ratio':_etf_num(rec.get('expense_ratio'),0.0),
+                'Dividend Yield':_etf_num(rec.get('dividend_yield'),0.0),'Premium Discount':_etf_num(rec.get('premium_discount'),0.0),'Implementation Fit Score':_etf_num(rec.get('implementation_fit_score'),0.0),
+                'Use case':rec.get('use_case') or rec.get('theme') or '','CPF-OA':format_etf_eligibility(rec.get('cpf_oa_eligible')),'SRS':format_etf_eligibility(rec.get('srs_eligible')),
+                'ETF Master Status':rec.get('status','ACTIVE'),'Data As Of':rec.get('data_as_of') or rec.get('source_date') or '','Data Coverage':'ETF master ranked universe'
+            })
+    rows=sorted(rows,key=lambda r:(r.get('Rank',999), -float(r.get('Implementation Fit Score',0) or 0), str(r.get('Instrument',''))))
+    rows=rows[:int(cfg.get('max_options_per_market',10) or 10)]
+    if include_user:
+        code,_,_,_=market_currency_info(market_name)
+        for r in enrich_user_etf_rows_for_market(market_name):
+            if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table':
+                rows.append({'Source':'User-selected','Rank':999,'Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Asset Class':'','AUM':0.0,'Expense Ratio':0.0,'Dividend Yield':0.0,'Premium Discount':0.0,'Implementation Fit Score':0.0,'Use case':r.get('Use case','User-selected ETF / watchlist'),'CPF-OA':'Unknown ⓘ','SRS':'Unknown ⓘ','ETF Master Status':'User-selected','Data As Of':'','Data Coverage':r.get('Data Coverage','')})
+    return rows, status
+
+def prefill_trade_entry_from_etf(market_name, ticker, trade_currency):
+    for prefix in ['full_trade_entry','quick_trade_modal','quick_trade_fallback']:
+        st.session_state[prefix+'_market_picker']=market_name
+        st.session_state[prefix+'_ticker_picker']=ticker
+        st.session_state[prefix+'_trade_ccy_picker']=trade_currency or MARKET_CURRENCY_MAP.get(market_name, st.session_state.get('base_capital_currency','SGD'))
+        st.session_state[prefix+'_side_picker']='BUY'
+        st.session_state[prefix+'_funding_source_picker']='Cash'
+    st.session_state.active_section='📝 Trade Entry Form'
+    return True
 
 @st.cache_data(ttl=86400)
 def yahoo_ticker_name(ticker,fallback=''):
@@ -3028,16 +3102,18 @@ def classify_etf_role(role_text):
     if 'core' in txt or 'lower-cost' in txt or 'broad' in txt: return 'Core'
     return 'Satellite'
 def build_etf_reference_rows(market_name):
+    # ETF master v2 is the ranked source of truth for implementation vehicles.
+    # Legacy ETF_UNIVERSE remains as fallback only if data/etf_master.json is unavailable.
+    master_rows,status=ranked_etf_master_rows_for_market(market_name, include_user=True)
+    if master_rows:
+        return master_rows
     code,_,_,_=market_currency_info(market_name); rows=[]
-    etf_master,_=load_etf_master()
     for item in enrich_platform_default_rows_for_market(market_name):
         if isinstance(item,dict) and _normalise_ticker(item.get('Ticker')):
-            rows.append({'Source':'Platform default','Role':item.get('Role','Core'),'Instrument':preferred_instrument_name(item.get('Ticker'),item.get('Instrument')),'Ticker':_normalise_ticker(item.get('Ticker')),'Currency':item.get('Currency') or code,'Use case':item.get('Use case',f'Platform-promoted core ETF for {market_name}'),'Data Coverage':item.get('Data Coverage','')})
+            rows.append({'Source':'Platform default','Rank':999,'Role':item.get('Role','Core'),'Instrument':preferred_instrument_name(item.get('Ticker'),item.get('Instrument')),'Ticker':_normalise_ticker(item.get('Ticker')),'Currency':item.get('Currency') or code,'Use case':item.get('Use case',f'Platform-promoted core ETF for {market_name}'),'Data Coverage':item.get('Data Coverage','')})
     for role,name,tick,use in ETF_UNIVERSE.get(market_name,[]):
-        rows.append({'Source':'System reference','Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
-    for r in enrich_user_etf_rows_for_market(market_name):
-        if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table':
-            rows.append({'Source':'User-selected','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Use case':r.get('Use case','User-selected ETF / watchlist'),'Data Coverage':r.get('Data Coverage','')})
+        rows.append({'Source':'System reference','Rank':999,'Role':classify_etf_role(role),'Instrument':name,'Ticker':tick,'Currency':code,'Use case':use,'Data Coverage':''})
+    etf_master,_=load_etf_master()
     return [enrich_etf_row_with_master(r, etf_master) for r in rows]
 
 def promote_label_for_row(row):
@@ -3944,7 +4020,14 @@ def render_suggested(expanded=False):
         with hold_btn_col:
             if st.button('View selected-market holdings ->', key='selected_market_holdings_link_'+re.sub(r'[^A-Za-z0-9]+','_',str(sel)), use_container_width=True):
                 st.session_state.active_section='📦 Holdings & Exposure'; st.session_state['_portfolio_requested_view']='holdings'; st.session_state['portfolio_overview_section_buttons']='Holdings & Exposure'; st.session_state['portfolio_market_filter']=[sel]; st.rerun()
-        if sel in ETF_UNIVERSE:
+        ranked_rows,_ranked_status=ranked_etf_master_rows_for_market(sel, include_user=False)
+        if ranked_rows:
+            st.markdown('#### Suggested Investment Options')
+            ranked_df=pd.DataFrame(ranked_rows)
+            show_cols=['Rank','Role','Instrument','Ticker','Currency','CPF-OA','SRS','Implementation Fit Score','Use case','ETF Master Status']
+            st.dataframe(ranked_df[[c for c in show_cols if c in ranked_df.columns]],use_container_width=True,hide_index=True)
+            st.caption('Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation. Final ETF selection and CPF/SRS eligibility should be verified before trade.')
+        elif sel in ETF_UNIVERSE:
             st.markdown('#### Suggested Investment Options')
             st.dataframe(pd.DataFrame([{'Role':r,'Instrument':n,'Ticker':t,'Use case':u} for r,n,t,u in ETF_UNIVERSE[sel]]),use_container_width=True,hide_index=True)
     if expanded: _render_suggested_content()
@@ -4187,10 +4270,13 @@ def render_performance(expanded=False):
         init_user_etf_preferences()
         role_label='Platform Owner' if is_platform_owner() else 'Visitor'
         st.markdown('## 📊 ETF Tracker')
-        st.caption('Consolidated ETF implementation vehicles with user-selected promotion action in the main table. Implementation reference only — not a recommendation.')
+        st.caption('Ranked implementation vehicles sourced from ETF master. Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation.')
         etf_master,etf_master_status=load_etf_master()
+        etf_config,etf_config_status=load_etf_config()
         if not etf_master_status.get('ok'):
             st.warning(etf_master_status.get('message'))
+        if not etf_config_status.get('ok'):
+            st.info(etf_config_status.get('message'))
         ctrl1,ctrl2,ctrl3,ctrl4=st.columns([1.0,.78,.82,.65])
         market_options=list(ETF_UNIVERSE.keys()); default_idx=market_options.index(sel) if sel in market_options else 0
 
@@ -4211,16 +4297,16 @@ def render_performance(expanded=False):
         etf_hierarchy_tip=tooltip_html(
             'ETF Implementation Vehicles',
             [
-                ('Table order','Platform default → System reference → User-added'),
+                ('Table order','ETF master ranked rows → User-added'),
                 ('Platform default','Owner-approved ETFs shown first'),
                 ('System reference','Built-in reference ETFs shown next'),
                 ('User-added','Comparison items shown at the bottom'),
                 ('Since Listing %','Calculated from the first available Yahoo Finance historical price record to the latest available price'),
                 ('1Y Gap','Compares ETF 1Y return with the selected market index where both are available'),
             ],
-            'Platform default ETFs are owner-approved and shown first. User-added ETFs are comparison items and do not affect Suggested Deploy.'
+            'ETF master rows are filtered by active/status, ranked by Rank and Implementation Fit Score, then capped by etf_config.json. User-added ETFs are comparison items and do not affect Suggested Deploy.'
         )
-        st.markdown(f'### 1. Selected-Market ETF Implementation Vehicles — {perf_market} {etf_hierarchy_tip}',unsafe_allow_html=True)
+        st.markdown(f'### 1. Suggested Investment Options — {perf_market} {etf_hierarchy_tip}',unsafe_allow_html=True)
         etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
         if not etf_df.empty:
             etf_df=etf_df[etf_df['Data Status'].eq('OK')]
@@ -4232,19 +4318,23 @@ def render_performance(expanded=False):
             st.info('No ETF rows with usable price data are available for the selected filter. Add a valid ETF below, using the correct Yahoo Finance ticker format where needed.')
         else:
             # Table order: Platform default -> System reference -> User-selected.
-            source_order={'Platform default':0,'System reference':1,'User-selected':2}
+            source_order={'ETF master':0,'Platform default':1,'System reference':2,'User-selected':3}
             role_order={'Core':0,'Satellite':1,'Defensive':2,'Thematic':3}
             etf_df=etf_df.copy()
             etf_df['_SourceOrder']=etf_df['Source'].map(source_order).fillna(9)
             etf_df['_RoleOrder']=etf_df['Role'].map(role_order).fillna(9)
-            etf_df=etf_df.sort_values(['_SourceOrder','_RoleOrder','Instrument','Ticker'],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
+            if 'Rank' not in etf_df.columns:
+                etf_df['Rank']=999
+            if 'Implementation Fit Score' not in etf_df.columns:
+                etf_df['Implementation Fit Score']=0.0
+            etf_df=etf_df.sort_values(['_SourceOrder','Rank','Implementation Fit Score','_RoleOrder','Instrument','Ticker'],ascending=[True,True,False,True,True,True],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
 
-            display_cols=['Instrument','Ticker','Promote','Role','Currency','CPF-OA','SRS','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','ETF Master Status','Coverage']
+            display_cols=['Rank','Instrument','Ticker','Promote','Role','Currency','CPF-OA','SRS','Price','AUM','Expense Ratio','Dividend Yield','Implementation Fit Score','Use case','Source','ETF Master Status','Coverage']
             display_df=etf_df[[c for c in display_cols if c in etf_df.columns]].copy()
             eligible_mask=display_df['Promote'].eq('Request') if 'Promote' in display_df.columns else pd.Series(False,index=display_df.index)
             if eligible_mask.any():
                 display_df['Request Promotion']=False
-                action_cols=['Instrument','Ticker','Request Promotion','Role','Currency','CPF-OA','SRS','Price','1Y %','3Y %','5Y %','Since Listing %','1Y Gap','Source','ETF Master Status','Coverage']
+                action_cols=['Rank','Instrument','Ticker','Request Promotion','Role','Currency','CPF-OA','SRS','Price','AUM','Expense Ratio','Dividend Yield','Implementation Fit Score','Use case','Source','ETF Master Status','Coverage']
                 editor_df=display_df[[c for c in action_cols if c in display_df.columns]].copy()
                 disabled_cols=[c for c in editor_df.columns if c!='Request Promotion']
                 edited_df=st.data_editor(editor_df,use_container_width=True,hide_index=True,disabled=disabled_cols,column_config={'Request Promotion':st.column_config.CheckboxColumn('Promote',help='Tick to request owner-gated promotion to Platform Default ETF.')},key=f'etf_implementation_unified_editor_{perf_market}')
@@ -4255,7 +4345,19 @@ def render_performance(expanded=False):
             else:
                 st.dataframe(display_df,use_container_width=True,hide_index=True)
 
-        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Eligibility is informational only and should be verified with CPF Board, SGX or broker before trade.')
+        st.caption('CPF-OA / SRS eligibility is read from data/etf_master.json generated from data/etf_master.csv. Ranking is implementation-fit only, not investment advice.')
+        if etf_config.get('quick_trade_enabled', True) and not etf_df.empty:
+            qt_df=etf_df[etf_df['Ticker'].astype(str).str.strip().ne('')].copy()
+            if not qt_df.empty:
+                qtc1,qtc2,qtc3=st.columns([1.7,.72,1.58])
+                qt_options=[f"{r.get('Ticker')} — {r.get('Instrument')}" for _,r in qt_df.iterrows()]
+                qt_choice=qtc1.selectbox('Quick Trade prefill', qt_options, key=f'etf_quick_trade_select_{perf_market}', help='Prefills Trade Entry only. Review quantity, price, FX and funding source before saving.')
+                selected_qt=qt_df.iloc[qt_options.index(qt_choice)] if qt_options else None
+                qtc2.markdown('<div style="height:1.72rem"></div>', unsafe_allow_html=True)
+                if selected_qt is not None and qtc2.button('Quick Trade →', use_container_width=True, key=f'etf_quick_trade_button_{perf_market}'):
+                    prefill_trade_entry_from_etf(perf_market, str(selected_qt.get('Ticker','')), str(selected_qt.get('Currency',market_ccy)))
+                    st.rerun()
+                qtc3.caption('Quick Trade pre-fills Market, Ticker, Currency, BUY side and Cash funding source. It does not create a trade until the Trade Entry form is saved.')
         add_etf_tip=tooltip_html(
             'Add / Compare My Own ETF',
             [
