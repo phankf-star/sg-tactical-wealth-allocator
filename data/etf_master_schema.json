@@ -1,22 +1,58 @@
 
 {
+  "source_of_truth": "data/etf_master.csv",
+  "generated_lookup": "data/etf_master.json",
+  "config_file": "data/etf_config.json",
+  "lookup_key": "yahoo_symbol",
   "required_columns": [
-    "ticker",
-    "exchange",
-    "yahoo_symbol",
-    "etf_name",
-    "asset_class",
-    "region",
     "market",
+    "rank",
+    "role",
+    "instrument",
+    "ticker",
+    "yahoo_symbol",
+    "exchange",
     "trade_currency",
+    "asset_class",
+    "implementation_fit_score",
+    "active",
+    "status",
     "cpf_oa_eligible",
-    "srs_eligible",
-    "status"
+    "srs_eligible"
+  ],
+  "optional_columns": [
+    "isin",
+    "issuer",
+    "region",
+    "country",
+    "theme",
+    "aum",
+    "aum_currency",
+    "market_cap",
+    "turnover",
+    "expense_ratio",
+    "dividend_yield",
+    "premium_discount",
+    "use_case",
+    "cpf_note",
+    "srs_note",
+    "source",
+    "source_url",
+    "source_date",
+    "data_as_of",
+    "last_reviewed",
+    "distribution_policy",
+    "replication_method",
+    "base_currency"
   ],
   "allowed_eligibility_values": [
     "TRUE",
     "FALSE",
     "UNKNOWN"
+  ],
+  "allowed_active_values": [
+    "TRUE",
+    "FALSE"
   ],
   "allowed_status_values": [
     "ACTIVE",
@@ -24,8 +60,6 @@
     "DELISTED",
     "MANUAL_REVIEW"
   ],
-  "lookup_key": "yahoo_symbol",
-  "source_of_truth": "data/etf_master.csv",
-  "generated_lookup": "data/etf_master.json"
+  "ranking_method": "rank_then_implementation_fit_score",
+  "notes": "Implementation Fit Score is a vehicle implementation ranking, not an investment recommendation."
 }
-
