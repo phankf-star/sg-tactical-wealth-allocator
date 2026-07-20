@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-17T14:58:31.200653+00:00",
+  "generated_at": "2026-07-20T06:02:48.481128+00:00",
   "source_file": "data/etf_master.csv",
   "generated_file": "data/etf_master.json",
-  "records": 53,
+  "records": 57,
   "status": "generated",
   "ranking_method": "rank_then_implementation_fit_score"
 }
