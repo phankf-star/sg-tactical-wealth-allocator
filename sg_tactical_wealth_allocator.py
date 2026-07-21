@@ -2837,6 +2837,12 @@ def _load_user_etf_preferences(): return _load_json_file(ETF_PREFS_FILE,{'prefer
 def _save_user_etf_preferences(data): return _save_json_file(ETF_PREFS_FILE,data)
 def _load_platform_etf_overrides(): return _load_json_file(PLATFORM_ETF_OVERRIDES_FILE,{'platform_default_etfs':{}})
 def _save_platform_etf_overrides(data): return _save_json_file(PLATFORM_ETF_OVERRIDES_FILE,data)
+def _platform_etf_overrides_export_bytes():
+    data=_load_platform_etf_overrides()
+    if not isinstance(data,dict): data={'platform_default_etfs':{}}
+    data.setdefault('platform_default_etfs',{})
+    data['export_metadata']={'exported_at':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'purpose':'Promoted ETF candidate queue for the next governed ETF discovery and assessment','canonical_master_unchanged':True}
+    return json.dumps(data,indent=2,ensure_ascii=False).encode('utf-8')
 
 @st.cache_data(ttl=300, show_spinner=False)
 def load_etf_master():
@@ -3058,7 +3064,9 @@ def _etf_header_html(label):
 
 def _etf_aum_display(row):
     try:
-        v=float(row.get('AUM') or 0)
+        raw=row.get('AUM')
+        if raw is None or pd.isna(raw): return '—'
+        v=float(raw)
         if v<=0: return '—'
         c=str(row.get('AUM Currency') or '').strip()
         txt=f'{v/1_000_000_000:.1f}B' if v>=1_000_000_000 else f'{v/1_000_000:.0f}M' if v>=1_000_000 else f'{v:,.0f}'
@@ -4547,17 +4555,24 @@ def render_performance(expanded=False):
             if not ok: st.warning(msg)
             st.rerun()
         if selected_promotion_row:
-            st.markdown('#### 🔐 Platform Default Promotion')
-            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be saved to platform_etf_overrides.json as PROMOTED_PENDING_METADATA and included in the next governed ETF assessment.</span></div>""",unsafe_allow_html=True)
-            p1,p2=st.columns([.95,1.05])
+            promo_title_col,promo_export_col=st.columns([1.55,.65],vertical_alignment='center')
+            promo_tip=_etf_mini_tip('Platform Default Promotion',[('Destination','platform_etf_overrides.json'),('Status after promotion','PROMOTED_PENDING_METADATA'),('Ranking','Not ranked / Fit Pending'),('Next review','Included in the next governed ETF discovery and assessment')],'Promotion does not insert the ETF into the canonical ETF master and does not make it eligible for Top 3 ranking.')
+            promo_title_col.markdown(f'#### 🔐 Platform Default Promotion {promo_tip}',unsafe_allow_html=True)
+            promo_export_col.download_button('⬇ Export Candidate JSON',data=_platform_etf_overrides_export_bytes(),file_name='platform_etf_overrides.json',mime='application/json',use_container_width=True,key='export_platform_etf_overrides_json_promotion',help='Download all owner-promoted ETF candidates. Supply this JSON together with the current ETF master for the next ETF review and discovery run.')
+            st.markdown(f"<div class='soft-card'><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} - {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style='color:{MUTED};font-size:12px;'>Owner passcode required. Successful promotion saves a persistent candidate, not an approved master ETF.</span></div>",unsafe_allow_html=True)
+            p1,p2=st.columns([1.0,1.0],vertical_alignment='bottom')
             inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
-            if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
+            promote_help='Valid latest price, non-duplicate ticker and correct owner passcode are mandatory. Missing AUM or Cost is allowed and remains explicitly unavailable. The ETF stays Not ranked / Fit Pending until governed review.'
+            if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button',help=promote_help):
                 ok,msg=promote_with_inline_passcode(perf_market,selected_promotion_row,inline_passcode)
                 st.toast(('✅ ' if ok else '⚠️ ')+msg)
                 if not ok: st.warning(msg)
                 st.rerun()
-            p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Missing AUM or Cost is allowed, labelled as unavailable, and never treated as zero. Promoted ETFs remain Not ranked / Fit Pending until governed assessment.')
-
+            p2.caption('ⓘ Saves a pending candidate. Export the JSON for the next governed ETF review.')
+        else:
+            export_left,export_right=st.columns([1.55,.65],vertical_alignment='center')
+            export_left.caption('Promoted candidate queue: export with the current ETF master for the next ETF review and discovery run.')
+            export_right.download_button('⬇ Export Candidate JSON',data=_platform_etf_overrides_export_bytes(),file_name='platform_etf_overrides.json',mime='application/json',use_container_width=True,key='export_platform_etf_overrides_json_idle',help='Downloads the current promoted ETF candidate queue. An empty queue is valid if no ETF has been promoted yet.')
         with st.expander('ETF list maintenance',expanded=False):
             m1,m2=st.columns([.8,1.2])
             if m1.button('Clean list',use_container_width=True,key='clean_user_etf_rows_button'):
