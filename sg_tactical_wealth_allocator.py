@@ -2829,7 +2829,7 @@ PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MASTER_FILE = Path('data/etf_master.json')
 ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
 ETF_CONFIG_FILE = Path('data/etf_config.json')
-ETF_VERIFICATION_DISCLAIMER = ('ETF information is for implementation comparison only. Verify the ETF identity, ticker, listing, trading currency, product details and CPF-OA/SRS eligibility with your broker or trading platform before placing any trade.')
+ETF_VERIFICATION_DISCLAIMER = ('ETF information is for comparison only. Verify the ETF, ticker, listing, currency, product details and CPF-OA/SRS eligibility with your broker or trading platform before trading.')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T', 'KOSPI': '.KS'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
@@ -3279,8 +3279,8 @@ def add_performance_and_gap(rows,market_name):
 # ─────────────────────────────────────────────────────────────────────────────
 CAPITAL_SETTINGS_FILE = Path('cde_capital_settings.json')
 CAPITAL_SETTINGS_COMMITTED_FILE = Path('config/cde_capital_settings.json')
-CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','Bitcoin','Gold','DJIA','A-Share']
-DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
+CDE_ALLOCATABLE_MARKETS = ['HSI','Nasdaq','S&P 500','STI','KLSE','Nikkei 225','KOSPI','Bitcoin','Gold','DJIA','A-Share']
+DEFAULT_MARKET_ALLOCATION_BUDGET_PCT = {'HSI':25.0,'Nasdaq':20.0,'S&P 500':20.0,'STI':15.0,'KLSE':10.0,'Nikkei 225':10.0,'KOSPI':0.0,'Bitcoin':0.0,'Gold':0.0,'DJIA':0.0,'A-Share':0.0}
 
 def _blank_capital_settings():
     # Safe blank state when no persisted config exists; never assume fake production capital.
