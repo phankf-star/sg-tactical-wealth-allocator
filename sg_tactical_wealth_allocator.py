@@ -2829,7 +2829,7 @@ PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MASTER_FILE = Path('data/etf_master.json')
 ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
 ETF_CONFIG_FILE = Path('data/etf_config.json')
-ETF_VERIFICATION_DISCLAIMER = ('ETF information is for comparison only. Verify the ETF, ticker, listing, currency, product details and CPF-OA/SRS eligibility with your broker or trading platform before trading.')
+ETF_VERIFICATION_DISCLAIMER = ('ETF data is for comparison only. Verify ETF details and CPF-OA/SRS eligibility before trading.')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T', 'KOSPI': '.KS'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
@@ -3742,7 +3742,22 @@ def cde_next_future_trigger(dd_value):
 
 def cde_all_market_rows():
     rows=[]
-    markets=[x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','KOSPI'] if x in m]
+    supported_markets=['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','KOSPI']
+    # Do not silently omit a supported market because its first startup fetch was empty.
+    # Retry/hydrate missing markets using the same history helper used by Market Deep Dive.
+    for mk in supported_markets:
+        if mk in m and isinstance(m.get(mk),dict) and not m[mk].get('df',pd.DataFrame()).empty:
+            continue
+        try:
+            mk_df=hist(INDEX_TICKERS.get(mk,''))
+            if mk_df is None or mk_df.empty:
+                continue
+            mk_close=safe_float(mk_df.Close.iloc[-1])
+            mk_ma=safe_float(mk_df.Close.rolling(200).mean().dropna().iloc[-1],mk_close) if len(mk_df)>=200 else mk_close
+            m[mk]={'ticker':INDEX_TICKERS.get(mk,''),'df':mk_df,'close':mk_close,'ma200':mk_ma}
+        except Exception:
+            continue
+    markets=[mk for mk in supported_markets if mk in m and isinstance(m.get(mk),dict) and not m[mk].get('df',pd.DataFrame()).empty]
     perf_map={}
     try:
         perf_rows=perf([(mk, INDEX_TICKERS.get(mk,'')) for mk in markets])
@@ -4157,6 +4172,7 @@ def render_suggested(expanded=False):
             with st.container(border=True):
                 suggested_tip=_etf_mini_tip('Suggested Investment Options',[('Scope',f'Top 3 {sel}-linked ETF implementation candidates'),('Price gate','Valid live/current price only'),('Trade Entry','Use Trade Entry page if an order log is needed')],'ETF list is for implementation comparison only.')
                 st.markdown(f'#### Top 3 {sel}-Linked ETF Options {suggested_tip}', unsafe_allow_html=True)
+                st.caption('⚠️ ' + ETF_VERIFICATION_DISCLAIMER)
                 ranked_df=add_performance_and_gap(ranked_rows, sel)
                 if ranked_df is not None and not ranked_df.empty:
                     ranked_df=ranked_df[ranked_df['Data Status'].eq('OK')].copy().sort_values(['Rank','Implementation Fit Score','Instrument','Ticker'],ascending=[True,False,True,True],kind='mergesort').head(3)
@@ -4430,7 +4446,7 @@ def render_performance(expanded=False):
         with st.container(border=True):
             etf_hierarchy_tip=_etf_mini_tip(f'Top 10 {perf_market}-Linked ETFs',[('Scope',f'Top 10 ETF candidates linked to {perf_market}'),('Price gate','Valid live/current price only'),('Trade Entry','Use Trade Entry page if an order log is needed')],'ETF list is for implementation comparison only.')
             st.markdown(f'<div style="font-size:12px;color:{MUTED};font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 12px 0;">ETF comparison list {etf_hierarchy_tip}</div>', unsafe_allow_html=True)
-            st.warning(ETF_VERIFICATION_DISCLAIMER, icon='⚠️')
+            st.caption('⚠️ ' + ETF_VERIFICATION_DISCLAIMER)
             etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
             if not etf_df.empty:
                 etf_df=etf_df[etf_df['Data Status'].eq('OK')]
