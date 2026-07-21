@@ -2829,7 +2829,7 @@ PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MASTER_FILE = Path('data/etf_master.json')
 ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
 ETF_CONFIG_FILE = Path('data/etf_config.json')
-ETF_VERIFICATION_DISCLAIMER = ('ETF data is for comparison only. Verify ETF details and CPF-OA/SRS eligibility before trading.')
+ETF_VERIFICATION_DISCLAIMER = ('ETF information is for implementation comparison only. CDE is not a broker or trading platform. Verify ETF identity, ticker, listing, trading currency, current price, fees, product details and CPF-OA/SRS eligibility with the issuer, exchange and your broker before trading.')
 ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T', 'KOSPI': '.KS'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
@@ -2984,15 +2984,25 @@ def ranked_etf_master_rows_for_market(market_name, include_user=True):
                 'Premium Discount':_etf_num(rec.get('premium_discount') or rec.get('premium_discount_pct'),0.0),
                 'Implementation Fit Score':_etf_num(rec.get('implementation_fit_score') or rec.get('candidate_fit_score') or rec.get('fit_score'),0.0),
                 'Use case':rec.get('use_case') or rec.get('theme') or '','CPF-OA':format_etf_eligibility(rec.get('cpf_oa_eligible')),'SRS':format_etf_eligibility(rec.get('srs_eligible')),
-                'ETF Master Status':rec.get('status','ACTIVE'),'Data As Of':rec.get('data_as_of') or rec.get('source_date') or '','Data Coverage':'ETF master ranked universe'
+                'ETF Master Status':rec.get('status','ACTIVE'),'Data As Of':rec.get('data_as_of') or rec.get('source_date') or '',
+                'Metadata Source':rec.get('source') or rec.get('issuer') or 'ETF master','Metadata Source URL':rec.get('source_url') or '',
+                'AUM Scope':rec.get('aum_scope') or ('Fund / product level unless otherwise stated' if _etf_num(rec.get('aum'),0.0)>0 else 'Unavailable / not yet verified'),
+                'Cost Basis':rec.get('fee_type') or rec.get('cost_basis') or ('Published recurring fund cost / expense ratio' if _etf_num(rec.get('expense_ratio'),0.0)>0 else 'Unavailable / not yet verified'),
+                'Metadata Status':'VERIFIED_MASTER' if (_etf_num(rec.get('aum'),0.0)>0 and _etf_num(rec.get('expense_ratio'),0.0)>0) else 'METADATA_PARTIAL','Data Coverage':'ETF master ranked universe'
             })
     rows=sorted(rows,key=lambda r:(r.get('Rank',999), -float(r.get('Implementation Fit Score',0) or 0), str(r.get('Instrument',''))))
+    # Owner-promoted user ETFs persist as governed candidates outside the canonical ETF master.
+    for item in get_platform_default_etfs_for_market(market_name):
+        if not isinstance(item,dict): continue
+        ticker=_normalise_ticker(item.get('Ticker'))
+        if not ticker or any(_normalise_ticker(x.get('Ticker'))==ticker for x in rows): continue
+        rows.append({'Source':'Platform default','Rank':'Not ranked','Role':item.get('Role','Satellite'),'Instrument':preferred_instrument_name(ticker,item.get('Instrument')),'Ticker':ticker,'Currency':item.get('Currency') or market_currency_info(market_name)[0],'Asset Class':'','AUM':item.get('AUM'),'AUM Currency':item.get('Currency') or market_currency_info(market_name)[0],'Expense Ratio':item.get('Expense Ratio'),'Dividend Yield':None,'Premium Discount':None,'Implementation Fit Score':None,'Use case':item.get('Use case',f'Platform-added ETF candidate for {market_name}'),'CPF-OA':'ⓘ','SRS':'ⓘ','ETF Master Status':item.get('Review Status','PROMOTED_PENDING_METADATA'),'Data As Of':item.get('Data As Of',''),'Metadata Source':item.get('Metadata Source') or 'Owner-promoted user submission','Metadata Source URL':item.get('Metadata Source URL',''),'AUM Scope':item.get('AUM Scope') or 'Unavailable / not yet verified','Cost Basis':item.get('Cost Basis') or 'Unavailable / not yet verified','Metadata Status':item.get('Review Status','PROMOTED_PENDING_METADATA'),'Data Coverage':item.get('Data Coverage','')})
     # Display caps are applied only after valid live-price filtering.
     if include_user:
         code,_,_,_=market_currency_info(market_name)
         for r in enrich_user_etf_rows_for_market(market_name):
             if r.get('Data Status')=='OK' and r.get('Table Status')=='Shown in ETF table':
-                rows.append({'Source':'User-selected','Rank':999,'Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Asset Class':'','AUM':0.0,'Expense Ratio':0.0,'Dividend Yield':0.0,'Premium Discount':0.0,'Implementation Fit Score':0.0,'Use case':r.get('Use case','User-selected ETF / watchlist'),'CPF-OA':'ⓘ','SRS':'ⓘ','ETF Master Status':'User-selected','Data As Of':'','Data Coverage':r.get('Data Coverage','')})
+                rows.append({'Source':'User-selected','Rank':'Not ranked','Role':r.get('Role','Satellite'),'Instrument':r.get('Instrument') or r.get('Ticker'),'Ticker':r.get('Ticker'),'Currency':r.get('Currency') or code,'Asset Class':'','AUM':None,'AUM Currency':r.get('Currency') or code,'Expense Ratio':None,'Dividend Yield':None,'Premium Discount':None,'Implementation Fit Score':None,'Use case':r.get('Use case','User-selected ETF / watchlist'),'CPF-OA':'ⓘ','SRS':'ⓘ','ETF Master Status':'USER_SUBMITTED_HOLD','Data As Of':r.get('Data As Of',''),'Metadata Source':r.get('Metadata Source') or 'Yahoo Finance price validation','Metadata Source URL':'','AUM Scope':'Unavailable / not yet verified','Cost Basis':'Unavailable / not yet verified','Metadata Status':'USER_SUBMITTED_HOLD','Data Coverage':r.get('Data Coverage','')})
     return rows, status
 
 def prefill_trade_entry_from_etf(market_name, ticker, trade_currency):
@@ -3061,6 +3071,26 @@ def _etf_display_cost(value):
         return f'{float(value):.2f}'
     except Exception: return '—'
 
+def _etf_metadata_tooltip(row, field_name):
+    source=_etf_display_text(row.get('Metadata Source') or row.get('Source'),'Not available')
+    as_of=_etf_display_text(row.get('Data As Of'),'Not available')
+    source_url=_etf_display_text(row.get('Metadata Source URL'),'Not available')
+    status=_etf_display_text(row.get('Metadata Status') or row.get('ETF Master Status'),'Not available')
+    if field_name=='AUM':
+        available=_etf_aum_display(row)!='—'; basis=_etf_display_text(row.get('AUM Scope'),'Unavailable / not yet verified')
+        footer='AUM is genuinely unavailable or not yet verified; the blank does not mean zero.' if not available else 'AUM may be fund-level rather than share-class-level. Verify scope with the cited source.'
+    else:
+        available=_etf_display_cost(row.get('Expense Ratio'))!='—'; basis=_etf_display_text(row.get('Cost Basis'),'Unavailable / not yet verified')
+        footer='Cost is genuinely unavailable or not yet verified; the blank does not mean zero or free.' if not available else 'Cost may be TER, ongoing charge, sponsor fee or management fee. Verify the stated basis.'
+    return _etf_mini_tip(f'{field_name} metadata',[('Status',status),('Source',source),('Data as of',as_of),('Basis / scope',basis),('Source URL',source_url)],footer)
+
+def _etf_rank_display(row,fallback):
+    return 'Not ranked' if str(row.get('Source','')) in ['User-selected','Platform default'] else _etf_display_text(row.get('Rank'),fallback)
+
+def _etf_fit_display(row):
+    v=row.get('Implementation Fit Score')
+    return 'Pending' if str(row.get('Source','')) in ['User-selected','Platform default'] or v is None or pd.isna(v) else _etf_display_num(v,1)
+
 def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_add_entry_rows', allow_promote=True, rich=False):
     # Add Entry buttons intentionally hidden for now to keep ETF comparison tables compact.
     if etf_df is None or etf_df.empty:
@@ -3090,8 +3120,8 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
     for pos,(_,row) in enumerate(etf_df.iterrows(),1):
         cols=st.columns(widths)
         ticker=_etf_display_text(row.get('Ticker')); ccy=_etf_display_text(row.get('Currency'),market_ccy); instrument=_etf_display_text(row.get('Instrument'))
-        rank=_etf_display_text(row.get('Rank'),str(pos)); role=_etf_display_text(row.get('Role')); cpf=_etf_eligibility_symbol(row.get('CPF-OA')); srs=_etf_eligibility_symbol(row.get('SRS'))
-        price=_etf_display_num(row.get('Price'),2); score=_etf_display_num(row.get('Implementation Fit Score'),1); use_case=_etf_display_text(row.get('Use case'),'')
+        rank=_etf_rank_display(row,str(pos)); role=_etf_display_text(row.get('Role')); cpf=_etf_eligibility_symbol(row.get('CPF-OA')); srs=_etf_eligibility_symbol(row.get('SRS'))
+        price=_etf_display_num(row.get('Price'),2); score=_etf_fit_display(row); use_case=_etf_display_text(row.get('Use case'),'')
         cols[0].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(rank)}</div>', unsafe_allow_html=True)
         cols[1].markdown(f'<div class="etf-row-text" style="font-weight:400;">{hesc(instrument)}</div>', unsafe_allow_html=True)
         cols[2].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(ticker)}</div>', unsafe_allow_html=True)
@@ -3100,8 +3130,9 @@ def render_etf_add_entry_rows(etf_df, market_name, market_ccy, key_prefix='etf_a
         cols[5].markdown(_etf_eligibility_html(cpf,'CPF-OA'), unsafe_allow_html=True); cols[6].markdown(_etf_eligibility_html(srs,'SRS'), unsafe_allow_html=True)
         cols[7].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(price)}</div>', unsafe_allow_html=True)
         if rich:
-            cols[8].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_aum_display(row))}</div>', unsafe_allow_html=True)
-            cols[9].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_cost(row.get("Expense Ratio")))}</div>', unsafe_allow_html=True)
+            aum_tip=_etf_metadata_tooltip(row,'AUM'); cost_tip=_etf_metadata_tooltip(row,'Cost')
+            cols[8].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_aum_display(row))} {aum_tip}</div>', unsafe_allow_html=True)
+            cols[9].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_cost(row.get("Expense Ratio")))} {cost_tip}</div>', unsafe_allow_html=True)
             cols[10].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("1Y %"),1))}</div>', unsafe_allow_html=True)
             cols[11].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("3Y %"),1))}</div>', unsafe_allow_html=True)
             cols[12].markdown(f'<div class="etf-row-text" style="white-space:nowrap;">{hesc(_etf_display_num(row.get("5Y %"),1))}</div>', unsafe_allow_html=True)
@@ -3183,7 +3214,7 @@ def add_user_etf_for_market(market_name,ticker,display_name='',role='Satellite',
     if any(_normalise_ticker(x.get('Ticker'))==res for x in ml if isinstance(x,dict)): return False,f'{res} already exists in the user-selected ETF list for {market_name}.'
     if currency=='Auto': currency=market_currency_info(market_name)[0]
     instrument=display_name.strip() or yahoo_ticker_name(res,res)
-    ml.append({'Source':'User-selected','Role':role,'Instrument':instrument,'Ticker':res,'Currency':currency,'Use case':use_case.strip() or 'User-selected ETF / watchlist'})
+    ml.append({'Source':'User-selected','Role':role,'Instrument':instrument,'Ticker':res,'Currency':currency,'Use case':use_case.strip() or 'User-selected ETF / watchlist','Review Status':'USER_SUBMITTED_HOLD','Metadata Status':'USER_SUBMITTED_HOLD','Submitted At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT'),'Missing Items':['AUM','Cost','CPF-OA/SRS eligibility','Benchmark validation'],'Metadata Source':'Yahoo Finance price validation','Data As Of':datetime.now().strftime('%Y-%m-%d')})
     st.session_state.user_etf_watchlist[market_name]=ml; persist_user_etf_preferences_if_enabled()
     return True,f'{res} added to {market_name} user-selected ETF watchlist. {msg}'
 def clear_user_etfs_for_market(market_name): init_user_etf_preferences(); st.session_state.user_etf_watchlist[market_name]=[]; persist_user_etf_preferences_if_enabled()
@@ -3196,7 +3227,7 @@ def promote_user_etf_to_platform_default(market_name,item):
     if res in platform_etf_tickers_for_market(market_name): return False,f'{res} is already promoted as a platform default ETF for {market_name}.'
     coverage=etf_data_coverage_label(res); instrument=preferred_instrument_name(res,item.get('Instrument'))
     ov=_load_platform_etf_overrides(); mp=ov.get('platform_default_etfs',{}) if isinstance(ov,dict) else {}; rows=mp.get(market_name,[]) if isinstance(mp.get(market_name,[]),list) else []
-    rows.append({'Source':'Platform default','Role':'Core','Instrument':instrument,'Ticker':res,'Currency':item.get('Currency') or market_currency_info(market_name)[0],'Use case':f'Platform-promoted core ETF for {market_name}','Data Coverage':coverage,'Promoted At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')})
+    rows.append({'Source':'Platform default','Role':item.get('Role','Satellite'),'Instrument':instrument,'Ticker':res,'Currency':item.get('Currency') or market_currency_info(market_name)[0],'Use case':item.get('Use case') or f'Platform-added ETF candidate for {market_name}','Data Coverage':coverage,'Review Status':'PROMOTED_PENDING_METADATA','Metadata Status':'PROMOTED_PENDING_METADATA','Candidate Assessment Required':True,'Include In Next ETF Discovery':True,'Missing Items':item.get('Missing Items') or ['AUM','Cost','CPF-OA/SRS eligibility','Benchmark validation'],'Metadata Source':item.get('Metadata Source') or 'Yahoo Finance price validation','Metadata Source URL':'','Data As Of':item.get('Data As Of') or datetime.now().strftime('%Y-%m-%d'),'AUM':None,'Expense Ratio':None,'AUM Scope':'Unavailable / not yet verified','Cost Basis':'Unavailable / not yet verified','Promoted At':datetime.now().strftime('%Y-%m-%d %H:%M:%S SGT')})
     mp[market_name]=rows; ov['platform_default_etfs']=mp
     if _save_platform_etf_overrides(ov): return True,f'{res} promoted to Platform Default ETF for {market_name}. {coverage}. {msg}'
     return False,'Failed to save platform ETF override file.'
@@ -3219,7 +3250,7 @@ def enrich_user_etf_rows_for_market(market_name):
         if ok and res in sys: status='Already in system reference table'
         elif ok and res in plat: status='Already promoted as platform default'
         elif not ok: status='Excluded from ETF table'
-        rows.append({'Source':item.get('Source','User-selected'),'Role':item.get('Role','Satellite'),'Instrument':preferred_instrument_name(key,item.get('Instrument')),'Original Ticker':original,'Ticker':res if ok else original,'Currency':item.get('Currency') or code,'Use case':item.get('Use case','User-selected ETF / watchlist'),'Data Status':'OK' if ok else 'No price data','Price':px,'Data Coverage':etf_data_coverage_label(res) if ok else 'N/A','Table Status':status,'Validation Note':msg})
+        rows.append({'Source':item.get('Source','User-selected'),'Role':item.get('Role','Satellite'),'Instrument':preferred_instrument_name(key,item.get('Instrument')),'Original Ticker':original,'Ticker':res if ok else original,'Currency':item.get('Currency') or code,'Use case':item.get('Use case','User-selected ETF / watchlist'),'Data Status':'OK' if ok else 'No price data','Price':px,'Data Coverage':etf_data_coverage_label(res) if ok else 'N/A','Table Status':status,'Validation Note':msg,'Review Status':item.get('Review Status','USER_SUBMITTED_HOLD'),'Metadata Status':item.get('Metadata Status','USER_SUBMITTED_HOLD'),'Missing Items':item.get('Missing Items') or ['AUM','Cost','CPF-OA/SRS eligibility','Benchmark validation'],'Metadata Source':item.get('Metadata Source') or 'Yahoo Finance price validation','Data As Of':item.get('Data As Of','')})
     return rows
 def clean_user_etfs_for_market(market_name,keep_system_duplicates=False):
     cleaned=[]
@@ -4466,7 +4497,9 @@ def render_performance(expanded=False):
                     etf_df['Rank']=999
                 if 'Implementation Fit Score' not in etf_df.columns:
                     etf_df['Implementation Fit Score']=0.0
-                etf_df=etf_df.sort_values(['_SourceOrder','Rank','Implementation Fit Score','_RoleOrder','Instrument','Ticker'],ascending=[True,True,False,True,True,True],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder'],errors='ignore')
+                etf_df['_RankSort']=pd.to_numeric(etf_df['Rank'],errors='coerce').fillna(999)
+                etf_df['_FitSort']=pd.to_numeric(etf_df['Implementation Fit Score'],errors='coerce').fillna(-1)
+                etf_df=etf_df.sort_values(['_SourceOrder','_RankSort','_FitSort','_RoleOrder','Instrument','Ticker'],ascending=[True,True,False,True,True,True],kind='mergesort').drop(columns=['_SourceOrder','_RoleOrder','_RankSort','_FitSort'],errors='ignore')
                 etf_df=etf_df.head(10)
                 selected_promotion_row=render_etf_add_entry_rows(etf_df, perf_market, market_ccy, key_prefix='etf_tracker_add_entry', allow_promote=True, rich=True)
 
@@ -4515,7 +4548,7 @@ def render_performance(expanded=False):
             st.rerun()
         if selected_promotion_row:
             st.markdown('#### 🔐 Platform Default Promotion')
-            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be added to platform_etf_overrides.json.</span></div>""",unsafe_allow_html=True)
+            st.markdown(f"""<div class="soft-card"><b>Selected ETF:</b> {hesc(selected_promotion_row.get('Ticker'))} — {hesc(selected_promotion_row.get('Instrument'))}<br><b>Coverage:</b> {hesc(selected_promotion_row.get('Coverage') or selected_promotion_row.get('Data Coverage'))}<br><span style="color:{MUTED};font-size:12px;">Owner passcode is required before this ETF can be saved to platform_etf_overrides.json as PROMOTED_PENDING_METADATA and included in the next governed ETF assessment.</span></div>""",unsafe_allow_html=True)
             p1,p2=st.columns([.95,1.05])
             inline_passcode=p1.text_input('Owner passcode',type='password',key='inline_owner_passcode_for_promotion')
             if p2.button('Validate & Promote',use_container_width=True,key='inline_promote_platform_default_button'):
@@ -4523,7 +4556,7 @@ def render_performance(expanded=False):
                 st.toast(('✅ ' if ok else '⚠️ ')+msg)
                 if not ok: st.warning(msg)
                 st.rerun()
-            p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Limited return history is allowed but labelled clearly.')
+            p2.caption('Promotion gate: valid latest price, non-duplicate ticker, and correct owner passcode. Missing AUM or Cost is allowed, labelled as unavailable, and never treated as zero. Promoted ETFs remain Not ranked / Fit Pending until governed assessment.')
 
         with st.expander('ETF list maintenance',expanded=False):
             m1,m2=st.columns([.8,1.2])
