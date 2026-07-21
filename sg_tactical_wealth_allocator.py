@@ -440,22 +440,22 @@ st.markdown("""
 
 INDEX_TICKERS = {
     'S&P 500':'^GSPC','Nasdaq':'^IXIC','DJIA':'^DJI','HSI':'^HSI','STI':'^STI','KLSE':'^KLSE',
-    'A-Share':'000001.SS','Nikkei 225':'^N225','Gold':'GC=F','Bitcoin':'BTC-USD'
+    'A-Share':'000001.SS','Nikkei 225':'^N225','KOSPI':'^KS11','Gold':'GC=F','Bitcoin':'BTC-USD'
 }
 
 MARKET_CURRENCY_MAP = {
     'S&P 500':'USD','Nasdaq':'USD','DJIA':'USD','HSI':'HKD','STI':'SGD','KLSE':'MYR',
-    'A-Share':'CNY','Nikkei 225':'JPY','Gold':'USD','Bitcoin':'USD'
+    'A-Share':'CNY','Nikkei 225':'JPY','KOSPI':'KRW','Gold':'USD','Bitcoin':'USD'
 }
-CURRENCY_SYMBOL_MAP = {'USD':'US$','SGD':'S$','HKD':'HK$','MYR':'RM','CNY':'RMB','JPY':'¥'}
-CURRENCY_HTML_MAP = {'USD':'US&#36;','SGD':'S&#36;','HKD':'HK&#36;','MYR':'RM','CNY':'RMB','JPY':'¥'}
-CURRENCY_NAME_MAP = {'USD':'United States Dollar','SGD':'Singapore Dollar','HKD':'Hong Kong Dollar','MYR':'Malaysian Ringgit','CNY':'Chinese Yuan / RMB','JPY':'Japanese Yen'}
+CURRENCY_SYMBOL_MAP = {'USD':'US$','SGD':'S$','HKD':'HK$','MYR':'RM','CNY':'RMB','JPY':'¥','KRW':'₩'}
+CURRENCY_HTML_MAP = {'USD':'US&#36;','SGD':'S&#36;','HKD':'HK&#36;','MYR':'RM','CNY':'RMB','JPY':'¥','KRW':'&#8361;'}
+CURRENCY_NAME_MAP = {'USD':'United States Dollar','SGD':'Singapore Dollar','HKD':'Hong Kong Dollar','MYR':'Malaysian Ringgit','CNY':'Chinese Yuan / RMB','JPY':'Japanese Yen','KRW':'South Korean Won'}
 
 def market_currency_info(market_name):
     code = MARKET_CURRENCY_MAP.get(market_name, 'SGD')
     return code, CURRENCY_SYMBOL_MAP.get(code, '$'), CURRENCY_HTML_MAP.get(code, '$'), CURRENCY_NAME_MAP.get(code, code)
 ASSET_GROUPS = {
-    'Market / Equity Index':['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'],
+    'Market / Equity Index':['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','KOSPI'],
     'Alternative Assets':['Gold','Bitcoin']
 }
 PMI_FRED_MARKETS = {'S&P 500','Nasdaq','DJIA'}
@@ -469,6 +469,7 @@ PMI_PROXY_MAP = {
     'KLSE':{'label':'Malaysia Manufacturing PMI','region':'Malaysia','source':'S&P Global Malaysia PMI / manual input','default':49.9},
     'A-Share':{'label':'China Caixin Manufacturing PMI','region':'China','source':'NBS / Caixin / manual input','default':50.0},
     'Nikkei 225':{'label':'Japan Jibun Bank Manufacturing PMI','region':'Japan','source':'Jibun Bank / S&P Global Japan PMI / manual input','default':50.4},
+    'KOSPI':{'label':'South Korea Manufacturing PMI','region':'South Korea','source':'S&P Global South Korea Manufacturing PMI / macro pack / manual input','default':50.0},
     'Gold':{'label':'N/A','region':'N/A','source':'PMI not applicable for Gold','default':0.0},
     'Bitcoin':{'label':'N/A','region':'N/A','source':'PMI not applicable for Bitcoin','default':0.0},
 }
@@ -478,6 +479,7 @@ LATEST_PMI_ACTUALS = {
     'Singapore S&P Global PMI':{'value':51.0,'month':'Jun 2026','source':'SIPMM / S&P Global Singapore PMI / manual input'},
     'Malaysia Manufacturing PMI':{'value':49.9,'month':'Jun 2026','source':'S&P Global Malaysia PMI / manual input'},
     'Japan Jibun Bank Manufacturing PMI':{'value':50.4,'month':'Jun 2026','source':'Jibun Bank / S&P Global Japan PMI / manual input'},
+    'South Korea Manufacturing PMI':{'value':50.0,'month':'Awaiting update','source':'Macro pack / manual input'},
     'N/A':{'value':0.0,'month':'N/A','source':'PMI not applicable for this asset class'},
 }
 PMI_PROXY_OPTIONS = list(LATEST_PMI_ACTUALS.keys())
@@ -491,16 +493,17 @@ ETF_UNIVERSE = {
     'S&P 500': [('Core exposure','SPDR S&P 500 ETF','SPY','Broad US large-cap exposure'),('Lower-cost core','Vanguard S&P 500 ETF','VOO','Low-cost S&P 500 exposure'),('Core alternative','iShares Core S&P 500 ETF','IVV','Broad S&P 500 exposure')],
     'Nasdaq': [('Core exposure','Invesco QQQ','QQQ','Nasdaq 100 exposure'),('Lower-cost alternative','Invesco QQQM','QQQM','Nasdaq 100 lower-fee alternative')],
     'DJIA': [('Core exposure','SPDR DJIA ETF','DIA','Blue-chip US exposure')],
-    'HSI': [('Core exposure','Tracker Fund of Hong Kong','2800.HK','Broad HSI exposure'),('Broad HSI ETF','iShares HSI ETF','3115.HK','Alternative HSI exposure'),('Higher beta satellite','iShares Hang Seng TECH ETF','3067.HK','Growth / tech sensitivity')],
+    'HSI': [('Core exposure','Tracker Fund of Hong Kong','2800.HK','Broad HSI exposure'),('Broad HSI ETF','iShares HSI ETF','3115.HK','Alternative HSI exposure'),('Satellite','Hang Seng China Enterprises Index ETF','2828.HK','Hong Kong-listed China enterprises exposure'),('Higher beta satellite','iShares Hang Seng TECH ETF','3067.HK','Growth / tech sensitivity')],
     'STI': [('Core exposure','SPDR STI ETF','ES3.SI','Broad STI exposure'),('Core alternative','Nikko AM STI ETF','G3B.SI','Alternative STI exposure')],
     'KLSE': [('Core exposure','FTSE Bursa Malaysia KLCI ETF','0820EA.KL','Broad Malaysia exposure')],
-    'A-Share': [('Core exposure','Xtrackers Harvest CSI 300 China A-Shares ETF','ASHR','China A-share exposure'),('Satellite','KraneShares Bosera MSCI China A 50 Connect ETF','KBA','China A-share alternative')],
+    'A-Share': [('Core exposure','Xtrackers Harvest CSI 300 China A-Shares ETF','ASHR','China A-share exposure'),('Satellite','KraneShares Bosera MSCI China A 50 Connect ETF','KBA','China A-share alternative'),('Satellite','iShares FTSE China A50 ETF','2823.HK','FTSE China A50 large-cap A-share exposure')],
     'Nikkei 225': [('Core exposure','NEXT FUNDS Nikkei 225 ETF','1321.T','Nikkei 225 exposure'),('International proxy','iShares MSCI Japan ETF','EWJ','Broad Japan equity exposure')],
+    'KOSPI': [('Core exposure','KODEX 200 ETF','069500.KS','KOSPI 200 large-cap South Korea exposure'),('Core alternative','TIGER 200 ETF','102110.KS','Alternative KOSPI 200 exposure'),('International proxy','iShares MSCI South Korea ETF','EWY','Broad South Korea equity exposure')],
     'Gold': [('Core exposure','SPDR Gold Shares','GLD','Physical gold ETF'),('Alternative','iShares Gold Trust','IAU','Lower-cost gold ETF')],
     'Bitcoin': [('Core exposure','iShares Bitcoin Trust','IBIT','Spot Bitcoin ETF'),('Alternative','Grayscale Bitcoin Trust','GBTC','Bitcoin trust')],
 }
 BENCHMARK_TICKERS = {
-    'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225')],
+    'Global Indices':[('STI','^STI'),('Nasdaq','^IXIC'),('S&P 500','^GSPC'),('DJIA','^DJI'),('HSI','^HSI'),('KLSE','^KLSE'),('A-Share','000001.SS'),('Nikkei 225','^N225'),('KOSPI','^KS11')],
     'Commodities & Crypto':[('Crude Oil','CL=F'),('Gold','GC=F'),('Silver','SI=F'),('Bitcoin','BTC-USD')]
 }
 NAV_OPTIONS = ['🧠 Executive Centre','▣ Market Deep Dive','🏆 Crash Analytics','📡 Audit, Methodology & Export']
@@ -680,9 +683,10 @@ EXTERNAL_MACRO_PACK_FILE=Path('macro_pack_latest/macro_data.csv')
 EXTERNAL_MACRO_DIAGNOSTICS_FILE=Path('macro_pack_latest/diagnostics.csv')
 US_MARKETS={'S&P 500','Nasdaq','DJIA'}
 USD_PROXY_MARKETS={'Gold','Bitcoin'}
-MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
+MARKET_UPLOAD_ALIASES={'S&P 500':'US','Nasdaq':'US','DJIA':'US','STI':'SG','HSI':'HK','A-Share':'CN','KLSE':'MY','Nikkei 225':'JP','KOSPI':'KR','Gold':'GLOBAL','Bitcoin':'GLOBAL'}
 MONTH_MAP={'Jan':1,'Feb':2,'Mar':3,'Apr':4,'May':5,'Jun':6,'Jul':7,'Aug':8,'Sep':9,'Oct':10,'Nov':11,'Dec':12}
 MACRO_SOURCE_REGISTRY={'S&P 500':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'Nasdaq':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'DJIA':{'Inflation':'FRED CPIAUCSL','Jobs':'FRED UNRATE','Claims':'FRED ICSA','Rates':'Yahoo ^TNX / FRED DGS10','PMI':'ISM Manufacturing PMI'},'STI':{'Inflation':'SingStat M213751 CPI YoY','Jobs':'SingStat/MOM M182342 unemployment','Claims':'Not applicable','Rates':'SG SORA live redistributor only; MAS legacy endpoints retired','PMI':'SIPMM Singapore Manufacturing PMI'},'HSI':{'Inflation':'C&SD Table 510-60001 Composite CPI YoY / HKMA fallback','Jobs':'HKMA unemployment','Claims':'Not applicable','Rates':'HKMA Open API HIBOR / HKD rates','PMI':'S&P Global Hong Kong SAR PMI'},'A-Share':{'Inflation':'NBS CPI validation mode','Jobs':'NBS unemployment validation mode','PMI':'NBS Manufacturing PMI','Claims':'Not applicable','Rates':'CFETS/PBC 1Y LPR validation mode'},'KLSE':{'Inflation':'OpenDOSM CPI mapping pending','Jobs':'OpenDOSM lfs_month unemployment','Claims':'Not applicable','Rates':'BNM OpenAPI Overnight Policy Rate (OPR)','PMI':'S&P Global Malaysia Manufacturing PMI'},'Nikkei 225':{'Inflation':'DBnomics STATJP/CPIm CPI YoY','Jobs':'DBnomics STATJP/MIm unemployment','Claims':'Not applicable','Rates':'BOJ FM01 STRDCLUCON CSV parser','PMI':'au Jibun Bank Japan Manufacturing PMI'},'Gold':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'},'Bitcoin':{'Rates':'FRED DGS10 global USD rates proxy','PMI':'N/A'}}
+MACRO_SOURCE_REGISTRY['KOSPI']={'Inflation':'Macro pack KR CPI','Jobs':'Macro pack KR unemployment','Claims':'Not applicable','Rates':'Bank of Korea base rate / macro pack','PMI':'S&P Global South Korea Manufacturing PMI'}
 MACRO_DIAGNOSTICS={}
 
 def _diag_row(adapter, endpoint='', reached=False, rows=0, matched='', latest='', reason=''):
@@ -1777,6 +1781,7 @@ MARKET_FLAG_ASSET_MAP = {
     'STI': 'assets/flags/sg.svg',
     'KLSE': 'assets/flags/my.svg',
     'Nikkei 225': 'assets/flags/jp.svg',
+    'KOSPI': 'assets/flags/kr.svg',
     'A-Share': 'assets/flags/cn.svg',
     'Gold': 'assets/flags/us.svg',
     'Bitcoin': 'assets/flags/us.svg',
@@ -2824,7 +2829,8 @@ PLATFORM_ETF_OVERRIDES_FILE = Path('platform_etf_overrides.json')
 ETF_MASTER_FILE = Path('data/etf_master.json')
 ETF_MASTER_REFRESH_FILE = Path('data/etf_master_last_refresh.json')
 ETF_CONFIG_FILE = Path('data/etf_config.json')
-ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T'}
+ETF_VERIFICATION_DISCLAIMER = ('ETF information is for implementation comparison only. Verify the ETF identity, ticker, listing, trading currency, product details and CPF-OA/SRS eligibility with your broker or trading platform before placing any trade.')
+ETF_MARKET_SUFFIX_HINTS = {'STI': '.SI', 'KLSE': '.KL', 'HSI': '.HK', 'Nikkei 225': '.T', 'KOSPI': '.KS'}
 DEFAULT_OWNER_PASSCODE = 'Kf272287' # Testing default only. Override with st.secrets/env in production.
 
 def _load_user_etf_preferences(): return _load_json_file(ETF_PREFS_FILE,{'preferred_etfs':{}})
@@ -2839,6 +2845,17 @@ def load_etf_master():
         return {}, {'ok': False, 'message': 'ETF master source is missing. ETF metadata, CPF/SRS eligibility and ETF classification may be incomplete.'}
     try:
         data=json.loads(ETF_MASTER_FILE.read_text(encoding='utf-8'))
+        # Locked ETF taxonomy governance: normalize approved records at runtime.
+        for _key,_rec in data.items() if isinstance(data,dict) else []:
+            if not isinstance(_rec,dict):
+                continue
+            _ticker=str(_rec.get('yahoo_symbol') or _rec.get('ticker') or _key or '').strip().upper()
+            if _ticker in {'2823.HK','02823.HK','2823'}:
+                _rec['market']='A-Share'; _rec['market_name']='A-Share'; _rec['linked_market']='A-Share'
+                _rec['use_case']='FTSE China A50 large-cap A-share exposure'; _rec['role']='Satellite'
+            elif _ticker in {'2828.HK','02828.HK','2828'}:
+                _rec['market']='HSI'; _rec['market_name']='HSI'; _rec['linked_market']='HSI'
+                _rec['use_case']='Hong Kong-listed China enterprises exposure'; _rec['role']='Satellite'
         if not isinstance(data,dict):
             return {}, {'ok': False, 'message': 'ETF master source is invalid. Expected JSON object lookup.'}
         refresh={}
@@ -3725,7 +3742,7 @@ def cde_next_future_trigger(dd_value):
 
 def cde_all_market_rows():
     rows=[]
-    markets=[x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'] if x in m]
+    markets=[x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','KOSPI'] if x in m]
     perf_map={}
     try:
         perf_rows=perf([(mk, INDEX_TICKERS.get(mk,'')) for mk in markets])
@@ -3746,7 +3763,7 @@ def cde_all_market_rows():
     return sorted(rows,key=lambda r:r['Score'],reverse=True)
 
 def cde_historical_edge_all_markets(threshold=10):
-    markets=[x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225'] if x in m]
+    markets=[x for x in ['S&P 500','Nasdaq','DJIA','HSI','STI','KLSE','A-Share','Nikkei 225','KOSPI'] if x in m]
     all_events=[]; forward_3y=[]; recovery_years=[]
     for mk in markets:
         try:
@@ -4413,6 +4430,7 @@ def render_performance(expanded=False):
         with st.container(border=True):
             etf_hierarchy_tip=_etf_mini_tip(f'Top 10 {perf_market}-Linked ETFs',[('Scope',f'Top 10 ETF candidates linked to {perf_market}'),('Price gate','Valid live/current price only'),('Trade Entry','Use Trade Entry page if an order log is needed')],'ETF list is for implementation comparison only.')
             st.markdown(f'<div style="font-size:12px;color:{MUTED};font-weight:900;text-transform:uppercase;letter-spacing:.04em;margin:10px 0 12px 0;">ETF comparison list {etf_hierarchy_tip}</div>', unsafe_allow_html=True)
+            st.warning(ETF_VERIFICATION_DISCLAIMER, icon='⚠️')
             etf_df=add_performance_and_gap(build_etf_reference_rows(perf_market),perf_market)
             if not etf_df.empty:
                 etf_df=etf_df[etf_df['Data Status'].eq('OK')]
@@ -4459,6 +4477,7 @@ def render_performance(expanded=False):
             'KLSE':'e.g. 0820EA.KL',
             'A-Share':'e.g. ASHR / KBA',
             'Nikkei 225':'e.g. 1321.T / EWJ',
+            'KOSPI':'e.g. 069500.KS / 102110.KS / EWY',
             'Gold':'e.g. GLD / IAU',
             'Bitcoin':'e.g. IBIT / GBTC',
         }
