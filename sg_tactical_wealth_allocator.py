@@ -3865,18 +3865,10 @@ def render_executive():
     max_deploy_pct=max([safe_float(r.get('Deploy %'),0) for r in rows] or [0])
     _init_capital_settings()
     total_cap=float(_capital_source_breakdown(currency_code).get('total',0.0) or 0.0)
-    best_deploy_pct=safe_float(best.get('Deploy %'),0)
     actual_total_deployed, actual_by_market, deployed_source = _actual_deployed_base_amount(currency_code)
     deployed_amt=max(0.0,min(float(actual_total_deployed),total_cap))
     remaining_amt=max(total_cap-deployed_amt,0)
-    best_market_budget=_market_budget_amount(best['Market'],total_cap)
-    best_market_actual=max(float(actual_by_market.get(best['Market'],0.0)),0.0)
-    if deployed_source=='manual_override' and best_market_actual<=0:
-        best_market_actual=0.0
-    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(best['Drawdown'])
-    next_target_amt=best_market_budget*safe_float(next_pct,best_deploy_pct)
-    next_deploy_amt=max(next_target_amt-best_market_actual,0)
-    next_increment=(next_deploy_amt/best_market_budget) if best_market_budget else 0
+
     active_trade_df=_trade_log_with_numeric() if '_trade_log_with_numeric' in globals() else pd.DataFrame()
     if isinstance(active_trade_df,pd.DataFrame) and not active_trade_df.empty and 'Entry Status' in active_trade_df.columns:
         active_trade_df=active_trade_df[~active_trade_df['Entry Status'].astype(str).str.lower().eq('voided')].copy()
@@ -3887,22 +3879,53 @@ def render_executive():
             pending_df=pending_df[pending_df['Base Currency'].astype(str).str.upper().eq(str(currency_code).upper())]
         if not pending_df.empty and 'Market' in pending_df.columns:
             pending_by_market={str(k):float(v) for k,v in pending_df.groupby('Market')['Base Currency Equivalent'].sum().items()}
-    best_market_pending=max(float(pending_by_market.get(best['Market'],0.0)),0.0)
-    best_market_available_raw=best_market_budget-best_market_actual-best_market_pending
-    best_market_over_amount=max(-best_market_available_raw,0.0)
-    best_market_overdeployed=best_market_over_amount>0
-    best_market_available=max(best_market_available_raw,0.0)
-    coverage_ratio=(min(best_market_available,remaining_amt)/next_deploy_amt) if next_deploy_amt>0 else 0
-    readiness_required=float(next_deploy_amt)
-    readiness=_funding_readiness_matrix(readiness_required,best_market_budget,best_market_actual,best_market_pending,remaining_amt,best['Market'])
-    coverage_text=readiness['detail']
+
+    # Primary Deployment Action must be executable, not merely the highest opportunity score.
+    # Select the highest-scoring triggered market with an assigned budget and an outstanding
+    # current-tier deployment. Markets without allocation remain in the watchlist.
+    actionable=[]
+    for r in rows:
+        mk=r['Market']
+        active_pct=safe_float(r.get('Deploy %'),deploy_rule(r.get('Drawdown',0)))
+        budget=max(float(_market_budget_amount(mk,total_cap)),0.0)
+        actual=max(float(actual_by_market.get(mk,0.0)),0.0)
+        pending=max(float(pending_by_market.get(mk,0.0)),0.0)
+        current_target=budget*active_pct
+        outstanding=max(current_target-actual-pending,0.0)
+        market_available=max(budget-actual-pending,0.0)
+        if active_pct>0 and budget>0 and outstanding>0 and market_available>0 and remaining_amt>0:
+            actionable.append((r,outstanding,budget,actual,pending,market_available))
+    actionable=sorted(actionable,key=lambda x:(-safe_float(x[0].get('Score'),0),-safe_float(x[0].get('Deploy %'),0),x[0]['Market']))
+
+    if actionable:
+        action,action_required,action_market_budget,action_market_actual,action_market_pending,action_market_available=actionable[0]
+        action_is_executable=True
+    else:
+        action=best
+        action_is_executable=False
+        action_market_budget=max(float(_market_budget_amount(action['Market'],total_cap)),0.0)
+        action_market_actual=max(float(actual_by_market.get(action['Market'],0.0)),0.0)
+        action_market_pending=max(float(pending_by_market.get(action['Market'],0.0)),0.0)
+        action_market_available=max(action_market_budget-action_market_actual-action_market_pending,0.0)
+        action_required=0.0
+
+    action_deploy_pct=safe_float(action.get('Deploy %'),0)
+    current_trigger_label=str(action.get('Signal','TRIGGER')).upper()
+    current_trigger_threshold='-50%' if action_deploy_pct>=1 else '-35%' if action_deploy_pct>=.75 else '-25%' if action_deploy_pct>=.50 else '-15%' if action_deploy_pct>=.25 else '-8%' if action_deploy_pct>=.10 else 'N/A'
+    next_trigger,next_tier,next_pct,distance=cde_next_future_trigger(action['Drawdown'])
+    next_deploy_amt=min(max(float(action_required),0.0),action_market_available,remaining_amt) if action_is_executable else 0.0
+    readiness_required=float(action_required) if action_is_executable else 0.0
+    readiness=_funding_readiness_matrix(readiness_required,action_market_budget,action_market_actual,action_market_pending,remaining_amt,action['Market'])
+    coverage_ratio=(min(action_market_available,remaining_amt)/readiness_required) if readiness_required>0 else 0
     funding_status=readiness['label']
     funding_status_class='cde-funding-ready' if readiness['class']=='ready' else 'cde-funding-insufficient' if readiness['class']=='insufficient' else 'cde-funding-warning'
-    top_funding_status=(f"○ {best['Market']} - NO ALLOCATION" if readiness['code']=='no_allocation' else funding_status)
+    top_funding_status=(f"○ {action['Market']} · {funding_status.upper()}" if action_is_executable else f"○ {best['Market']} · NO ALLOCATION")
     top_funding_status_class=funding_status_class
-    dry_powder_tip = tooltip_html('Funding Readiness Detail', _funding_breakdown_pairs(readiness_required,best_market_available,remaining_amt,coverage_ratio,currency_code)+[('Status', funding_status)], readiness['detail'])
-    top_funding_amount=(f"Portfolio cash: {fmt_sgd_html(remaining_amt)}" if readiness['code']=='no_allocation' else f"{fmt_sgd_html(remaining_amt)} available")
+    dry_powder_tip = tooltip_html('Funding Readiness Detail', _funding_breakdown_pairs(readiness_required,action_market_available,remaining_amt,coverage_ratio,currency_code)+[('Status', funding_status)], readiness['detail'])
+    top_funding_amount=f"Portfolio cash: {fmt_sgd_html(remaining_amt)}"
     top_target_warning_html = ''
+    # Best Opportunity remains independent from the executable Primary Action.
+    best_market_budget=max(float(_market_budget_amount(best['Market'],total_cap)),0.0)
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
     market_rows=[]
     try:
@@ -3920,8 +3943,8 @@ def render_executive():
 
     alloc_pct=(deployed_amt/total_cap) if total_cap else 0
     dry_pct=(remaining_amt/total_cap) if total_cap else 0
-    active_tier=f"{best['Zone']} / {best_deploy_pct:.0%}"
-    confidence_label='High' if best['Score']>=50 else 'Medium' if best['Score']>=25 else 'Low'
+    active_tier=f"{action['Zone']} / {action_deploy_pct:.0%}"
+    confidence_label='High' if action['Score']>=50 else 'Medium' if action['Score']>=25 else 'Low'
     edge=cde_historical_edge_all_markets()
 
     score_tip=tooltip_html('Market Opportunity Score',[('Definition','Market Opportunity Score is a landing-level 0–100 ranking score based on drawdown depth and active deployment tier. It is used for cross-market prioritisation only.'),('Key takeaway','Opportunities are ranked across all supported equity markets. Single-market execution and original detail remain inside Market Deep Dive.')],'Not a return forecast and not a detailed Market Deep Dive score.')
@@ -3935,12 +3958,19 @@ def render_executive():
     env_html=f'''<div class="cde-env-compact"><div><b>Volatility:</b> {hesc(vol_value)}</div><div><b>Credit:</b> Tightening</div><div><b>Liquidity:</b> Neutral</div><div><b>Growth:</b> Moderate</div></div>'''
 
     # Top layer locked.
+    st.markdown('''
+<style>
+.cde-kpi-grid .cde-card{container-type:inline-size;}
+.cde-kpi-grid .cde-funding-status{font-size:clamp(15px,7cqw,22px)!important;white-space:nowrap!important;line-height:1.1!important;letter-spacing:-.02em!important;max-width:100%!important;}
+@supports not (font-size:1cqw){.cde-kpi-grid .cde-funding-status{font-size:clamp(15px,1.45vw,22px)!important;}}
+</style>
+''', unsafe_allow_html=True)
     st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-funding-status {top_funding_status_class}">{hesc(top_funding_status)}</div><div class="cde-funding-amount">{top_funding_amount} {dry_powder_tip}</div>{top_target_warning_html}</div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
 
     # Deployment & Capital Command Centre — Primary Deployment Action first, Watchlist second.
     # Deployment Trigger Watchlist: triggered actions first, then nearest unhit triggers.
     # A reached trigger is ACTION only while its tier target remains outstanding.
-    # A reached trigger with no assigned market allocation is NO ALLOCATION.
+    # A reached trigger with no assigned market allocation is ALLOCATION REQUIRED.
     triggered_items=[]
     next_items=[]
     for r in rows:
@@ -3956,7 +3986,7 @@ def render_executive():
         if active_pct>0 and market_budget>0 and outstanding>0:
             triggered_items.append({'Market':market_name,'Status':'ACTION','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'Priority':0,'Score':safe_float(r.get('Score'),0)})
         elif active_pct>0 and market_budget<=0:
-            triggered_items.append({'Market':market_name,'Status':'NO ALLOCATION','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'Priority':1,'Score':safe_float(r.get('Score'),0)})
+            triggered_items.append({'Market':market_name,'Status':'ALLOCATION REQUIRED','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'Priority':1,'Score':safe_float(r.get('Score'),0)})
         else:
             next_items.append({'Market':market_name,'Status':'NEXT','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'DistanceNum':distance_num(dist),'Priority':2,'Score':safe_float(r.get('Score'),0)})
     triggered_items=sorted(triggered_items,key=lambda x:(x['Priority'],-x['Score'],x['Market']))
@@ -3967,22 +3997,22 @@ def render_executive():
     watch_tip=tooltip_html('Deployment Trigger Watchlist',[
         ('ACTION','Trigger reached and deployment outstanding'),
         ('NEXT','Approaching the next unhit trigger'),
-        ('NO ALLOCATION','Trigger reached but no market allocation is available'),
-    ],'Priority: ACTION, then NO ALLOCATION, then NEXT. Up to three markets are displayed.')
-    condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
-    if readiness['code'] in ['over_budget','not_ready']:
-        next_deploy_amt=0.0
-        condition_text=f"{best['Market']} already above allocated deployment budget"
-    no_allocation_state=readiness['code']=='no_allocation'
-    next_deployment_display='NO ALLOCATION' if no_allocation_state else fmt_sgd_html(next_deploy_amt)
-    if no_allocation_state:
-        funding_detail_inline="Allocation required<br><span class='cde-readiness-indent'>&middot; Required: Not calculated</span>"
+        ('ALLOCATION REQUIRED','Trigger reached but no market allocation is available'),
+    ],'Priority: ACTION, then ALLOCATION REQUIRED, then NEXT. Up to three markets are displayed.')
+    if action_is_executable:
+        condition_text=f"{action['Market']} {current_trigger_label} {current_trigger_threshold} reached"
+        next_deployment_display=fmt_sgd_html(next_deploy_amt)
+    else:
+        condition_text=f"{best['Market']} allocation required"
+        next_deployment_display='NO EXECUTABLE ACTION'
     if readiness['code']=='funding_action':
         funding_detail_inline=f"Portfolio funding shortfall<br><span class='cde-readiness-indent'>{fmt_sgd_html(remaining_amt)} cash vs {fmt_sgd_html(readiness_required)} required</span>"
     elif readiness['code']=='ready':
-        funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available<br><span class='cde-readiness-indent'>&middot; Coverage {coverage_ratio:.1f}x</span>"
-    elif not no_allocation_state:
+        funding_detail_inline=f"{fmt_sgd_html(action_market_available)} {hesc(action['Market'])} allocation available<br><span class='cde-readiness-indent'>&middot; Coverage {coverage_ratio:.1f}x</span>"
+    elif action_is_executable:
         funding_detail_inline=f"{hesc(readiness['detail'])}<br><span class='cde-readiness-indent'>&middot; Required: {fmt_sgd_html(readiness_required)}</span>"
+    else:
+        funding_detail_inline="No allocated market has an outstanding executable deployment"
 
     st.markdown('''<style>
     .cde-action-status-box.warning{background:#FEF2F2!important;border:1px solid #FECACA!important;box-shadow:none!important;}
@@ -4006,7 +4036,7 @@ def render_executive():
     @media (max-width:900px){.cde-command-grid{grid-template-columns:1fr!important;grid-template-areas:"primary" "watch"!important;}}
     </style>''', unsafe_allow_html=True)
     st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{hesc(next_deployment_display)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if readiness['code'] not in ['ready','no_action'] else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(best["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Deployment Trigger Watchlist {watch_tip}</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(action["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(current_trigger_label)} {hesc(current_trigger_threshold)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{action["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{"Reached" if action_is_executable else hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{hesc(next_deployment_display)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if readiness['code'] not in ['ready','no_action'] else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(action["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Deployment Trigger Watchlist {watch_tip}</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
 
