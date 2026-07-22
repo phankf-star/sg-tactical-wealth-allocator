@@ -1,5 +1,5 @@
 indicator,value,numeric_value,status,trend,source,source_series,last_updated,coverage,remarks
-Credit,NFCI -0.515,-0.515,Easy,Stable,FRED / Chicago Fed NFCI,NFCI,2026-07-03,OK,Positive NFCI indicates tighter-than-average financial conditions; negative indicates looser-than-average.
-Liquidity,US Net Liquidity 5.99T,5986361.653,Supportive,Rising,FRED,WALCL-WDTGAL-RRPONTSYD,2026-07-08,OK,US net liquidity proxy in USD millions. 4W change: 62.0bn. Formula: Fed assets minus TGA minus overnight reverse repo.
+Credit,NFCI -0.538,-0.538,Easy,Stable,FRED / Chicago Fed NFCI,NFCI,2026-07-10,OK,Positive NFCI indicates tighter-than-average financial conditions; negative indicates looser-than-average.
+Liquidity,US Net Liquidity 5.95T,5947051.849,Abundant,Rising strongly,FRED,WALCL-WDTGAL-RRPONTSYD,2026-07-15,OK,US net liquidity proxy in USD millions. 4W change: 167.1bn. Formula: Fed assets minus TGA minus overnight reverse repo.
 Growth,N/A,,Unavailable,Unavailable,PMI composite,PMI,,ERROR,Missing production-safe PMI rows: MY
-Volatility,VIX 17.2,17.16,Normal,Stable,FRED / CBOE VIX,VIXCLS,2026-07-13,OK,VIX used as broad US equity volatility and market stress proxy.
+Volatility,VIX 18.6,18.65,Normal,Rising,FRED / CBOE VIX,VIXCLS,2026-07-20,OK,VIX used as broad US equity volatility and market stress proxy.
