@@ -3898,9 +3898,10 @@ def render_executive():
     coverage_text=readiness['detail']
     funding_status=readiness['label']
     funding_status_class='cde-funding-ready' if readiness['class']=='ready' else 'cde-funding-insufficient' if readiness['class']=='insufficient' else 'cde-funding-warning'
-    top_funding_status=funding_status
+    top_funding_status=(f"○ {best['Market']} - NO ALLOCATION" if readiness['code']=='no_allocation' else funding_status)
     top_funding_status_class=funding_status_class
     dry_powder_tip = tooltip_html('Funding Readiness Detail', _funding_breakdown_pairs(readiness_required,best_market_available,remaining_amt,coverage_ratio,currency_code)+[('Status', funding_status)], readiness['detail'])
+    top_funding_amount=(f"Portfolio cash: {fmt_sgd_html(remaining_amt)}" if readiness['code']=='no_allocation' else f"{fmt_sgd_html(remaining_amt)} available")
     top_target_warning_html = ''
     other_funds_amt=max((srs_balance if 'srs_balance' in globals() else 0)+(cpf_oa_balance if 'cpf_oa_balance' in globals() else 0),0)
     market_rows=[]
@@ -3934,7 +3935,7 @@ def render_executive():
     env_html=f'''<div class="cde-env-compact"><div><b>Volatility:</b> {hesc(vol_value)}</div><div><b>Credit:</b> Tightening</div><div><b>Liquidity:</b> Neutral</div><div><b>Growth:</b> Moderate</div></div>'''
 
     # Top layer locked.
-    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-funding-status {top_funding_status_class}">{hesc(top_funding_status)}</div><div class="cde-funding-amount">{fmt_sgd_html(remaining_amt)} available {dry_powder_tip}</div>{top_target_warning_html}</div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
+    st.markdown(f'''<div class="cde-hero"><div><div class="cde-title">CRASH DEPLOYMENT ENGINE</div><div class="cde-subtitle">Turning market crashes into opportunities.</div><div class="cde-page-label">Executive Centre — All Markets</div></div></div><section class="cde-grid cde-kpi-grid"><div class="cde-card"><div class="cde-card-title">Best Opportunity</div><div class="cde-main-value cde-green">{market_label_html(best['Market'])}</div><div class="cde-card-sub">Drawdown {best['Drawdown']:.1f}% · score {best['Score']}</div></div><div class="cde-card"><div class="cde-card-title">Deployment Stance</div><div class="cde-main-value cde-orange">{max_deploy_pct:.0%}</div><div class="cde-card-sub">Active cumulative deployment</div></div><div class="cde-card"><div class="cde-card-title">Funding Readiness</div><div class="cde-funding-status {top_funding_status_class}">{hesc(top_funding_status)}</div><div class="cde-funding-amount">{top_funding_amount} {dry_powder_tip}</div>{top_target_warning_html}</div><div class="cde-card cde-risk-card"><div class="cde-card-title">Global Macro Risk Regime {global_macro_tip}</div><div class="cde-risk-flex"><div class="cde-risk-left"><div class="cde-main-value cde-orange">{hesc(global_regime)}</div><div class="cde-card-sub">Average macro score {global_risk_score:.0f} / 100</div></div><div class="cde-risk-gauge-side">{risk_gauge_html}</div></div></div><div class="cde-card"><div class="cde-card-title">Current Market Environment {env_tip}</div>{env_html}</div></section>''', unsafe_allow_html=True)
 
     # Deployment & Capital Command Centre — Primary Deployment Action first, Watchlist second.
     # Deployment Trigger Watchlist: triggered actions first, then nearest unhit triggers.
@@ -3951,30 +3952,36 @@ def render_executive():
         active_target=market_budget*active_pct
         outstanding=max(active_target-market_actual,0.0)
         trig, tier, pct, dist=cde_next_future_trigger(dd_value)
-        if active_pct>0 and market_budget<=0:
-            triggered_items.append({'Market':market_name,'Status':'NO ALLOCATION','Main':f'{r.get("Signal","TRIGGER")} trigger reached','Detail':f'{dd_value:.1f}%','Priority':0,'Score':safe_float(r.get('Score'),0)})
-        elif active_pct>0 and outstanding>0:
-            triggered_items.append({'Market':market_name,'Status':'ACTION','Main':f'{r.get("Signal","TRIGGER")} trigger reached','Detail':f'{dd_value:.1f}%','Priority':1,'Score':safe_float(r.get('Score'),0)})
+        reached_tier=str(r.get('Signal','TRIGGER')).upper()
+        if active_pct>0 and market_budget>0 and outstanding>0:
+            triggered_items.append({'Market':market_name,'Status':'ACTION','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'Priority':0,'Score':safe_float(r.get('Score'),0)})
+        elif active_pct>0 and market_budget<=0:
+            triggered_items.append({'Market':market_name,'Status':'NO ALLOCATION','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'Priority':1,'Score':safe_float(r.get('Score'),0)})
         else:
-            next_items.append({'Market':market_name,'Status':'NEXT','Main':f'{dist} to {trig}','Detail':f'{dd_value:.1f}%','DistanceNum':distance_num(dist)})
+            next_items.append({'Market':market_name,'Status':'NEXT','Tier':reached_tier,'Drawdown':f'{dd_value:.1f}%','Next':trig,'DistanceNum':distance_num(dist),'Priority':2,'Score':safe_float(r.get('Score'),0)})
     triggered_items=sorted(triggered_items,key=lambda x:(x['Priority'],-x['Score'],x['Market']))
     next_items=sorted(next_items,key=lambda x:(x['DistanceNum'],x['Market']))
     watch_items=(triggered_items+next_items)[:3]
-    watch_html=''.join([f'''<div class="cde-watch-item"><b>{market_label_html(w['Market'])}</b><span><strong>{hesc(w['Status'])}</strong> · {hesc(w['Main'])}</span><em>{hesc(w['Detail'])}</em></div>''' for w in watch_items])
+    watch_rows=''.join([f'''<div class="cde-watch-table-row"><div class="cde-watch-market">{market_label_html(w['Market'])}</div><div class="cde-watch-action"><strong>{hesc(w['Status'])}</strong> · {hesc(w['Tier'])}</div><div class="cde-watch-dd">{hesc(w['Drawdown'])}</div><div class="cde-watch-next">{hesc(w['Next'])}</div></div>''' for w in watch_items])
+    watch_html=f'''<div class="cde-watch-table"><div class="cde-watch-table-head"><div>Market</div><div>Action</div><div>Drawdown</div><div>Next</div></div>{watch_rows}</div>'''
     watch_tip=tooltip_html('Deployment Trigger Watchlist',[
         ('ACTION','Trigger reached and deployment outstanding'),
         ('NEXT','Approaching the next unhit trigger'),
         ('NO ALLOCATION','Trigger reached but no market allocation is available'),
-    ],'Triggered markets are prioritised first. Remaining positions are filled by markets nearest to their next unhit trigger, up to three markets in total.')
+    ],'Priority: ACTION, then NO ALLOCATION, then NEXT. Up to three markets are displayed.')
     condition_text='Already at maximum deployment tier' if next_trigger=='Fully deployed' else f"{best['Market']} {next_trigger}"
     if readiness['code'] in ['over_budget','not_ready']:
         next_deploy_amt=0.0
         condition_text=f"{best['Market']} already above allocated deployment budget"
+    no_allocation_state=readiness['code']=='no_allocation'
+    next_deployment_display='NO ALLOCATION' if no_allocation_state else fmt_sgd_html(next_deploy_amt)
+    if no_allocation_state:
+        funding_detail_inline="Allocation required<br><span class='cde-readiness-indent'>&middot; Required: Not calculated</span>"
     if readiness['code']=='funding_action':
         funding_detail_inline=f"Portfolio funding shortfall<br><span class='cde-readiness-indent'>{fmt_sgd_html(remaining_amt)} cash vs {fmt_sgd_html(readiness_required)} required</span>"
     elif readiness['code']=='ready':
         funding_detail_inline=f"{fmt_sgd_html(best_market_available)} {hesc(best['Market'])} allocation available<br><span class='cde-readiness-indent'>&middot; Coverage {coverage_ratio:.1f}x</span>"
-    else:
+    elif not no_allocation_state:
         funding_detail_inline=f"{hesc(readiness['detail'])}<br><span class='cde-readiness-indent'>&middot; Required: {fmt_sgd_html(readiness_required)}</span>"
 
     st.markdown('''<style>
@@ -3986,9 +3993,20 @@ def render_executive():
     .cde-action-status-box .cde-readiness-indent{display:block!important;margin-top:2px!important;color:inherit!important;}
     .cde-action-status-box.warning .cde-overdeployed-status{color:#DC2626!important;}
     .cde-action-status-box.warning .cde-overdeployed-detail{color:#7F1D1D!important;}
+    .cde-command-grid{grid-template-columns:minmax(0,68fr) minmax(360px,32fr)!important;grid-template-areas:"primary watch"!important;}
+    .cde-command-grid>.cde-primary-action-card{grid-area:primary!important;}
+    .cde-command-grid>.cde-watch-panel-card{grid-area:watch!important;}
+    .cde-watch-table{width:100%;margin-top:8px;border-top:1px solid #DDE7F3;}
+    .cde-watch-table-head,.cde-watch-table-row{display:grid;grid-template-columns:24% 36% 22% 18%;align-items:center;column-gap:0;}
+    .cde-watch-table-head>div{padding:7px 5px;font-size:10px;font-weight:950;color:#475569;background:#F8FAFC;border-bottom:1px solid #DDE7F3;white-space:nowrap;}
+    .cde-watch-table-row>div{padding:9px 5px;font-size:10.5px;font-weight:750;color:#0F172A;border-bottom:1px solid #E5EDF6;min-width:0;}
+    .cde-watch-market,.cde-watch-dd,.cde-watch-next{white-space:nowrap;}
+    .cde-watch-action{line-height:1.25;overflow-wrap:anywhere;}
+    .cde-watch-dd,.cde-watch-next{text-align:right;font-weight:900!important;}
+    @media (max-width:900px){.cde-command-grid{grid-template-columns:1fr!important;grid-template-areas:"primary" "watch"!important;}}
     </style>''', unsafe_allow_html=True)
     st.markdown('<div class="cde-dcc-title">Deployment & Capital Command Centre</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{fmt_sgd_html(next_deploy_amt)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if readiness['code'] not in ['ready','no_action'] else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(best["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Deployment Trigger Watchlist {watch_tip}</div><div class="cde-watch-sub">Triggered actions first, then nearest upcoming levels</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="cde-dcc-parent"><div class="cde-command-grid"><div class="cde-primary-action-card"><div class="cde-dcc-section-title">Primary Deployment Action</div><div class="cde-action-row"><div class="cde-action-mini target"><span>Target Market</span><b>{market_label_html(best["Market"])}</b></div><div class="cde-action-mini"><span>Trigger Level</span><b>{hesc(next_trigger)}</b></div><div class="cde-action-mini"><span>Current Drawdown</span><b>{best["Drawdown"]:.1f}%</b></div><div class="cde-action-mini"><span>Distance</span><b>{hesc(distance)}</b></div><div class="cde-action-mini"><span>Confidence</span><b>{hesc(confidence_label)}</b></div></div><div class="cde-next-action-grid"><div class="cde-next-deployment-hero"><div class="cde-dcc-section-title">Next Deployment</div><div class="cde-next-amount">{hesc(next_deployment_display)}</div><div class="cde-action-line"><b>Condition:</b> {hesc(condition_text)}</div></div><div class="cde-action-status-box {'warning' if readiness['code'] not in ['ready','no_action'] else ''}"><div class="cde-action-status-title">Funding Readiness — {market_label_html(best["Market"])}</div><div class="cde-action-status-line"><span class="cde-overdeployed-status">{hesc(funding_status)}</span><span class="cde-overdeployed-detail">&middot; {funding_detail_inline}</span></div></div></div></div><div class="cde-watch-panel-card"><div class="cde-watch-title">Deployment Trigger Watchlist {watch_tip}</div>{watch_html}</div></div></div>', unsafe_allow_html=True)
 
     edge_html=f'''<div class="cde-mini-metrics"><div><b>{hesc(edge['success'])}</b><span>Success</span></div><div><b>{hesc(edge['avg3y'])}</b><span>Avg 3Y</span></div><div><b>{hesc(edge['recovery'])}</b><span>Recovery</span></div><div><b>{hesc(edge['worst3y'])}</b><span>Worst 3Y</span></div></div>'''
 
