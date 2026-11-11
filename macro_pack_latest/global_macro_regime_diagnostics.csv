@@ -1,5 +1,5 @@
 adapter,status,series,last_value,last_date,error,source_url,run_utc
-credit_nfci,OK,NFCI,-0.487,2026-10-23,,https://fred.stlouisfed.org/graph/fredgraph.csv?id=NFCI,2026-11-04T06:59:45Z
-liquidity_net,OK,WALCL-WDTGAL-RRPONTSYD,5.73T,2026-10-28,,FRED graph CSV endpoints,2026-11-04T06:59:45Z
-growth_pmi,ERROR,PMI composite,,,Missing production-safe PMI rows: MY,macro_pack_latest/macro_data.csv,2026-11-04T06:59:45Z
-volatility_vix,OK,VIXCLS,21.1,2026-11-02,,https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS,2026-11-04T06:59:45Z
+credit_nfci,OK,NFCI,-0.459,2026-10-30,,https://fred.stlouisfed.org/graph/fredgraph.csv?id=NFCI,2026-11-11T07:11:43Z
+liquidity_net,OK,WALCL-WDTGAL-RRPONTSYD,5.81T,2026-11-04,,FRED graph CSV endpoints,2026-11-11T07:11:43Z
+growth_pmi,ERROR,PMI composite,,,Missing production-safe PMI rows: MY,macro_pack_latest/macro_data.csv,2026-11-11T07:11:43Z
+volatility_vix,OK,VIXCLS,19.9,2026-11-09,,https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS,2026-11-11T07:11:43Z
